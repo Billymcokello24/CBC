@@ -60,7 +60,7 @@ return new class extends Migration
             $table->json('breakdown')->nullable();
             $table->timestamps();
 
-            $table->index(['school_id', 'metric_definition_id', 'measurement_date']);
+            $table->index(['school_id', 'metric_definition_id', 'measurement_date'], 'perf_metric_date_idx');
         });
 
         // Dashboard Widgets

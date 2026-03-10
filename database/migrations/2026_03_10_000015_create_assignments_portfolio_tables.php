@@ -64,7 +64,7 @@ return new class extends Migration
             $table->foreignId('learning_outcome_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['assignment_id', 'learning_outcome_id']);
+            $table->unique(['assignment_id', 'learning_outcome_id'], 'assign_lo_unique');
         });
 
         // Assignment Submissions
@@ -88,7 +88,7 @@ return new class extends Migration
             $table->timestamp('graded_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['assignment_id', 'student_id', 'attempt_number']);
+            $table->unique(['assignment_id', 'student_id', 'attempt_number'], 'assign_stud_attempt_unique');
             $table->index(['student_id', 'status']);
         });
 
@@ -211,7 +211,7 @@ return new class extends Migration
             $table->foreignId('competency_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['portfolio_item_id', 'competency_id']);
+            $table->unique(['portfolio_item_id', 'competency_id'], 'port_item_comp_unique');
         });
 
         // Talent Categories

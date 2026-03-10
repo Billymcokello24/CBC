@@ -71,7 +71,7 @@ return new class extends Migration
             $table->boolean('is_current')->default(true);
             $table->timestamps();
 
-            $table->unique(['student_id', 'medical_condition_id']);
+            $table->unique(['student_id', 'medical_condition_id'], 'stud_med_cond_unique');
         });
 
         // Immunizations/Vaccinations
@@ -103,7 +103,7 @@ return new class extends Migration
             $table->foreignId('recorded_by')->constrained('users');
             $table->timestamps();
 
-            $table->index(['student_id', 'immunization_type_id']);
+            $table->index(['student_id', 'immunization_type_id'], 'stud_imm_type_idx');
         });
 
         // Medical Visits (clinic visits)
@@ -171,7 +171,7 @@ return new class extends Migration
             $table->foreignId('recorded_by')->constrained('users');
             $table->timestamps();
 
-            $table->unique(['health_screening_id', 'student_id']);
+            $table->unique(['health_screening_id', 'student_id'], 'screen_student_unique');
         });
 
         // First Aid/Treatment Log

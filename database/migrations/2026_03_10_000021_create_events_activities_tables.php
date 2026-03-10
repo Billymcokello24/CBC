@@ -103,7 +103,7 @@ return new class extends Migration
             $table->foreignId('registered_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['event_id', 'registrant_type', 'registrant_id']);
+            $table->unique(['event_id', 'registrant_type', 'registrant_id'], 'event_reg_unique');
         });
 
         // Event Resources
@@ -159,7 +159,7 @@ return new class extends Migration
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['club_id', 'student_id', 'academic_year_id']);
+            $table->unique(['club_id', 'student_id', 'academic_year_id'], 'club_stud_year_unique');
         });
 
         // Club Activities
@@ -215,7 +215,7 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->unique(['student_id', 'activity_id', 'academic_year_id']);
+            $table->unique(['student_id', 'activity_id', 'academic_year_id'], 'stud_act_year_unique');
         });
 
         // Sports/Competition Results

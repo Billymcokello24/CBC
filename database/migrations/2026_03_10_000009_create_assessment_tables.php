@@ -105,7 +105,7 @@ return new class extends Migration
             $table->foreignId('learning_outcome_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['assessment_id', 'learning_outcome_id']);
+            $table->unique(['assessment_id', 'learning_outcome_id'], 'assess_lo_unique');
         });
 
         // Linking Assessments to Competencies
@@ -202,7 +202,7 @@ return new class extends Migration
             $table->text('comments')->nullable();
             $table->timestamps();
 
-            $table->unique(['student_assessment_id', 'rubric_criteria_id']);
+            $table->unique(['student_assessment_id', 'rubric_criteria_id'], 'stud_assess_rubric_unique');
         });
 
         // Student Competency Ratings
@@ -221,7 +221,7 @@ return new class extends Migration
             $table->timestamp('rated_at');
             $table->timestamps();
 
-            $table->index(['student_id', 'competency_id', 'academic_term_id']);
+            $table->index(['student_id', 'competency_id', 'academic_term_id'], 'stud_comp_term_idx');
         });
 
         // Report Cards

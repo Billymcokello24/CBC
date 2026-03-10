@@ -125,7 +125,7 @@ return new class extends Migration
             $table->foreignId('competency_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
 
-            $table->unique(['learning_outcome_id', 'competency_id']);
+            $table->unique(['learning_outcome_id', 'competency_id'], 'lo_competency_unique');
         });
 
         // Learning Indicators (CBC specific assessment indicators)
