@@ -116,8 +116,8 @@ return new class extends Migration
             $table->text('sync_error')->nullable();
             $table->timestamps();
 
-            $table->unique(['external_system', 'local_entity_type', 'local_entity_id'], 'external_mapping_unique');
-            $table->index(['external_system', 'external_entity_id']);
+            $table->unique(['external_system', 'local_entity_type', 'local_entity_id'], 'ext_map_unique');
+            $table->index(['external_system', 'external_entity_id'], 'ext_sys_entity_idx');
         });
 
         // Integration Logs

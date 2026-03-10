@@ -120,7 +120,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['school_id', 'report_type_id', 'report_date']);
+            $table->index(['school_id', 'report_type_id', 'report_date'], 'analytics_rpt_date_idx');
         });
 
         // Report Schedules
@@ -157,7 +157,7 @@ return new class extends Migration
             $table->foreignId('created_by')->constrained('users');
             $table->timestamps();
 
-            $table->index(['school_id', 'snapshot_type', 'snapshot_date']);
+            $table->index(['school_id', 'snapshot_type', 'snapshot_date'], 'snap_type_date_idx');
         });
 
         // Trend Analysis
