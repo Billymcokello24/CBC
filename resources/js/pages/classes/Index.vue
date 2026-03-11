@@ -1,29 +1,77 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { School, Plus, Search, Users, BookOpen, GraduationCap, MoreHorizontal } from 'lucide-vue-next';
-import { ref } from 'vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { BookOpen, GraduationCap, List, MoreHorizontal, Plus, School, Search, Users, Grid2x2 } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
+
+interface ClassRow {
+    id: number;
+    name: string;
+    code: string;
+    grade: string | null;
+    stream: string | null;
+    stream_code: string | null;
+    teacher: string | null;
+    students: number;
+    capacity: number | null;
+    academic_year: string | null;
+    utilization: number;
+}
+
+const props = defineProps<{
+    classes: ClassRow[];
+    stats: {
+        total_classes: number;
+        total_students: number;
+        average_class_size: number;
+        grades_count: number;
+    };
+    filters: {
+        search: string;
+        grade_id: number | null;
+        view: 'grid' | 'list';
+    };
+    grades: Array<{ id: number; name: string }>;
+}>();
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Classes', href: '/classes' },
 ];
-const classes = ref([
-    { id: 1, name: 'Grade 1A', grade: 'Grade 1', stream: 'A', teacher: 'Mrs. Jane Wambui', students: 35, capacity: 40 },
-    { id: 2, name: 'Grade 1B', grade: 'Grade 1', stream: 'B', teacher: 'Mr. John Kamau', students: 38, capacity: 40 },
-    { id: 3, name: 'Grade 2A', grade: 'Grade 2', stream: 'A', teacher: 'Ms. Grace Achieng', students: 32, capacity: 40 },
-    { id: 4, name: 'Grade 2B', grade: 'Grade 2', stream: 'B', teacher: 'Mr. Peter Ochieng', students: 36, capacity: 40 },
-    { id: 5, name: 'Grade 3A', grade: 'Grade 3', stream: 'A', teacher: 'Mrs. Mary Njeri', students: 40, capacity: 40 },
-    { id: 6, name: 'Grade 3B', grade: 'Grade 3', stream: 'B', teacher: 'Mr. David Kiprop', students: 37, capacity: 40 },
-]);
-const grades = ['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
+
+const searchQuery = ref(props.filters.search ?? '');
+const selectedGradeId = ref(props.filters.grade_id ? String(props.filters.grade_id) : '');
+const selectedView = ref<'grid' | 'list'>(props.filters.view ?? 'grid');
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const applyFilters = () => {
+    router.get('/classes', {
+        search: searchQuery.value || undefined,
+        grade_id: selectedGradeId.value || undefined,
+        view: selectedView.value,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+watch(searchQuery, () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => applyFilters(), 300);
+});
+watch(selectedGradeId, () => applyFilters());
+watch(selectedView, () => applyFilters());
 </script>
+
 <template>
     <Head title="Classes" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -33,78 +81,123 @@ const grades = ['PP1', 'PP2', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade
                     </div>
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight">Classes</h1>
-                        <p class="text-muted-foreground">Manage class structures and allocations</p>
+                        <p class="text-muted-foreground">Manage class structures and allocations from the live database</p>
                     </div>
                 </div>
-                <Button as-child><Link href="/classes/create"><Plus class="mr-2 h-4 w-4" />Add Class</Link></Button>
+                <div class="flex items-center gap-2">
+                    <Button variant="outline" as-child><Link href="/classes/allocations">Allocations</Link></Button>
+                    <Button as-child><Link href="/classes/create"><Plus class="mr-2 h-4 w-4" />Add Class</Link></Button>
+                </div>
             </div>
+
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-4 dark:from-indigo-950/50 dark:to-indigo-900/30">
+                <div class="rounded-xl border bg-card p-4">
                     <div class="flex items-center gap-3"><School class="h-5 w-5 text-indigo-600" /><span class="text-sm text-muted-foreground">Total Classes</span></div>
-                    <p class="mt-2 text-3xl font-bold text-indigo-600">42</p>
+                    <p class="mt-2 text-3xl font-bold text-indigo-600">{{ stats.total_classes }}</p>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 dark:from-blue-950/50 dark:to-blue-900/30">
+                <div class="rounded-xl border bg-card p-4">
                     <div class="flex items-center gap-3"><Users class="h-5 w-5 text-blue-600" /><span class="text-sm text-muted-foreground">Total Students</span></div>
-                    <p class="mt-2 text-3xl font-bold text-blue-600">1,250</p>
+                    <p class="mt-2 text-3xl font-bold text-blue-600">{{ stats.total_students }}</p>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-4 dark:from-green-950/50 dark:to-green-900/30">
+                <div class="rounded-xl border bg-card p-4">
                     <div class="flex items-center gap-3"><GraduationCap class="h-5 w-5 text-green-600" /><span class="text-sm text-muted-foreground">Avg. Class Size</span></div>
-                    <p class="mt-2 text-3xl font-bold text-green-600">30</p>
+                    <p class="mt-2 text-3xl font-bold text-green-600">{{ stats.average_class_size }}</p>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 dark:from-purple-950/50 dark:to-purple-900/30">
+                <div class="rounded-xl border bg-card p-4">
                     <div class="flex items-center gap-3"><BookOpen class="h-5 w-5 text-purple-600" /><span class="text-sm text-muted-foreground">Grades</span></div>
-                    <p class="mt-2 text-3xl font-bold text-purple-600">8</p>
+                    <p class="mt-2 text-3xl font-bold text-purple-600">{{ stats.grades_count }}</p>
                 </div>
             </div>
+
             <div class="flex flex-col gap-4 md:flex-row md:items-center">
                 <div class="relative flex-1 md:max-w-sm">
                     <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Search classes..." class="pl-9" />
+                    <Input v-model="searchQuery" placeholder="Search classes..." class="pl-9" />
+                </div>
+                <select v-model="selectedGradeId" class="h-10 rounded-md border bg-background px-3 text-sm">
+                    <option value="">All Grades</option>
+                    <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">{{ grade.name }}</option>
+                </select>
+                <div class="flex items-center gap-2">
+                    <Button variant="outline" size="sm" @click="selectedView = 'grid'"><Grid2x2 class="mr-2 h-4 w-4" />Grid</Button>
+                    <Button variant="outline" size="sm" @click="selectedView = 'list'"><List class="mr-2 h-4 w-4" />List</Button>
                 </div>
             </div>
-            <!-- Grade Level Tabs -->
-            <div class="flex flex-wrap gap-2">
-                <Button v-for="grade in grades" :key="grade" variant="outline" size="sm" class="rounded-full">{{ grade }}</Button>
-            </div>
-            <!-- Class Cards Grid -->
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+            <div v-if="selectedView === 'grid'" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div v-for="cls in classes" :key="cls.id" class="rounded-xl border bg-card p-6 transition-all hover:shadow-lg">
-                    <div class="flex items-start justify-between mb-4">
+                    <div class="mb-4 flex items-start justify-between">
                         <div class="flex items-center gap-3">
                             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
-                                {{ cls.stream }}
+                                {{ cls.stream_code || '?' }}
                             </div>
                             <div>
-                                <h3 class="font-semibold text-lg">{{ cls.name }}</h3>
-                                <p class="text-sm text-muted-foreground">{{ cls.grade }}</p>
+                                <h3 class="text-lg font-semibold">{{ cls.name }}</h3>
+                                <p class="text-sm text-muted-foreground">{{ cls.grade || 'Unknown grade' }}</p>
                             </div>
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                <DropdownMenuItem>Edit Class</DropdownMenuItem>
-                                <DropdownMenuItem>Manage Students</DropdownMenuItem>
+                                <DropdownMenuItem as-child><Link :href="`/classes/${cls.id}`">View Details</Link></DropdownMenuItem>
+                                <DropdownMenuItem as-child><Link href="/students">Manage Students</Link></DropdownMenuItem>
+                                <DropdownMenuItem as-child><Link :href="`/students/enrollments/groups/${cls.id}`">View Enrollments</Link></DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
                     <div class="space-y-3">
                         <div class="flex items-center gap-2 text-sm">
                             <Users class="h-4 w-4 text-muted-foreground" />
-                            <span>Class Teacher: <span class="font-medium">{{ cls.teacher }}</span></span>
+                            <span>Class Teacher: <span class="font-medium">{{ cls.teacher || 'Not assigned' }}</span></span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <Badge variant="outline">{{ cls.academic_year || 'No academic year' }}</Badge>
+                            <Badge variant="outline">{{ cls.stream || 'No stream' }}</Badge>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-muted-foreground">Students</span>
-                            <span class="font-semibold">{{ cls.students }}/{{ cls.capacity }}</span>
+                            <span class="font-semibold">{{ cls.students }}/{{ cls.capacity || '—' }}</span>
                         </div>
                         <div class="h-2 rounded-full bg-muted">
-                            <div class="h-full rounded-full bg-indigo-500 transition-all" :style="{ width: `${(cls.students / cls.capacity) * 100}%` }"></div>
+                            <div class="h-full rounded-full bg-indigo-500 transition-all" :style="{ width: `${cls.utilization}%` }"></div>
                         </div>
                         <div class="flex gap-2 pt-2">
                             <Button variant="outline" size="sm" class="flex-1" as-child><Link :href="`/classes/${cls.id}`">View Class</Link></Button>
-                            <Button variant="outline" size="sm" class="flex-1" as-child><Link :href="`/classes/${cls.id}/students`">Students</Link></Button>
+                            <Button variant="outline" size="sm" class="flex-1" as-child><Link :href="`/students/enrollments/groups/${cls.id}`">Enrollments</Link></Button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div v-else class="rounded-xl border bg-card">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b bg-muted/50">
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Class</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Grade</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Year</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Students</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Utilization</th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Open</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="cls in classes" :key="cls.id" class="border-b transition-colors hover:bg-muted/50">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium">{{ cls.name }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ cls.code }}<span v-if="cls.stream"> • {{ cls.stream }}</span></div>
+                                </td>
+                                <td class="px-4 py-3 text-sm">{{ cls.grade || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ cls.academic_year || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ cls.students }}/{{ cls.capacity || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ cls.utilization }}%</td>
+                                <td class="px-4 py-3 text-right">
+                                    <Button variant="outline" size="sm" as-child><Link :href="`/classes/${cls.id}`">Open</Link></Button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

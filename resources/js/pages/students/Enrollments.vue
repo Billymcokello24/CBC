@@ -1,42 +1,35 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { BookOpenCheck, ChevronDown, ChevronUp, Filter, Search } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Badge } from '@/components/ui/badge';
+import {
+    BookOpenCheck,
+    ChevronDown,
+    ChevronUp,
+    Filter,
+    Grid2x2,
+    List,
+    Search,
+    Users,
+} from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
-interface EnrollmentRow {
-    id: number;
-    student_id: number;
-    student_name: string;
-    admission_number: string | null;
-    student_status: string | null;
-    class_name: string | null;
+interface EnrollmentGroup {
+    class_id: number;
+    class_name: string;
+    grade_name: string | null;
+    stream_name: string | null;
     academic_year: string | null;
-    academic_term: string | null;
-    enrollment_date: string | null;
-    end_date: string | null;
-    enrollment_type: string;
-    status: string;
-    roll_number: string | null;
-    notes: string | null;
-    enrolled_by: string | null;
-}
-
-interface PaginatedEnrollments {
-    data: EnrollmentRow[];
-    current_page: number;
-    last_page: number;
-    total: number;
-    from: number | null;
-    to: number | null;
+    total_students: number;
+    active_students: number;
+    new_enrollments: number;
+    promoted_students: number;
 }
 
 interface Props {
-    enrollments: PaginatedEnrollments;
+    groups: EnrollmentGroup[];
     stats: {
         total: number;
         active: number;
@@ -49,7 +42,7 @@ interface Props {
         enrollment_type: string;
         class_id: number | null;
         academic_year_id: number | null;
-        per_page: number;
+        view: 'grid' | 'list';
     };
     classes: Array<{ id: number; name: string }>;
     academicYears: Array<{ id: number; name: string }>;
@@ -70,11 +63,11 @@ const selectedStatus = ref(props.filters.status ?? 'all');
 const selectedEnrollmentType = ref(props.filters.enrollment_type ?? 'all');
 const selectedClassId = ref(props.filters.class_id ? String(props.filters.class_id) : '');
 const selectedAcademicYearId = ref(props.filters.academic_year_id ? String(props.filters.academic_year_id) : '');
+const selectedView = ref<'grid' | 'list'>(props.filters.view ?? 'grid');
 const showFilters = ref(true);
-
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-const applyFilters = (page = 1) => {
+const applyFilters = () => {
     router.get(
         '/students/enrollments',
         {
@@ -83,7 +76,7 @@ const applyFilters = (page = 1) => {
             enrollment_type: selectedEnrollmentType.value !== 'all' ? selectedEnrollmentType.value : undefined,
             class_id: selectedClassId.value || undefined,
             academic_year_id: selectedAcademicYearId.value || undefined,
-            page,
+            view: selectedView.value,
         },
         {
             preserveState: true,
@@ -97,8 +90,7 @@ watch(searchQuery, () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => applyFilters(), 350);
 });
-
-watch([selectedStatus, selectedEnrollmentType, selectedClassId, selectedAcademicYearId], () => applyFilters());
+watch([selectedStatus, selectedEnrollmentType, selectedClassId, selectedAcademicYearId, selectedView], () => applyFilters());
 
 const clearFilters = () => {
     searchQuery.value = '';
@@ -108,16 +100,10 @@ const clearFilters = () => {
     selectedAcademicYearId.value = '';
     applyFilters();
 };
-
-const pageLabel = computed(() => {
-    const from = props.enrollments.from ?? 0;
-    const to = props.enrollments.to ?? 0;
-    return `Showing ${from} to ${to} of ${props.enrollments.total} enrollments`;
-});
 </script>
 
 <template>
-    <Head title="Student Enrollments" />
+    <Head title="Enrollment Groups" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
@@ -127,8 +113,8 @@ const pageLabel = computed(() => {
                         <BookOpenCheck class="h-6 w-6 text-emerald-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">Student Enrollments</h1>
-                        <p class="text-muted-foreground">Track class enrollment history from the live database</p>
+                        <h1 class="text-2xl font-bold tracking-tight">Enrollment Groups</h1>
+                        <p class="text-muted-foreground">Browse groups first, then open a group page to manage its students</p>
                     </div>
                 </div>
                 <Button variant="outline" as-child>
@@ -158,16 +144,21 @@ const pageLabel = computed(() => {
             <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:flex-row md:items-center">
                 <div class="relative flex-1 md:max-w-sm">
                     <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input v-model="searchQuery" placeholder="Search student or admission number..." class="pl-9" />
+                    <Input v-model="searchQuery" placeholder="Search group, class, or student..." class="pl-9" />
                 </div>
                 <div class="flex items-center gap-2">
+                    <Button variant="outline" size="sm" @click="selectedView = 'grid'">
+                        <Grid2x2 class="mr-2 h-4 w-4" /> Grid
+                    </Button>
+                    <Button variant="outline" size="sm" @click="selectedView = 'list'">
+                        <List class="mr-2 h-4 w-4" /> List
+                    </Button>
                     <Button variant="outline" size="sm" @click="showFilters = !showFilters">
                         <component :is="showFilters ? ChevronUp : ChevronDown" class="mr-2 h-4 w-4" />
                         {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
                     </Button>
                     <Button variant="outline" size="sm" @click="clearFilters">
-                        <Filter class="mr-2 h-4 w-4" />
-                        Reset
+                        <Filter class="mr-2 h-4 w-4" /> Reset
                     </Button>
                 </div>
             </div>
@@ -201,49 +192,81 @@ const pageLabel = computed(() => {
                 </div>
             </div>
 
-            <div class="rounded-xl border bg-card">
+            <div v-if="groups.length === 0" class="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
+                No enrollment groups found.
+            </div>
+
+            <div v-else-if="selectedView === 'grid'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <Link
+                    v-for="group in groups"
+                    :key="group.class_id"
+                    :href="`/students/enrollments/groups/${group.class_id}`"
+                    class="rounded-xl border bg-card p-5 transition hover:border-primary/40 hover:shadow-md"
+                >
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-semibold">{{ group.class_name }}</h2>
+                            <p class="text-sm text-muted-foreground">
+                                {{ group.grade_name || 'Unknown Grade' }}<span v-if="group.stream_name"> • {{ group.stream_name }}</span>
+                            </p>
+                            <p class="mt-1 text-xs text-muted-foreground">{{ group.academic_year || 'No year set' }}</p>
+                        </div>
+                        <div class="rounded-full bg-primary/10 p-2 text-primary">
+                            <Users class="h-4 w-4" />
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                        <div class="rounded-lg border p-3">
+                            <div class="text-muted-foreground">Students</div>
+                            <div class="mt-1 font-semibold">{{ group.total_students }}</div>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <div class="text-muted-foreground">Active</div>
+                            <div class="mt-1 font-semibold text-green-600">{{ group.active_students }}</div>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <div class="text-muted-foreground">New</div>
+                            <div class="mt-1 font-semibold text-blue-600">{{ group.new_enrollments }}</div>
+                        </div>
+                        <div class="rounded-lg border p-3">
+                            <div class="text-muted-foreground">Promoted</div>
+                            <div class="mt-1 font-semibold text-amber-600">{{ group.promoted_students }}</div>
+                        </div>
+                    </div>
+                </Link>
+            </div>
+
+            <div v-else class="rounded-xl border bg-card">
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead>
                             <tr class="border-b bg-muted/50">
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Student</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Admission No</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Class</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Year / Term</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Enrollment Type</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">By</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Group</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Academic Year</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Students</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Active</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Promoted</th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Open</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="enrollments.data.length === 0">
-                                <td colspan="8" class="px-4 py-10 text-center text-sm text-muted-foreground">
-                                    No enrollment records found.
-                                </td>
-                            </tr>
-                            <tr v-for="enrollment in enrollments.data" :key="enrollment.id" class="border-b transition-colors hover:bg-muted/50">
-                                <td class="px-4 py-3 font-medium">{{ enrollment.student_name }}</td>
-                                <td class="px-4 py-3 text-sm">{{ enrollment.admission_number || '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ enrollment.class_name || '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ enrollment.academic_year || '—' }}<span v-if="enrollment.academic_term"> / {{ enrollment.academic_term }}</span></td>
-                                <td class="px-4 py-3 text-sm capitalize">{{ enrollment.enrollment_type.replace('_', ' ') }}</td>
+                            <tr v-for="group in groups" :key="group.class_id" class="border-b transition-colors hover:bg-muted/50">
                                 <td class="px-4 py-3">
-                                    <Badge :variant="enrollment.status === 'active' ? 'default' : 'secondary'">{{ enrollment.status }}</Badge>
+                                    <div class="font-medium">{{ group.class_name }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ group.grade_name || 'Unknown Grade' }}<span v-if="group.stream_name"> • {{ group.stream_name }}</span></div>
                                 </td>
-                                <td class="px-4 py-3 text-sm">{{ enrollment.enrollment_date || '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ enrollment.enrolled_by || 'System' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ group.academic_year || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ group.total_students }}</td>
+                                <td class="px-4 py-3 text-sm text-green-600">{{ group.active_students }}</td>
+                                <td class="px-4 py-3 text-sm text-amber-600">{{ group.promoted_students }}</td>
+                                <td class="px-4 py-3 text-right">
+                                    <Button variant="outline" size="sm" as-child>
+                                        <Link :href="`/students/enrollments/groups/${group.class_id}`">Open Group</Link>
+                                    </Button>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
-                </div>
-                <div class="flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between">
-                    <p class="text-sm text-muted-foreground">{{ pageLabel }}</p>
-                    <div class="flex items-center gap-2">
-                        <Button variant="outline" size="sm" :disabled="enrollments.current_page <= 1" @click="applyFilters(enrollments.current_page - 1)">Previous</Button>
-                        <span class="text-sm text-muted-foreground">Page {{ enrollments.current_page }} of {{ enrollments.last_page }}</span>
-                        <Button variant="outline" size="sm" :disabled="enrollments.current_page >= enrollments.last_page" @click="applyFilters(enrollments.current_page + 1)">Next</Button>
-                    </div>
                 </div>
             </div>
         </div>

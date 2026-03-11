@@ -5,6 +5,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentsController;
 use App\Http\Controllers\StudentEnrollmentController;
+use App\Http\Controllers\AcademicManagementController;
 
 Route::inertia('/', 'Welcome', [
     'canLogin' => true,
@@ -18,6 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Students
     Route::get('students', [StudentsController::class, 'index'])->name('students.index');
     Route::get('students/enrollments', [StudentEnrollmentController::class, 'index'])->name('students.enrollments');
+    Route::get('students/enrollments/groups/{class}', [StudentEnrollmentController::class, 'show'])->name('students.enrollments.groups.show');
     Route::get('students/create', [StudentsController::class, 'create'])->name('students.create');
     Route::post('students', [StudentsController::class, 'store'])->name('students.store');
     Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
@@ -35,9 +37,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('teachers/{id}', 'teachers/Show')->name('teachers.show');
 
     // Classes
-    Route::inertia('classes', 'classes/Index')->name('classes.index');
-    Route::inertia('classes/create', 'classes/Create')->name('classes.create');
-    Route::inertia('classes/{id}', 'classes/Show')->name('classes.show');
+    Route::get('classes', [AcademicManagementController::class, 'classes'])->name('classes.index');
+    Route::get('classes/allocations', [AcademicManagementController::class, 'allocations'])->name('classes.allocations');
+    Route::get('classes/create', [AcademicManagementController::class, 'createClass'])->name('classes.create');
+    Route::post('classes', [AcademicManagementController::class, 'storeClass'])->name('classes.store');
+    Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
+    Route::get('classes/{id}', [AcademicManagementController::class, 'showClass'])->name('classes.show');
+    Route::get('classes/{id}/edit', [AcademicManagementController::class, 'editClass'])->name('classes.edit');
+    Route::put('classes/{id}', [AcademicManagementController::class, 'updateClass'])->name('classes.update');
+    Route::delete('classes/{id}', [AcademicManagementController::class, 'destroyClass'])->name('classes.destroy');
+
+    // Grades
+    Route::get('grades', [AcademicManagementController::class, 'grades'])->name('grades.index');
+
+    // Streams
+    Route::get('streams', [AcademicManagementController::class, 'streams'])->name('streams.index');
 
     // Guardians
     Route::inertia('guardians', 'guardians/Index')->name('guardians.index');
