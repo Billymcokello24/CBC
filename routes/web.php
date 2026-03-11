@@ -28,6 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('students/{student}/suspend', [StudentsController::class, 'suspend'])->name('students.suspend');
     Route::patch('students/{student}/activate', [StudentsController::class, 'activate'])->name('students.activate');
     Route::patch('students/{student}/demote', [StudentsController::class, 'demote'])->name('students.demote');
+    Route::patch('students/{student}/transfer', [StudentsController::class, 'transfer'])->name('students.transfer');
     Route::post('students/promote', [StudentsController::class, 'promote'])->name('students.promote');
     Route::delete('students/{student}', [StudentsController::class, 'destroy'])->name('students.destroy');
 
@@ -49,9 +50,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Grades
     Route::get('grades', [AcademicManagementController::class, 'grades'])->name('grades.index');
+    Route::get('grades/create', [AcademicManagementController::class, 'createGrade'])->name('grades.create');
+    Route::post('grades', [AcademicManagementController::class, 'storeGrade'])->name('grades.store');
+    Route::post('grades/bulk-action', [AcademicManagementController::class, 'bulkGradeAction'])->name('grades.bulk-action');
+    Route::get('grades/{id}', [AcademicManagementController::class, 'showGrade'])->name('grades.show');
+    Route::get('grades/{id}/edit', [AcademicManagementController::class, 'editGrade'])->name('grades.edit');
+    Route::put('grades/{id}', [AcademicManagementController::class, 'updateGrade'])->name('grades.update');
+    Route::patch('grades/{id}/activate', [AcademicManagementController::class, 'activateGrade'])->name('grades.activate');
+    Route::patch('grades/{id}/deactivate', [AcademicManagementController::class, 'deactivateGrade'])->name('grades.deactivate');
+    Route::delete('grades/{id}', [AcademicManagementController::class, 'destroyGrade'])->name('grades.destroy');
 
     // Streams
     Route::get('streams', [AcademicManagementController::class, 'streams'])->name('streams.index');
+    Route::get('streams/create', [AcademicManagementController::class, 'createStream'])->name('streams.create');
+    Route::post('streams', [AcademicManagementController::class, 'storeStream'])->name('streams.store');
+    Route::post('streams/bulk-action', [AcademicManagementController::class, 'bulkStreamAction'])->name('streams.bulk-action');
+    Route::get('streams/{id}', [AcademicManagementController::class, 'showStream'])->name('streams.show');
+    Route::get('streams/{id}/edit', [AcademicManagementController::class, 'editStream'])->name('streams.edit');
+    Route::put('streams/{id}', [AcademicManagementController::class, 'updateStream'])->name('streams.update');
+    Route::patch('streams/{id}/activate', [AcademicManagementController::class, 'activateStream'])->name('streams.activate');
+    Route::patch('streams/{id}/deactivate', [AcademicManagementController::class, 'deactivateStream'])->name('streams.deactivate');
+    Route::delete('streams/{id}', [AcademicManagementController::class, 'destroyStream'])->name('streams.destroy');
 
     // Guardians
     Route::inertia('guardians', 'guardians/Index')->name('guardians.index');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { BookOpen, GraduationCap, List, MoreHorizontal, Plus, School, Search, Users, Grid2x2 } from 'lucide-vue-next';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -67,6 +67,41 @@ watch(searchQuery, () => {
 });
 watch(selectedGradeId, () => applyFilters());
 watch(selectedView, () => applyFilters());
+
+watch(
+    () => props.classes,
+    () => {
+        selectedClassIds.value = selectedClassIds.value.filter((id) => props.classes.some((cls) => cls.id === id));
+    },
+    { deep: true },
+);
+
+const bulkForm = useForm<{ class_ids: number[]; action: 'activate' | 'deactivate' | 'delete' | '' }>({ class_ids: [], action: '' });
+const selectedClassIds = ref<number[]>([]);
+const selectedCount = computed(() => selectedClassIds.value.length);
+const allSelected = computed(() => props.classes.length > 0 && props.classes.every((cls) => selectedClassIds.value.includes(cls.id)));
+
+const toggleAllClasses = () => {
+    selectedClassIds.value = allSelected.value ? [] : props.classes.map((cls) => cls.id);
+};
+
+const toggleClassSelection = (classId: number) => {
+    selectedClassIds.value = selectedClassIds.value.includes(classId)
+        ? selectedClassIds.value.filter((id) => id !== classId)
+        : [...selectedClassIds.value, classId];
+};
+
+const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
+    if (!selectedClassIds.value.length) return;
+    bulkForm.class_ids = [...selectedClassIds.value];
+    bulkForm.action = action;
+    bulkForm.post('/classes/bulk-action', {
+        preserveScroll: true,
+        onSuccess: () => {
+            selectedClassIds.value = [];
+        },
+    });
+};
 </script>
 
 <template>
@@ -124,10 +159,24 @@ watch(selectedView, () => applyFilters());
                 </div>
             </div>
 
+            <div v-if="selectedCount > 0" class="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <div>
+                    <p class="text-sm font-medium">{{ selectedCount }} class{{ selectedCount === 1 ? '' : 'es' }} selected</p>
+                    <p class="text-xs text-muted-foreground">Apply bulk actions across multiple classes at once.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <Button variant="outline" size="sm" @click="selectedClassIds = []">Clear</Button>
+                    <Button variant="outline" size="sm" @click="runBulkAction('activate')">Activate</Button>
+                    <Button variant="outline" size="sm" @click="runBulkAction('deactivate')">Deactivate</Button>
+                    <Button variant="destructive" size="sm" @click="runBulkAction('delete')">Delete</Button>
+                </div>
+            </div>
+
             <div v-if="selectedView === 'grid'" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <div v-for="cls in classes" :key="cls.id" class="rounded-xl border bg-card p-6 transition-all hover:shadow-lg">
                     <div class="mb-4 flex items-start justify-between">
                         <div class="flex items-center gap-3">
+                            <input type="checkbox" :checked="selectedClassIds.includes(cls.id)" @change="toggleClassSelection(cls.id)" />
                             <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold">
                                 {{ cls.stream_code || '?' }}
                             </div>
@@ -140,6 +189,7 @@ watch(selectedView, () => applyFilters());
                             <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem as-child><Link :href="`/classes/${cls.id}`">View Details</Link></DropdownMenuItem>
+                                <DropdownMenuItem as-child><Link :href="`/classes/${cls.id}/edit`">Edit Class</Link></DropdownMenuItem>
                                 <DropdownMenuItem as-child><Link href="/students">Manage Students</Link></DropdownMenuItem>
                                 <DropdownMenuItem as-child><Link :href="`/students/enrollments/groups/${cls.id}`">View Enrollments</Link></DropdownMenuItem>
                             </DropdownMenuContent>
@@ -174,6 +224,9 @@ watch(selectedView, () => applyFilters());
                     <table class="w-full">
                         <thead>
                             <tr class="border-b bg-muted/50">
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                                    <input type="checkbox" :checked="allSelected" @change="toggleAllClasses" />
+                                </th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Class</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Grade</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Year</th>
@@ -184,6 +237,7 @@ watch(selectedView, () => applyFilters());
                         </thead>
                         <tbody>
                             <tr v-for="cls in classes" :key="cls.id" class="border-b transition-colors hover:bg-muted/50">
+                                <td class="px-4 py-3"><input type="checkbox" :checked="selectedClassIds.includes(cls.id)" @change="toggleClassSelection(cls.id)" /></td>
                                 <td class="px-4 py-3">
                                     <div class="font-medium">{{ cls.name }}</div>
                                     <div class="text-xs text-muted-foreground">{{ cls.code }}<span v-if="cls.stream"> • {{ cls.stream }}</span></div>
@@ -193,7 +247,10 @@ watch(selectedView, () => applyFilters());
                                 <td class="px-4 py-3 text-sm">{{ cls.students }}/{{ cls.capacity || '—' }}</td>
                                 <td class="px-4 py-3 text-sm">{{ cls.utilization }}%</td>
                                 <td class="px-4 py-3 text-right">
-                                    <Button variant="outline" size="sm" as-child><Link :href="`/classes/${cls.id}`">Open</Link></Button>
+                                    <div class="flex justify-end gap-2">
+                                        <Button variant="outline" size="sm" as-child><Link :href="`/classes/${cls.id}`">Open</Link></Button>
+                                        <Button variant="outline" size="sm" as-child><Link :href="`/classes/${cls.id}/edit`">Edit</Link></Button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>

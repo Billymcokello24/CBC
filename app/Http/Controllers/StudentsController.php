@@ -448,6 +448,59 @@ class StudentsController extends Controller
         return back()->with('success', 'Student demoted successfully.');
     }
 
+    public function transfer(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'target_class_id' => ['required', 'integer', 'exists:classes,id'],
+        ]);
+
+        if (!$student->current_class_id) {
+            return back()->with('error', 'Student has no current class to transfer from.');
+        }
+
+        $currentClass = DB::table('classes')->where('id', $student->current_class_id)->first();
+        $targetClass = DB::table('classes')->where('id', $validated['target_class_id'])->first();
+
+        if (!$currentClass || !$targetClass) {
+            return back()->with('error', 'Current or target class could not be found.');
+        }
+
+        if ((int) $currentClass->grade_level_id !== (int) $targetClass->grade_level_id) {
+            return back()->with('error', 'Transfers are only allowed between classes of the same grade level.');
+        }
+
+        DB::transaction(function () use ($student, $currentClass, $targetClass) {
+            DB::table('student_enrollments')
+                ->where('student_id', $student->id)
+                ->where('class_id', $currentClass->id)
+                ->where('status', 'active')
+                ->update([
+                    'status' => 'transferred',
+                    'end_date' => now()->toDateString(),
+                    'updated_at' => now(),
+                ]);
+
+            $student->update([
+                'current_class_id' => $targetClass->id,
+            ]);
+
+            DB::table('student_enrollments')->insert([
+                'student_id' => $student->id,
+                'class_id' => $targetClass->id,
+                'academic_year_id' => $targetClass->academic_year_id,
+                'academic_term_id' => DB::table('academic_terms')->where('is_current', true)->value('id'),
+                'enrollment_date' => now()->toDateString(),
+                'enrollment_type' => 'transferred_in',
+                'status' => 'active',
+                'enrolled_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return back()->with('success', 'Student transferred successfully.');
+    }
+
     private function transformStudentRow(Student $student): array
     {
         return [
