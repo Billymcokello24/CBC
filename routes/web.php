@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\StudentsController;
+use App\Http\Controllers\StudentEnrollmentController;
 
 Route::inertia('/', 'Welcome', [
     'canLogin' => true,
@@ -14,10 +16,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Students
-    Route::inertia('students', 'students/Index')->name('students.index');
-    Route::inertia('students/create', 'students/Create')->name('students.create');
-    Route::inertia('students/{id}', 'students/Show')->name('students.show');
-    Route::inertia('students/{id}/edit', 'students/Edit')->name('students.edit');
+    Route::get('students', [StudentsController::class, 'index'])->name('students.index');
+    Route::get('students/enrollments', [StudentEnrollmentController::class, 'index'])->name('students.enrollments');
+    Route::get('students/create', [StudentsController::class, 'create'])->name('students.create');
+    Route::post('students', [StudentsController::class, 'store'])->name('students.store');
+    Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
+    Route::get('students/{student}/edit', [StudentsController::class, 'edit'])->name('students.edit');
+    Route::put('students/{student}', [StudentsController::class, 'update'])->name('students.update');
+    Route::patch('students/{student}/suspend', [StudentsController::class, 'suspend'])->name('students.suspend');
+    Route::patch('students/{student}/activate', [StudentsController::class, 'activate'])->name('students.activate');
+    Route::patch('students/{student}/demote', [StudentsController::class, 'demote'])->name('students.demote');
+    Route::post('students/promote', [StudentsController::class, 'promote'])->name('students.promote');
+    Route::delete('students/{student}', [StudentsController::class, 'destroy'])->name('students.destroy');
 
     // Teachers
     Route::inertia('teachers', 'teachers/Index')->name('teachers.index');

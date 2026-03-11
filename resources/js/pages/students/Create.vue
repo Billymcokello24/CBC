@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { GraduationCap, ArrowLeft, Save, Loader2 } from 'lucide-vue-next';
-import AppLayout from '@/layouts/AppLayout.vue';
+import { ArrowLeft, GraduationCap, Loader2, Save } from 'lucide-vue-next';
+import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import InputError from '@/components/InputError.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
+
+defineProps<{
+    classes: Array<{ id: number; name: string }>;
+    counties: string[];
+}>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -20,23 +24,25 @@ const form = useForm({
     middle_name: '',
     last_name: '',
     admission_number: '',
-    gender: '',
+    gender: 'male',
     date_of_birth: '',
     class_id: '',
-    guardian_name: '',
-    guardian_phone: '',
-    guardian_email: '',
-    address: '',
     county: '',
+    boarding_status: 'day',
+    status: 'active',
 });
 
 const submit = () => {
-    form.post('/students');
+    form.transform((data) => ({
+        ...data,
+        class_id: data.class_id ? Number(data.class_id) : null,
+    })).post('/students');
 };
 </script>
 
 <template>
     <Head title="Add Student" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <div class="flex items-center justify-between">
@@ -52,11 +58,10 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-8">
-                <!-- Personal Information -->
                 <div class="rounded-xl border bg-card p-6">
-                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
                         <GraduationCap class="h-5 w-5 text-primary" />
-                        Personal Information
+                        Student Information
                     </h2>
                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         <div class="space-y-2">
@@ -67,6 +72,7 @@ const submit = () => {
                         <div class="space-y-2">
                             <Label for="middle_name">Middle Name</Label>
                             <Input id="middle_name" v-model="form.middle_name" placeholder="Kamau" />
+                            <InputError :message="form.errors.middle_name" />
                         </div>
                         <div class="space-y-2">
                             <Label for="last_name">Last Name *</Label>
@@ -75,18 +81,16 @@ const submit = () => {
                         </div>
                         <div class="space-y-2">
                             <Label for="admission_number">Admission Number *</Label>
-                            <Input id="admission_number" v-model="form.admission_number" placeholder="ADM001" required />
+                            <Input id="admission_number" v-model="form.admission_number" placeholder="STU00666" required />
                             <InputError :message="form.errors.admission_number" />
                         </div>
                         <div class="space-y-2">
                             <Label for="gender">Gender *</Label>
-                            <Select v-model="form.gender">
-                                <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="male">Male</SelectItem>
-                                    <SelectItem value="female">Female</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <select id="gender" v-model="form.gender" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
                             <InputError :message="form.errors.gender" />
                         </div>
                         <div class="space-y-2">
@@ -95,66 +99,43 @@ const submit = () => {
                             <InputError :message="form.errors.date_of_birth" />
                         </div>
                         <div class="space-y-2">
-                            <Label for="class_id">Class *</Label>
-                            <Select v-model="form.class_id">
-                                <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="1">Grade 1A</SelectItem>
-                                    <SelectItem value="2">Grade 1B</SelectItem>
-                                    <SelectItem value="3">Grade 2A</SelectItem>
-                                    <SelectItem value="4">Grade 2B</SelectItem>
-                                    <SelectItem value="5">Grade 3A</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label for="class_id">Class</Label>
+                            <select id="class_id" v-model="form.class_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="">Unassigned</option>
+                                <option v-for="schoolClass in classes" :key="schoolClass.id" :value="String(schoolClass.id)">
+                                    {{ schoolClass.name }}
+                                </option>
+                            </select>
                             <InputError :message="form.errors.class_id" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Guardian Information -->
-                <div class="rounded-xl border bg-card p-6">
-                    <h2 class="text-lg font-semibold mb-4">Guardian Information</h2>
-                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <div class="space-y-2">
-                            <Label for="guardian_name">Guardian Name *</Label>
-                            <Input id="guardian_name" v-model="form.guardian_name" placeholder="Jane Wanjiku" required />
-                        </div>
-                        <div class="space-y-2">
-                            <Label for="guardian_phone">Phone Number *</Label>
-                            <Input id="guardian_phone" v-model="form.guardian_phone" placeholder="+254700000000" required />
-                        </div>
-                        <div class="space-y-2">
-                            <Label for="guardian_email">Email</Label>
-                            <Input id="guardian_email" v-model="form.guardian_email" type="email" placeholder="jane@email.com" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Address Information -->
-                <div class="rounded-xl border bg-card p-6">
-                    <h2 class="text-lg font-semibold mb-4">Address Information</h2>
-                    <div class="grid gap-6 md:grid-cols-2">
-                        <div class="space-y-2">
-                            <Label for="address">Home Address</Label>
-                            <Input id="address" v-model="form.address" placeholder="P.O. Box 123, Nairobi" />
                         </div>
                         <div class="space-y-2">
                             <Label for="county">County</Label>
-                            <Select v-model="form.county">
-                                <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="nairobi">Nairobi</SelectItem>
-                                    <SelectItem value="mombasa">Mombasa</SelectItem>
-                                    <SelectItem value="kisumu">Kisumu</SelectItem>
-                                    <SelectItem value="nakuru">Nakuru</SelectItem>
-                                    <SelectItem value="eldoret">Uasin Gishu</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <select id="county" v-model="form.county" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="">Select county</option>
+                                <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
+                            </select>
+                            <InputError :message="form.errors.county" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="boarding_status">Boarding Status *</Label>
+                            <select id="boarding_status" v-model="form.boarding_status" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="day">Day</option>
+                                <option value="boarding">Boarding</option>
+                            </select>
+                            <InputError :message="form.errors.boarding_status" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="status">Initial Status *</Label>
+                            <select id="status" v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                            <InputError :message="form.errors.status" />
                         </div>
                     </div>
                 </div>
 
-                <!-- Actions -->
                 <div class="flex items-center justify-end gap-4">
                     <Button type="button" variant="outline" as-child>
                         <Link href="/students">Cancel</Link>
