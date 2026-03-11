@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             SchoolTypesAndLevelsSeeder::class,
             CurriculumSeeder::class,
+            DashboardSeeder::class,
         ]);
 
         // Create Super Admin user
