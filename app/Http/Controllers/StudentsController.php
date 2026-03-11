@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Guardian;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class StudentsController extends Controller
 {
@@ -94,8 +98,28 @@ class StudentsController extends Controller
 
     public function create(): Response
     {
+        $grades = DB::table('grade_levels')
+            ->select('id', 'name', 'code', 'level_order')
+            ->orderBy('level_order')
+            ->get();
+
+        $classes = DB::table('classes')
+            ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
+            ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
+            ->select(
+                'classes.id',
+                'classes.name',
+                'classes.grade_level_id',
+                'grade_levels.name as grade_name',
+                'streams.name as stream_name'
+            )
+            ->orderBy('grade_levels.level_order')
+            ->orderBy('classes.name')
+            ->get();
+
         return Inertia::render('students/Create', [
-            'classes' => DB::table('classes')->select('id', 'name')->orderBy('name')->get(),
+            'grades' => $grades,
+            'classes' => $classes,
             'counties' => Student::query()->whereNotNull('county')->distinct()->orderBy('county')->pluck('county'),
         ]);
     }
@@ -113,33 +137,64 @@ class StudentsController extends Controller
             'county' => ['nullable', 'string', 'max:255'],
             'boarding_status' => ['required', Rule::in(['day', 'boarding'])],
             'status' => ['required', Rule::in(['active', 'inactive', 'graduated', 'transferred', 'withdrawn', 'suspended'])],
+            'guardian_name' => ['nullable', 'string', 'max:255'],
+            'guardian_email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email'), Rule::unique('guardians', 'email')],
+            'guardian_phone' => ['nullable', 'string', 'max:50'],
+            'guardian_password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
+
+        $guardianProvided = filled($validated['guardian_name'] ?? null)
+            || filled($validated['guardian_email'] ?? null)
+            || filled($validated['guardian_phone'] ?? null)
+            || filled($validated['guardian_password'] ?? null);
+
+        if ($guardianProvided) {
+            $request->validate([
+                'guardian_name' => ['required', 'string', 'max:255'],
+                'guardian_email' => ['required', 'email', 'max:255', Rule::unique('users', 'email'), Rule::unique('guardians', 'email')],
+                'guardian_phone' => ['required', 'string', 'max:50'],
+                'guardian_password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+        }
 
         $schoolId = DB::table('schools')->value('id');
 
-        $student = Student::create([
-            'school_id' => $schoolId,
-            'first_name' => $validated['first_name'],
-            'middle_name' => $validated['middle_name'] ?? null,
-            'last_name' => $validated['last_name'],
-            'admission_number' => $validated['admission_number'],
-            'gender' => $validated['gender'],
-            'date_of_birth' => $validated['date_of_birth'],
-            'admission_date' => now()->toDateString(),
-            'admission_class_id' => $validated['class_id'] ?? null,
-            'current_class_id' => $validated['class_id'] ?? null,
-            'county' => $validated['county'] ?? null,
-            'boarding_status' => $validated['boarding_status'],
-            'status' => $validated['status'],
-            'nationality' => 'Kenyan',
-        ]);
+        $student = DB::transaction(function () use ($validated, $schoolId, $guardianProvided) {
+            $student = Student::create([
+                'school_id' => $schoolId,
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'admission_number' => $validated['admission_number'],
+                'gender' => $validated['gender'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'admission_date' => now()->toDateString(),
+                'admission_class_id' => $validated['class_id'] ?? null,
+                'current_class_id' => $validated['class_id'] ?? null,
+                'county' => $validated['county'] ?? null,
+                'boarding_status' => $validated['boarding_status'],
+                'status' => $validated['status'],
+                'nationality' => 'Kenyan',
+            ]);
+
+            if ($guardianProvided) {
+                $this->createGuardianAccountForStudent($student, [
+                    'name' => $validated['guardian_name'],
+                    'email' => $validated['guardian_email'],
+                    'phone' => $validated['guardian_phone'],
+                    'password' => $validated['guardian_password'],
+                ]);
+            }
+
+            return $student;
+        });
 
         return redirect()->route('students.show', $student)->with('success', 'Student added successfully.');
     }
 
     public function show(Student $student): Response
     {
-        $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,first_name,last_name,phone,email']);
+        $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,user_id,first_name,last_name,phone,email']);
 
         return Inertia::render('students/Show', [
             'student' => [
@@ -167,7 +222,9 @@ class StudentsController extends Controller
                     'name' => trim($guardian->first_name . ' ' . $guardian->last_name),
                     'phone' => $guardian->phone,
                     'email' => $guardian->email,
+                    'has_login' => (bool) $guardian->user_id,
                 ])->values(),
+                'has_guardian_login' => $student->guardians->contains(fn ($guardian) => (bool) $guardian->user_id),
             ],
         ]);
     }
@@ -515,5 +572,77 @@ class StudentsController extends Controller
             'age' => $student->age,
             'admission_date' => optional($student->admission_date)?->format('Y-m-d'),
         ];
+    }
+
+    public function storeGuardian(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'guardian_name' => ['required', 'string', 'max:255'],
+            'guardian_email' => ['required', 'email', 'max:255', Rule::unique('users', 'email'), Rule::unique('guardians', 'email')],
+            'guardian_phone' => ['required', 'string', 'max:50'],
+            'guardian_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        DB::transaction(function () use ($student, $validated) {
+            $this->createGuardianAccountForStudent($student, [
+                'name' => $validated['guardian_name'],
+                'email' => $validated['guardian_email'],
+                'phone' => $validated['guardian_phone'],
+                'password' => $validated['guardian_password'],
+            ]);
+        });
+
+        return back()->with('success', 'Guardian account created and linked successfully.');
+    }
+
+    protected function createGuardianAccountForStudent(Student $student, array $data): Guardian
+    {
+        $nameParts = preg_split('/\s+/', trim((string) $data['name'])) ?: [];
+        $firstName = array_shift($nameParts) ?: 'Guardian';
+        $lastName = count($nameParts) ? array_pop($nameParts) : $firstName;
+        $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
+
+        $user = User::create([
+            'name' => trim((string) $data['name']),
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'password' => $data['password'],
+            'status' => 'active',
+            'locale' => config('app.locale'),
+            'timezone' => config('app.timezone'),
+        ]);
+
+        if (method_exists($user, 'assignRole') && Role::query()->where('name', 'parent')->where('guard_name', 'web')->exists()) {
+            $user->assignRole('parent');
+        }
+
+        $guardian = Guardian::create([
+            'user_id' => $user->id,
+            'school_id' => $student->school_id,
+            'first_name' => $firstName,
+            'middle_name' => $middleName,
+            'last_name' => $lastName,
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'relationship_type' => 'guardian',
+            'receives_communication' => true,
+            'is_active' => true,
+            'can_pickup' => true,
+            'is_emergency_contact' => true,
+        ]);
+
+        $student->guardians()->attach($guardian->id, [
+            'relationship' => 'guardian',
+            'is_primary_contact' => true,
+            'is_emergency_contact' => true,
+            'can_pickup' => true,
+            'receives_reports' => true,
+            'receives_fees_notification' => true,
+            'is_fee_payer' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $guardian;
     }
 }

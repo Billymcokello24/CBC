@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, GraduationCap, Loader2, Save } from 'lucide-vue-next';
+import { computed, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,9 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
-defineProps<{
-    classes: Array<{ id: number; name: string }>;
+const props = defineProps<{
+    grades: Array<{ id: number; name: string; code: string; level_order: number }>;
+    classes: Array<{ id: number; name: string; grade_level_id: number | null; grade_name: string | null; stream_name: string | null }>;
     counties: string[];
 }>();
 
@@ -26,11 +28,33 @@ const form = useForm({
     admission_number: '',
     gender: 'male',
     date_of_birth: '',
+    grade_id: '',
     class_id: '',
     county: '',
     boarding_status: 'day',
     status: 'active',
+    guardian_name: '',
+    guardian_email: '',
+    guardian_phone: '',
+    guardian_password: '',
+    guardian_password_confirmation: '',
 });
+
+const filteredClasses = computed(() => {
+    if (!form.grade_id) return [];
+    const selectedGradeId = Number(form.grade_id);
+
+    return props.classes.filter((schoolClass) => schoolClass.grade_level_id === selectedGradeId);
+});
+
+watch(
+    () => form.grade_id,
+    () => {
+        if (!filteredClasses.value.some((schoolClass) => String(schoolClass.id) === form.class_id)) {
+            form.class_id = '';
+        }
+    },
+);
 
 const submit = () => {
     form.transform((data) => ({
@@ -99,11 +123,20 @@ const submit = () => {
                             <InputError :message="form.errors.date_of_birth" />
                         </div>
                         <div class="space-y-2">
+                            <Label for="grade_id">Grade</Label>
+                            <select id="grade_id" v-model="form.grade_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                                <option value="">Select grade</option>
+                                <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">
+                                    {{ grade.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
                             <Label for="class_id">Class</Label>
-                            <select id="class_id" v-model="form.class_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                <option value="">Unassigned</option>
-                                <option v-for="schoolClass in classes" :key="schoolClass.id" :value="String(schoolClass.id)">
-                                    {{ schoolClass.name }}
+                            <select id="class_id" v-model="form.class_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm" :disabled="!form.grade_id">
+                                <option value="">{{ form.grade_id ? 'Select class' : 'Select grade first' }}</option>
+                                <option v-for="schoolClass in filteredClasses" :key="schoolClass.id" :value="String(schoolClass.id)">
+                                    {{ schoolClass.name }}<span v-if="schoolClass.stream_name"> • {{ schoolClass.stream_name }}</span>
                                 </option>
                             </select>
                             <InputError :message="form.errors.class_id" />
@@ -132,6 +165,43 @@ const submit = () => {
                                 <option value="suspended">Suspended</option>
                             </select>
                             <InputError :message="form.errors.status" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border bg-card p-6">
+                    <h2 class="mb-4 flex items-center gap-2 text-lg font-semibold">
+                        <Save class="h-5 w-5 text-primary" />
+                        Guardian / Parent Credentials
+                    </h2>
+                    <p class="mb-6 text-sm text-muted-foreground">
+                        Optional. Add parent login details now so the guardian can sign in and access this student's content.
+                    </p>
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-2">
+                            <Label for="guardian_name">Guardian / Parent Name</Label>
+                            <Input id="guardian_name" v-model="form.guardian_name" placeholder="Jane Wanjiru" />
+                            <InputError :message="form.errors.guardian_name" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="guardian_email">Guardian / Parent Email</Label>
+                            <Input id="guardian_email" v-model="form.guardian_email" type="email" placeholder="parent@example.com" />
+                            <InputError :message="form.errors.guardian_email" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="guardian_phone">Guardian / Parent Phone</Label>
+                            <Input id="guardian_phone" v-model="form.guardian_phone" placeholder="+2547XXXXXXXX" />
+                            <InputError :message="form.errors.guardian_phone" />
+                        </div>
+                        <div class="space-y-2">
+                            <Label for="guardian_password">Password</Label>
+                            <Input id="guardian_password" v-model="form.guardian_password" type="password" placeholder="Minimum 8 characters" />
+                            <InputError :message="form.errors.guardian_password" />
+                        </div>
+                        <div class="space-y-2 md:col-span-2">
+                            <Label for="guardian_password_confirmation">Confirm Password</Label>
+                            <Input id="guardian_password_confirmation" v-model="form.guardian_password_confirmation" type="password" placeholder="Re-enter password" />
+                            <InputError :message="form.errors.guardian_password_confirmation" />
                         </div>
                     </div>
                 </div>

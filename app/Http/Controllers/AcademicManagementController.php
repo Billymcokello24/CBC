@@ -16,351 +16,6 @@ use Inertia\Response;
 
 class AcademicManagementController extends Controller
 {
-    public function classes(Request $request): Response
-    {
-        $search = trim((string) $request->string('search'));
-        $gradeId = $request->integer('grade_id');
-        $view = (string) $request->string('view', 'grid');
-
-        $classes = SchoolClass::query()
-            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name'])
-            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
-            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
-            ->when($gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
-            ->orderBy('name')
-            ->get()
-            ->map(function (SchoolClass $class) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name,
-                    'code' => $class->code,
-                    'grade' => $class->gradeLevel?->name,
-                    'stream' => $class->stream?->name,
-                    'stream_code' => $class->stream?->code,
-                    'teacher' => null,
-                    'students' => $class->students_count,
-                    'capacity' => $class->capacity,
-                    'academic_year' => $class->academicYear?->name,
-                    'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
-                ];
-            })
-            ->values();
-
-        return Inertia::render('classes/Index', [
-            'classes' => $classes,
-            'stats' => [
-                'total_classes' => SchoolClass::count(),
-                'total_students' => Student::where('status', 'active')->count(),
-                'average_class_size' => (int) round((float) Student::where('status', 'active')->count() / max(SchoolClass::count(), 1)),
-                'grades_count' => GradeLevel::count(),
-            ],
-            'filters' => [
-                'search' => $search,
-                'grade_id' => $gradeId ?: null,
-                'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
-            ],
-            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
-        ]);
-    }
-
-    public function createClass(): Response
-    {
-        return Inertia::render('classes/Create', [
-            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
-            'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
-            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
-        ]);
-    }
-
-    public function storeClass(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', Rule::unique('classes', 'code')],
-            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
-            'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
-            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
-            'capacity' => ['required', 'integer', 'min:1'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $schoolId = DB::table('schools')->value('id');
-
-        $class = SchoolClass::create([
-            'school_id' => $schoolId,
-            'grade_level_id' => $validated['grade_level_id'],
-            'stream_id' => $validated['stream_id'] ?? null,
-            'academic_year_id' => $validated['academic_year_id'],
-            'name' => $validated['name'],
-            'code' => $validated['code'],
-            'capacity' => $validated['capacity'],
-            'is_active' => $validated['is_active'],
-        ]);
-
-        return redirect()->route('classes.show', $class->id)->with('success', 'Class created successfully.');
-    }
-
-    public function showClass(Request $request, int $id): Response
-    {
-        $search = trim((string) $request->string('search'));
-        $status = (string) $request->string('status');
-        $gender = (string) $request->string('gender');
-
-        $class = SchoolClass::query()
-            ->with(['gradeLevel:id,name,code,level_order', 'stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name,email'])
-            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
-            ->findOrFail($id);
-
-        $subjectAllocations = DB::table('teacher_subjects')
-            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
-            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
-            ->join('teachers', 'teachers.id', '=', 'teacher_subjects.teacher_id')
-            ->where('teacher_subjects.class_id', $class->id)
-            ->select(
-                'teacher_subjects.id',
-                'teacher_subjects.is_primary_teacher',
-                'teacher_subjects.is_active',
-                'subjects.name as subject_name',
-                'subjects.code as subject_code',
-                'subjects.subject_type',
-                'learning_areas.name as learning_area_name',
-                'teachers.first_name',
-                'teachers.middle_name',
-                'teachers.last_name'
-            )
-            ->orderBy('subjects.name')
-            ->get()
-            ->map(fn ($allocation) => [
-                'id' => $allocation->id,
-                'subject' => $allocation->subject_name,
-                'code' => $allocation->subject_code,
-                'type' => $allocation->subject_type,
-                'learning_area' => $allocation->learning_area_name,
-                'teacher' => trim($allocation->first_name . ' ' . ($allocation->middle_name ? $allocation->middle_name . ' ' : '') . $allocation->last_name),
-                'is_primary_teacher' => (bool) $allocation->is_primary_teacher,
-                'is_active' => (bool) $allocation->is_active,
-            ])
-            ->values();
-
-        $students = Student::query()
-            ->where('current_class_id', $class->id)
-            ->when($search !== '', fn ($q) => $q->search($search))
-            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
-            ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get(['id', 'first_name', 'middle_name', 'last_name', 'admission_number', 'gender', 'status'])
-            ->map(fn (Student $student) => [
-                'id' => $student->id,
-                'name' => $student->full_name,
-                'admission_number' => $student->admission_number,
-                'gender' => ucfirst($student->gender),
-                'status' => $student->status,
-            ])
-            ->values();
-
-        $transferTargets = SchoolClass::query()
-            ->where('grade_level_id', $class->grade_level_id)
-            ->where('id', '!=', $class->id)
-            ->orderBy('name')
-            ->get(['id', 'name'])
-            ->map(fn (SchoolClass $target) => ['id' => $target->id, 'name' => $target->name])
-            ->values();
-
-        return Inertia::render('classes/Show', [
-            'classroom' => [
-                'id' => $class->id,
-                'name' => $class->name,
-                'code' => $class->code,
-                'grade' => $class->gradeLevel?->name,
-                'stream' => $class->stream?->name,
-                'academic_year' => $class->academicYear?->name,
-                'capacity' => $class->capacity,
-                'students_count' => $class->students_count,
-                'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
-                'is_active' => $class->is_active,
-                'teacher' => $class->classTeacher?->name,
-                'teacher_email' => $class->classTeacher?->email,
-            ],
-            'subjectAllocations' => $subjectAllocations,
-            'students' => $students,
-            'filters' => [
-                'search' => $search,
-                'status' => $status === '' ? 'all' : $status,
-                'gender' => $gender === '' ? 'all' : $gender,
-            ],
-            'transferTargets' => $transferTargets,
-            'statusOptions' => [
-                ['value' => 'all', 'label' => 'All Statuses'],
-                ['value' => 'active', 'label' => 'Active'],
-                ['value' => 'inactive', 'label' => 'Inactive'],
-                ['value' => 'suspended', 'label' => 'Suspended'],
-            ],
-            'genderOptions' => [
-                ['value' => 'all', 'label' => 'All Genders'],
-                ['value' => 'male', 'label' => 'Male'],
-                ['value' => 'female', 'label' => 'Female'],
-            ],
-        ]);
-    }
-
-    public function createGrade(): Response
-    {
-        return Inertia::render('grades/Create');
-    }
-
-    public function storeGrade(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', Rule::unique('grade_levels', 'code')],
-            'category' => ['required', 'string', 'max:100'],
-            'level_order' => ['required', 'integer', 'min:1'],
-            'minimum_age' => ['nullable', 'integer', 'min:1'],
-            'maximum_age' => ['nullable', 'integer', 'min:1'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $schoolId = DB::table('schools')->value('id');
-        $grade = GradeLevel::create([...$validated, 'school_id' => $schoolId]);
-
-        return redirect()->route('grades.show', $grade->id)->with('success', 'Grade created successfully.');
-    }
-
-    public function showGrade(int $id): Response
-    {
-        $grade = GradeLevel::findOrFail($id);
-        $classes = SchoolClass::query()
-            ->with(['stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name'])
-            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
-            ->where('grade_level_id', $grade->id)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (SchoolClass $class) => [
-                'id' => $class->id,
-                'name' => $class->name,
-                'code' => $class->code,
-                'stream' => $class->stream?->name,
-                'academic_year' => $class->academicYear?->name,
-                'teacher' => $class->classTeacher?->name,
-                'students_count' => $class->students_count,
-                'capacity' => $class->capacity,
-            ])
-            ->values();
-
-        $subjects = DB::table('subject_grade_levels')
-            ->join('subjects', 'subjects.id', '=', 'subject_grade_levels.subject_id')
-            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
-            ->where('subject_grade_levels.grade_level_id', $grade->id)
-            ->where('subject_grade_levels.is_active', true)
-            ->orderBy('subjects.name')
-            ->select(
-                'subject_grade_levels.lessons_per_week',
-                'subject_grade_levels.minutes_per_lesson',
-                'subject_grade_levels.is_compulsory',
-                'subjects.id',
-                'subjects.name',
-                'subjects.code',
-                'subjects.subject_type',
-                'learning_areas.name as learning_area_name'
-            )
-            ->get()
-            ->map(fn ($subject) => [
-                'id' => $subject->id,
-                'name' => $subject->name,
-                'code' => $subject->code,
-                'subject_type' => $subject->subject_type,
-                'learning_area' => $subject->learning_area_name,
-                'lessons_per_week' => $subject->lessons_per_week,
-                'minutes_per_lesson' => $subject->minutes_per_lesson,
-                'is_compulsory' => (bool) $subject->is_compulsory,
-            ])
-            ->values();
-
-        return Inertia::render('grades/Show', [
-            'grade' => [
-                'id' => $grade->id,
-                'name' => $grade->name,
-                'code' => $grade->code,
-                'category' => $grade->category,
-                'level_order' => $grade->level_order,
-                'minimum_age' => $grade->minimum_age,
-                'maximum_age' => $grade->maximum_age,
-                'is_active' => $grade->is_active,
-                'lead_name' => null,
-            ],
-            'subjects' => $subjects,
-            'classes' => $classes,
-        ]);
-    }
-
-    public function editClass(int $id): Response
-    {
-        $class = SchoolClass::findOrFail($id);
-
-        return Inertia::render('classes/Edit', [
-            'classroom' => [
-                'id' => $class->id,
-                'name' => $class->name,
-                'code' => $class->code,
-                'grade_level_id' => $class->grade_level_id,
-                'stream_id' => $class->stream_id,
-                'academic_year_id' => $class->academic_year_id,
-                'capacity' => $class->capacity,
-                'is_active' => $class->is_active,
-            ],
-            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
-            'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
-            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
-        ]);
-    }
-
-    public function updateClass(Request $request, int $id): RedirectResponse
-    {
-        $class = SchoolClass::findOrFail($id);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', Rule::unique('classes', 'code')->ignore($class->id)],
-            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
-            'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
-            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
-            'capacity' => ['required', 'integer', 'min:1'],
-            'is_active' => ['required', 'boolean'],
-        ]);
-
-        $class->update($validated);
-
-        return redirect()->route('classes.show', $class->id)->with('success', 'Class updated successfully.');
-    }
-
-    public function destroyClass(int $id): RedirectResponse
-    {
-        $class = SchoolClass::findOrFail($id);
-        $class->delete();
-
-        return redirect()->route('classes.index')->with('success', 'Class deleted successfully.');
-    }
-
-    public function bulkAction(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'class_ids' => ['required', 'array', 'min:1'],
-            'class_ids.*' => ['integer', 'exists:classes,id'],
-            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete'])],
-        ]);
-
-        $query = SchoolClass::query()->whereIn('id', $validated['class_ids']);
-
-        match ($validated['action']) {
-            'activate' => $query->update(['is_active' => true]),
-            'deactivate' => $query->update(['is_active' => false]),
-            'delete' => $query->delete(),
-        };
-
-        return back()->with('success', 'Bulk class action completed successfully.');
-    }
-
     public function allocations(Request $request): Response
     {
         $classes = SchoolClass::query()
@@ -527,6 +182,200 @@ class AcademicManagementController extends Controller
         return back()->with('success', 'Subject allocation deleted successfully.');
     }
 
+    public function classes(Request $request): Response
+    {
+        $search = trim((string) $request->string('search'));
+        $gradeId = $request->integer('grade_id');
+        $view = (string) $request->string('view', 'grid');
+
+        $classes = SchoolClass::query()
+            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name'])
+            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
+            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
+            ->when($gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
+            ->orderBy('name')
+            ->get()
+            ->map(function (SchoolClass $class) {
+                return [
+                    'id' => $class->id,
+                    'name' => $class->name,
+                    'code' => $class->code,
+                    'grade' => $class->gradeLevel?->name,
+                    'stream' => $class->stream?->name,
+                    'stream_code' => $class->stream?->code,
+                    'teacher' => null,
+                    'students' => $class->students_count,
+                    'capacity' => $class->capacity,
+                    'academic_year' => $class->academicYear?->name,
+                    'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
+                ];
+            })
+            ->values();
+
+        return Inertia::render('classes/Index', [
+            'classes' => $classes,
+            'stats' => [
+                'total_classes' => SchoolClass::count(),
+                'total_students' => Student::where('status', 'active')->count(),
+                'average_class_size' => (int) round((float) Student::where('status', 'active')->count() / max(SchoolClass::count(), 1)),
+                'grades_count' => GradeLevel::count(),
+            ],
+            'filters' => [
+                'search' => $search,
+                'grade_id' => $gradeId ?: null,
+                'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
+            ],
+            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
+        ]);
+    }
+
+    public function createClass(): Response
+    {
+        return Inertia::render('classes/Create', [
+            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
+            'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
+            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
+        ]);
+    }
+
+    public function storeClass(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('classes', 'code')],
+            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
+            'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
+            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $schoolId = DB::table('schools')->value('id');
+
+        $class = SchoolClass::create([
+            'school_id' => $schoolId,
+            'grade_level_id' => $validated['grade_level_id'],
+            'stream_id' => $validated['stream_id'] ?? null,
+            'academic_year_id' => $validated['academic_year_id'],
+            'name' => $validated['name'],
+            'code' => $validated['code'],
+            'capacity' => $validated['capacity'],
+            'is_active' => $validated['is_active'],
+        ]);
+
+        return redirect()->route('classes.show', $class->id)->with('success', 'Class created successfully.');
+    }
+
+    public function showClass(Request $request, int $id): Response
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $gender = (string) $request->string('gender');
+
+        $class = SchoolClass::query()
+            ->with(['gradeLevel:id,name,code,level_order', 'stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name,email'])
+            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
+            ->findOrFail($id);
+
+        $subjectAllocations = DB::table('teacher_subjects')
+            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
+            ->join('teachers', 'teachers.id', '=', 'teacher_subjects.teacher_id')
+            ->where('teacher_subjects.class_id', $class->id)
+            ->select(
+                'teacher_subjects.id',
+                'teacher_subjects.teacher_id',
+                'teacher_subjects.subject_id',
+                'teacher_subjects.academic_year_id',
+                'teacher_subjects.is_primary_teacher',
+                'teacher_subjects.is_active',
+                'subjects.name as subject_name',
+                'subjects.code as subject_code',
+                'subjects.subject_type',
+                'learning_areas.name as learning_area_name',
+                'teachers.first_name',
+                'teachers.middle_name',
+                'teachers.last_name'
+            )
+            ->orderBy('subjects.name')
+            ->get()
+            ->map(fn ($allocation) => [
+                'id' => $allocation->id,
+                'teacher_id' => $allocation->teacher_id,
+                'subject_id' => $allocation->subject_id,
+                'academic_year_id' => $allocation->academic_year_id,
+                'subject' => $allocation->subject_name,
+                'code' => $allocation->subject_code,
+                'type' => $allocation->subject_type,
+                'learning_area' => $allocation->learning_area_name,
+                'teacher' => trim($allocation->first_name . ' ' . ($allocation->middle_name ? $allocation->middle_name . ' ' : '') . $allocation->last_name),
+                'is_primary_teacher' => (bool) $allocation->is_primary_teacher,
+                'is_active' => (bool) $allocation->is_active,
+            ])
+            ->values();
+
+        $students = Student::query()
+            ->where('current_class_id', $class->id)
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'admission_number', 'gender', 'status'])
+            ->map(fn (Student $student) => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'admission_number' => $student->admission_number,
+                'gender' => ucfirst($student->gender),
+                'status' => $student->status,
+            ])
+            ->values();
+
+        $transferTargets = SchoolClass::query()
+            ->where('grade_level_id', $class->grade_level_id)
+            ->where('id', '!=', $class->id)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (SchoolClass $target) => ['id' => $target->id, 'name' => $target->name])
+            ->values();
+
+        return Inertia::render('classes/Show', [
+            'classroom' => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'code' => $class->code,
+                'grade' => $class->gradeLevel?->name,
+                'stream' => $class->stream?->name,
+                'academic_year' => $class->academicYear?->name,
+                'capacity' => $class->capacity,
+                'students_count' => $class->students_count,
+                'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
+                'is_active' => $class->is_active,
+                'teacher' => $class->classTeacher?->name,
+                'teacher_email' => $class->classTeacher?->email,
+            ],
+            'subjectAllocations' => $subjectAllocations,
+            'students' => $students,
+            'filters' => [
+                'search' => $search,
+                'status' => $status === '' ? 'all' : $status,
+                'gender' => $gender === '' ? 'all' : $gender,
+            ],
+            'transferTargets' => $transferTargets,
+            'statusOptions' => [
+                ['value' => 'all', 'label' => 'All Statuses'],
+                ['value' => 'active', 'label' => 'Active'],
+                ['value' => 'inactive', 'label' => 'Inactive'],
+                ['value' => 'suspended', 'label' => 'Suspended'],
+            ],
+            'genderOptions' => [
+                ['value' => 'all', 'label' => 'All Genders'],
+                ['value' => 'male', 'label' => 'Male'],
+                ['value' => 'female', 'label' => 'Female'],
+            ],
+        ]);
+    }
+
     public function grades(Request $request): Response
     {
         $search = trim((string) $request->string('search'));
@@ -579,12 +428,94 @@ class AcademicManagementController extends Controller
         ]);
     }
 
+    public function createGrade(): Response
+    {
+        return Inertia::render('grades/Create');
+    }
 
-    public function editGrade(int $id): Response
+    public function storeGrade(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('grade_levels', 'code')],
+            'category' => ['required', 'string', 'max:100'],
+            'level_order' => ['required', 'integer', 'min:1'],
+            'minimum_age' => ['nullable', 'integer', 'min:1'],
+            'maximum_age' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $schoolId = DB::table('schools')->value('id');
+        $grade = GradeLevel::create([...$validated, 'school_id' => $schoolId]);
+
+        return redirect()->route('grades.show', $grade->id)->with('success', 'Grade created successfully.');
+    }
+
+    public function showGrade(int $id): Response
     {
         $grade = GradeLevel::findOrFail($id);
+        $classIds = SchoolClass::query()->where('grade_level_id', $grade->id)->pluck('id');
 
-        return Inertia::render('grades/Edit', [
+        $classes = SchoolClass::query()
+            ->with(['stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name'])
+            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
+            ->where('grade_level_id', $grade->id)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (SchoolClass $class) => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'code' => $class->code,
+                'stream' => $class->stream?->name,
+                'academic_year' => $class->academicYear?->name,
+                'teacher' => $class->classTeacher?->name,
+                'students_count' => $class->students_count,
+                'capacity' => $class->capacity,
+            ])
+            ->values();
+
+        $subjects = DB::table('subject_grade_levels')
+            ->join('subjects', 'subjects.id', '=', 'subject_grade_levels.subject_id')
+            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
+            ->where('subject_grade_levels.grade_level_id', $grade->id)
+            ->where('subject_grade_levels.is_active', true)
+            ->orderBy('subjects.name')
+            ->select(
+                'subject_grade_levels.lessons_per_week',
+                'subject_grade_levels.minutes_per_lesson',
+                'subject_grade_levels.is_compulsory',
+                'subject_grade_levels.is_active as allocation_is_active',
+                'subjects.id',
+                'subjects.name',
+                'subjects.code',
+                'subjects.subject_type',
+                'subjects.is_active as subject_is_active',
+                'learning_areas.name as learning_area_name'
+            )
+            ->get()
+            ->map(fn ($subject) => [
+                'id' => $subject->id,
+                'name' => $subject->name,
+                'code' => $subject->code,
+                'subject_type' => $subject->subject_type,
+                'learning_area' => $subject->learning_area_name,
+                'lessons_per_week' => $subject->lessons_per_week,
+                'minutes_per_lesson' => $subject->minutes_per_lesson,
+                'is_compulsory' => (bool) $subject->is_compulsory,
+                'is_active' => (bool) $subject->allocation_is_active,
+                'subject_is_active' => (bool) $subject->subject_is_active,
+            ])
+            ->values();
+
+        $studentsCount = $classIds->isEmpty()
+            ? 0
+            : Student::query()->whereIn('current_class_id', $classIds)->count();
+
+        $activeStudentsCount = $classIds->isEmpty()
+            ? 0
+            : Student::query()->whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+
+        return Inertia::render('grades/Show', [
             'grade' => [
                 'id' => $grade->id,
                 'name' => $grade->name,
@@ -594,63 +525,150 @@ class AcademicManagementController extends Controller
                 'minimum_age' => $grade->minimum_age,
                 'maximum_age' => $grade->maximum_age,
                 'is_active' => $grade->is_active,
+                'lead_name' => null,
+            ],
+            'subjects' => $subjects,
+            'classes' => $classes,
+            'stats' => [
+                'students_count' => $studentsCount,
+                'active_students_count' => $activeStudentsCount,
+                'subjects_count' => $subjects->count(),
+                'compulsory_subjects_count' => $subjects->where('is_compulsory', true)->count(),
             ],
         ]);
     }
 
-    public function updateGrade(Request $request, int $id): RedirectResponse
+    public function gradeSubjects(int $id): Response
     {
         $grade = GradeLevel::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:50', Rule::unique('grade_levels', 'code')->ignore($grade->id)],
-            'category' => ['required', 'string', 'max:100'],
-            'level_order' => ['required', 'integer', 'min:1'],
-            'minimum_age' => ['nullable', 'integer', 'min:1'],
-            'maximum_age' => ['nullable', 'integer', 'min:1'],
-            'is_active' => ['required', 'boolean'],
+        $subjects = DB::table('subject_grade_levels')
+            ->join('subjects', 'subjects.id', '=', 'subject_grade_levels.subject_id')
+            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
+            ->leftJoin('teacher_subjects', function ($join) use ($grade) {
+                $join->on('teacher_subjects.subject_id', '=', 'subjects.id')
+                    ->join('classes', 'classes.id', '=', 'teacher_subjects.class_id')
+                    ->where('classes.grade_level_id', '=', $grade->id);
+            })
+            ->leftJoin('teachers', 'teachers.id', '=', 'teacher_subjects.teacher_id')
+            ->where('subject_grade_levels.grade_level_id', $grade->id)
+            ->orderBy('subjects.name')
+            ->select(
+                'subjects.id as subject_id',
+                'subjects.name',
+                'subjects.code',
+                'subjects.description',
+                'subjects.subject_type',
+                'subjects.is_examinable',
+                'subjects.is_active as subject_is_active',
+                'learning_areas.name as learning_area_name',
+                'subject_grade_levels.lessons_per_week',
+                'subject_grade_levels.minutes_per_lesson',
+                'subject_grade_levels.is_compulsory',
+                'subject_grade_levels.is_active as allocation_is_active',
+                'teachers.first_name',
+                'teachers.middle_name',
+                'teachers.last_name'
+            )
+            ->get()
+            ->groupBy('subject_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $teachers = collect($rows)
+                    ->map(fn ($row) => trim(($row->first_name ?? '') . ' ' . ($row->middle_name ? $row->middle_name . ' ' : '') . ($row->last_name ?? '')))
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                return [
+                    'id' => $first->subject_id,
+                    'name' => $first->name,
+                    'code' => $first->code,
+                    'description' => $first->description,
+                    'subject_type' => $first->subject_type,
+                    'learning_area' => $first->learning_area_name,
+                    'is_examinable' => (bool) $first->is_examinable,
+                    'subject_is_active' => (bool) $first->subject_is_active,
+                    'is_active' => (bool) $first->allocation_is_active,
+                    'lessons_per_week' => $first->lessons_per_week,
+                    'minutes_per_lesson' => $first->minutes_per_lesson,
+                    'is_compulsory' => (bool) $first->is_compulsory,
+                    'teachers' => $teachers,
+                    'teachers_count' => $teachers->count(),
+                ];
+            })
+            ->values();
+
+        return Inertia::render('grades/Subjects', [
+            'grade' => [
+                'id' => $grade->id,
+                'name' => $grade->name,
+                'code' => $grade->code,
+                'category' => $grade->category,
+                'level_order' => $grade->level_order,
+                'is_active' => $grade->is_active,
+            ],
+            'subjects' => $subjects,
+            'stats' => [
+                'total' => $subjects->count(),
+                'active' => $subjects->where('is_active', true)->count(),
+                'compulsory' => $subjects->where('is_compulsory', true)->count(),
+                'examinable' => $subjects->where('is_examinable', true)->count(),
+            ],
         ]);
-
-        $grade->update($validated);
-
-        return redirect()->route('grades.show', $grade->id)->with('success', 'Grade updated successfully.');
     }
 
-    public function activateGrade(int $id): RedirectResponse
+    public function gradeStudents(Request $request, int $id): Response
     {
-        GradeLevel::whereKey($id)->update(['is_active' => true]);
-        return back()->with('success', 'Grade activated successfully.');
-    }
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $grade = GradeLevel::findOrFail($id);
+        $classIds = SchoolClass::query()->where('grade_level_id', $grade->id)->pluck('id');
 
-    public function deactivateGrade(int $id): RedirectResponse
-    {
-        GradeLevel::whereKey($id)->update(['is_active' => false]);
-        return back()->with('success', 'Grade deactivated successfully.');
-    }
+        $students = Student::query()
+            ->with(['currentClass:id,name,stream_id', 'currentClass.stream:id,name'])
+            ->when(!$classIds->isEmpty(), fn ($q) => $q->whereIn('current_class_id', $classIds), fn ($q) => $q->whereRaw('1 = 0'))
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'admission_number', 'gender', 'status', 'current_class_id'])
+            ->map(fn (Student $student) => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'admission_number' => $student->admission_number,
+                'gender' => ucfirst($student->gender),
+                'status' => $student->status,
+                'class_name' => $student->currentClass?->name,
+                'stream_name' => $student->currentClass?->stream?->name,
+            ])
+            ->values();
 
-    public function destroyGrade(int $id): RedirectResponse
-    {
-        GradeLevel::findOrFail($id)->delete();
-        return redirect()->route('grades.index')->with('success', 'Grade deleted successfully.');
-    }
-
-    public function bulkGradeAction(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'grade_ids' => ['required', 'array', 'min:1'],
-            'grade_ids.*' => ['integer', 'exists:grade_levels,id'],
-            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete'])],
+        return Inertia::render('grades/Students', [
+            'grade' => [
+                'id' => $grade->id,
+                'name' => $grade->name,
+                'code' => $grade->code,
+                'category' => $grade->category,
+                'level_order' => $grade->level_order,
+                'is_active' => $grade->is_active,
+            ],
+            'students' => $students,
+            'filters' => [
+                'search' => $search,
+                'status' => $status === '' ? 'all' : $status,
+            ],
+            'statusOptions' => [
+                ['value' => 'all', 'label' => 'All Statuses'],
+                ['value' => 'active', 'label' => 'Active'],
+                ['value' => 'inactive', 'label' => 'Inactive'],
+                ['value' => 'suspended', 'label' => 'Suspended'],
+            ],
+            'stats' => [
+                'total' => $students->count(),
+                'active' => $students->where('status', 'active')->count(),
+            ],
         ]);
-
-        $query = GradeLevel::query()->whereIn('id', $validated['grade_ids']);
-        match ($validated['action']) {
-            'activate' => $query->update(['is_active' => true]),
-            'deactivate' => $query->update(['is_active' => false]),
-            'delete' => $query->delete(),
-        };
-
-        return back()->with('success', 'Bulk grade action completed successfully.');
     }
 
     public function streams(Request $request): Response
@@ -821,5 +839,99 @@ class AcademicManagementController extends Controller
         };
 
         return back()->with('success', 'Bulk stream action completed successfully.');
+    }
+
+    public function classSubjects(int $id): Response
+    {
+        $class = SchoolClass::query()
+            ->with(['gradeLevel:id,name,code,level_order', 'stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name,email'])
+            ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
+            ->findOrFail($id);
+
+        $subjects = DB::table('teacher_subjects')
+            ->join('subjects', 'subjects.id', '=', 'teacher_subjects.subject_id')
+            ->leftJoin('learning_areas', 'learning_areas.id', '=', 'subjects.learning_area_id')
+            ->join('teachers', 'teachers.id', '=', 'teacher_subjects.teacher_id')
+            ->leftJoin('subject_grade_levels', function ($join) use ($class) {
+                $join->on('subject_grade_levels.subject_id', '=', 'subjects.id')
+                    ->where('subject_grade_levels.grade_level_id', '=', $class->grade_level_id);
+            })
+            ->where('teacher_subjects.class_id', $class->id)
+            ->select(
+                'teacher_subjects.id',
+                'teacher_subjects.teacher_id',
+                'teacher_subjects.subject_id',
+                'teacher_subjects.academic_year_id',
+                'teacher_subjects.is_primary_teacher',
+                'teacher_subjects.is_active',
+                'subjects.name as subject_name',
+                'subjects.code as subject_code',
+                'subjects.description as subject_description',
+                'subjects.subject_type',
+                'subjects.is_examinable',
+                'subjects.is_active as subject_is_active',
+                'learning_areas.name as learning_area_name',
+                'subject_grade_levels.lessons_per_week',
+                'subject_grade_levels.minutes_per_lesson',
+                'subject_grade_levels.is_compulsory',
+                'teachers.first_name',
+                'teachers.middle_name',
+                'teachers.last_name'
+            )
+            ->orderBy('subjects.name')
+            ->get()
+            ->map(fn ($subject) => [
+                'allocation_id' => $subject->id,
+                'teacher_id' => $subject->teacher_id,
+                'subject_id' => $subject->subject_id,
+                'academic_year_id' => $subject->academic_year_id,
+                'name' => $subject->subject_name,
+                'code' => $subject->subject_code,
+                'description' => $subject->subject_description,
+                'subject_type' => $subject->subject_type,
+                'learning_area' => $subject->learning_area_name,
+                'teacher' => trim($subject->first_name . ' ' . ($subject->middle_name ? $subject->middle_name . ' ' : '') . $subject->last_name),
+                'is_primary_teacher' => (bool) $subject->is_primary_teacher,
+                'is_active' => (bool) $subject->is_active,
+                'subject_is_active' => (bool) $subject->subject_is_active,
+                'is_examinable' => (bool) $subject->is_examinable,
+                'lessons_per_week' => $subject->lessons_per_week,
+                'minutes_per_lesson' => $subject->minutes_per_lesson,
+                'is_compulsory' => (bool) $subject->is_compulsory,
+            ])
+            ->values();
+
+        $teachers = Teacher::query()
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name'])
+            ->map(fn (Teacher $teacher) => [
+                'id' => $teacher->id,
+                'name' => trim($teacher->first_name . ' ' . ($teacher->middle_name ? $teacher->middle_name . ' ' : '') . $teacher->last_name),
+            ])
+            ->values();
+
+        return Inertia::render('classes/Subjects', [
+            'classroom' => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'code' => $class->code,
+                'grade' => $class->gradeLevel?->name,
+                'grade_id' => $class->grade_level_id,
+                'stream' => $class->stream?->name,
+                'academic_year' => $class->academicYear?->name,
+                'academic_year_id' => $class->academic_year_id,
+                'students_count' => $class->students_count,
+                'teacher' => $class->classTeacher?->name,
+            ],
+            'subjects' => $subjects,
+            'teachers' => $teachers,
+            'stats' => [
+                'total' => $subjects->count(),
+                'active' => $subjects->where('is_active', true)->count(),
+                'compulsory' => $subjects->where('is_compulsory', true)->count(),
+                'examinable' => $subjects->where('is_examinable', true)->count(),
+            ],
+        ]);
     }
 }

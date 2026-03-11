@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('students/enrollments/groups/{class}', [StudentEnrollmentController::class, 'show'])->name('students.enrollments.groups.show');
     Route::get('students/create', [StudentsController::class, 'create'])->name('students.create');
     Route::post('students', [StudentsController::class, 'store'])->name('students.store');
+    Route::post('students/{student}/guardian', [StudentsController::class, 'storeGuardian'])->name('students.guardian.store');
     Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
     Route::get('students/{student}/edit', [StudentsController::class, 'edit'])->name('students.edit');
     Route::put('students/{student}', [StudentsController::class, 'update'])->name('students.update');
@@ -48,6 +49,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('classes/create', [AcademicManagementController::class, 'createClass'])->name('classes.create');
     Route::post('classes', [AcademicManagementController::class, 'storeClass'])->name('classes.store');
     Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
+    Route::get('classes/{id}/subjects', [AcademicManagementController::class, 'classSubjects'])->name('classes.subjects');
     Route::get('classes/{id}', [AcademicManagementController::class, 'showClass'])->name('classes.show');
     Route::get('classes/{id}/edit', [AcademicManagementController::class, 'editClass'])->name('classes.edit');
     Route::put('classes/{id}', [AcademicManagementController::class, 'updateClass'])->name('classes.update');
@@ -58,6 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('grades/create', [AcademicManagementController::class, 'createGrade'])->name('grades.create');
     Route::post('grades', [AcademicManagementController::class, 'storeGrade'])->name('grades.store');
     Route::post('grades/bulk-action', [AcademicManagementController::class, 'bulkGradeAction'])->name('grades.bulk-action');
+    Route::get('grades/{id}/subjects', [AcademicManagementController::class, 'gradeSubjects'])->name('grades.subjects');
+    Route::get('grades/{id}/students', [AcademicManagementController::class, 'gradeStudents'])->name('grades.students');
     Route::get('grades/{id}', [AcademicManagementController::class, 'showGrade'])->name('grades.show');
     Route::get('grades/{id}/edit', [AcademicManagementController::class, 'editGrade'])->name('grades.edit');
     Route::put('grades/{id}', [AcademicManagementController::class, 'updateGrade'])->name('grades.update');

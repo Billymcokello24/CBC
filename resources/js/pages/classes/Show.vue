@@ -51,6 +51,9 @@ const props = defineProps<{
     };
     subjectAllocations: Array<{
         id: number;
+        teacher_id: number;
+        subject_id: number;
+        academic_year_id: number;
         subject: string;
         code: string;
         type: string;
@@ -179,9 +182,9 @@ const confirmAction = () => {
         bulkTransferForm.student_ids = [...selectedStudentIds.value];
         bulkTransferForm.target_class_id = Number(transferTargetId.value);
         selectedStudentIds.value.forEach((studentId) => {
-            actionForm.patch(`/students/${studentId}/transfer`, {
+            actionForm.transform(() => ({
                 target_class_id: Number(transferTargetId.value),
-            }, {
+            })).patch(`/students/${studentId}/transfer`, {
                 preserveScroll: true,
             });
         });
@@ -240,14 +243,14 @@ const confirmSubjectAction = () => {
         return;
     }
 
-    subjectActionForm.put(`/classes/allocations/${selectedSubjectAllocation.value.id}`, {
-        teacher_id: selectedSubjectAllocation.value.teacher_id,
-        subject_id: selectedSubjectAllocation.value.subject_id,
+    subjectActionForm.transform(() => ({
+        teacher_id: selectedSubjectAllocation.value?.teacher_id,
+        subject_id: selectedSubjectAllocation.value?.subject_id,
         class_id: props.classroom.id,
-        academic_year_id: selectedSubjectAllocation.value.academic_year_id,
-        is_primary_teacher: selectedSubjectAllocation.value.is_primary_teacher,
+        academic_year_id: selectedSubjectAllocation.value?.academic_year_id,
+        is_primary_teacher: selectedSubjectAllocation.value?.is_primary_teacher,
         is_active: subjectConfirmMode.value === 'activate',
-    }, {
+    })).put(`/classes/allocations/${selectedSubjectAllocation.value.id}`, {
         preserveScroll: true,
         onSuccess: closeSubjectActionModal,
     });
@@ -381,126 +384,50 @@ const confirmSubjectAction = () => {
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-semibold">Subjects Assigned to {{ classroom.name }}</h2>
-                        <p class="text-sm text-muted-foreground">Click any subject card to open its subject page or use the actions menu to manage the allocation</p>
+                        <p class="text-sm text-muted-foreground">Open the class subjects page by clicking a card. From there you can manage teacher assignment, status, and subject actions.</p>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="text-sm text-muted-foreground">{{ subjectAllocations.length }} subject allocation(s)</div>
-                        <Button variant="outline" as-child><Link href="/classes/allocations">Manage Allocations</Link></Button>
+                        <Button variant="outline" as-child><Link :href="`/classes/${classroom.id}/subjects`">Open Subjects Page</Link></Button>
                     </div>
                 </div>
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <div v-if="subjectAllocations.length === 0" class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">No subjects have been assigned to this class yet.</div>
-                    <div v-for="allocation in subjectAllocations" :key="allocation.id" class="rounded-xl border bg-card p-5 transition hover:border-primary/40 hover:shadow-md">
-                        <div class="flex items-start justify-between gap-4">
-                            <Link :href="`/curriculum/subjects/${allocation.subject_id}`" class="min-w-0 flex-1">
-                                <h3 class="text-lg font-semibold">{{ allocation.subject }}</h3>
-                                <p class="text-sm text-muted-foreground">{{ allocation.code }} • {{ allocation.learning_area || 'General' }}</p>
-                                <p class="mt-1 text-xs text-muted-foreground">Teacher: {{ allocation.teacher }}</p>
-                            </Link>
+                <div v-if="subjectAllocations.length === 0" class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+                    No subjects have been assigned to this class yet.
+                </div>
+                <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div v-for="allocation in subjectAllocations" :key="allocation.id" class="group relative overflow-hidden rounded-xl border bg-card transition hover:border-primary/40 hover:shadow-md">
+                        <Link :href="`/classes/${classroom.id}/subjects`" class="block h-full p-5 pr-16">
+                            <h3 class="text-lg font-semibold transition group-hover:text-primary">{{ allocation.subject }}</h3>
+                            <p class="text-sm text-muted-foreground">{{ allocation.code }} • {{ allocation.learning_area || 'General' }}</p>
+                            <p class="mt-1 text-xs text-muted-foreground">Teacher: {{ allocation.teacher }}</p>
+                            <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                <div class="rounded-lg border p-3">
+                                    <div class="text-muted-foreground">Type</div>
+                                    <div class="mt-1 font-semibold">{{ allocation.type }}</div>
+                                </div>
+                                <div class="rounded-lg border p-3">
+                                    <div class="text-muted-foreground">Status</div>
+                                    <div class="mt-1 font-semibold">{{ allocation.is_active ? 'Active' : 'Inactive' }}</div>
+                                </div>
+                            </div>
+                        </Link>
+                        <div class="absolute right-3 top-3 z-10">
                             <DropdownMenu>
-                                <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="icon" class="h-8 w-8 bg-background/80 backdrop-blur">
+                                        <MoreHorizontal class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${allocation.subject_id}`"><Eye class="mr-2 h-4 w-4" />Open Subject</Link></DropdownMenuItem>
-                                    <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${allocation.subject_id}/edit`"><Edit class="mr-2 h-4 w-4" />Edit Subject</Link></DropdownMenuItem>
-                                    <DropdownMenuItem as-child><Link :href="`/classes/allocations`"><ArrowRightLeft class="mr-2 h-4 w-4" />Assign Teacher</Link></DropdownMenuItem>
-                                    <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${allocation.subject_id}/allocate`"><BookCopy class="mr-2 h-4 w-4" />Allocate to Grades</Link></DropdownMenuItem>
+                                    <DropdownMenuItem as-child><Link :href="`/classes/${classroom.id}/subjects`"><Eye class="mr-2 h-4 w-4" />Open Class Subjects</Link></DropdownMenuItem>
+                                    <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${allocation.subject_id}`"><BookCopy class="mr-2 h-4 w-4" />Open Subject</Link></DropdownMenuItem>
+                                    <DropdownMenuItem as-child><Link :href="`/classes/allocations?class_id=${classroom.id}&subject_id=${allocation.subject_id}`"><UserCheck class="mr-2 h-4 w-4" />Assign Teacher</Link></DropdownMenuItem>
                                     <DropdownMenuItem @click="openSubjectActionModal(allocation.is_active ? 'deactivate' : 'activate', allocation)"><component :is="allocation.is_active ? ShieldOff : ShieldCheck" class="mr-2 h-4 w-4" />{{ allocation.is_active ? 'Deactivate' : 'Activate' }}</DropdownMenuItem>
                                     <DropdownMenuItem class="text-destructive" @click="openSubjectActionModal('delete', allocation)"><Trash2 class="mr-2 h-4 w-4" />Delete Allocation</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
-                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Type</div><div class="mt-1 font-semibold">{{ allocation.type }}</div></div>
-                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Status</div><div class="mt-1 font-semibold">{{ allocation.is_active ? 'Active' : 'Inactive' }}</div></div>
-                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="rounded-xl border bg-card p-6">
-                <div class="mb-4 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold">Student Operations</h2>
-                        <p class="text-sm text-muted-foreground">Manage all students assigned to this class</p>
-                    </div>
-                    <div class="text-sm text-muted-foreground">Utilization: {{ classroom.utilization }}%</div>
-                </div>
-                <div class="mb-6 h-2 rounded-full bg-muted"><div class="h-full rounded-full bg-indigo-500" :style="{ width: `${classroom.utilization}%` }"></div></div>
-
-                <div class="flex flex-col gap-4 md:flex-row md:items-center">
-                    <div class="relative flex-1 md:max-w-sm">
-                        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input v-model="searchQuery" placeholder="Search students..." class="pl-9" />
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <Button variant="outline" size="sm" @click="showFilters = !showFilters"><Filter class="mr-2 h-4 w-4" />{{ showFilters ? 'Hide Filters' : 'Show Filters' }}</Button>
-                        <Button variant="outline" size="sm" @click="clearFilters">Reset</Button>
-                    </div>
-                </div>
-
-                <div v-if="showFilters" class="mt-4 grid gap-4 rounded-xl border p-4 md:grid-cols-2">
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium">Student Status</label>
-                        <select v-model="selectedStatus" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                            <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                        </select>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-sm font-medium">Gender</label>
-                        <select v-model="selectedGender" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                            <option v-for="option in genderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div v-if="selectedCount > 0" class="mt-4 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
-                    <div>
-                        <p class="text-sm font-medium">{{ selectedCount }} student{{ selectedCount === 1 ? '' : 's' }} selected</p>
-                        <p class="text-xs text-muted-foreground">Promote, transfer, or clear selection for this class.</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <Button variant="outline" size="sm" @click="selectedStudentIds = []">Clear</Button>
-                        <Button variant="outline" size="sm" @click="openActionModal('transfer')"><ArrowRightLeft class="mr-2 h-4 w-4" />Transfer</Button>
-                        <Button size="sm" @click="openActionModal('promote')"><ArrowUpCircle class="mr-2 h-4 w-4" />Promote</Button>
-                    </div>
-                </div>
-
-                <div class="mt-6 overflow-x-auto">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="border-b bg-muted/50">
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground"><input type="checkbox" :checked="allSelected" @change="toggleAllStudents" /></th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Student</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Adm. No</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Gender</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
-                                <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="students.length === 0"><td colspan="6" class="px-4 py-10 text-center text-sm text-muted-foreground">No students match the current class filters.</td></tr>
-                            <tr v-for="student in students" :key="student.id" class="border-b transition-colors hover:bg-muted/50">
-                                <td class="px-4 py-3"><input type="checkbox" :checked="selectedStudentIds.includes(student.id)" @change="toggleStudent(student.id)" /></td>
-                                <td class="px-4 py-3 font-medium">{{ student.name }}</td>
-                                <td class="px-4 py-3 text-sm">{{ student.admission_number || '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ student.gender }}</td>
-                                <td class="px-4 py-3"><Badge variant="outline">{{ student.status }}</Badge></td>
-                                <td class="px-4 py-3 text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem as-child><Link :href="`/students/${student.id}`"><Eye class="mr-2 h-4 w-4" />View</Link></DropdownMenuItem>
-                                            <DropdownMenuItem as-child><Link :href="`/students/${student.id}/edit`"><Edit class="mr-2 h-4 w-4" />Edit</Link></DropdownMenuItem>
-                                            <DropdownMenuItem v-if="student.status !== 'suspended'" @click="openActionModal('suspend', student)"><ShieldAlert class="mr-2 h-4 w-4" />Suspend</DropdownMenuItem>
-                                            <DropdownMenuItem v-else @click="openActionModal('activate', student)"><UserCheck class="mr-2 h-4 w-4" />Activate</DropdownMenuItem>
-                                            <DropdownMenuItem @click="openActionModal('demote', student)"><ArrowDownCircle class="mr-2 h-4 w-4" />Demote</DropdownMenuItem>
-                                            <DropdownMenuItem class="text-destructive" @click="openActionModal('delete', student)"><Trash2 class="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
