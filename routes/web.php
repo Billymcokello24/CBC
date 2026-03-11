@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentsController;
 use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\AcademicManagementController;
+use App\Http\Controllers\CurriculumManagementController;
 
 Route::inertia('/', 'Welcome', [
     'canLogin' => true,
@@ -40,6 +41,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Classes
     Route::get('classes', [AcademicManagementController::class, 'classes'])->name('classes.index');
     Route::get('classes/allocations', [AcademicManagementController::class, 'allocations'])->name('classes.allocations');
+    Route::get('classes/allocation', [AcademicManagementController::class, 'allocations'])->name('classes.allocation');
+    Route::post('classes/allocations', [AcademicManagementController::class, 'storeAllocation'])->name('classes.allocations.store');
+    Route::put('classes/allocations/{id}', [AcademicManagementController::class, 'updateAllocation'])->name('classes.allocations.update');
+    Route::delete('classes/allocations/{id}', [AcademicManagementController::class, 'destroyAllocation'])->name('classes.allocations.destroy');
     Route::get('classes/create', [AcademicManagementController::class, 'createClass'])->name('classes.create');
     Route::post('classes', [AcademicManagementController::class, 'storeClass'])->name('classes.store');
     Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
@@ -77,8 +82,40 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Curriculum
     Route::inertia('curriculum', 'curriculum/Index')->name('curriculum.index');
-    Route::inertia('curriculum/learning-areas', 'curriculum/LearningAreas')->name('curriculum.learning-areas');
-    Route::inertia('curriculum/subjects', 'curriculum/Subjects')->name('curriculum.subjects');
+    Route::get('curriculum/learning-areas', [CurriculumManagementController::class, 'learningAreas'])->name('curriculum.learning-areas');
+    Route::get('curriculum/learning-areas/create', [CurriculumManagementController::class, 'createLearningArea'])->name('curriculum.learning-areas.create');
+    Route::post('curriculum/learning-areas', [CurriculumManagementController::class, 'storeLearningArea'])->name('curriculum.learning-areas.store');
+    Route::get('curriculum/learning-areas/{learningArea}', [CurriculumManagementController::class, 'showLearningArea'])->name('curriculum.learning-areas.show');
+    Route::get('curriculum/learning-areas/{learningArea}/edit', [CurriculumManagementController::class, 'editLearningArea'])->name('curriculum.learning-areas.edit');
+    Route::put('curriculum/learning-areas/{learningArea}', [CurriculumManagementController::class, 'updateLearningArea'])->name('curriculum.learning-areas.update');
+    Route::delete('curriculum/learning-areas/{learningArea}', [CurriculumManagementController::class, 'destroyLearningArea'])->name('curriculum.learning-areas.destroy');
+    Route::post('curriculum/learning-areas/bulk-action', [CurriculumManagementController::class, 'bulkLearningAreaAction'])->name('curriculum.learning-areas.bulk-action');
+    Route::get('curriculum/subjects', [CurriculumManagementController::class, 'subjects'])->name('curriculum.subjects');
+    Route::get('curriculum/subjects/create', [CurriculumManagementController::class, 'createSubject'])->name('curriculum.subjects.create');
+    Route::post('curriculum/subjects', [CurriculumManagementController::class, 'storeSubject'])->name('curriculum.subjects.store');
+    Route::get('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'showSubject'])->name('curriculum.subjects.show');
+    Route::get('curriculum/subjects/{subject}/edit', [CurriculumManagementController::class, 'editSubject'])->name('curriculum.subjects.edit');
+    Route::get('curriculum/subjects/{subject}/allocate', [CurriculumManagementController::class, 'allocateSubject'])->name('curriculum.subjects.allocate');
+    Route::put('curriculum/subjects/{subject}/allocate', [CurriculumManagementController::class, 'saveSubjectAllocations'])->name('curriculum.subjects.allocate.save');
+    Route::put('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'updateSubject'])->name('curriculum.subjects.update');
+    Route::delete('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'destroySubject'])->name('curriculum.subjects.destroy');
+    Route::post('curriculum/subjects/bulk-action', [CurriculumManagementController::class, 'bulkSubjectAction'])->name('curriculum.subjects.bulk-action');
+    Route::get('curriculum/strands', [CurriculumManagementController::class, 'strands'])->name('curriculum.strands');
+    Route::get('curriculum/strands/create', [CurriculumManagementController::class, 'createStrand'])->name('curriculum.strands.create');
+    Route::post('curriculum/strands', [CurriculumManagementController::class, 'storeStrand'])->name('curriculum.strands.store');
+    Route::get('curriculum/strands/{id}', [CurriculumManagementController::class, 'showStrand'])->name('curriculum.strands.show');
+    Route::get('curriculum/strands/{id}/edit', [CurriculumManagementController::class, 'editStrand'])->name('curriculum.strands.edit');
+    Route::put('curriculum/strands/{id}', [CurriculumManagementController::class, 'updateStrand'])->name('curriculum.strands.update');
+    Route::delete('curriculum/strands/{id}', [CurriculumManagementController::class, 'destroyStrand'])->name('curriculum.strands.destroy');
+    Route::post('curriculum/strands/bulk-action', [CurriculumManagementController::class, 'bulkStrandAction'])->name('curriculum.strands.bulk-action');
+    Route::get('curriculum/competencies', [CurriculumManagementController::class, 'competencies'])->name('curriculum.competencies');
+    Route::get('curriculum/competencies/create', [CurriculumManagementController::class, 'createCompetency'])->name('curriculum.competencies.create');
+    Route::post('curriculum/competencies', [CurriculumManagementController::class, 'storeCompetency'])->name('curriculum.competencies.store');
+    Route::get('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'showCompetency'])->name('curriculum.competencies.show');
+    Route::get('curriculum/competencies/{competency}/edit', [CurriculumManagementController::class, 'editCompetency'])->name('curriculum.competencies.edit');
+    Route::put('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'updateCompetency'])->name('curriculum.competencies.update');
+    Route::delete('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'destroyCompetency'])->name('curriculum.competencies.destroy');
+    Route::post('curriculum/competencies/bulk-action', [CurriculumManagementController::class, 'bulkCompetencyAction'])->name('curriculum.competencies.bulk-action');
 
     // Assessments
     Route::inertia('assessments', 'assessments/Index')->name('assessments.index');

@@ -1,0 +1,12 @@
+<script setup lang="ts">
+import { Head, Link } from '@inertiajs/vue3';
+import { BookCopy } from 'lucide-vue-next';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/AppLayout.vue';
+import type { BreadcrumbItem } from '@/types';
+
+const props = defineProps<{ subject: { id: number; learning_area: string | null; name: string; code: string; description: string | null; subject_type: string; is_examinable: boolean; display_order: number; is_active: boolean; strands: Array<{ id: number; name: string; code: string; is_active: boolean }> } }>();
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }, { title: 'Curriculum', href: '/curriculum' }, { title: 'Subjects', href: '/curriculum/subjects' }, { title: props.subject.name, href: `/curriculum/subjects/${props.subject.id}` }];
+</script>
+<template><Head :title="subject.name" /><AppLayout :breadcrumbs="breadcrumbs"><div class="flex h-full flex-1 flex-col gap-6 p-6"><div class="flex items-center justify-between gap-4"><div class="flex items-center gap-4"><div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10"><BookCopy class="h-6 w-6 text-blue-600" /></div><div><h1 class="text-2xl font-bold tracking-tight">{{ subject.name }}</h1><p class="text-muted-foreground">{{ subject.code }} • {{ subject.learning_area || '—' }}</p></div></div><div class="flex gap-2"><Button variant="outline" as-child><Link :href="`/curriculum/subjects/${subject.id}/edit`">Edit</Link></Button><Button variant="outline" as-child><Link href="/curriculum/subjects">Back</Link></Button></div></div><div class="grid gap-4 sm:grid-cols-4"><div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Type</div><div class="mt-1 text-lg font-semibold">{{ subject.subject_type }}</div></div><div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Examinable</div><div class="mt-1 text-lg font-semibold">{{ subject.is_examinable ? 'Yes' : 'No' }}</div></div><div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Status</div><div class="mt-2"><Badge>{{ subject.is_active ? 'Active' : 'Inactive' }}</Badge></div></div><div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Strands</div><div class="mt-1 text-2xl font-bold">{{ subject.strands.length }}</div></div></div></div></AppLayout></template>

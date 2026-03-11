@@ -18,6 +18,16 @@ const props = defineProps<{
         is_active: boolean;
         lead_name: string | null;
     };
+    subjects: Array<{
+        id: number;
+        name: string;
+        code: string;
+        subject_type: string;
+        learning_area: string | null;
+        lessons_per_week: number;
+        minutes_per_lesson: number;
+        is_compulsory: boolean;
+    }>;
     classes: Array<{
         id: number;
         name: string;
@@ -90,6 +100,53 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <div class="rounded-lg border p-3"><div class="text-muted-foreground">Capacity</div><div class="mt-1 font-semibold">{{ classroom.capacity ?? '—' }}</div></div>
                         </div>
                     </Link>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-card p-6">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold">Subjects Assigned to {{ grade.name }}</h2>
+                        <p class="text-sm text-muted-foreground">Curriculum subjects allocated to this grade level</p>
+                    </div>
+                    <div class="text-sm text-muted-foreground">{{ subjects.length }} subject(s)</div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div v-if="subjects.length === 0" class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">No subjects have been allocated to this grade yet.</div>
+                    <div v-for="subject in subjects" :key="subject.id" class="rounded-xl border bg-card p-5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-semibold">{{ subject.name }}</h3>
+                                <p class="text-sm text-muted-foreground">{{ subject.code }} • {{ subject.learning_area || 'General' }}</p>
+                            </div>
+                            <Badge>{{ subject.is_compulsory ? 'Compulsory' : 'Optional' }}</Badge>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Type</div><div class="mt-1 font-semibold">{{ subject.subject_type }}</div></div>
+                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Lessons/Week</div><div class="mt-1 font-semibold">{{ subject.lessons_per_week }}</div></div>
+                            <div class="rounded-lg border p-3 col-span-2"><div class="text-muted-foreground">Minutes/Lesson</div><div class="mt-1 font-semibold">{{ subject.minutes_per_lesson }}</div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border bg-card p-6">
+                <div class="mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold">Manage {{ grade.name }} Students</h2>
+                        <p class="text-sm text-muted-foreground">Oversee student enrollment and progress</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <Button variant="outline" as-child><Link :href="`/grades/${grade.id}/students`">View Students</Link></Button>
+                        <Button as-child><Link :href="`/grades/${grade.id}/students/create`">Enroll New Student</Link></Button>
+                    </div>
+                </div>
+                <div class="rounded-lg border bg-card p-4">
+                    <div class="animate-pulse flex flex-col gap-4">
+                        <div class="h-4 rounded-full bg-muted"></div>
+                        <div class="h-4 rounded-full bg-muted"></div>
+                        <div class="h-4 rounded-full bg-muted"></div>
+                    </div>
                 </div>
             </div>
         </div>
