@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
-defineProps<{
+const props = defineProps<{
     grades: Array<{ id: number; name: string; code: string }>;
     streams: Array<{ id: number; name: string; code: string }>;
     academicYears: Array<{ id: number; name: string }>;
@@ -40,6 +40,20 @@ const submit = () => {
         is_active: Boolean(data.is_active),
     })).post('/classes');
 };
+
+import { watch } from 'vue';
+
+watch([() => form.grade_level_id, () => form.stream_id], ([gradeId, streamId]) => {
+    if (!gradeId) return;
+    
+    const grade = props.grades.find(g => String(g.id) === String(gradeId));
+    const stream = props.streams.find(s => String(s.id) === String(streamId));
+    
+    if (grade) {
+        form.name = grade.name + (stream ? ' ' + stream.name : '');
+        form.code = grade.code + (stream ? stream.code : '');
+    }
+});
 </script>
 
 <template>

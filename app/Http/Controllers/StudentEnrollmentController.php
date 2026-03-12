@@ -6,6 +6,7 @@ use App\Models\Academic\SchoolClass;
 use App\Models\StudentEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -67,7 +68,7 @@ class StudentEnrollmentController extends Controller
             ->sortBy('class_name')
             ->values();
 
-        $statsBase = StudentEnrollment::query();
+        $statsBase = StudentEnrollment::query()->whereHas('student');
 
         return Inertia::render('students/Enrollments', [
             'groups' => $groups,
@@ -114,6 +115,7 @@ class StudentEnrollmentController extends Controller
         $enrollmentStatus = (string) $request->string('enrollment_status');
 
         $query = StudentEnrollment::query()
+            ->whereHas('student')
             ->with([
                 'student:id,first_name,middle_name,last_name,admission_number,status',
                 'academicYear:id,name',
@@ -188,5 +190,17 @@ class StudentEnrollmentController extends Controller
                 ['value' => 'repeated', 'label' => 'Repeated'],
             ],
         ]);
+    }
+
+    public function bulkDelete(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enrollment_ids' => ['required', 'array', 'min:1'],
+            'enrollment_ids.*' => ['integer', 'exists:student_enrollments,id'],
+        ]);
+
+        StudentEnrollment::whereIn('id', $validated['enrollment_ids'])->delete();
+
+        return back()->with('success', count($validated['enrollment_ids']) . ' enrollment records removed successfully.');
     }
 }

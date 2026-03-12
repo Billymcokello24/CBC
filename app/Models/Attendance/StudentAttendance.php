@@ -13,27 +13,32 @@ class StudentAttendance extends Model
 {
     use HasFactory;
 
+    protected $table = 'student_attendance';
+
     protected $fillable = [
         'student_id',
-        'school_class_id',
+        'class_id',
+        'academic_year_id',
         'academic_term_id',
-        'date',
+        'attendance_date',
         'status',
-        'check_in_time',
-        'check_out_time',
-        'is_late',
-        'late_minutes',
-        'reason',
+        'arrival_time',
+        'departure_time',
+        'absence_reason',
+        'late_reason',
+        'is_excused',
+        'excused_by',
         'notes',
         'marked_by',
+        'marked_at',
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'check_in_time' => 'datetime',
-        'check_out_time' => 'datetime',
-        'is_late' => 'boolean',
-        'late_minutes' => 'integer',
+        'attendance_date' => 'date',
+        'arrival_time' => 'datetime',
+        'departure_time' => 'datetime',
+        'is_excused' => 'boolean',
+        'marked_at' => 'datetime',
     ];
 
     public function student()
@@ -43,7 +48,12 @@ class StudentAttendance extends Model
 
     public function schoolClass()
     {
-        return $this->belongsTo(SchoolClass::class);
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(\App\Models\Academic\AcademicYear::class);
     }
 
     public function academicTerm()

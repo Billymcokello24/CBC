@@ -11,6 +11,7 @@ import {
     ShieldAlert,
     Trash2,
     Users,
+    AlertTriangle,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -116,6 +117,26 @@ const clearFilters = () => {
     applyFilters();
 };
 
+const selectedEnrollmentIds = ref<number[]>([]);
+const isAllSelected = computed(() => props.students.length > 0 && selectedEnrollmentIds.value.length === props.students.length);
+
+const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+        selectedEnrollmentIds.value = [];
+    } else {
+        selectedEnrollmentIds.value = props.students.map((s) => s.enrollment_id);
+    }
+};
+
+const toggleSelection = (id: number) => {
+    const index = selectedEnrollmentIds.value.indexOf(id);
+    if (index === -1) {
+        selectedEnrollmentIds.value.push(id);
+    } else {
+        selectedEnrollmentIds.value.splice(index, 1);
+    }
+};
+
 const flashSuccess = computed(() => page.props.flash?.success ?? '');
 watch(
     flashSuccess,
@@ -134,6 +155,26 @@ const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'demote', stu
     confirmMode.value = mode;
     selectedStudent.value = student;
     confirmOpen.value = true;
+};
+
+const bulkDeleteOpen = ref(false);
+const deleteSelected = () => {
+    if (selectedEnrollmentIds.value.length === 0) return;
+    bulkDeleteOpen.value = true;
+};
+
+const confirmBulkDelete = () => {
+    actionForm
+        .transform(() => ({
+            enrollment_ids: selectedEnrollmentIds.value,
+        }))
+        .post('/students/enrollments/bulk-delete', {
+            preserveScroll: true,
+            onSuccess: () => {
+                bulkDeleteOpen.value = false;
+                selectedEnrollmentIds.value = [];
+            },
+        });
 };
 
 const closeActionModal = () => {
@@ -205,11 +246,17 @@ const modalMessage = computed(() => {
                             {{ group.grade_name || 'Unknown Grade' }}<span v-if="group.stream_name"> • {{ group.stream_name }}</span><span v-if="group.academic_year"> • {{ group.academic_year }}</span>
                         </p>
                     </div>
-                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <Button v-if="selectedEnrollmentIds.length > 0" variant="destructive" size="sm" @click="deleteSelected">
+                    <Trash2 class="mr-2 h-4 w-4" />
+                    Delete Selected ({{ selectedEnrollmentIds.length }})
+                </Button>
                 <Button variant="outline" as-child>
                     <Link href="/students/enrollments">Back to Groups</Link>
                 </Button>
             </div>
+        </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
                 <div class="rounded-xl border bg-card p-4">
@@ -256,6 +303,14 @@ const modalMessage = computed(() => {
                     <table class="w-full">
                         <thead>
                             <tr class="border-b bg-muted/50">
+                                <th class="w-[50px] px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        :checked="isAllSelected"
+                                        @change="toggleSelectAll"
+                                    />
+                                </th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Student</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Adm. No</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
@@ -267,9 +322,17 @@ const modalMessage = computed(() => {
                         </thead>
                         <tbody>
                             <tr v-if="students.length === 0">
-                                <td colspan="7" class="px-4 py-10 text-center text-sm text-muted-foreground">No students found in this group.</td>
+                                <td colspan="8" class="px-4 py-10 text-center text-sm text-muted-foreground">No students found in this group.</td>
                             </tr>
-                            <tr v-for="student in students" :key="student.enrollment_id" class="border-b transition-colors hover:bg-muted/50">
+                            <tr v-for="student in students" :key="student.enrollment_id" class="border-b transition-colors hover:bg-muted/50" :class="{ 'bg-primary/5': selectedEnrollmentIds.includes(student.enrollment_id) }">
+                                <td class="px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                        :checked="selectedEnrollmentIds.includes(student.enrollment_id)"
+                                        @change="toggleSelection(student.enrollment_id)"
+                                    />
+                                </td>
                                 <td class="px-4 py-3 font-medium">{{ student.student_name }}</td>
                                 <td class="px-4 py-3 text-sm">{{ student.admission_number || '—' }}</td>
                                 <td class="px-4 py-3 text-sm capitalize">{{ student.enrollment_type.replace('_', ' ') }}</td>
@@ -331,12 +394,37 @@ const modalMessage = computed(() => {
 
         <div v-if="confirmOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="closeActionModal">
             <div class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
-                <h2 class="text-lg font-semibold">{{ modalTitle }}</h2>
+                <div class="flex items-center gap-3 text-destructive mb-2">
+                    <AlertTriangle class="h-5 w-5" />
+                    <h2 class="text-lg font-semibold">{{ modalTitle }}</h2>
+                </div>
                 <p class="mt-2 text-sm text-muted-foreground">{{ modalMessage }}</p>
                 <div class="mt-6 flex justify-end gap-2">
                     <Button variant="outline" @click="closeActionModal">Cancel</Button>
                     <Button :variant="confirmMode === 'delete' ? 'destructive' : 'default'" :disabled="actionForm.processing" @click="confirmAction">
                         Confirm
+                    </Button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Delete Modal -->
+        <div v-if="bulkDeleteOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="bulkDeleteOpen = false">
+            <div class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
+                <div class="flex items-center gap-3 text-destructive mb-2">
+                    <AlertTriangle class="h-6 w-6" />
+                    <h2 class="text-xl font-bold">Confirm Bulk Removal</h2>
+                </div>
+                <p class="mt-3 text-sm text-muted-foreground leading-relaxed">
+                    Are you sure you want to remove <span class="font-bold text-foreground">{{ selectedEnrollmentIds.length }}</span> selected students from this enrollment group? 
+                    This action will delete their enrollment records for this class.
+                </p>
+                <div class="mt-6 flex justify-end gap-3">
+                    <Button variant="outline" @click="bulkDeleteOpen = false">Cancel</Button>
+                    <Button variant="destructive" :disabled="actionForm.processing" @click="confirmBulkDelete">
+                        <Trash2 v-if="!actionForm.processing" class="mr-2 h-4 w-4" />
+                        <span v-else class="mr-2 h-4 w-4 animate-spin">⌛</span>
+                        Yes, Remove Selected
                     </Button>
                 </div>
             </div>

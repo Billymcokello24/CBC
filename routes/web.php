@@ -20,8 +20,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Students
     Route::get('students', [StudentsController::class, 'index'])->name('students.index');
     Route::get('students/enrollments', [StudentEnrollmentController::class, 'index'])->name('students.enrollments');
+    Route::post('students/enrollments/bulk-delete', [StudentEnrollmentController::class, 'bulkDelete'])->name('students.enrollments.bulk-delete');
     Route::get('students/enrollments/groups/{class}', [StudentEnrollmentController::class, 'show'])->name('students.enrollments.groups.show');
+    Route::get('guardian/portal', [StudentsController::class, 'guardianDashboard'])->name('guardian.portal');
     Route::get('students/create', [StudentsController::class, 'create'])->name('students.create');
+    Route::get('students/template/download', [StudentsController::class, 'downloadTemplate'])->name('students.template.download');
+    Route::post('students/bulk-upload', [StudentsController::class, 'bulkUpload'])->name('students.bulk-upload');
+    Route::post('students/bulk-delete', [StudentsController::class, 'bulkDelete'])->name('students.bulk-delete');
+    Route::get('students/export-pdf', [StudentsController::class, 'exportPdf'])->name('students.export-pdf');
     Route::post('students', [StudentsController::class, 'store'])->name('students.store');
     Route::post('students/{student}/guardian', [StudentsController::class, 'storeGuardian'])->name('students.guardian.store');
     Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
@@ -48,6 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('classes/allocations/{id}', [AcademicManagementController::class, 'destroyAllocation'])->name('classes.allocations.destroy');
     Route::get('classes/create', [AcademicManagementController::class, 'createClass'])->name('classes.create');
     Route::post('classes', [AcademicManagementController::class, 'storeClass'])->name('classes.store');
+    Route::post('classes/auto-create', [AcademicManagementController::class, 'autoCreateClasses'])->name('classes.auto-create');
     Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
     Route::get('classes/{id}/subjects', [AcademicManagementController::class, 'classSubjects'])->name('classes.subjects');
     Route::get('classes/{id}', [AcademicManagementController::class, 'showClass'])->name('classes.show');

@@ -2,17 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Academic\GradeLevel;
+use App\Models\Academic\SchoolClass;
+use App\Models\Academic\Stream;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentsController extends Controller
 {
@@ -24,7 +30,7 @@ class StudentsController extends Controller
         $gender = (string) $request->string('gender');
         $boardingStatus = (string) $request->string('boarding_status');
         $county = trim((string) $request->string('county'));
-        $perPage = min(max((int) $request->integer('per_page', 15), 5), 100);
+        $perPage = min(max((int) $request->integer('per_page', 15), 5), 500);
 
         $query = Student::query()
             ->select('students.*')
@@ -194,6 +200,11 @@ class StudentsController extends Controller
 
     public function show(Student $student): Response
     {
+        if (auth()->user()?->hasRole('parent')) {
+            $guardian = auth()->user()->guardian;
+            abort_unless($guardian && $guardian->students()->whereKey($student->id)->exists(), 403);
+        }
+
         $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,user_id,first_name,last_name,phone,email']);
 
         return Inertia::render('students/Show', [
@@ -231,6 +242,9 @@ class StudentsController extends Controller
 
     public function edit(Student $student): Response
     {
+        $student->load(['guardians.user']);
+        $linkedGuardian = $student->guardians->firstWhere('user_id', '!=', null);
+
         return Inertia::render('students/Edit', [
             'student' => [
                 'id' => $student->id,
@@ -240,18 +254,37 @@ class StudentsController extends Controller
                 'admission_number' => $student->admission_number,
                 'gender' => $student->gender,
                 'date_of_birth' => optional($student->date_of_birth)?->format('Y-m-d'),
+                'grade_id' => DB::table('classes')->where('id', $student->current_class_id)->value('grade_level_id'),
                 'class_id' => $student->current_class_id,
                 'county' => $student->county,
                 'boarding_status' => $student->boarding_status,
                 'status' => $student->status,
+                'guardian' => $linkedGuardian ? [
+                    'name' => trim($linkedGuardian->first_name . ' ' . $linkedGuardian->last_name),
+                    'email' => $linkedGuardian->email,
+                    'phone' => $linkedGuardian->phone,
+                    'has_login' => (bool) $linkedGuardian->user_id,
+                ] : null,
             ],
-            'classes' => DB::table('classes')->select('id', 'name')->orderBy('name')->get(),
+            'grades' => DB::table('grade_levels')->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'classes' => DB::table('classes')
+                ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
+                ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
+                ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
+                ->orderBy('grade_levels.level_order')
+                ->orderBy('classes.name')
+                ->get(),
             'counties' => Student::query()->whereNotNull('county')->distinct()->orderBy('county')->pluck('county'),
         ]);
     }
 
     public function update(Request $request, Student $student): RedirectResponse
     {
+        $student->load(['guardians.user']);
+        $existingGuardian = $student->guardians->firstWhere('user_id', '!=', null);
+        $existingGuardianUserId = $existingGuardian?->user_id;
+        $existingGuardianId = $existingGuardian?->id;
+
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
@@ -268,22 +301,48 @@ class StudentsController extends Controller
             'county' => ['nullable', 'string', 'max:255'],
             'boarding_status' => ['required', Rule::in(['day', 'boarding'])],
             'status' => ['required', Rule::in(['active', 'inactive', 'graduated', 'transferred', 'withdrawn', 'suspended'])],
+            'guardian_name' => ['nullable', 'string', 'max:255'],
+            'guardian_email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($existingGuardianUserId),
+                Rule::unique('guardians', 'email')->ignore($existingGuardianId),
+            ],
+            'guardian_phone' => ['nullable', 'string', 'max:50'],
+            'guardian_password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
-        $student->update([
-            'first_name' => $validated['first_name'],
-            'middle_name' => $validated['middle_name'] ?? null,
-            'last_name' => $validated['last_name'],
-            'admission_number' => $validated['admission_number'] ?? null,
-            'gender' => $validated['gender'],
-            'date_of_birth' => $validated['date_of_birth'],
-            'current_class_id' => $validated['class_id'] ?? null,
-            'county' => $validated['county'] ?? null,
-            'boarding_status' => $validated['boarding_status'],
-            'status' => $validated['status'],
-        ]);
+        $guardianProvided = filled($validated['guardian_name'] ?? null)
+            || filled($validated['guardian_email'] ?? null)
+            || filled($validated['guardian_phone'] ?? null)
+            || filled($validated['guardian_password'] ?? null);
 
-        return redirect()->route('students.index')->with('success', 'Student updated successfully.');
+        DB::transaction(function () use ($student, $validated, $guardianProvided) {
+            $student->update([
+                'first_name' => $validated['first_name'],
+                'middle_name' => $validated['middle_name'] ?? null,
+                'last_name' => $validated['last_name'],
+                'admission_number' => $validated['admission_number'] ?? null,
+                'gender' => $validated['gender'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'current_class_id' => $validated['class_id'] ?? null,
+                'county' => $validated['county'] ?? null,
+                'boarding_status' => $validated['boarding_status'],
+                'status' => $validated['status'],
+            ]);
+
+            if ($guardianProvided) {
+                $this->upsertGuardianAccountForStudent($student, [
+                    'name' => $validated['guardian_name'] ?? null,
+                    'email' => $validated['guardian_email'] ?? null,
+                    'phone' => $validated['guardian_phone'] ?? null,
+                    'password' => $validated['guardian_password'] ?? null,
+                ]);
+            }
+        });
+
+        return redirect()->route('students.show', $student)->with('success', 'Student updated successfully.');
     }
 
     public function suspend(Student $student): RedirectResponse
@@ -305,6 +364,44 @@ class StudentsController extends Controller
         $student->delete();
 
         return redirect()->route('students.index')->with('success', 'Student deleted successfully.');
+    }
+
+    public function bulkDelete(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => ['integer', 'exists:students,id'],
+        ]);
+
+        Student::whereIn('id', $validated['student_ids'])->delete();
+
+        return redirect()->route('students.index')->with('success', count($validated['student_ids']) . ' students deleted successfully.');
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $classId = $request->integer('class_id');
+        $gender = (string) $request->string('gender');
+        $boardingStatus = (string) $request->string('boarding_status');
+        $county = trim((string) $request->string('county'));
+
+        $students = Student::query()
+            ->with(['currentClass:id,name,code'])
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))
+            ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
+            ->when($boardingStatus !== '' && $boardingStatus !== 'all', fn ($q) => $q->where('boarding_status', $boardingStatus))
+            ->when($county !== '', fn ($q) => $q->where('county', $county))
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+
+        $pdf = Pdf::loadView('reports.students-pdf', compact('students'));
+        
+        return $pdf->download('students-list-' . now()->format('Y-m-d') . '.pdf');
     }
 
     public function promote(Request $request): RedirectResponse
@@ -345,6 +442,7 @@ class StudentsController extends Controller
 
         DB::transaction(function () use ($students, $currentTermId, $actorId, &$promoted, &$skipped) {
             foreach ($students as $student) {
+                // Find next grade level
                 $nextGrade = DB::table('grade_levels')
                     ->where('school_id', $student->school_id)
                     ->where('level_order', $student->level_order + 1)
@@ -355,22 +453,46 @@ class StudentsController extends Controller
                     continue;
                 }
 
+                // Try to find if there is a next academic year
+                $currentYear = DB::table('academic_years')->where('id', $student->academic_year_id)->first();
+                $nextYear = null;
+                if ($currentYear) {
+                    $nextYear = DB::table('academic_years')
+                        ->where('school_id', $student->school_id)
+                        ->where('start_date', '>', $currentYear->end_date)
+                        ->orderBy('start_date')
+                        ->first();
+                }
+
+                $targetYearId = $nextYear ? $nextYear->id : $student->academic_year_id;
+
                 $nextClassQuery = DB::table('classes')
                     ->where('school_id', $student->school_id)
-                    ->where('academic_year_id', $student->academic_year_id)
+                    ->where('academic_year_id', $targetYearId)
                     ->where('grade_level_id', $nextGrade->id);
 
+                // Match stream if possible
                 if ($student->stream_id) {
                     $nextClassQuery->where('stream_id', $student->stream_id);
                 }
 
                 $nextClass = $nextClassQuery->first();
 
+                // If no match with stream, try to find any class in that grade/year
+                if (!$nextClass && $student->stream_id) {
+                    $nextClass = DB::table('classes')
+                        ->where('school_id', $student->school_id)
+                        ->where('academic_year_id', $targetYearId)
+                        ->where('grade_level_id', $nextGrade->id)
+                        ->first();
+                }
+
                 if (!$nextClass) {
                     $skipped++;
                     continue;
                 }
 
+                // Update current enrollment to 'promoted'
                 DB::table('student_enrollments')
                     ->where('student_id', $student->student_id)
                     ->where('academic_year_id', $student->academic_year_id)
@@ -381,6 +503,7 @@ class StudentsController extends Controller
                         'updated_at' => now(),
                     ]);
 
+                // Update student's current class
                 DB::table('students')
                     ->where('id', $student->student_id)
                     ->update([
@@ -388,18 +511,28 @@ class StudentsController extends Controller
                         'updated_at' => now(),
                     ]);
 
+                // Create new enrollment in the target year/class
                 $exists = DB::table('student_enrollments')
                     ->where('student_id', $student->student_id)
                     ->where('class_id', $nextClass->id)
-                    ->where('academic_year_id', $student->academic_year_id)
+                    ->where('academic_year_id', $targetYearId)
                     ->exists();
 
                 if (!$exists) {
+                    // Try to find if there is a term in the next year
+                    $targetTermId = $currentTermId;
+                    if ($nextYear) {
+                        $targetTermId = DB::table('academic_terms')
+                            ->where('academic_year_id', $nextYear->id)
+                            ->orderBy('start_date')
+                            ->value('id') ?? $currentTermId;
+                    }
+
                     DB::table('student_enrollments')->insert([
                         'student_id' => $student->student_id,
                         'class_id' => $nextClass->id,
-                        'academic_year_id' => $student->academic_year_id,
-                        'academic_term_id' => $currentTermId,
+                        'academic_year_id' => $targetYearId,
+                        'academic_term_id' => $targetTermId,
                         'enrollment_date' => now()->toDateString(),
                         'enrollment_type' => 'promoted',
                         'status' => 'active',
@@ -644,5 +777,498 @@ class StudentsController extends Controller
         ]);
 
         return $guardian;
+    }
+
+    protected function upsertGuardianAccountForStudent(Student $student, array $data): Guardian
+    {
+        $existingGuardian = $student->guardians()->whereNotNull('user_id')->first();
+
+        if ($existingGuardian) {
+            $user = $existingGuardian->user;
+            $nameParts = preg_split('/\s+/', trim((string) ($data['name'] ?: $existingGuardian->full_name))) ?: [];
+            $firstName = array_shift($nameParts) ?: $existingGuardian->first_name;
+            $lastName = count($nameParts) ? array_pop($nameParts) : $existingGuardian->last_name;
+            $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
+
+            $user?->update(array_filter([
+                'name' => $data['name'] ?: $existingGuardian->full_name,
+                'email' => $data['email'] ?: $existingGuardian->email,
+                'phone' => $data['phone'] ?: $existingGuardian->phone,
+                'password' => $data['password'] ?: null,
+            ], fn ($value) => $value !== null && $value !== ''));
+
+            $existingGuardian->update([
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+                'email' => $data['email'] ?: $existingGuardian->email,
+                'phone' => $data['phone'] ?: $existingGuardian->phone,
+            ]);
+
+            return Guardian::query()->findOrFail($existingGuardian->id);
+        }
+
+        return $this->createGuardianAccountForStudent($student, [
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'phone' => $data['phone'],
+            'password' => $data['password'],
+        ]);
+    }
+
+    public function guardianDashboard(): Response
+    {
+        $guardian = auth()->user()?->guardian;
+        abort_unless($guardian, 403);
+
+        $guardian->load(['students.currentClass:id,name,code']);
+
+        return Inertia::render('guardians/Portal', [
+            'guardian' => [
+                'id' => $guardian->id,
+                'name' => $guardian->full_name,
+                'email' => $guardian->email,
+                'phone' => $guardian->phone,
+            ],
+            'students' => $guardian->students->map(fn ($student) => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'admission_number' => $student->admission_number,
+                'class' => $student->currentClass?->name,
+                'status' => $student->status,
+            ])->values(),
+        ]);
+    }
+
+    public function downloadTemplate(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="students_bulk_upload_template.csv"',
+        ];
+
+        $columns = [
+            'first_name',
+            'middle_name',
+            'last_name',
+            'admission_number',
+            'gender',
+            'date_of_birth',
+            'grade_name',
+            'grade_code',
+            'grade_level_order',
+            'grade_category',
+            'stream_name',
+            'stream_code',
+            'class_name',
+            'class_code',
+            'county',
+            'boarding_status',
+            'status',
+            'guardian_name',
+            'guardian_email',
+            'guardian_phone',
+            'guardian_password',
+        ];
+
+        $sample = [
+            'John',
+            'Kamau',
+            'Mwangi',
+            'STU1001',
+            'male',
+            '2014-05-21',
+            'Grade 5',
+            'G5',
+            '5',
+            'Primary',
+            'West',
+            'W',
+            'Grade 5 West',
+            'G5-W',
+            'Kiambu',
+            'day',
+            'active',
+            'Jane Mwangi',
+            'jane.mwangi@example.com',
+            '+254700000001',
+            'Password123',
+        ];
+
+        $callback = function () use ($columns, $sample) {
+            $handle = fopen('php://output', 'w');
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, $columns);
+            fputcsv($handle, $sample);
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function bulkUpload(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $schoolId = DB::table('schools')->value('id');
+        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id')
+            ?? DB::table('academic_years')->orderByDesc('start_date')->value('id');
+
+        if (!$schoolId || !$academicYearId) {
+            return back()->with('error', 'School or academic year setup is missing, so bulk upload cannot continue.');
+        }
+
+        try {
+            $rows = $this->parseStudentCsv($validated['file']->getRealPath());
+
+            if (count($rows) === 0) {
+                return back()->with('error', 'The uploaded CSV file is empty.');
+            }
+
+            $createdStudents = 0;
+            $updatedStudents = 0;
+            $createdGrades = 0;
+            $createdStreams = 0;
+            $createdClasses = 0;
+            $guardianAccounts = 0;
+
+            DB::transaction(function () use (
+                $rows,
+                $schoolId,
+                $academicYearId,
+                &$createdStudents,
+                &$updatedStudents,
+                &$createdGrades,
+                &$createdStreams,
+                &$createdClasses,
+                &$guardianAccounts
+            ) {
+                foreach ($rows as $index => $row) {
+                    $line = $index + 2;
+                    $normalized = $this->normalizeStudentImportRow($row, $line);
+                    $grade = $this->firstOrCreateImportGrade($schoolId, $normalized, $createdGrades);
+                    $stream = $this->firstOrCreateImportStream($schoolId, $normalized, $createdStreams);
+                    $class = $this->firstOrCreateImportClass($schoolId, $academicYearId, $grade, $stream, $normalized, $createdClasses);
+
+                    $student = Student::query()->where('admission_number', $normalized['admission_number'])->first();
+
+                    $studentPayload = [
+                        'school_id' => $schoolId,
+                        'first_name' => $normalized['first_name'],
+                        'middle_name' => $normalized['middle_name'],
+                        'last_name' => $normalized['last_name'],
+                        'admission_number' => $normalized['admission_number'],
+                        'gender' => $normalized['gender'],
+                        'date_of_birth' => $normalized['date_of_birth'],
+                        'admission_date' => now()->toDateString(),
+                        'admission_class_id' => $class?->id,
+                        'current_class_id' => $class?->id,
+                        'county' => $normalized['county'],
+                        'boarding_status' => $normalized['boarding_status'],
+                        'status' => $normalized['status'],
+                        'nationality' => 'Kenyan',
+                    ];
+
+                    if ($student) {
+                        $student->update($studentPayload);
+                        $updatedStudents++;
+                    } else {
+                        $student = Student::create($studentPayload);
+                        $createdStudents++;
+                    }
+
+                    if ($class) {
+                        $this->syncEnrollmentForImportedStudent($student, $class->id, $academicYearId);
+                    }
+
+                    if ($normalized['guardian_name'] && $normalized['guardian_email'] && $normalized['guardian_phone'] && $normalized['guardian_password']) {
+                        $this->upsertImportedGuardian($student, $normalized, $guardianAccounts);
+                    }
+                }
+            });
+
+            $message = "Bulk upload complete: {$createdStudents} created, {$updatedStudents} updated, {$createdGrades} grades added, {$createdStreams} streams added, {$createdClasses} classes added";
+            if ($guardianAccounts > 0) {
+                $message .= ", {$guardianAccounts} guardian accounts processed";
+            }
+            $message .= '.';
+
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Import Error: ' . $e->getMessage());
+        }
+    }
+
+    protected function parseStudentCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        if (!$handle) {
+            throw new \RuntimeException('Unable to read the uploaded CSV file.');
+        }
+
+        $header = fgetcsv($handle) ?: [];
+        $header = array_map(fn ($value) => trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value)), $header);
+
+        $requiredHeaders = [
+            'first_name',
+            'last_name',
+            'admission_number',
+            'gender',
+            'date_of_birth',
+        ];
+
+        foreach ($requiredHeaders as $required) {
+            if (!in_array($required, $header, true)) {
+                throw new \InvalidArgumentException("Missing required column: '{$required}'. Please download the template to see the correct format.");
+            }
+        }
+
+        $rows = [];
+
+        while (($data = fgetcsv($handle)) !== false) {
+            if ($data === [null] || count(array_filter($data, fn ($value) => trim((string) $value) !== '')) === 0) {
+                continue;
+            }
+
+            $row = [];
+            foreach ($header as $index => $column) {
+                $row[$column] = isset($data[$index]) ? trim((string) $data[$index]) : null;
+            }
+            $rows[] = $row;
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    protected function normalizeStudentImportRow(array $row, int $line): array
+    {
+        $firstName = trim((string) ($row['first_name'] ?? ''));
+        $lastName = trim((string) ($row['last_name'] ?? ''));
+        $admissionNumber = trim((string) ($row['admission_number'] ?? ''));
+        $gender = strtolower(trim((string) ($row['gender'] ?? 'male')));
+        $dateOfBirth = trim((string) ($row['date_of_birth'] ?? ''));
+        $gradeName = trim((string) ($row['grade_name'] ?? ''));
+        $className = trim((string) ($row['class_name'] ?? ''));
+        $boardingStatus = strtolower(trim((string) ($row['boarding_status'] ?? 'day')));
+        $status = strtolower(trim((string) ($row['status'] ?? 'active')));
+
+        if ($firstName === '' || $lastName === '' || $admissionNumber === '' || $dateOfBirth === '') {
+            throw new \InvalidArgumentException("CSV line {$line}: first_name, last_name, admission_number and date_of_birth are required.");
+        }
+
+        if (!in_array($gender, ['male', 'female', 'other'], true)) {
+            throw new \InvalidArgumentException("CSV line {$line}: gender must be male, female or other.");
+        }
+
+        if (!in_array($boardingStatus, ['day', 'boarding'], true)) {
+            throw new \InvalidArgumentException("CSV line {$line}: boarding_status must be day or boarding.");
+        }
+
+        if (!in_array($status, ['active', 'inactive', 'graduated', 'transferred', 'withdrawn', 'suspended'], true)) {
+            throw new \InvalidArgumentException("CSV line {$line}: status is invalid.");
+        }
+
+        if ($gradeName === '' && $className !== '') {
+            throw new \InvalidArgumentException("CSV line {$line}: grade_name is required when class_name is provided.");
+        }
+
+        return [
+            'first_name' => $firstName,
+            'middle_name' => $this->nullableValue($row['middle_name'] ?? null),
+            'last_name' => $lastName,
+            'admission_number' => $admissionNumber,
+            'gender' => $gender,
+            'date_of_birth' => $dateOfBirth,
+            'grade_name' => $this->nullableValue($gradeName),
+            'grade_code' => $this->nullableValue($row['grade_code'] ?? null),
+            'grade_level_order' => is_numeric($row['grade_level_order'] ?? null) ? (int) $row['grade_level_order'] : null,
+            'grade_category' => $this->nullableValue($row['grade_category'] ?? null) ?? 'General',
+            'stream_name' => $this->nullableValue($row['stream_name'] ?? null),
+            'stream_code' => $this->nullableValue($row['stream_code'] ?? null),
+            'class_name' => $this->nullableValue($className),
+            'class_code' => $this->nullableValue($row['class_code'] ?? null),
+            'county' => $this->nullableValue($row['county'] ?? null),
+            'boarding_status' => $boardingStatus,
+            'status' => $status,
+            'guardian_name' => $this->nullableValue($row['guardian_name'] ?? null),
+            'guardian_email' => $this->nullableValue($row['guardian_email'] ?? null),
+            'guardian_phone' => $this->nullableValue($row['guardian_phone'] ?? null),
+            'guardian_password' => $this->nullableValue($row['guardian_password'] ?? null),
+        ];
+    }
+
+    protected function firstOrCreateImportGrade(int $schoolId, array $data, int &$createdGrades): ?GradeLevel
+    {
+        if (!$data['grade_name']) {
+            return null;
+        }
+
+        $grade = GradeLevel::query()
+            ->where('school_id', $schoolId)
+            ->where(function ($query) use ($data) {
+                $query->where('name', $data['grade_name']);
+                if ($data['grade_code']) {
+                    $query->orWhere('code', $data['grade_code']);
+                }
+            })
+            ->first();
+
+        if ($grade) {
+            return $grade;
+        }
+
+        $createdGrades++;
+
+        return GradeLevel::create([
+            'school_id' => $schoolId,
+            'name' => $data['grade_name'],
+            'code' => $data['grade_code'] ?: Str::upper(Str::slug($data['grade_name'], '')),
+            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::query()->where('school_id', $schoolId)->max('level_order') + 1),
+            'category' => $data['grade_category'],
+            'is_active' => true,
+        ]);
+    }
+
+    protected function firstOrCreateImportStream(int $schoolId, array $data, int &$createdStreams): ?Stream
+    {
+        if (!$data['stream_name']) {
+            return null;
+        }
+
+        $stream = Stream::query()
+            ->where('school_id', $schoolId)
+            ->where(function ($query) use ($data) {
+                $query->where('name', $data['stream_name']);
+                if ($data['stream_code']) {
+                    $query->orWhere('code', $data['stream_code']);
+                }
+            })
+            ->first();
+
+        if ($stream) {
+            return $stream;
+        }
+
+        $createdStreams++;
+
+        return Stream::create([
+            'school_id' => $schoolId,
+            'name' => $data['stream_name'],
+            'code' => $data['stream_code'] ?: Str::upper(Str::substr($data['stream_name'], 0, 3)),
+            'capacity' => 40,
+            'is_active' => true,
+        ]);
+    }
+
+    protected function firstOrCreateImportClass(int $schoolId, int $academicYearId, ?GradeLevel $grade, ?Stream $stream, array $data, int &$createdClasses): ?SchoolClass
+    {
+        if (!$grade || !$data['class_name']) {
+            return null;
+        }
+
+        $query = SchoolClass::query()
+            ->where('school_id', $schoolId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('grade_level_id', $grade->id)
+            ->where('name', $data['class_name']);
+
+        if ($stream) {
+            $query->where('stream_id', $stream->id);
+        }
+
+        $class = $query->first();
+
+        if ($class) {
+            return $class;
+        }
+
+        $createdClasses++;
+
+        return SchoolClass::create([
+            'school_id' => $schoolId,
+            'grade_level_id' => $grade->id,
+            'stream_id' => $stream?->id,
+            'academic_year_id' => $academicYearId,
+            'name' => $data['class_name'],
+            'code' => $data['class_code'] ?: Str::upper(Str::slug($data['class_name'], '-')),
+            'capacity' => 40,
+            'is_active' => true,
+        ]);
+    }
+
+    protected function syncEnrollmentForImportedStudent(Student $student, int $classId, int $academicYearId): void
+    {
+        $currentTermId = DB::table('academic_terms')->where('is_current', true)->value('id');
+
+        DB::table('student_enrollments')
+            ->where('student_id', $student->id)
+            ->where('academic_year_id', $academicYearId)
+            ->where('status', 'active')
+            ->where('class_id', '!=', $classId)
+            ->update([
+                'status' => 'transferred',
+                'end_date' => now()->toDateString(),
+                'updated_at' => now(),
+            ]);
+
+        $exists = DB::table('student_enrollments')
+            ->where('student_id', $student->id)
+            ->where('class_id', $classId)
+            ->where('academic_year_id', $academicYearId)
+            ->exists();
+
+        if (!$exists) {
+            DB::table('student_enrollments')->insert([
+                'student_id' => $student->id,
+                'class_id' => $classId,
+                'academic_year_id' => $academicYearId,
+                'academic_term_id' => $currentTermId,
+                'enrollment_date' => now()->toDateString(),
+                'enrollment_type' => 'new',
+                'status' => 'active',
+                'enrolled_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+    }
+
+    protected function upsertImportedGuardian(Student $student, array $data, int &$guardianAccounts): void
+    {
+        $guardianAccounts++;
+        $existingGuardian = Guardian::query()->where('email', $data['guardian_email'])->first();
+
+        if ($existingGuardian && $existingGuardian->user_id) {
+            $student->guardians()->syncWithoutDetaching([
+                $existingGuardian->id => [
+                    'relationship' => 'guardian',
+                    'is_primary_contact' => true,
+                    'is_emergency_contact' => true,
+                    'can_pickup' => true,
+                    'receives_reports' => true,
+                    'receives_fees_notification' => true,
+                    'is_fee_payer' => true,
+                    'updated_at' => now(),
+                ],
+            ]);
+            return;
+        }
+
+        $this->upsertGuardianAccountForStudent($student, [
+            'name' => $data['guardian_name'],
+            'email' => $data['guardian_email'],
+            'phone' => $data['guardian_phone'],
+            'password' => $data['guardian_password'],
+        ]);
+    }
+
+    protected function nullableValue(mixed $value): ?string
+    {
+        $trimmed = trim((string) $value);
+        return $trimmed === '' ? null : $trimmed;
     }
 }

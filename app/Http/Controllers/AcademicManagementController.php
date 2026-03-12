@@ -187,6 +187,7 @@ class AcademicManagementController extends Controller
         $search = trim((string) $request->string('search'));
         $gradeId = $request->integer('grade_id');
         $view = (string) $request->string('view', 'grid');
+        $perPage = min(max((int) $request->integer('per_page', 20), 5), 1000);
 
         $classes = SchoolClass::query()
             ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name'])
@@ -194,23 +195,24 @@ class AcademicManagementController extends Controller
             ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
             ->when($gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
             ->orderBy('name')
-            ->get()
-            ->map(function (SchoolClass $class) {
-                return [
-                    'id' => $class->id,
-                    'name' => $class->name,
-                    'code' => $class->code,
-                    'grade' => $class->gradeLevel?->name,
-                    'stream' => $class->stream?->name,
-                    'stream_code' => $class->stream?->code,
-                    'teacher' => null,
-                    'students' => $class->students_count,
-                    'capacity' => $class->capacity,
-                    'academic_year' => $class->academicYear?->name,
-                    'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
-                ];
-            })
-            ->values();
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $classes->getCollection()->transform(function (SchoolClass $class) {
+            return [
+                'id' => $class->id,
+                'name' => $class->name,
+                'code' => $class->code,
+                'grade' => $class->gradeLevel?->name,
+                'stream' => $class->stream?->name,
+                'stream_code' => $class->stream?->code,
+                'teacher' => null,
+                'students' => $class->students_count,
+                'capacity' => $class->capacity,
+                'academic_year' => $class->academicYear?->name,
+                'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
+            ];
+        });
 
         return Inertia::render('classes/Index', [
             'classes' => $classes,
@@ -224,6 +226,7 @@ class AcademicManagementController extends Controller
                 'search' => $search,
                 'grade_id' => $gradeId ?: null,
                 'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
+                'per_page' => $perPage,
             ],
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
         ]);
@@ -264,6 +267,125 @@ class AcademicManagementController extends Controller
         ]);
 
         return redirect()->route('classes.show', $class->id)->with('success', 'Class created successfully.');
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'class_ids' => ['required', 'array', 'min:1'],
+            'class_ids.*' => ['integer', 'exists:classes,id'],
+            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete', 'promote'])],
+        ]);
+
+        if ($validated['action'] === 'promote') {
+            return $this->bulkClassPromote($validated['class_ids']);
+        }
+
+        $query = SchoolClass::query()->whereIn('id', $validated['class_ids']);
+        match ($validated['action']) {
+            'activate' => $query->update(['is_active' => true]),
+            'deactivate' => $query->update(['is_active' => false]),
+            'delete' => $query->delete(),
+        };
+
+        return back()->with('success', 'Bulk class action completed successfully.');
+    }
+
+    protected function bulkClassPromote(array $classIds): RedirectResponse
+    {
+        $schoolId = DB::table('schools')->value('id');
+        $classes = SchoolClass::whereIn('id', $classIds)->with(['gradeLevel', 'stream'])->get();
+        $promotedCount = 0;
+        $skippedCount = 0;
+
+        DB::transaction(function () use ($classes, $schoolId, &$promotedCount, &$skippedCount) {
+            foreach ($classes as $class) {
+                // Find next grade
+                $nextGrade = GradeLevel::where('school_id', $schoolId)
+                    ->where('level_order', '>', $class->gradeLevel->level_order)
+                    ->orderBy('level_order')
+                    ->first();
+
+                if (!$nextGrade) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Find next academic year
+                $currentYear = DB::table('academic_years')->where('id', $class->academic_year_id)->first();
+                $nextYear = DB::table('academic_years')
+                    ->where('school_id', $schoolId)
+                    ->where('start_date', '>', $currentYear?->end_date ?? now())
+                    ->orderBy('start_date')
+                    ->first();
+
+                $targetYearId = $nextYear ? $nextYear->id : $class->academic_year_id;
+
+                // Find or create target class
+                $targetClass = SchoolClass::where('school_id', $schoolId)
+                    ->where('academic_year_id', $targetYearId)
+                    ->where('grade_level_id', $nextGrade->id)
+                    ->where('stream_id', $class->stream_id)
+                    ->first();
+
+                if (!$targetClass) {
+                    // Auto-create the target class if it doesn't exist
+                    $targetClass = SchoolClass::create([
+                        'school_id' => $schoolId,
+                        'academic_year_id' => $targetYearId,
+                        'grade_level_id' => $nextGrade->id,
+                        'stream_id' => $class->stream_id,
+                        'name' => $nextGrade->name . ($class->stream ? ' ' . $class->stream->name : ''),
+                        'code' => $nextGrade->code . ($class->stream ? $class->stream->code : ''),
+                        'capacity' => $class->capacity,
+                        'is_active' => true,
+                    ]);
+                }
+
+                // Move all active students
+                $enrollments = DB::table('student_enrollments')
+                    ->where('class_id', $class->id)
+                    ->where('status', 'active')
+                    ->get();
+
+                foreach ($enrollments as $enrollment) {
+                    // Check if already enrolled in target
+                    $exists = DB::table('student_enrollments')
+                        ->where('student_id', $enrollment->student_id)
+                        ->where('class_id', $targetClass->id)
+                        ->exists();
+
+                    if (!$exists) {
+                        // Get first term of target year if available
+                        $termId = DB::table('academic_terms')
+                            ->where('academic_year_id', $targetYearId)
+                            ->orderBy('start_date')
+                            ->value('id');
+
+                        DB::table('student_enrollments')->insert([
+                            'student_id' => $enrollment->student_id,
+                            'class_id' => $targetClass->id,
+                            'academic_year_id' => $targetYearId,
+                            'academic_term_id' => $termId,
+                            'status' => 'active',
+                            'enrollment_type' => 'promoted',
+                            'enrollment_date' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+
+                        // Update student's current class
+                        DB::table('students')
+                            ->where('id', $enrollment->student_id)
+                            ->update(['current_class_id' => $targetClass->id]);
+
+                        $promotedCount++;
+                    }
+                }
+            }
+        });
+
+        return back()->with('success', "Promotion complete. Promoted students from selected classes. ({$promotedCount} enrollments created)");
     }
 
     public function showClass(Request $request, int $id): Response
@@ -435,6 +557,41 @@ class AcademicManagementController extends Controller
 
     public function storeGrade(Request $request): RedirectResponse
     {
+        if ($request->boolean('is_bulk')) {
+            $validated = $request->validate([
+                'base_name' => ['required', 'string', 'max:100'],
+                'start_level' => ['required', 'integer', 'min:1'],
+                'end_level' => ['required', 'integer', 'min:1', 'gte:start_level'],
+                'category' => ['required', 'string', 'max:100'],
+                'is_active' => ['required', 'boolean'],
+            ]);
+
+            $schoolId = DB::table('schools')->value('id');
+            $created = 0;
+
+            DB::transaction(function () use ($validated, $schoolId, &$created) {
+                for ($i = $validated['start_level']; $i <= $validated['end_level']; $i++) {
+                    $name = $validated['base_name'] . ' ' . $i;
+                    $code = strtoupper(substr($validated['base_name'], 0, 1)) . $i;
+
+                    // Ensure uniqueness
+                    if (!GradeLevel::where('school_id', $schoolId)->where('code', $code)->exists()) {
+                        GradeLevel::create([
+                            'school_id' => $schoolId,
+                            'name' => $name,
+                            'code' => $code,
+                            'category' => $validated['category'],
+                            'level_order' => $i,
+                            'is_active' => $validated['is_active'],
+                        ]);
+                        $created++;
+                    }
+                }
+            });
+
+            return redirect()->route('grades.index')->with('success', "Successfully created {$created} grades.");
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', Rule::unique('grade_levels', 'code')],
@@ -449,6 +606,24 @@ class AcademicManagementController extends Controller
         $grade = GradeLevel::create([...$validated, 'school_id' => $schoolId]);
 
         return redirect()->route('grades.show', $grade->id)->with('success', 'Grade created successfully.');
+    }
+
+    public function bulkGradeAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'grade_ids' => ['required', 'array', 'min:1'],
+            'grade_ids.*' => ['integer', 'exists:grade_levels,id'],
+            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete'])],
+        ]);
+
+        $query = GradeLevel::query()->whereIn('id', $validated['grade_ids']);
+        match ($validated['action']) {
+            'activate' => $query->update(['is_active' => true]),
+            'deactivate' => $query->update(['is_active' => false]),
+            'delete' => $query->delete(),
+        };
+
+        return back()->with('success', 'Bulk grade action completed successfully.');
     }
 
     public function showGrade(int $id): Response
@@ -727,6 +902,40 @@ class AcademicManagementController extends Controller
 
     public function storeStream(Request $request): RedirectResponse
     {
+        if ($request->boolean('is_bulk')) {
+            $validated = $request->validate([
+                'names' => ['required', 'string'],
+                'capacity' => ['nullable', 'integer', 'min:1'],
+                'is_active' => ['required', 'boolean'],
+            ]);
+
+            $schoolId = DB::table('schools')->value('id');
+            $names = array_map('trim', explode(',', $validated['names']));
+            $created = 0;
+
+            DB::transaction(function () use ($names, $validated, $schoolId, &$created) {
+                foreach ($names as $name) {
+                    if (empty($name)) continue;
+                    
+                    $code = strtoupper(substr($name, 0, 3));
+                    
+                    // Ensure uniqueness
+                    if (!Stream::where('school_id', $schoolId)->where('code', $code)->exists()) {
+                        Stream::create([
+                            'school_id' => $schoolId,
+                            'name' => $name,
+                            'code' => $code,
+                            'capacity' => $validated['capacity'] ?? 40,
+                            'is_active' => $validated['is_active'],
+                        ]);
+                        $created++;
+                    }
+                }
+            });
+
+            return redirect()->route('streams.index')->with('success', "Successfully created {$created} streams.");
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', Rule::unique('streams', 'code')],
@@ -738,6 +947,68 @@ class AcademicManagementController extends Controller
         $stream = Stream::create([...$validated, 'school_id' => $schoolId]);
 
         return redirect()->route('streams.show', $stream->id)->with('success', 'Stream created successfully.');
+    }
+
+    public function autoCreateClasses(): RedirectResponse
+    {
+        $schoolId = DB::table('schools')->value('id');
+        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id') 
+            ?? DB::table('academic_years')->orderByDesc('start_date')->value('id');
+
+        if (!$academicYearId) {
+            return back()->with('error', 'No academic year found. Please create one first.');
+        }
+
+        $grades = GradeLevel::where('school_id', $schoolId)->where('is_active', true)->get();
+        $streams = Stream::where('school_id', $schoolId)->where('is_active', true)->get();
+        $created = 0;
+
+        DB::transaction(function () use ($grades, $streams, $schoolId, $academicYearId, &$created) {
+            foreach ($grades as $grade) {
+                if ($streams->isEmpty()) {
+                    // Create single class for the grade
+                    $this->createClassIfNotExists($schoolId, $academicYearId, $grade, null, $created);
+                } else {
+                    foreach ($streams as $stream) {
+                        $this->createClassIfNotExists($schoolId, $academicYearId, $grade, $stream, $created);
+                    }
+                }
+            }
+        });
+
+        return back()->with('success', "Auto-generation complete. Created {$created} new classes.");
+    }
+
+    protected function createClassIfNotExists(int $schoolId, int $academicYearId, GradeLevel $grade, ?Stream $stream, int &$created): void
+    {
+        $name = $grade->name . ($stream ? ' ' . $stream->name : '');
+        $code = $grade->code . ($stream ? $stream->code : '');
+
+        $exists = SchoolClass::where('school_id', $schoolId)
+            ->where('academic_year_id', $academicYearId)
+            ->where('grade_level_id', $grade->id)
+            ->where(function($q) use ($stream) {
+                if ($stream) {
+                    $q->where('stream_id', $stream->id);
+                } else {
+                    $q->whereNull('stream_id');
+                }
+            })
+            ->exists();
+
+        if (!$exists) {
+            SchoolClass::create([
+                'school_id' => $schoolId,
+                'academic_year_id' => $academicYearId,
+                'grade_level_id' => $grade->id,
+                'stream_id' => $stream?->id,
+                'name' => $name,
+                'code' => $code,
+                'capacity' => $stream?->capacity ?? 40,
+                'is_active' => true,
+            ]);
+            $created++;
+        }
     }
 
     public function showStream(int $id): Response

@@ -19,6 +19,8 @@ const form = useForm({
     code: '',
     capacity: '',
     is_active: true,
+    is_bulk: false,
+    names: '',
 });
 
 const submit = () => {
@@ -42,7 +44,24 @@ const submit = () => {
                 </div>
             </div>
             <form @submit.prevent="submit" class="space-y-6 rounded-xl border bg-card p-6">
-                <div class="grid gap-6 md:grid-cols-2">
+                <div class="flex items-center gap-2 pb-4 border-b">
+                    <input type="checkbox" id="is_bulk" v-model="form.is_bulk" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600" />
+                    <Label for="is_bulk" class="text-base font-semibold cursor-pointer">Bulk Creation Mode</Label>
+                </div>
+
+                <div v-if="form.is_bulk" class="grid gap-6">
+                    <div class="space-y-2">
+                        <Label for="names">Stream Names (comma separated)</Label>
+                        <textarea id="names" v-model="form.names" placeholder="North, South, East, West" class="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"></textarea>
+                        <InputError :message="form.errors.names" />
+                    </div>
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <div class="space-y-2"><Label for="bulk_capacity">Default Capacity</Label><Input id="bulk_capacity" v-model="form.capacity" type="number" min="1" /><InputError :message="form.errors.capacity" /></div>
+                        <div class="space-y-2"><Label for="bulk_is_active">Status</Label><select id="bulk_is_active" v-model="form.is_active" class="h-10 w-full rounded-md border bg-background px-3 text-sm"><option :value="true">Active</option><option :value="false">Inactive</option></select></div>
+                    </div>
+                </div>
+
+                <div v-else class="grid gap-6 md:grid-cols-2">
                     <div class="space-y-2"><Label for="name">Name</Label><Input id="name" v-model="form.name" placeholder="West" /><InputError :message="form.errors.name" /></div>
                     <div class="space-y-2"><Label for="code">Code</Label><Input id="code" v-model="form.code" placeholder="WST" /><InputError :message="form.errors.code" /></div>
                     <div class="space-y-2"><Label for="capacity">Capacity</Label><Input id="capacity" v-model="form.capacity" type="number" min="1" /><InputError :message="form.errors.capacity" /></div>

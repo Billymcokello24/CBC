@@ -24,7 +24,14 @@ interface ClassRow {
 }
 
 const props = defineProps<{
-    classes: ClassRow[];
+    classes: {
+        data: ClassRow[];
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+        links: Array<{ url: string | null; label: string; active: boolean }>;
+    };
     stats: {
         total_classes: number;
         total_students: number;
@@ -35,6 +42,7 @@ const props = defineProps<{
         search: string;
         grade_id: number | null;
         view: 'grid' | 'list';
+        per_page: number;
     };
     grades: Array<{ id: number; name: string }>;
 }>();
@@ -47,6 +55,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const searchQuery = ref(props.filters.search ?? '');
 const selectedGradeId = ref(props.filters.grade_id ? String(props.filters.grade_id) : '');
 const selectedView = ref<'grid' | 'list'>(props.filters.view ?? 'grid');
+const perPage = ref(props.filters.per_page ?? 20);
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const applyFilters = () => {
@@ -54,6 +63,7 @@ const applyFilters = () => {
         search: searchQuery.value || undefined,
         grade_id: selectedGradeId.value || undefined,
         view: selectedView.value,
+        per_page: perPage.value,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -67,22 +77,23 @@ watch(searchQuery, () => {
 });
 watch(selectedGradeId, () => applyFilters());
 watch(selectedView, () => applyFilters());
+watch(perPage, () => applyFilters());
 
 watch(
-    () => props.classes,
+    () => props.classes.data,
     () => {
-        selectedClassIds.value = selectedClassIds.value.filter((id) => props.classes.some((cls) => cls.id === id));
+        selectedClassIds.value = selectedClassIds.value.filter((id) => props.classes.data.some((cls) => cls.id === id));
     },
     { deep: true },
 );
 
-const bulkForm = useForm<{ class_ids: number[]; action: 'activate' | 'deactivate' | 'delete' | '' }>({ class_ids: [], action: '' });
+const bulkForm = useForm<{ class_ids: number[]; action: 'activate' | 'deactivate' | 'delete' | 'promote' | '' }>({ class_ids: [], action: '' });
 const selectedClassIds = ref<number[]>([]);
 const selectedCount = computed(() => selectedClassIds.value.length);
-const allSelected = computed(() => props.classes.length > 0 && props.classes.every((cls) => selectedClassIds.value.includes(cls.id)));
+const allSelected = computed(() => props.classes.data.length > 0 && props.classes.data.every((cls) => selectedClassIds.value.includes(cls.id)));
 
 const toggleAllClasses = () => {
-    selectedClassIds.value = allSelected.value ? [] : props.classes.map((cls) => cls.id);
+    selectedClassIds.value = allSelected.value ? [] : props.classes.data.map((cls) => cls.id);
 };
 
 const toggleClassSelection = (classId: number) => {
@@ -91,8 +102,13 @@ const toggleClassSelection = (classId: number) => {
         : [...selectedClassIds.value, classId];
 };
 
-const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
+const runBulkAction = (action: 'activate' | 'deactivate' | 'delete' | 'promote') => {
     if (!selectedClassIds.value.length) return;
+    
+    if (action === 'promote' && !confirm('Are you sure you want to promote all students in the selected classes? This will move them to the next grade.')) {
+        return;
+    }
+
     bulkForm.class_ids = [...selectedClassIds.value];
     bulkForm.action = action;
     bulkForm.post('/classes/bulk-action', {
@@ -121,6 +137,9 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child><Link href="/classes/allocations">Allocations</Link></Button>
+                    <Button variant="secondary" @click="router.post('/classes/auto-create')">
+                        <Plus class="mr-2 h-4 w-4" />Auto Add Classes
+                    </Button>
                     <Button as-child><Link href="/classes/create"><Plus class="mr-2 h-4 w-4" />Add Class</Link></Button>
                 </div>
             </div>
@@ -166,6 +185,9 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" size="sm" @click="selectedClassIds = []">Clear</Button>
+                    <Button variant="outline" size="sm" @click="runBulkAction('promote')" class="bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100">
+                        <GraduationCap class="mr-2 h-4 w-4" />Promote
+                    </Button>
                     <Button variant="outline" size="sm" @click="runBulkAction('activate')">Activate</Button>
                     <Button variant="outline" size="sm" @click="runBulkAction('deactivate')">Deactivate</Button>
                     <Button variant="destructive" size="sm" @click="runBulkAction('delete')">Delete</Button>
@@ -173,7 +195,7 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
             </div>
 
             <div v-if="selectedView === 'grid'" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div v-for="cls in classes" :key="cls.id" class="rounded-xl border bg-card p-6 transition-all hover:shadow-lg">
+                <div v-for="cls in classes.data" :key="cls.id" class="rounded-xl border bg-card p-6 transition-all hover:shadow-lg">
                     <div class="mb-4 flex items-start justify-between">
                         <div class="flex items-center gap-3">
                             <input type="checkbox" :checked="selectedClassIds.includes(cls.id)" @change="toggleClassSelection(cls.id)" />
@@ -236,7 +258,7 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="cls in classes" :key="cls.id" class="border-b transition-colors hover:bg-muted/50">
+                            <tr v-for="cls in classes.data" :key="cls.id" class="border-b transition-colors hover:bg-muted/50">
                                 <td class="px-4 py-3"><input type="checkbox" :checked="selectedClassIds.includes(cls.id)" @change="toggleClassSelection(cls.id)" /></td>
                                 <td class="px-4 py-3">
                                     <div class="font-medium">{{ cls.name }}</div>
@@ -255,6 +277,32 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-muted-foreground">Rows per page:</span>
+                    <select v-model="perPage" class="h-8 rounded-md border bg-background px-2 text-xs">
+                        <option :value="20">20</option>
+                        <option :value="50">50</option>
+                        <option :value="100">100</option>
+                        <option :value="200">200</option>
+                        <option :value="500">500</option>
+                        <option :value="1000">1000</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-1">
+                    <Button 
+                        v-for="link in classes.links" 
+                        :key="link.label" 
+                        variant="outline" 
+                        size="sm" 
+                        :disabled="!link.url"
+                        :class="{ 'bg-primary text-primary-foreground': link.active }"
+                        @click="link.url && router.get(link.url)"
+                        v-html="link.label"
+                    />
                 </div>
             </div>
         </div>

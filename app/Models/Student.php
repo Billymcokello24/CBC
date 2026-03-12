@@ -10,13 +10,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class Student extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'user_id', 'school_id', 'admission_number', 'upi', 'first_name', 'middle_name', 'last_name',
@@ -43,6 +42,25 @@ class Student extends Model
         return LogOptions::defaults()
             ->logOnly(['first_name', 'last_name', 'status', 'current_class_id'])
             ->logOnlyDirty();
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Student $student) {
+            // Hard delete related records in one go
+            $student->enrollments()->delete();
+            $student->previousSchools()->delete();
+            $student->statusHistory()->delete();
+            $student->attendance()->delete();
+            $student->fees()->delete();
+            
+            // For models with SoftDeletes, use forceDelete to completely remove
+            $student->documents()->forceDelete();
+            
+            // Detach relationships
+            $student->guardians()->detach();
+            $student->siblings()->detach();
+        });
     }
 
     public function user(): BelongsTo
@@ -105,6 +123,16 @@ class Student extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(StudentStatusHistory::class);
+    }
+
+    public function attendance(): HasMany
+    {
+        return $this->hasMany(\App\Models\Attendance\StudentAttendance::class);
+    }
+
+    public function fees(): HasMany
+    {
+        return $this->hasMany(\App\Models\Finance\StudentFee::class);
     }
 
     public function getFullNameAttribute(): string

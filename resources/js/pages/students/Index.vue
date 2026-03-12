@@ -15,6 +15,7 @@ import {
     ChevronDown,
     ChevronUp,
     ArrowUpCircle,
+    FileText,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
+import BulkUploadModal from './partials/BulkUploadModal.vue';
 
 interface StudentRow {
     id: number;
@@ -94,14 +96,16 @@ const selectedGender = ref(props.filters.gender ?? 'all');
 const selectedBoardingStatus = ref(props.filters.boarding_status ?? 'all');
 const selectedCounty = ref(props.filters.county ?? '');
 const showFilters = ref(props.filters.show_filters ?? true);
+const perPage = ref(props.filters.per_page ?? 15);
 
 const actionForm = useForm({});
 const promotionForm = useForm<{ student_ids: number[] }>({ student_ids: [] });
 const selectedStudentIds = ref<number[]>([]);
 const confirmOpen = ref(false);
 const promoteOpen = ref(false);
-const confirmMode = ref<'suspend' | 'activate' | 'delete'>('suspend');
+const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'bulkDelete'>('suspend');
 const selectedStudent = ref<StudentRow | null>(null);
+const bulkUploadOpen = ref(false);
 const showToast = ref(false);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -118,6 +122,7 @@ const applyFilters = (page = 1) => {
             boarding_status: selectedBoardingStatus.value !== 'all' ? selectedBoardingStatus.value : undefined,
             county: selectedCounty.value || undefined,
             show_filters: showFilters.value,
+            per_page: perPage.value,
             page,
         },
         {
@@ -134,7 +139,7 @@ watch(searchQuery, () => {
     debounceTimer = setTimeout(() => applyFilters(), 350);
 });
 
-watch([selectedStatus, selectedClassId, selectedGender, selectedBoardingStatus, selectedCounty], () => applyFilters());
+watch([selectedStatus, selectedClassId, selectedGender, selectedBoardingStatus, selectedCounty, perPage], () => applyFilters());
 
 const activeRate = computed(() => {
     if (!props.stats.total) return 0;
@@ -150,6 +155,17 @@ const exportUrl = computed(() => {
     if (selectedBoardingStatus.value !== 'all') params.set('boarding_status', selectedBoardingStatus.value);
     if (selectedCounty.value) params.set('county', selectedCounty.value);
     return `/students?${params.toString()}`;
+});
+
+const pdfExportUrl = computed(() => {
+    const params = new URLSearchParams();
+    if (searchQuery.value) params.set('search', searchQuery.value);
+    if (selectedStatus.value !== 'all') params.set('status', selectedStatus.value);
+    if (selectedClassId.value) params.set('class_id', selectedClassId.value);
+    if (selectedGender.value !== 'all') params.set('gender', selectedGender.value);
+    if (selectedBoardingStatus.value !== 'all') params.set('boarding_status', selectedBoardingStatus.value);
+    if (selectedCounty.value) params.set('county', selectedCounty.value);
+    return `/students/export-pdf?${params.toString()}`;
 });
 
 const clearFilters = () => {
@@ -182,7 +198,7 @@ watch(
     { immediate: true },
 );
 
-const openActionModal = (mode: 'suspend' | 'activate' | 'delete', student: StudentRow) => {
+const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'bulkDelete', student: StudentRow | null = null) => {
     confirmMode.value = mode;
     selectedStudent.value = student;
     confirmOpen.value = true;
@@ -194,6 +210,19 @@ const closeActionModal = () => {
 };
 
 const confirmAction = () => {
+    if (confirmMode.value === 'bulkDelete') {
+        actionForm.transform(() => ({
+            student_ids: selectedStudentIds.value
+        })).post('/students/bulk-delete', {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedStudentIds.value = [];
+                closeActionModal();
+            },
+        });
+        return;
+    }
+
     if (!selectedStudent.value) return;
 
     if (confirmMode.value === 'suspend') {
@@ -221,10 +250,12 @@ const confirmAction = () => {
 const modalTitle = computed(() => {
     if (confirmMode.value === 'activate') return 'Activate student';
     if (confirmMode.value === 'delete') return 'Delete student';
+    if (confirmMode.value === 'bulkDelete') return 'Delete selected students';
     return 'Suspend student';
 });
 
 const modalMessage = computed(() => {
+    if (confirmMode.value === 'bulkDelete') return `Are you sure you want to delete ${selectedStudentIds.value.length} selected students? This action cannot be undone.`;
     if (!selectedStudent.value) return '';
     if (confirmMode.value === 'activate') return `Activate ${selectedStudent.value.name}?`;
     if (confirmMode.value === 'delete') return `Delete ${selectedStudent.value.name}? This action will remove the record from the active list.`;
@@ -279,6 +310,14 @@ const promoteSelectedStudents = () => {
         },
     });
 };
+
+const openBulkUploadModal = () => {
+  bulkUploadOpen.value = true;
+};
+
+const exportToPDF = () => {
+    window.location.href = pdfExportUrl.value;
+};
 </script>
 
 <template>
@@ -304,14 +343,26 @@ const promoteSelectedStudents = () => {
                         <p class="text-muted-foreground">Manage student records and enrollments from the live database</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button variant="outline" as-child>
+                <div class="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" @click="exportToPDF">
+                        <FileText class="mr-2 h-4 w-4" />
+                        Export to PDF
+                    </Button>
+                    <Button variant="outline" size="sm" @click="openBulkUploadModal">
+                        <Upload class="mr-2 h-4 w-4" />
+                        Bulk Upload
+                    </Button>
+                    <Button v-if="selectedCount > 0" variant="destructive" size="sm" @click="openActionModal('bulkDelete')">
+                        <Trash2 class="mr-2 h-4 w-4" />
+                        Delete Selected ({{ selectedCount }})
+                    </Button>
+                    <Button variant="outline" size="sm" as-child>
                         <a :href="exportUrl">
                             <Download class="mr-2 h-4 w-4" />
-                            Export View
+                            Export CSV
                         </a>
                     </Button>
-                    <Button as-child>
+                    <Button size="sm" as-child>
                         <Link href="/students/create">
                             <Plus class="mr-2 h-4 w-4" />
                             Add Student
@@ -319,24 +370,25 @@ const promoteSelectedStudents = () => {
                     </Button>
                 </div>
             </div>
+
             <!-- Stats -->
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 dark:from-blue-950/50 dark:to-blue-900/30">
+                <div class="rounded-xl border bg-linear-to-br from-blue-50 to-blue-100/50 p-4 dark:from-blue-950/50 dark:to-blue-900/30">
                     <div class="text-sm text-muted-foreground">Total Students</div>
                     <div class="mt-1 text-3xl font-bold text-blue-600">{{ stats.total.toLocaleString() }}</div>
                     <div class="mt-1 text-xs text-green-600">{{ stats.growth }}% recent admission growth</div>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-4 dark:from-green-950/50 dark:to-green-900/30">
+                <div class="rounded-xl border bg-linear-to-br from-green-50 to-green-100/50 p-4 dark:from-green-950/50 dark:to-green-900/30">
                     <div class="text-sm text-muted-foreground">Active</div>
                     <div class="mt-1 text-3xl font-bold text-green-600">{{ stats.active.toLocaleString() }}</div>
                     <div class="mt-1 text-xs text-muted-foreground">{{ activeRate }}% of total</div>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-indigo-50 to-indigo-100/50 p-4 dark:from-indigo-950/50 dark:to-indigo-900/30">
+                <div class="rounded-xl border bg-linear-to-br from-indigo-50 to-indigo-100/50 p-4 dark:from-indigo-950/50 dark:to-indigo-900/30">
                     <div class="text-sm text-muted-foreground">Boys</div>
                     <div class="mt-1 text-3xl font-bold text-indigo-600">{{ stats.boys.toLocaleString() }}</div>
                     <div class="mt-1 text-xs text-muted-foreground">Live from MySQL</div>
                 </div>
-                <div class="rounded-xl border bg-gradient-to-br from-pink-50 to-pink-100/50 p-4 dark:from-pink-950/50 dark:to-pink-900/30">
+                <div class="rounded-xl border bg-linear-to-br from-pink-50 to-pink-100/50 p-4 dark:from-pink-950/50 dark:to-pink-900/30">
                     <div class="text-sm text-muted-foreground">Girls</div>
                     <div class="mt-1 text-3xl font-bold text-pink-600">{{ stats.girls.toLocaleString() }}</div>
                     <div class="mt-1 text-xs text-muted-foreground">Live from MySQL</div>
@@ -448,7 +500,7 @@ const promoteSelectedStudents = () => {
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
-                                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-primary/20 to-primary/10 text-sm font-semibold text-primary">
                                             {{ student.name.charAt(0) }}
                                         </div>
                                         <div>
@@ -512,26 +564,39 @@ const promoteSelectedStudents = () => {
                 </div>
                 <div class="flex flex-col gap-3 border-t px-4 py-3 md:flex-row md:items-center md:justify-between">
                     <p class="text-sm text-muted-foreground">{{ pageLabel }}</p>
-                    <div class="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            :disabled="students.current_page <= 1"
-                            @click="applyFilters(students.current_page - 1)"
-                        >
-                            Previous
-                        </Button>
-                        <span class="text-sm text-muted-foreground">
-                            Page {{ students.current_page }} of {{ students.last_page }}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            :disabled="students.current_page >= students.last_page"
-                            @click="applyFilters(students.current_page + 1)"
-                        >
-                            Next
-                        </Button>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-medium text-muted-foreground">Per page:</label>
+                            <select v-model="perPage" class="h-8 rounded-md border bg-background px-2 text-xs">
+                                <option :value="15">15</option>
+                                <option :value="20">20</option>
+                                <option :value="50">50</option>
+                                <option :value="100">100</option>
+                                <option :value="200">200</option>
+                                <option :value="500">500</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                :disabled="students.current_page <= 1"
+                                @click="applyFilters(students.current_page - 1)"
+                            >
+                                Previous
+                            </Button>
+                            <span class="text-sm text-muted-foreground">
+                                Page {{ students.current_page }} of {{ students.last_page }}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                :disabled="students.current_page >= students.last_page"
+                                @click="applyFilters(students.current_page + 1)"
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -580,5 +645,14 @@ const promoteSelectedStudents = () => {
                 </div>
             </div>
         </div>
+        <BulkUploadModal v-model:open="bulkUploadOpen" />
     </AppLayout>
 </template>
+
+<style>
+/* Fix class name issues */
+.bg-gradient-to-br {
+  @apply bg-linear-to-br;
+}
+</style>
+
