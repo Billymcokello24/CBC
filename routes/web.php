@@ -7,6 +7,7 @@ use App\Http\Controllers\StudentsController;
 use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\CurriculumManagementController;
+use App\Http\Controllers\TeachersController;
 
 Route::inertia('/', 'Welcome', [
     'canLogin' => true,
@@ -41,9 +42,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('students/{student}', [StudentsController::class, 'destroy'])->name('students.destroy');
 
     // Teachers
-    Route::inertia('teachers', 'teachers/Index')->name('teachers.index');
-    Route::inertia('teachers/create', 'teachers/Create')->name('teachers.create');
-    Route::inertia('teachers/{id}', 'teachers/Show')->name('teachers.show');
+    Route::get('teachers', [TeachersController::class, 'index'])->name('teachers.index');
+    Route::get('teachers/create', [TeachersController::class, 'create'])->name('teachers.create');
+    Route::get('teachers/template/download', [TeachersController::class, 'downloadTemplate'])->name('teachers.template.download');
+    Route::post('teachers/bulk-upload', [TeachersController::class, 'bulkUpload'])->name('teachers.bulk-upload');
+    Route::post('teachers/bulk-delete', [TeachersController::class, 'bulkDelete'])->name('teachers.bulk-delete');
+    Route::post('teachers', [TeachersController::class, 'store'])->name('teachers.store');
+    Route::get('teachers/{teacher}', [TeachersController::class, 'show'])->name('teachers.show');
+    Route::get('teachers/{teacher}/edit', [TeachersController::class, 'edit'])->name('teachers.edit');
+    Route::put('teachers/{teacher}', [TeachersController::class, 'update'])->name('teachers.update');
+    Route::post('teachers/{teacher}/assign-class-teacher', [TeachersController::class, 'assignClassTeacher'])->name('teachers.assign-class-teacher');
+    Route::delete('teachers/{teacher}', [TeachersController::class, 'destroy'])->name('teachers.destroy');
 
     // Classes
     Route::get('classes', [AcademicManagementController::class, 'classes'])->name('classes.index');

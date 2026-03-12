@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -207,6 +208,15 @@ class StudentsController extends Controller
 
         $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,user_id,first_name,last_name,phone,email']);
 
+        // Define available counties (Kenya)
+        $counties = [
+            'Mombasa', 'Kwale', 'Kilifi', 'Tana River', 'Lamu', 'Taita Taveta', 'Garissa', 'Wajir', 'Mandera', 'Marsabit',
+            'Isiolo', 'Meru', 'Tharaka-Nithi', 'Embu', 'Kitui', 'Machakos', 'Makueni', 'Nyandarua', 'Nyeri', 'Kirinyaga',
+            'Murang\'a', 'Kiambu', 'Turkana', 'West Pokot', 'Samburu', 'Trans Nzoia', 'Uasin Gishu', 'Elgeyo Marakwet',
+            'Nandi', 'Baringo', 'Laikipia', 'Nakuru', 'Narok', 'Kajiado', 'Kericho', 'Bomet', 'Kakamega', 'Vihiga',
+            'Bungoma', 'Busia', 'Siaya', 'Kisumu', 'Homa Bay', 'Migori', 'Kisii', 'Nyamira', 'Nairobi'
+        ];
+
         return Inertia::render('students/Show', [
             'student' => [
                 'id' => $student->id,
@@ -216,18 +226,37 @@ class StudentsController extends Controller
                 'first_name' => $student->first_name,
                 'middle_name' => $student->middle_name,
                 'last_name' => $student->last_name,
-                'gender' => ucfirst($student->gender),
-                'date_of_birth' => optional($student->date_of_birth)?->format('Y-m-d'),
-                'age' => $student->age,
-                'class' => $student->currentClass?->name,
-                'status' => $student->status,
-                'boarding_status' => $student->boarding_status,
-                'county' => $student->county,
-                'admission_date' => optional($student->admission_date)?->format('Y-m-d'),
-                'blood_group' => $student->blood_group,
-                'religion' => $student->religion,
+                'gender' => $student->gender,
+                'date_of_birth' => optional($student->date_of_birth)->format('Y-m-d'),
+                'birth_certificate_number' => $student->birth_certificate_number,
                 'nationality' => $student->nationality,
+                'religion' => $student->religion,
+                'home_address' => $student->home_address,
+                'county' => $student->county,
+                'sub_county' => $student->sub_county,
+                'ward' => $student->ward,
                 'photo' => $student->photo,
+                'admission_date' => optional($student->admission_date)->format('Y-m-d'),
+                'admission_class_id' => $student->admission_class_id,
+                'current_class_id' => $student->current_class_id,
+                'boarding_status' => $student->boarding_status,
+                'hostel_room' => $student->hostel_room,
+                'transport_route' => $student->transport_route,
+                'pickup_point' => $student->pickup_point,
+                'blood_group' => $student->blood_group,
+                'medical_conditions' => $student->medical_conditions,
+                'allergies' => $student->allergies,
+                'has_special_needs' => (bool) $student->has_special_needs,
+                'special_needs_details' => $student->special_needs_details,
+                'primary_language' => $student->primary_language,
+                'secondary_language' => $student->secondary_language,
+                'status' => $student->status,
+                'graduation_date' => optional($student->graduation_date)->format('Y-m-d'),
+                'withdrawal_date' => optional($student->withdrawal_date)->format('Y-m-d'),
+                'withdrawal_reason' => $student->withdrawal_reason,
+                'age' => $student->age,
+                'class_name' => $student->currentClass?->name,
+                'grade_id' => DB::table('classes')->where('id', $student->current_class_id)->value('grade_level_id'),
                 'guardians' => $student->guardians->map(fn ($guardian) => [
                     'id' => $guardian->id,
                     'name' => trim($guardian->first_name . ' ' . $guardian->last_name),
@@ -235,8 +264,16 @@ class StudentsController extends Controller
                     'email' => $guardian->email,
                     'has_login' => (bool) $guardian->user_id,
                 ])->values(),
-                'has_guardian_login' => $student->guardians->contains(fn ($guardian) => (bool) $guardian->user_id),
             ],
+            'grades' => DB::table('grade_levels')->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'classes' => DB::table('classes')
+                ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
+                ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
+                ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
+                ->orderBy('grade_levels.level_order')
+                ->orderBy('classes.name')
+                ->get(),
+            'counties' => $counties,
         ]);
     }
 
@@ -286,26 +323,60 @@ class StudentsController extends Controller
         $existingGuardianId = $existingGuardian?->id;
 
         $validated = $request->validate([
+            // Personal Information
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'admission_number' => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('students', 'admission_number')->ignore($student->id)->where(fn ($q) => $q->where('school_id', $student->school_id)),
-            ],
             'gender' => ['required', Rule::in(['male', 'female', 'other'])],
             'date_of_birth' => ['required', 'date'],
-            'class_id' => ['nullable', 'integer', 'exists:classes,id'],
-            'county' => ['nullable', 'string', 'max:255'],
-            'boarding_status' => ['required', Rule::in(['day', 'boarding'])],
+            'birth_certificate_number' => ['nullable', 'string', 'max:255'],
+            'nationality' => ['nullable', 'string', 'max:255'],
+            'religion' => ['nullable', 'string', 'max:255'],
+            'primary_language' => ['nullable', 'string', 'max:255'],
+            'secondary_language' => ['nullable', 'string', 'max:255'],
+            
+            // Academic Details
+            'admission_number' => [
+                'nullable', 'string', 'max:255',
+                Rule::unique('students', 'admission_number')->ignore($student->id)->where(fn ($q) => $q->where('school_id', $student->school_id)),
+            ],
+            'upi' => ['nullable', 'string', 'max:255'],
+            'admission_date' => ['nullable', 'date'],
+            'admission_class_id' => ['nullable', 'integer', 'exists:classes,id'],
+            'current_class_id' => ['nullable', 'integer', 'exists:classes,id'],
             'status' => ['required', Rule::in(['active', 'inactive', 'graduated', 'transferred', 'withdrawn', 'suspended'])],
+            
+            // Location
+            'home_address' => ['nullable', 'string'],
+            'county' => ['nullable', 'string', 'max:255'],
+            'sub_county' => ['nullable', 'string', 'max:255'],
+            'ward' => ['nullable', 'string', 'max:255'],
+            
+            // Health
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'medical_conditions' => ['nullable', 'string'],
+            'allergies' => ['nullable', 'string'],
+            'has_special_needs' => ['nullable', 'boolean'],
+            'special_needs_details' => ['nullable', 'string'],
+            
+            // Logistics
+            'boarding_status' => ['required', Rule::in(['day', 'boarding'])],
+            'hostel_room' => ['nullable', 'string', 'max:255'],
+            'transport_route' => ['nullable', 'string', 'max:255'],
+            'pickup_point' => ['nullable', 'string', 'max:255'],
+            
+            // End of Life cycle
+            'graduation_date' => ['nullable', 'date'],
+            'withdrawal_date' => ['nullable', 'date'],
+            'withdrawal_reason' => ['nullable', 'string'],
+            
+            // Media
+            'photo' => ['nullable', 'image', 'max:2048'],
+
+            // Guardian (simplified for this context)
             'guardian_name' => ['nullable', 'string', 'max:255'],
             'guardian_email' => [
-                'nullable',
-                'email',
-                'max:255',
+                'nullable', 'email', 'max:255',
                 Rule::unique('users', 'email')->ignore($existingGuardianUserId),
                 Rule::unique('guardians', 'email')->ignore($existingGuardianId),
             ],
@@ -318,19 +389,19 @@ class StudentsController extends Controller
             || filled($validated['guardian_phone'] ?? null)
             || filled($validated['guardian_password'] ?? null);
 
-        DB::transaction(function () use ($student, $validated, $guardianProvided) {
-            $student->update([
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'] ?? null,
-                'last_name' => $validated['last_name'],
-                'admission_number' => $validated['admission_number'] ?? null,
-                'gender' => $validated['gender'],
-                'date_of_birth' => $validated['date_of_birth'],
-                'current_class_id' => $validated['class_id'] ?? null,
-                'county' => $validated['county'] ?? null,
-                'boarding_status' => $validated['boarding_status'],
-                'status' => $validated['status'],
-            ]);
+        DB::transaction(function () use ($student, $validated, $guardianProvided, $request) {
+            $updateData = collect($validated)->except([
+                'photo', 'guardian_name', 'guardian_email', 'guardian_phone', 'guardian_password', 'guardian_password_confirmation'
+            ])->toArray();
+
+            if ($request->hasFile('photo')) {
+                if ($student->photo) {
+                    Storage::disk('public')->delete($student->photo);
+                }
+                $updateData['photo'] = $request->file('photo')->store('students/photos', 'public');
+            }
+
+            $student->update($updateData);
 
             if ($guardianProvided) {
                 $this->upsertGuardianAccountForStudent($student, [
@@ -342,7 +413,7 @@ class StudentsController extends Controller
             }
         });
 
-        return redirect()->route('students.show', $student)->with('success', 'Student updated successfully.');
+        return redirect()->route('students.show', $student)->with('success', 'Student profile updated successfully.');
     }
 
     public function suspend(Student $student): RedirectResponse
