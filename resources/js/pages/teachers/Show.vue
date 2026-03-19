@@ -6,7 +6,8 @@ import {
     BookOpen, FileText, Settings, Edit,
     Camera, CheckCircle2, ShieldCheck,
     Building2, Hash, Contact,
-    Globe, Trash2, Save, X, Plus
+    Globe, Trash2, Save, X, Plus,
+    Loader2, AlertCircle
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -14,8 +15,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import InputError from '@/components/InputError.vue';
 import type { BreadcrumbItem } from '@/types';
+
+interface AvailableClass {
+    id: number;
+    name: string;
+    grade: string | null;
+    is_assigned: boolean;
+    current_teacher: string | null;
+}
 
 interface Teacher {
     id: number;
@@ -38,6 +55,22 @@ interface Teacher {
     contract_type: string | null;
     employment_type: string | null;
     basic_salary: number | null;
+    alternate_phone: string | null;
+    address: string | null;
+    county: string | null;
+    sub_county: string | null;
+    marital_status: string | null;
+    blood_group: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_relationship: string | null;
+    bank_name: string | null;
+    bank_account_number: string | null;
+    bank_branch: string | null;
+    nhif_number: string | null;
+    nssf_number: string | null;
+    kra_pin: string | null;
+    notes: string | null;
     department: { id: number; name: string } | null;
     staff_category: { id: number; name: string } | null;
     staff_designation: { id: number; name: string } | null;
@@ -61,6 +94,7 @@ const props = defineProps<{
     departments: Array<{ id: number; name: string }>;
     categories: Array<{ id: number; name: string }>;
     designations: Array<{ id: number; name: string }>;
+    availableClasses: AvailableClass[];
     counties: string[];
 }>();
 
@@ -92,16 +126,48 @@ const form = useForm({
     employment_type: props.teacher.employment_type ?? 'Full-time',
     date_joined: props.teacher.date_joined ?? '',
     basic_salary: props.teacher.basic_salary ?? '',
+    alternate_phone: props.teacher.alternate_phone ?? '',
+    address: props.teacher.address ?? '',
+    county: props.teacher.county ?? '',
+    sub_county: props.teacher.sub_county ?? '',
+    marital_status: props.teacher.marital_status ?? '',
+    blood_group: props.teacher.blood_group ?? '',
+    emergency_contact_name: props.teacher.emergency_contact_name ?? '',
+    emergency_contact_phone: props.teacher.emergency_contact_phone ?? '',
+    emergency_contact_relationship: props.teacher.emergency_contact_relationship ?? '',
+    bank_name: props.teacher.bank_name ?? '',
+    bank_account_number: props.teacher.bank_account_number ?? '',
+    bank_branch: props.teacher.bank_branch ?? '',
+    nhif_number: props.teacher.nhif_number ?? '',
+    nssf_number: props.teacher.nssf_number ?? '',
+    kra_pin: props.teacher.kra_pin ?? '',
+    notes: props.teacher.notes ?? '',
     status: props.teacher.status,
     photo: null as File | null,
     password: '',
     password_confirmation: '',
 });
 
+const assignClassOpen = ref(false);
+const assignClassForm = useForm({
+    class_id: '',
+    role: 'primary',
+});
+
 const saveChanges = () => {
     form.put(`/teachers/${props.teacher.id}`, {
         preserveScroll: true,
         onSuccess: () => isEditing.value = false,
+    });
+};
+
+const submitClassAssignment = () => {
+    assignClassForm.post(`/teachers/${props.teacher.id}/assign-class-teacher`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            assignClassOpen.value = false;
+            assignClassForm.reset();
+        },
     });
 };
 
@@ -211,57 +277,96 @@ const handlePhotoChange = (e: Event) => {
             <div class="grid gap-6">
                 <!-- Overview Tab -->
                 <div v-if="activeTab === 'overview'" class="space-y-6">
-                    <div class="grid gap-6 md:grid-cols-2">
-                        <!-- Quick Stats Card -->
+                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <!-- Class Teacher Card -->
                         <div class="rounded-xl border bg-card p-6 shadow-sm">
-                            <h3 class="font-semibold mb-4 flex items-center gap-2">
-                                <Users class="h-5 w-5 text-purple-600" />
-                                Class Teacher of
-                            </h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-semibold flex items-center gap-2">
+                                    <Users class="h-5 w-5 text-purple-600" />
+                                    Class Teacher
+                                </h3>
+                                <Button variant="outline" @click="assignClassOpen = true" class="h-7 px-2 text-[11px]">
+                                    <Plus class="h-3 w-3 mr-1" /> Assign
+                                </Button>
+                            </div>
                             <div v-if="teacher.classes_as_teacher.length" class="space-y-3">
                                 <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                    <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 flex items-center justify-center rounded-lg bg-purple-100 text-purple-700 font-bold">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="h-10 w-10 flex items-center justify-center rounded-lg bg-purple-100 text-purple-700 font-bold shrink-0">
                                             {{ cls.name[0] }}
                                         </div>
-                                        <div>
-                                            <p class="font-medium text-sm">{{ cls.name }}</p>
+                                        <div class="min-w-0">
+                                            <p class="font-medium text-sm truncate">{{ cls.name }}</p>
                                             <p class="text-xs text-muted-foreground">{{ cls.grade_level.name }}</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="sm" as-child>
-                                        <Link :href="`/classes/${cls.id}`">View Class</Link>
+                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" as-child>
+                                        <Link :href="`/classes/${cls.id}`"><Eye class="h-4 w-4" /></Link>
                                     </Button>
                                 </div>
                             </div>
-                            <div v-else class="text-center py-6 text-muted-foreground text-sm">
+                            <div v-else class="text-center py-8 text-muted-foreground text-sm border border-dashed rounded-lg">
+                                <div class="opacity-20 mb-2"><Users class="h-8 w-8 mx-auto" /></div>
                                 Not assigned as a class teacher.
                             </div>
                         </div>
 
-                        <!-- Contact Info Card -->
+                        <!-- Contact Details -->
                         <div class="rounded-xl border bg-card p-6 shadow-sm">
-                            <h3 class="font-semibold mb-4">Contact Details</h3>
+                            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                                <Contact class="h-5 w-5 text-blue-600" />
+                                Contact Details
+                            </h3>
                             <div class="space-y-4">
-                                <div class="flex items-center gap-3 text-sm">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                                        <Mail class="h-4 w-4" />
-                                    </div>
-                                    <div v-if="!isEditing">{{ teacher.email }}</div>
-                                    <Input v-else v-model="form.email" class="h-8 py-0" />
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">PRIMARY EMAIL</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.email }}</div>
+                                    <Input v-else v-model="form.email" class="h-8 text-sm" />
                                 </div>
-                                <div class="flex items-center gap-3 text-sm">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-green-50 text-green-600">
-                                        <Phone class="h-4 w-4" />
-                                    </div>
-                                    <div v-if="!isEditing">{{ teacher.phone }}</div>
-                                    <Input v-else v-model="form.phone" class="h-8 py-0" />
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">PHONE NUMBER</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.phone }}</div>
+                                    <Input v-else v-model="form.phone" class="h-8 text-sm" />
                                 </div>
-                                <div class="flex items-center gap-3 text-sm">
-                                    <div class="h-8 w-8 flex items-center justify-center rounded-full bg-purple-50 text-purple-600">
-                                        <Calendar class="h-4 w-4" />
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="space-y-1">
+                                        <Label class="text-[10px] text-muted-foreground font-bold uppercase">GENDER</Label>
+                                        <div v-if="!isEditing" class="text-sm font-medium capitalize">{{ teacher.gender }}</div>
+                                        <select v-else v-model="form.gender" class="h-8 w-full rounded-md border bg-background px-2 text-sm">
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                        </select>
                                     </div>
-                                    <span>Joined {{ teacher.date_joined || 'date unknown' }}</span>
+                                    <div class="space-y-1">
+                                        <Label class="text-[10px] text-muted-foreground font-bold uppercase">DOB</Label>
+                                        <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.date_of_birth || '—' }}</div>
+                                        <Input v-else v-model="form.date_of_birth" type="date" class="h-8 text-sm px-1" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact -->
+                        <div class="rounded-xl border bg-card p-6 shadow-sm">
+                            <h3 class="font-semibold mb-4 flex items-center gap-2">
+                                <AlertCircle class="h-5 w-5 text-red-600" />
+                                Emergency Contact
+                            </h3>
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTACT NAME</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.emergency_contact_name || '—' }}</div>
+                                    <Input v-else v-model="form.emergency_contact_name" class="h-8 text-sm" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">RELATIONSHIP</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium capitalize">{{ teacher.emergency_contact_relationship || '—' }}</div>
+                                    <Input v-else v-model="form.emergency_contact_relationship" class="h-8 text-sm" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTACT PHONE</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.emergency_contact_phone || '—' }}</div>
+                                    <Input v-else v-model="form.emergency_contact_phone" class="h-8 text-sm" />
                                 </div>
                             </div>
                         </div>
@@ -270,72 +375,91 @@ const handlePhotoChange = (e: Event) => {
 
                 <!-- Professional Tab -->
                 <div v-if="activeTab === 'professional'" class="space-y-6">
-                    <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
-                        <div class="border-b bg-muted/30 px-6 py-4">
-                            <h3 class="font-semibold">Employment Details</h3>
-                        </div>
-                        <div class="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">DEPARTMENT</Label>
-                                <div v-if="!isEditing" class="font-medium">{{ teacher.department?.name || '—' }}</div>
-                                <select v-else v-model="form.department_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                                </select>
+                    <div class="grid gap-6 md:grid-cols-2">
+                        <!-- Employment & Payroll -->
+                        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
+                            <div class="border-b bg-muted/30 px-6 py-4">
+                                <h3 class="font-semibold flex items-center gap-2">
+                                    <Briefcase class="h-5 w-5 text-purple-600" />
+                                    Employment & Payroll
+                                </h3>
                             </div>
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">DESIGNATION</Label>
-                                <div v-if="!isEditing" class="font-medium">{{ teacher.staff_designation?.name || '—' }}</div>
-                                <select v-else v-model="form.staff_designation_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option v-for="desig in designations" :key="desig.id" :value="desig.id">{{ desig.name }}</option>
-                                </select>
-                            </div>
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">CONTRACT TYPE</Label>
-                                <div v-if="!isEditing" class="font-medium">{{ teacher.contract_type || '—' }}</div>
-                                <select v-else v-model="form.contract_type" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option value="Permanent">Permanent</option>
-                                    <option value="Contract">Contract</option>
-                                    <option value="Part-time">Part-time</option>
-                                </select>
-                            </div>
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">BASIC SALARY</Label>
-                                <div v-if="!isEditing" class="font-medium">KES {{ teacher.basic_salary?.toLocaleString() || '0' }}</div>
-                                <Input v-else v-model="form.basic_salary" type="number" class="h-9" />
-                            </div>
-                            <div v-if="isEditing" class="space-y-1 md:col-span-2">
-                                <Label class="text-xs text-muted-foreground font-semibold">ACCOUNT PASSWORD (LEAVE BLANK TO KEEP CURRENT)</Label>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <Input v-model="form.password" type="password" placeholder="New Password" class="h-9" />
-                                    <Input v-model="form.password_confirmation" type="password" placeholder="Confirm" class="h-9" />
+                            <div class="p-6 grid gap-6 sm:grid-cols-2">
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DEPARTMENT</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium truncate">{{ teacher.department?.name || '—' }}</div>
+                                    <select v-else v-model="form.department_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                                        <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DESIGNATION</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium truncate">{{ teacher.staff_designation?.name || '—' }}</div>
+                                    <select v-else v-model="form.staff_designation_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                                        <option v-for="desig in designations" :key="desig.id" :value="desig.id">{{ desig.name }}</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTRACT TYPE</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.contract_type || '—' }}</div>
+                                    <select v-else v-model="form.contract_type" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
+                                        <option value="Permanent">Permanent</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Part-time">Part-time</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">BASIC SALARY</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">KES {{ Number(teacher.basic_salary).toLocaleString() }}</div>
+                                    <Input v-else v-model="form.basic_salary" type="number" class="h-9" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">BANK NAME</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.bank_name || '—' }}</div>
+                                    <Input v-else v-model="form.bank_name" class="h-9" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">ACCOUNT NUMBER</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.bank_account_number || '—' }}</div>
+                                    <Input v-else v-model="form.bank_account_number" class="h-9" />
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
-                        <div class="border-b bg-muted/30 px-6 py-4">
-                            <h3 class="font-semibold">Personal Backup Information</h3>
-                        </div>
-                        <div class="p-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">ID / PASSPORT</Label>
-                                <div v-if="!isEditing" class="font-medium">{{ teacher.id_number || '—' }}</div>
-                                <Input v-else v-model="form.id_number" class="h-9" />
+                        <!-- Statutory Details -->
+                        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
+                            <div class="border-b bg-muted/30 px-6 py-4">
+                                <h3 class="font-semibold flex items-center gap-2">
+                                    <ShieldCheck class="h-5 w-5 text-indigo-600" />
+                                    Statutory Details
+                                </h3>
                             </div>
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">GENDER</Label>
-                                <div v-if="!isEditing" class="font-medium capitalize">{{ teacher.gender }}</div>
-                                <select v-else v-model="form.gender" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
-                            <div class="space-y-1">
-                                <Label class="text-xs text-muted-foreground font-semibold">DATE OF BIRTH</Label>
-                                <div v-if="!isEditing" class="font-medium">{{ teacher.date_of_birth || '—' }}</div>
-                                <Input v-else v-model="form.date_of_birth" type="date" class="h-9" />
+                            <div class="p-6 grid gap-6 sm:grid-cols-2">
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">KRA PIN</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.kra_pin || '—' }}</div>
+                                    <Input v-else v-model="form.kra_pin" class="h-9" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">NHIF NUMBER</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.nhif_number || '—' }}</div>
+                                    <Input v-else v-model="form.nhif_number" class="h-9" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">NSSF NUMBER</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.nssf_number || '—' }}</div>
+                                    <Input v-else v-model="form.nssf_number" class="h-9" />
+                                </div>
+                                <div class="space-y-1">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DATE JOINED</Label>
+                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.date_joined || '—' }}</div>
+                                    <Input v-else v-model="form.date_joined" type="date" class="h-9" />
+                                </div>
+                                <div class="col-span-full space-y-1 pt-4 border-t">
+                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase italic">NOTES / REMARKS</Label>
+                                    <div v-if="!isEditing" class="text-sm text-muted-foreground leading-relaxed">{{ teacher.notes || 'No additional notes provided.' }}</div>
+                                    <textarea v-else v-model="form.notes" class="w-full rounded-md border bg-background p-3 text-sm min-h-[100px]"></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -398,5 +522,58 @@ const handlePhotoChange = (e: Event) => {
                 </div>
             </div>
         </div>
+
+        <!-- Assign Class Modal -->
+        <Dialog :open="assignClassOpen" @update:open="assignClassOpen = $event">
+            <DialogContent class="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Assign as Class Teacher</DialogTitle>
+                    <DialogDescription>
+                        Assign <strong>{{ teacher.full_name }}</strong> to manage a class.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="grid gap-4 py-4">
+                    <div class="space-y-2">
+                        <Label>Select Class</Label>
+                        <select v-model="assignClassForm.class_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                            <option value="">Choose class...</option>
+                            <option v-for="cls in availableClasses" :key="cls.id" :value="cls.id">
+                                {{ cls.name }} ({{ cls.grade }}) {{ cls.is_assigned ? ' - Already has teacher' : '' }}
+                            </option>
+                        </select>
+                        <InputError :message="assignClassForm.errors.class_id" />
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Teacher Role</Label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="radio" v-model="assignClassForm.role" value="primary" class="h-4 w-4 text-purple-600" />
+                                Primary Teacher
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="radio" v-model="assignClassForm.role" value="assistant" class="h-4 w-4 text-purple-600" />
+                                Assistant Teacher
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div v-if="assignClassForm.class_id && availableClasses.find(c => String(c.id) === String(assignClassForm.class_id))?.is_assigned" class="rounded-lg bg-amber-50 p-3 border border-amber-200">
+                        <div class="flex gap-2">
+                            <AlertCircle class="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                            <p class="text-xs text-amber-800">
+                                This class already has <strong>{{ availableClasses.find(c => String(c.id) === String(assignClassForm.class_id))?.current_teacher }}</strong> assigned. Proceeding will replace them.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" @click="assignClassOpen = false">Cancel</Button>
+                    <Button @click="submitClassAssignment" :disabled="assignClassForm.processing">
+                        <Loader2 v-if="assignClassForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Confirm Assignment
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

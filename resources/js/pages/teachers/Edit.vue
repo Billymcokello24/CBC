@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { 
-    ArrowLeft, CheckCircle2, Users, Loader2, 
-    Save, Edit, AlertTriangle, Briefcase, 
+import {
+    ArrowLeft, CheckCircle2, Users, Loader2,
+    Save, Edit, AlertTriangle, Briefcase,
     User, Key, Trash2
 } from 'lucide-vue-next';
 import { ref } from 'vue';
@@ -288,7 +288,7 @@ const deleteTeacher = () => {
                 <DialogHeader>
                     <DialogTitle>Save Changes?</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to update the profile for <strong>{{ teacher.full_name }}</strong>?
+                        Are you sure you want to update the profile for <strong>{{ `${teacher.first_name} ${teacher.last_name}` }}</strong>?
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>

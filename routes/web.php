@@ -97,6 +97,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('streams/{id}/deactivate', [AcademicManagementController::class, 'deactivateStream'])->name('streams.deactivate');
     Route::delete('streams/{id}', [AcademicManagementController::class, 'destroyStream'])->name('streams.destroy');
 
+    // Departments
+    Route::get('departments', [AcademicManagementController::class, 'departments'])->name('departments.index');
+    Route::get('departments/create', [AcademicManagementController::class, 'createDepartment'])->name('departments.create');
+    Route::post('departments', [AcademicManagementController::class, 'storeDepartment'])->name('departments.store');
+    Route::get('departments/{id}/edit', [AcademicManagementController::class, 'editDepartment'])->name('departments.edit');
+    Route::put('departments/{id}', [AcademicManagementController::class, 'updateDepartment'])->name('departments.update');
+    Route::delete('departments/{id}', [AcademicManagementController::class, 'destroyDepartment'])->name('departments.destroy');
+
     // Guardians
     Route::inertia('guardians', 'guardians/Index')->name('guardians.index');
 

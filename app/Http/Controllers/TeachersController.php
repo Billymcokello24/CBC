@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Academic\Department;
+use App\Models\Academic\SchoolClass;
 use App\Models\StaffCategory;
 use App\Models\StaffDesignation;
 use App\Models\Teacher;
@@ -87,6 +88,22 @@ class TeachersController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
+            'alternate_phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'county' => ['nullable', 'string', 'max:100'],
+            'sub_county' => ['nullable', 'string', 'max:100'],
+            'marital_status' => ['nullable', 'string', 'max:50'],
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'nhif_number' => ['nullable', 'string', 'max:100'],
+            'nssf_number' => ['nullable', 'string', 'max:100'],
+            'kra_pin' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
@@ -136,7 +153,7 @@ class TeachersController extends Controller
             'designations' => StaffDesignation::orderBy('name')->get(['id', 'name']),
             'availableClasses' => SchoolClass::active()
                 ->forCurrentYear()
-                ->with(['gradeLevel', 'stream'])
+                ->with(['gradeLevel', 'stream', 'classTeacher'])
                 ->get()
                 ->map(fn ($cls) => [
                     'id' => $cls->id,
@@ -203,6 +220,22 @@ class TeachersController extends Controller
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
+            'alternate_phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'county' => ['nullable', 'string', 'max:100'],
+            'sub_county' => ['nullable', 'string', 'max:100'],
+            'marital_status' => ['nullable', 'string', 'max:50'],
+            'blood_group' => ['nullable', 'string', 'max:10'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account_number' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'nhif_number' => ['nullable', 'string', 'max:100'],
+            'nssf_number' => ['nullable', 'string', 'max:100'],
+            'kra_pin' => ['nullable', 'string', 'max:100'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         return DB::transaction(function () use ($validated, $request, $teacher) {

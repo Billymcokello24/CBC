@@ -269,11 +269,10 @@ class CurriculumManagementController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        DB::table('strands')->insert([
-            ...$validated,
+        DB::table('strands')->insert(array_merge($validated, [
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ]));
 
         return back()->with('success', 'Strand created successfully.');
     }
@@ -290,7 +289,7 @@ class CurriculumManagementController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        DB::table('strands')->where('id', $id)->update([...$validated, 'updated_at' => now()]);
+        DB::table('strands')->where('id', $id)->update(array_merge($validated, ['updated_at' => now()]));
         return back()->with('success', 'Strand updated successfully.');
     }
 

@@ -168,10 +168,7 @@ class AcademicManagementController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        DB::table('teacher_subjects')->where('id', $id)->update([
-            ...$validated,
-            'updated_at' => now(),
-        ]);
+        DB::table('teacher_subjects')->where('id', $id)->update(array_merge($validated, ['updated_at' => now()]));
 
         return back()->with('success', 'Subject allocation updated successfully.');
     }
@@ -603,7 +600,7 @@ class AcademicManagementController extends Controller
         ]);
 
         $schoolId = DB::table('schools')->value('id');
-        $grade = GradeLevel::create([...$validated, 'school_id' => $schoolId]);
+        $grade = GradeLevel::create(array_merge($validated, ['school_id' => $schoolId]));
 
         return redirect()->route('grades.show', $grade->id)->with('success', 'Grade created successfully.');
     }
@@ -916,9 +913,9 @@ class AcademicManagementController extends Controller
             DB::transaction(function () use ($names, $validated, $schoolId, &$created) {
                 foreach ($names as $name) {
                     if (empty($name)) continue;
-                    
+
                     $code = strtoupper(substr($name, 0, 3));
-                    
+
                     // Ensure uniqueness
                     if (!Stream::where('school_id', $schoolId)->where('code', $code)->exists()) {
                         Stream::create([
@@ -944,7 +941,7 @@ class AcademicManagementController extends Controller
         ]);
 
         $schoolId = DB::table('schools')->value('id');
-        $stream = Stream::create([...$validated, 'school_id' => $schoolId]);
+        $stream = Stream::create(array_merge($validated, ['school_id' => $schoolId]));
 
         return redirect()->route('streams.show', $stream->id)->with('success', 'Stream created successfully.');
     }
@@ -952,7 +949,7 @@ class AcademicManagementController extends Controller
     public function autoCreateClasses(): RedirectResponse
     {
         $schoolId = DB::table('schools')->value('id');
-        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id') 
+        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id')
             ?? DB::table('academic_years')->orderByDesc('start_date')->value('id');
 
         if (!$academicYearId) {
@@ -1204,5 +1201,107 @@ class AcademicManagementController extends Controller
                 'examinable' => $subjects->where('is_examinable', true)->count(),
             ],
         ]);
+    }
+
+    // Departments management
+    public function departments(Request $request): Response
+    {
+        $search = trim((string) $request->string('search'));
+        $perPage = min(max((int) $request->integer('per_page', 20), 5), 1000);
+
+        $query = \App\Models\Academic\Department::query()
+            ->with('headOfDepartment')
+            ->when($search !== '', fn($q) => $q->where('name', 'like', "%{$search}%"))
+            ->orderBy('name');
+
+        $departments = $query->paginate($perPage)->withQueryString();
+
+        $departments->getCollection()->transform(function ($dept) {
+            return [
+                'id' => $dept->id,
+                'name' => $dept->name,
+                'code' => $dept->code,
+                'description' => $dept->description,
+                'head_of_department' => $dept->headOfDepartment?->name,
+                'is_active' => (bool) $dept->is_active,
+            ];
+        });
+
+        return Inertia::render('departments/Index', [
+            'departments' => $departments,
+            'stats' => [
+                'total' => \App\Models\Academic\Department::count(),
+                'active' => \App\Models\Academic\Department::where('is_active', true)->count(),
+            ],
+            'filters' => [
+                'search' => $search,
+                'view' => $request->string('view', 'grid'),
+                'per_page' => $perPage,
+            ],
+            'teachers' => \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]),
+        ]);
+    }
+
+    public function createDepartment(): Response
+    {
+        $teachers = \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]);
+        return Inertia::render('departments/Create', [
+            'teachers' => $teachers,
+        ]);
+    }
+
+    public function storeDepartment(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string'],
+            'head_of_department_id' => ['nullable', 'exists:users,id'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $validated['school_id'] = DB::table('schools')->value('id');
+        $validated['is_active'] = $request->boolean('is_active', true);
+
+        \App\Models\Academic\Department::create($validated);
+
+        return redirect()->route('departments.index')->with('success', 'Department created successfully.');
+    }
+
+    public function editDepartment(int $id): Response
+    {
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+        $teachers = \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]);
+
+        return Inertia::render('departments/Edit', [
+            'department' => $dept,
+            'teachers' => $teachers,
+        ]);
+    }
+
+    public function updateDepartment(Request $request, int $id): RedirectResponse
+    {
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['nullable', 'string', 'max:50'],
+            'description' => ['nullable', 'string'],
+            'head_of_department_id' => ['nullable', 'exists:users,id'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $dept->update(array_merge($validated, [
+            'is_active' => $request->boolean('is_active', $dept->is_active),
+        ]));
+
+        return redirect()->route('departments.index')->with('success', 'Department updated successfully.');
+    }
+
+    public function destroyDepartment(int $id): RedirectResponse
+    {
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+        $dept->delete();
+        return back()->with('success', 'Department deleted successfully.');
     }
 }

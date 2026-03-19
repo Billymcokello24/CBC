@@ -280,12 +280,12 @@ const isActive = (href: string) => {
 
 const expandedItems = ref<string[]>(['Students', 'Assessments']);
 
-const toggleExpanded = (title: string) => {
-    const index = expandedItems.value.indexOf(title);
-    if (index > -1) {
-        expandedItems.value.splice(index, 1);
+const handleCollapsibleUpdate = (title: string, open: boolean) => {
+    const idx = expandedItems.value.indexOf(title);
+    if (open) {
+        if (idx === -1) expandedItems.value.push(title);
     } else {
-        expandedItems.value.push(title);
+        if (idx > -1) expandedItems.value.splice(idx, 1);
     }
 };
 </script>
@@ -312,7 +312,7 @@ const toggleExpanded = (title: string) => {
                         <SidebarMenuItem v-for="item in mainNavItems" :key="item.title">
                             <SidebarMenuButton
                                 as-child
-                                :is-active="isActive(item.href)"
+                                :is-active="isActive(String(item.href))"
                                 tooltip-content="Dashboard"
                             >
                                 <Link :href="item.href">
@@ -333,13 +333,14 @@ const toggleExpanded = (title: string) => {
                         <template v-for="item in academicNavItems" :key="item.title">
                             <Collapsible
                                 v-if="item.children"
-                                v-model:open="expandedItems"
+                                :open="expandedItems.includes(item.title)"
+                                @update:open="(val) => handleCollapsibleUpdate(item.title, val)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton
-                                            :is-active="isActive(item.href)"
+                                            :is-active="isActive(String(item.href))"
                                             :tooltip-content="item.title"
                                         >
                                             <component :is="item.icon" class="h-4 w-4" />
@@ -352,7 +353,7 @@ const toggleExpanded = (title: string) => {
                                             <SidebarMenuItem v-for="child in item.children" :key="child.title">
                                                 <SidebarMenuButton
                                                     as-child
-                                                    :is-active="currentPath === child.href"
+                                                    :is-active="currentPath === String(child.href)"
                                                     size="sm"
                                                 >
                                                     <Link :href="child.href">
@@ -367,7 +368,7 @@ const toggleExpanded = (title: string) => {
                             <SidebarMenuItem v-else>
                                 <SidebarMenuButton
                                     as-child
-                                    :is-active="isActive(item.href)"
+                                    :is-active="isActive(String(item.href))"
                                     :tooltip-content="item.title"
                                 >
                                     <Link :href="item.href">
@@ -394,7 +395,7 @@ const toggleExpanded = (title: string) => {
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton
-                                            :is-active="isActive(item.href)"
+                                            :is-active="isActive(String(item.href))"
                                             :tooltip-content="item.title"
                                         >
                                             <component :is="item.icon" class="h-4 w-4" />
@@ -407,7 +408,7 @@ const toggleExpanded = (title: string) => {
                                             <SidebarMenuItem v-for="child in item.children" :key="child.title">
                                                 <SidebarMenuButton
                                                     as-child
-                                                    :is-active="currentPath === child.href"
+                                                    :is-active="currentPath === String(child.href)"
                                                     size="sm"
                                                 >
                                                     <Link :href="child.href">
@@ -437,7 +438,7 @@ const toggleExpanded = (title: string) => {
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton
-                                            :is-active="isActive(item.href)"
+                                            :is-active="isActive(String(item.href))"
                                             :tooltip-content="item.title"
                                         >
                                             <component :is="item.icon" class="h-4 w-4" />
@@ -450,7 +451,7 @@ const toggleExpanded = (title: string) => {
                                             <SidebarMenuItem v-for="child in item.children" :key="child.title">
                                                 <SidebarMenuButton
                                                     as-child
-                                                    :is-active="currentPath === child.href"
+                                                    :is-active="currentPath === String(child.href)"
                                                     size="sm"
                                                 >
                                                     <Link :href="child.href">
@@ -480,7 +481,7 @@ const toggleExpanded = (title: string) => {
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton
-                                            :is-active="isActive(item.href)"
+                                            :is-active="isActive(String(item.href))"
                                             :tooltip-content="item.title"
                                         >
                                             <component :is="item.icon" class="h-4 w-4" />
@@ -493,7 +494,7 @@ const toggleExpanded = (title: string) => {
                                             <SidebarMenuItem v-for="child in item.children" :key="child.title">
                                                 <SidebarMenuButton
                                                     as-child
-                                                    :is-active="currentPath === child.href"
+                                                    :is-active="currentPath === String(child.href)"
                                                     size="sm"
                                                 >
                                                     <Link :href="child.href">
@@ -523,7 +524,7 @@ const toggleExpanded = (title: string) => {
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton
-                                            :is-active="isActive(item.href)"
+                                            :is-active="isActive(String(item.href))"
                                             :tooltip-content="item.title"
                                         >
                                             <component :is="item.icon" class="h-4 w-4" />
@@ -536,7 +537,7 @@ const toggleExpanded = (title: string) => {
                                             <SidebarMenuItem v-for="child in item.children" :key="child.title">
                                                 <SidebarMenuButton
                                                     as-child
-                                                    :is-active="currentPath === child.href"
+                                                    :is-active="currentPath === String(child.href)"
                                                     size="sm"
                                                 >
                                                     <Link :href="child.href">
