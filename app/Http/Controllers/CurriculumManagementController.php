@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Curriculum\Competency;
 use App\Models\Curriculum\LearningArea;
+use App\Models\Academic\Department;
 use App\Models\Curriculum\Subject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -121,7 +122,7 @@ class CurriculumManagementController extends Controller
         $view = (string) $request->string('view', 'grid');
 
         $subjects = Subject::query()
-            ->with('learningArea:id,name')
+            ->with(['learningArea:id,name', 'department:id,name,code'])
             ->withCount('strands')
             ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
@@ -131,6 +132,12 @@ class CurriculumManagementController extends Controller
                 'id' => $subject->id,
                 'learning_area_id' => $subject->learning_area_id,
                 'learning_area' => $subject->learningArea?->name,
+                'department_id' => $subject->department_id,
+                'department' => $subject->department ? [
+                    'id' => $subject->department->id,
+                    'name' => $subject->department->name,
+                    'code' => $subject->department->code,
+                ] : null,
                 'name' => $subject->name,
                 'code' => $subject->code,
                 'description' => $subject->description,
@@ -167,6 +174,7 @@ class CurriculumManagementController extends Controller
     {
         $validated = $request->validate([
             'learning_area_id' => ['required', 'integer', 'exists:learning_areas,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:20', Rule::unique('subjects', 'code')],
             'description' => ['nullable', 'string'],
@@ -184,6 +192,7 @@ class CurriculumManagementController extends Controller
     {
         $validated = $request->validate([
             'learning_area_id' => ['required', 'integer', 'exists:learning_areas,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:20', Rule::unique('subjects', 'code')->ignore($subject->id)],
             'description' => ['nullable', 'string'],
@@ -419,6 +428,7 @@ class CurriculumManagementController extends Controller
     {
         return Inertia::render('curriculum/CreateSubject', [
             'learningAreas' => LearningArea::query()->orderBy('display_order')->get(['id', 'name']),
+            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -481,13 +491,23 @@ class CurriculumManagementController extends Controller
 
     public function showSubject(Subject $subject): Response
     {
-        $subject->load(['learningArea:id,name', 'strands' => fn ($query) => $query->orderBy('display_order')]);
+        $subject->load([
+            'learningArea:id,name',
+            'department.headOfDepartment:id,name',
+            'strands' => fn ($query) => $query->orderBy('display_order')
+        ]);
 
         return Inertia::render('curriculum/ShowSubject', [
             'subject' => [
                 'id' => $subject->id,
                 'learning_area_id' => $subject->learning_area_id,
                 'learning_area' => $subject->learningArea?->name,
+                'department' => $subject->department ? [
+                    'id' => $subject->department->id,
+                    'name' => $subject->department->name,
+                    'code' => $subject->department->code,
+                    'head_of_department' => $subject->department->headOfDepartment?->name,
+                ] : null,
                 'name' => $subject->name,
                 'code' => $subject->code,
                 'description' => $subject->description,
@@ -511,6 +531,7 @@ class CurriculumManagementController extends Controller
             'subject' => [
                 'id' => $subject->id,
                 'learning_area_id' => $subject->learning_area_id,
+                'department_id' => $subject->department_id,
                 'name' => $subject->name,
                 'code' => $subject->code,
                 'description' => $subject->description,
@@ -520,6 +541,7 @@ class CurriculumManagementController extends Controller
                 'is_active' => $subject->is_active,
             ],
             'learningAreas' => LearningArea::query()->orderBy('display_order')->get(['id', 'name']),
+            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 

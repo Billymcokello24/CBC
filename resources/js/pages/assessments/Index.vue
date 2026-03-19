@@ -12,17 +12,25 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Assessments', href: '/assessments' },
 ];
-const assessments = ref([
-    { id: 1, title: 'Mathematics CAT 1', subject: 'Mathematics', class: 'Grade 5A', date: '2026-03-15', type: 'CAT', status: 'published', submissions: 35, total: 38 },
-    { id: 2, title: 'English Essay Writing', subject: 'English', class: 'Grade 6B', date: '2026-03-14', type: 'Assignment', status: 'in_progress', submissions: 28, total: 40 },
-    { id: 3, title: 'Science Practical', subject: 'Science', class: 'Grade 5B', date: '2026-03-13', type: 'Practical', status: 'completed', submissions: 32, total: 32 },
-    { id: 4, title: 'Kiswahili Insha', subject: 'Kiswahili', class: 'Grade 4A', date: '2026-03-12', type: 'Assignment', status: 'grading', submissions: 35, total: 35 },
-    { id: 5, title: 'Social Studies Project', subject: 'Social Studies', class: 'Grade 6A', date: '2026-03-18', type: 'Project', status: 'draft', submissions: 0, total: 42 },
-]);
+const props = defineProps<{
+    assessments: {
+        data: Array<any>;
+        links: Array<any>;
+        meta: any;
+    };
+    stats?: {
+        total: number;
+        thisWeek: number;
+        pendingGrading: number;
+        avgScore: number;
+    };
+}>();
+
 const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
         draft: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
         published: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        scheduled: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
         in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
         grading: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
         completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -33,7 +41,7 @@ const getStatusColor = (status: string) => {
 <template>
     <Head title="Assessments" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-6xl mx-auto">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
@@ -48,20 +56,20 @@ const getStatusColor = (status: string) => {
             </div>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div class="rounded-xl border bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 dark:from-amber-950/50 dark:to-amber-900/30">
-                    <div class="flex items-center gap-3"><ClipboardList class="h-5 w-5 text-amber-600" /><span class="text-sm text-muted-foreground">Total Assessments</span></div>
-                    <p class="mt-2 text-3xl font-bold text-amber-600">156</p>
+                    <div class="flex items-center gap-3"><ClipboardList class="h-5 w-5 text-amber-600" /><span class="text-sm text-muted-foreground font-medium">Total Assessments</span></div>
+                    <p class="mt-2 text-3xl font-bold text-amber-600">{{ props.stats?.total ?? 0 }}</p>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-4 dark:from-blue-950/50 dark:to-blue-900/30">
-                    <div class="flex items-center gap-3"><Calendar class="h-5 w-5 text-blue-600" /><span class="text-sm text-muted-foreground">This Week</span></div>
-                    <p class="mt-2 text-3xl font-bold text-blue-600">12</p>
+                    <div class="flex items-center gap-3"><Calendar class="h-5 w-5 text-blue-600" /><span class="text-sm text-muted-foreground font-medium">This Week</span></div>
+                    <p class="mt-2 text-3xl font-bold text-blue-600">{{ props.stats?.thisWeek ?? 0 }}</p>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 dark:from-purple-950/50 dark:to-purple-900/30">
-                    <div class="flex items-center gap-3"><FileText class="h-5 w-5 text-purple-600" /><span class="text-sm text-muted-foreground">Pending Grading</span></div>
-                    <p class="mt-2 text-3xl font-bold text-purple-600">8</p>
+                    <div class="flex items-center gap-3"><FileText class="h-5 w-5 text-purple-600" /><span class="text-sm text-muted-foreground font-medium">Pending Grading</span></div>
+                    <p class="mt-2 text-3xl font-bold text-purple-600">{{ props.stats?.pendingGrading ?? 0 }}</p>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-4 dark:from-green-950/50 dark:to-green-900/30">
-                    <div class="flex items-center gap-3"><TrendingUp class="h-5 w-5 text-green-600" /><span class="text-sm text-muted-foreground">Avg. Score</span></div>
-                    <p class="mt-2 text-3xl font-bold text-green-600">72%</p>
+                    <div class="flex items-center gap-3"><TrendingUp class="h-5 w-5 text-green-600" /><span class="text-sm text-muted-foreground font-medium">Avg. Score</span></div>
+                    <p class="mt-2 text-3xl font-bold text-green-600">{{ props.stats?.avgScore ?? 0 }}%</p>
                 </div>
             </div>
             <div class="flex flex-col gap-4 md:flex-row md:items-center">
@@ -81,29 +89,41 @@ const getStatusColor = (status: string) => {
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Class</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date</th>
-                                <th class="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Submissions</th>
+                                <th class="px-4 py-3 text-center text-sm font-medium text-muted-foreground">Marks</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="assessment in assessments" :key="assessment.id" class="border-b hover:bg-muted/50">
-                                <td class="px-4 py-3 font-medium">{{ assessment.title }}</td>
-                                <td class="px-4 py-3 text-sm">{{ assessment.subject }}</td>
-                                <td class="px-4 py-3 text-sm">{{ assessment.class }}</td>
-                                <td class="px-4 py-3"><Badge variant="outline">{{ assessment.type }}</Badge></td>
-                                <td class="px-4 py-3 text-sm">{{ assessment.date }}</td>
-                                <td class="px-4 py-3 text-center">
-                                    <span class="font-medium">{{ assessment.submissions }}</span><span class="text-muted-foreground">/{{ assessment.total }}</span>
+                            <tr v-if="assessments.data.length === 0">
+                                <td colspan="8" class="px-4 py-8 text-center text-muted-foreground">No assessments found.</td>
+                            </tr>
+                            <tr v-for="assessment in assessments.data" :key="assessment.id" class="border-b hover:bg-muted/50">
+                                <td class="px-4 py-3">
+                                    <div class="font-medium text-gray-900 font-bold capitalize">{{ assessment.title }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ assessment.teacher?.name }}</div>
                                 </td>
-                                <td class="px-4 py-3"><span :class="['rounded-full px-2 py-1 text-xs font-medium', getStatusColor(assessment.status)]">{{ assessment.status }}</span></td>
+                                <td class="px-4 py-3 text-sm font-medium">{{ assessment.subject?.name }}</td>
+                                <td class="px-4 py-3 text-sm font-bold">{{ assessment.class?.name }}</td>
+                                <td class="px-4 py-3 font-bold"><Badge variant="outline">{{ assessment.assessment_type?.name }}</Badge></td>
+                                <td class="px-4 py-3 text-sm font-bold">{{ assessment.assessment_date }}</td>
+                                <td class="px-4 py-3 text-center font-bold">
+                                    {{ assessment.total_marks }}
+                                </td>
+                                <td class="px-4 py-3"><span :class="['rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', getStatusColor(assessment.status)]">{{ assessment.status }}</span></td>
                                 <td class="px-4 py-3 text-right">
                                     <DropdownMenu>
-                                        <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                        <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4 text-indigo-600" /></Button></DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
-                                            <DropdownMenuItem><Eye class="mr-2 h-4 w-4" />View</DropdownMenuItem>
-                                            <DropdownMenuItem><Edit class="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
-                                            <DropdownMenuItem><FileText class="mr-2 h-4 w-4" />Grade</DropdownMenuItem>
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="`/assessments/${assessment.id}`" class="flex w-full items-center"><Eye class="mr-2 h-4 w-4" />View</Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="`/assessments/${assessment.id}/edit`" class="flex w-full items-center"><Edit class="mr-2 h-4 w-4" />Edit</Link>
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem as-child>
+                                                <Link :href="`/assessments/${assessment.id}/grading`" class="flex w-full items-center"><FileText class="mr-2 h-4 w-4" />Grade</Link>
+                                            </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </td>

@@ -31,6 +31,12 @@ interface SubjectRow {
     id: number;
     learning_area_id: number;
     learning_area: string | null;
+    department_id: number | null;
+    department: {
+        id: number;
+        name: string;
+        code: string;
+    } | null;
     name: string;
     code: string;
     description: string | null;
@@ -190,6 +196,11 @@ watch(
                             <div>
                                 <h2 class="text-lg font-semibold">{{ subject.name }}</h2>
                                 <p class="text-sm text-muted-foreground">{{ subject.code }} • {{ subject.learning_area || '—' }}</p>
+                                <div v-if="subject.department" class="mt-1">
+                                    <Badge variant="outline" class="text-[10px] h-4 bg-indigo-50 text-indigo-700 border-indigo-200">
+                                        {{ subject.department.name }}
+                                    </Badge>
+                                </div>
                             </div>
                         </div>
                         <DropdownMenu>
@@ -229,7 +240,12 @@ watch(
                             <tr v-for="subject in subjects" :key="subject.id" class="border-b">
                                 <td class="px-4 py-3"><input type="checkbox" :checked="selectedIds.includes(subject.id)" @change="toggleOne(subject.id)" /></td>
                                 <td class="px-4 py-3"><div class="font-medium">{{ subject.name }}</div><div class="text-xs text-muted-foreground">{{ subject.code }}</div></td>
-                                <td class="px-4 py-3 text-sm">{{ subject.learning_area || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">
+                                    <div>{{ subject.learning_area || '—' }}</div>
+                                    <div v-if="subject.department" class="text-[10px] text-indigo-600 font-medium uppercase tracking-wider">
+                                        {{ subject.department.name }}
+                                    </div>
+                                </td>
                                 <td class="px-4 py-3 text-sm">{{ subject.subject_type }}</td>
                                 <td class="px-4 py-3 text-sm">{{ subject.strands_count }}</td>
                                 <td class="px-4 py-3 text-sm">{{ subject.is_active ? 'Active' : 'Inactive' }}</td>

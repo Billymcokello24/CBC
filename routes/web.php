@@ -8,6 +8,7 @@ use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\CurriculumManagementController;
 use App\Http\Controllers\TeachersController;
+use App\Http\Controllers\AssessmentController;
 
 Route::inertia('/', 'Welcome', [
     'canLogin' => true,
@@ -101,9 +102,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('departments', [AcademicManagementController::class, 'departments'])->name('departments.index');
     Route::get('departments/create', [AcademicManagementController::class, 'createDepartment'])->name('departments.create');
     Route::post('departments', [AcademicManagementController::class, 'storeDepartment'])->name('departments.store');
+    Route::get('departments/{id}', [AcademicManagementController::class, 'showDepartment'])->name('departments.show');
     Route::get('departments/{id}/edit', [AcademicManagementController::class, 'editDepartment'])->name('departments.edit');
     Route::put('departments/{id}', [AcademicManagementController::class, 'updateDepartment'])->name('departments.update');
+    Route::patch('departments/{id}/toggle-status', [AcademicManagementController::class, 'toggleDepartmentStatus'])->name('departments.toggle-status');
     Route::delete('departments/{id}', [AcademicManagementController::class, 'destroyDepartment'])->name('departments.destroy');
+    Route::post('departments/{id}/subjects', [AcademicManagementController::class, 'storeDepartmentSubject'])->name('departments.subjects.store');
+    Route::delete('departments/{id}/subjects/{subjectId}', [AcademicManagementController::class, 'destroyDepartmentSubject'])->name('departments.subjects.destroy');
+    Route::get('departments/{id}/export-results', [AcademicManagementController::class, 'exportDepartmentResults'])->name('departments.export-results');
+    Route::get('departments/export', [AcademicManagementController::class, 'exportDepartments'])->name('departments.export');
+    Route::post('departments/bulk-delete', [AcademicManagementController::class, 'bulkDeleteDepartments'])->name('departments.bulk-delete');
 
     // Guardians
     Route::inertia('guardians', 'guardians/Index')->name('guardians.index');
@@ -146,10 +154,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('curriculum/competencies/bulk-action', [CurriculumManagementController::class, 'bulkCompetencyAction'])->name('curriculum.competencies.bulk-action');
 
     // Assessments
-    Route::inertia('assessments', 'assessments/Index')->name('assessments.index');
-    Route::inertia('assessments/create', 'assessments/Create')->name('assessments.create');
-    Route::inertia('assessments/grading', 'assessments/Grading')->name('assessments.grading');
-    Route::inertia('assessments/report-cards', 'assessments/ReportCards')->name('assessments.report-cards');
+    Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+    Route::post('assessments', [AssessmentController::class, 'store'])->name('assessments.store');
+    Route::get('assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
+    Route::get('assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
+    Route::get('assessments/{assessment}/grading', [AssessmentController::class, 'grading'])->name('assessments.grading.show');
+    Route::post('assessments/{assessment}/grading', [AssessmentController::class, 'storeGrading'])->name('assessments.store-grading');
+    Route::get('assessments/report-cards', [AssessmentController::class, 'reportCards'])->name('assessments.report-cards');
+    Route::get('assessments/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('assessments.report-cards.show');
+    Route::get('assessments/rubrics', [AssessmentController::class, 'rubrics'])->name('assessments.rubrics');
+    Route::get('assessments/rubrics/create', [AssessmentController::class, 'rubricCreate'])->name('assessments.rubrics.create');
+    Route::post('assessments/rubrics', [AssessmentController::class, 'rubricStore'])->name('assessments.rubrics.store');
+    Route::get('assessments/rubrics/{id}/edit', [AssessmentController::class, 'rubricEdit'])->name('assessments.rubrics.edit');
+    Route::put('assessments/rubrics/{id}', [AssessmentController::class, 'rubricUpdate'])->name('assessments.rubrics.update');
+    
+    // Results & Bulk Uploads
+    Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
+    Route::get('assessments/results/export', [AssessmentController::class, 'exportResults'])->name('assessments.results.export');
+    Route::post('assessments/results/import', [AssessmentController::class, 'importResults'])->name('assessments.results.import');
+    Route::get('assessments/import-template', [AssessmentController::class, 'importTemplate'])->name('assessments.import-template');
+    Route::post('assessments/import', [AssessmentController::class, 'import'])->name('assessments.import');
 
     // Attendance
     Route::inertia('attendance', 'attendance/Index')->name('attendance.index');

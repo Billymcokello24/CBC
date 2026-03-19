@@ -27,12 +27,24 @@ class Department extends Model
 
     public function headOfDepartment(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'head_of_department_id');
+        return $this->belongsTo(Teacher::class, 'head_of_department_id');
     }
 
     public function teachers(): HasMany
     {
         return $this->hasMany(Teacher::class);
+    }
+
+    public function subjects(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            \App\Models\Curriculum\Subject::class,
+            \App\Models\Academic\SchoolSubject::class,
+            'department_id',
+            'id',
+            'id',
+            'subject_id'
+        );
     }
 
     public function scopeActive($query)

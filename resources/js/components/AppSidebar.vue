@@ -121,6 +121,7 @@ const curriculumNavItems = [
             { title: 'Grading', href: '/assessments/grading' },
             { title: 'Report Cards', href: '/assessments/report-cards' },
             { title: 'Rubrics', href: '/assessments/rubrics' },
+            { title: 'Results', href: '/assessments/results' },
         ],
     },
     {
@@ -278,7 +279,7 @@ const isActive = (href: string) => {
     return currentPath.value.startsWith(href);
 };
 
-const expandedItems = ref<string[]>(['Students', 'Assessments']);
+const expandedItems = ref<string[]>(['Students', 'Curriculum', 'Assessments']);
 
 const handleCollapsibleUpdate = (title: string, open: boolean) => {
     const idx = expandedItems.value.indexOf(title);
@@ -390,6 +391,8 @@ const handleCollapsibleUpdate = (title: string, open: boolean) => {
                         <template v-for="item in curriculumNavItems" :key="item.title">
                             <Collapsible
                                 v-if="item.children"
+                                :open="expandedItems.includes(item.title)"
+                                @update:open="(val) => handleCollapsibleUpdate(item.title, val)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>
@@ -433,6 +436,8 @@ const handleCollapsibleUpdate = (title: string, open: boolean) => {
                         <template v-for="item in managementNavItems" :key="item.title">
                             <Collapsible
                                 v-if="item.children"
+                                :open="expandedItems.includes(item.title)"
+                                @update:open="(val) => handleCollapsibleUpdate(item.title, val)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>
@@ -476,6 +481,8 @@ const handleCollapsibleUpdate = (title: string, open: boolean) => {
                         <template v-for="item in extrasNavItems" :key="item.title">
                             <Collapsible
                                 v-if="item.children"
+                                :open="expandedItems.includes(item.title)"
+                                @update:open="(val) => handleCollapsibleUpdate(item.title, val)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>
@@ -519,6 +526,8 @@ const handleCollapsibleUpdate = (title: string, open: boolean) => {
                         <template v-for="item in settingsNavItems" :key="item.title">
                             <Collapsible
                                 v-if="item.children"
+                                :open="expandedItems.includes(item.title)"
+                                @update:open="(val) => handleCollapsibleUpdate(item.title, val)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>

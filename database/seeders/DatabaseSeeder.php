@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SchoolTypesAndLevelsSeeder::class,
             CurriculumSeeder::class,
             DashboardSeeder::class,
+            RubricSeeder::class,
         ]);
 
         // Create Super Admin user

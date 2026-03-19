@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Subject extends Model
 {
     protected $fillable = [
-        'learning_area_id', 'name', 'code', 'description',
+        'learning_area_id', 'department_id', 'name', 'code', 'description',
         'subject_type', 'is_examinable', 'display_order', 'is_active'
     ];
     protected $casts = [
@@ -17,9 +17,17 @@ class Subject extends Model
     {
         return $this->belongsTo(LearningArea::class);
     }
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Academic\Department::class);
+    }
     public function strands(): HasMany
     {
         return $this->hasMany(Strand::class);
+    }
+    public function schoolSubjects(): HasMany
+    {
+        return $this->hasMany(\App\Models\Academic\SchoolSubject::class);
     }
     public function scopeActive($query)
     {

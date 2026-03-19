@@ -1211,6 +1211,7 @@ class AcademicManagementController extends Controller
 
         $query = \App\Models\Academic\Department::query()
             ->with('headOfDepartment')
+            ->withCount(['teachers', 'subjects'])
             ->when($search !== '', fn($q) => $q->where('name', 'like', "%{$search}%"))
             ->orderBy('name');
 
@@ -1222,8 +1223,10 @@ class AcademicManagementController extends Controller
                 'name' => $dept->name,
                 'code' => $dept->code,
                 'description' => $dept->description,
-                'head_of_department' => $dept->headOfDepartment?->name,
+                'head_of_department' => $dept->headOfDepartment?->full_name,
                 'is_active' => (bool) $dept->is_active,
+                'teachers_count' => $dept->teachers_count,
+                'subjects_count' => $dept->subjects_count,
             ];
         });
 
@@ -1232,19 +1235,21 @@ class AcademicManagementController extends Controller
             'stats' => [
                 'total' => \App\Models\Academic\Department::count(),
                 'active' => \App\Models\Academic\Department::where('is_active', true)->count(),
+                'teachers' => \App\Models\Teacher::count(),
+                'subjects' => \App\Models\Academic\SchoolSubject::distinct('subject_id')->count(),
             ],
             'filters' => [
                 'search' => $search,
                 'view' => $request->string('view', 'grid'),
                 'per_page' => $perPage,
             ],
-            'teachers' => \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]),
+            'teachers' => \App\Models\Teacher::orderBy('first_name')->get()->map(fn($t) => ['id' => $t->id, 'name' => $t->full_name]),
         ]);
     }
 
     public function createDepartment(): Response
     {
-        $teachers = \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]);
+        $teachers = \App\Models\Teacher::orderBy('first_name')->get()->map(fn($t) => ['id' => $t->id, 'name' => $t->full_name]);
         return Inertia::render('departments/Create', [
             'teachers' => $teachers,
         ]);
@@ -1252,16 +1257,24 @@ class AcademicManagementController extends Controller
 
     public function storeDepartment(Request $request): RedirectResponse
     {
+        $schoolId = DB::table('schools')->value('id');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:50'],
+            'code' => [
+                'required', 
+                'string', 
+                'max:20', 
+                Rule::unique('departments', 'code')->where('school_id', $schoolId)
+            ],
             'description' => ['nullable', 'string'],
-            'head_of_department_id' => ['nullable', 'exists:users,id'],
+            'head_of_department_id' => ['nullable', 'exists:teachers,id'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $validated['school_id'] = DB::table('schools')->value('id');
+        $validated['school_id'] = $schoolId;
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['head_of_department_id'] = $request->input('head_of_department_id') ?: null;
 
         \App\Models\Academic\Department::create($validated);
 
@@ -1271,7 +1284,7 @@ class AcademicManagementController extends Controller
     public function editDepartment(int $id): Response
     {
         $dept = \App\Models\Academic\Department::findOrFail($id);
-        $teachers = \App\Models\Teacher::orderBy('first_name')->get(['id', 'first_name', 'middle_name', 'last_name'])->map(fn($t) => ['id' => $t->id, 'name' => trim($t->first_name . ' ' . ($t->middle_name ? $t->middle_name . ' ' : '') . $t->last_name)]);
+        $teachers = \App\Models\Teacher::orderBy('first_name')->get()->map(fn($t) => ['id' => $t->id, 'name' => $t->full_name]);
 
         return Inertia::render('departments/Edit', [
             'department' => $dept,
@@ -1285,14 +1298,20 @@ class AcademicManagementController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:50'],
+            'code' => [
+                'required', 
+                'string', 
+                'max:20', 
+                Rule::unique('departments', 'code')->where('school_id', $dept->school_id)->ignore($id)
+            ],
             'description' => ['nullable', 'string'],
-            'head_of_department_id' => ['nullable', 'exists:users,id'],
+            'head_of_department_id' => ['nullable', 'exists:teachers,id'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
         $dept->update(array_merge($validated, [
             'is_active' => $request->boolean('is_active', $dept->is_active),
+            'head_of_department_id' => $request->input('head_of_department_id') ?: null,
         ]));
 
         return redirect()->route('departments.index')->with('success', 'Department updated successfully.');
@@ -1303,5 +1322,246 @@ class AcademicManagementController extends Controller
         $dept = \App\Models\Academic\Department::findOrFail($id);
         $dept->delete();
         return back()->with('success', 'Department deleted successfully.');
+    }
+
+    public function showDepartment(int $id): Response
+    {
+        $dept = \App\Models\Academic\Department::with('headOfDepartment')->findOrFail($id);
+        
+        $teachers = Teacher::where('department_id', $id)
+            ->withCount(['subjectAssignments', 'classesAsTeacher'])
+            ->get()
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'name' => $t->full_name,
+                'email' => $t->email,
+                'phone' => $t->phone,
+                'subjects_count' => $t->subject_assignments_count,
+                'classes_count' => $t->classes_as_teacher_count,
+            ]);
+
+        $subjects = DB::table('school_subjects')
+            ->join('subjects', 'subjects.id', '=', 'school_subjects.subject_id')
+            ->where('school_subjects.department_id', $id)
+            ->select('subjects.*', 'school_subjects.is_offered')
+            ->get()
+            ->map(fn($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'code' => $s->code,
+                'description' => $s->description,
+                'is_active' => (bool)$s->is_active,
+                'is_offered' => (bool)$s->is_offered,
+            ]);
+
+        // Analytics
+        $subjectIds = $subjects->pluck('id');
+        $performance = DB::table('student_assessments')
+            ->join('assessments', 'assessments.id', '=', 'student_assessments.assessment_id')
+            ->whereIn('assessments.subject_id', $subjectIds)
+            ->select(
+                DB::raw('AVG(percentage) as avg_score'),
+                DB::raw('COUNT(*) as total_grades'),
+                DB::raw("SUM(CASE WHEN grade_level = 'EE' THEN 1 ELSE 0 END) as ee_count"),
+                DB::raw("SUM(CASE WHEN grade_level = 'ME' THEN 1 ELSE 0 END) as me_count"),
+                DB::raw("SUM(CASE WHEN grade_level = 'AE' THEN 1 ELSE 0 END) as ae_count"),
+                DB::raw("SUM(CASE WHEN grade_level = 'BE' THEN 1 ELSE 0 END) as be_count")
+            )
+            ->first();
+
+        $grades = DB::table('student_assessments')
+            ->join('assessments', 'assessments.id', '=', 'student_assessments.assessment_id')
+            ->join('students', 'students.id', '=', 'student_assessments.student_id')
+            ->join('subjects', 'subjects.id', '=', 'assessments.subject_id')
+            // Using left joins for optional academic structure tables
+            ->leftJoin('academic_terms', 'academic_terms.id', '=', 'assessments.academic_term_id')
+            ->leftJoin('academic_years', 'academic_years.id', '=', 'assessments.academic_year_id')
+            ->whereIn('assessments.subject_id', $subjectIds)
+            ->select(
+                'student_assessments.*',
+                'students.first_name', 'students.middle_name', 'students.last_name',
+                'subjects.name as subject_name',
+                'academic_terms.name as term_name',
+                'academic_years.name as year_name'
+            )
+            ->orderByDesc('student_assessments.created_at')
+            ->limit(100)
+            ->get()
+            ->map(fn($g) => [
+                'id' => $g->id,
+                'student_name' => trim($g->first_name . ' ' . $g->middle_name . ' ' . $g->last_name),
+                'subject_name' => $g->subject_name,
+                'score' => $g->marks_obtained,
+                'percentage' => $g->percentage,
+                'grade' => $g->grade_level,
+                'term' => $g->term_name,
+                'year' => $g->year_name,
+            ]);
+
+        return Inertia::render('departments/Show', [
+            'department' => [
+                'id' => $dept->id,
+                'name' => $dept->name,
+                'description' => $dept->description,
+                'code' => $dept->code,
+                'is_active' => (bool)$dept->is_active,
+                'head_of_department' => $dept->headOfDepartment ? [
+                    'id' => $dept->headOfDepartment->id,
+                    'name' => $dept->headOfDepartment->full_name,
+                    'email' => $dept->headOfDepartment->email,
+                    'avatar' => $dept->headOfDepartment->photo,
+                ] : null,
+            ],
+            'teachers' => $teachers,
+            'subjects' => $subjects,
+            'grades' => $grades,
+            'analytics' => [
+                'mean_grade' => round($performance->avg_score ?? 0, 2),
+                'total_grades' => $performance->total_grades ?? 0,
+                'grade_a_count' => $performance->ee_count ?? 0,
+                'grade_b_count' => $performance->me_count ?? 0,
+                'grade_c_count' => $performance->ae_count ?? 0,
+                'grade_d_count' => $performance->be_count ?? 0,
+                'avg_performance' => round($performance->avg_score ?? 0, 2),
+                'pass_rate' => $performance->total_grades > 0 ? round((($performance->ee_count + $performance->me_count) / $performance->total_grades) * 100, 2) : 0,
+                'fail_rate' => $performance->total_grades > 0 ? round(($performance->be_count / $performance->total_grades) * 100, 2) : 0,
+                'performance_trend' => 0, // Placeholder
+            ],
+            'curriculum_subjects' => \App\Models\Curriculum\Subject::active()->orderBy('name')->get(['id', 'name', 'code']),
+        ]);
+    }
+
+    public function toggleDepartmentStatus(int $id): RedirectResponse
+    {
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+        $dept->update(['is_active' => !$dept->is_active]);
+        return back()->with('success', 'Department status updated successfully.');
+    }
+
+    public function storeDepartmentSubject(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'subject_id' => ['required', 'exists:subjects,id'],
+        ]);
+
+        $schoolId = DB::table('schools')->value('id');
+
+        DB::table('school_subjects')->updateOrInsert(
+            ['school_id' => $schoolId, 'subject_id' => $validated['subject_id']],
+            ['department_id' => $id, 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        return back()->with('success', 'Subject added to department successfully.');
+    }
+
+    public function destroyDepartmentSubject(int $id, int $subjectId): RedirectResponse
+    {
+        DB::table('school_subjects')
+            ->where('department_id', $id)
+            ->where('subject_id', $subjectId)
+            ->update(['department_id' => null]);
+
+        return back()->with('success', 'Subject removed from department successfully.');
+    }
+
+    public function exportDepartmentResults(int $id): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+        
+        $subjects = DB::table('school_subjects')
+            ->where('department_id', $id)
+            ->pluck('subject_id');
+
+        $grades = DB::table('student_assessments')
+            ->join('assessments', 'assessments.id', '=', 'student_assessments.assessment_id')
+            ->join('students', 'students.id', '=', 'student_assessments.student_id')
+            ->join('subjects', 'subjects.id', '=', 'assessments.subject_id')
+            ->leftJoin('academic_terms', 'academic_terms.id', '=', 'assessments.academic_term_id')
+            ->leftJoin('academic_years', 'academic_years.id', '=', 'assessments.academic_year_id')
+            ->whereIn('assessments.subject_id', $subjects)
+            ->select(
+                'students.first_name', 'students.middle_name', 'students.last_name',
+                'subjects.name as subject_name',
+                'student_assessments.marks_obtained',
+                'student_assessments.percentage',
+                'student_assessments.grade_level',
+                'academic_terms.name as term_name',
+                'academic_years.name as year_name'
+            )
+            ->orderBy('students.last_name')
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . str_replace(' ', '_', $dept->name) . '_Results.csv"',
+        ];
+
+        $callback = function () use ($grades) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Student Name', 'Subject', 'Score', 'Percentage', 'Grade', 'Term', 'Year']);
+
+            foreach ($grades as $grade) {
+                fputcsv($file, [
+                    trim($grade->first_name . ' ' . $grade->middle_name . ' ' . $grade->last_name),
+                    $grade->subject_name,
+                    $grade->marks_obtained,
+                    $grade->percentage . '%',
+                    $grade->grade_level,
+                    $grade->term_name,
+                    $grade->year_name,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+    public function exportDepartments(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $search = trim((string)$request->string('search'));
+        $status = (string)$request->string('status');
+
+        $departments = \App\Models\Academic\Department::query()
+            ->with('headOfDepartment')
+            ->when($search !== '', fn($q) => $q->where(fn($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
+            ->when($status !== '' && $status !== 'all', fn($q) => $q->where('is_active', $status === 'active'))
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="Departments_Export.csv"',
+        ];
+
+        $callback = function () use ($departments) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Name', 'Code', 'Head of Department', 'Status', 'Description']);
+
+            foreach ($departments as $dept) {
+                fputcsv($file, [
+                    $dept->name,
+                    $dept->code,
+                    $dept->headOfDepartment->name ?? 'N/A',
+                    $dept->is_active ? 'Active' : 'Inactive',
+                    $dept->description,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function bulkDeleteDepartments(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['exists:departments,id'],
+        ]);
+
+        \App\Models\Academic\Department::whereIn('id', $validated['ids'])->delete();
+
+        return back()->with('success', count($validated['ids']) . ' departments deleted successfully.');
     }
 }
