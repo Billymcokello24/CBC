@@ -59,14 +59,14 @@ watch(() => props.strand, (newStrand) => {
 
 const submit = () => {
   if (props.strand) {
-    form.put(route('curriculum.strands.update', props.strand.id), {
+    form.put(`/curriculum/strands/${props.strand.id}`, {
       onSuccess: () => {
         emit('success');
         emit('close');
       },
     });
   } else {
-    form.post(route('curriculum.strands.store'), {
+    form.post('/curriculum/strands', {
       onSuccess: () => {
         emit('success');
         emit('close');

@@ -23,8 +23,8 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' }, 
     { title: 'Curriculum', href: '/curriculum' }, 
-    { title: 'Strands Registry', href: route('curriculum.strands') }, 
-    { title: props.strand.name, href: route('curriculum.strands.show', props.strand.id) }
+    { title: 'Strands Registry', href: '/curriculum/strands' }, 
+    { title: props.strand.name, href: `/curriculum/strands/${props.strand.id}` }
 ];
 </script>
 
@@ -36,7 +36,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                        <Link :href="route('curriculum.strands')"><ArrowLeft class="h-4 w-4" /></Link>
+                        <Link href="/curriculum/strands"><ArrowLeft class="h-4 w-4" /></Link>
                     </Button>
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 shrink-0">
                         <Layers class="h-6 w-6 text-violet-600" />
@@ -48,10 +48,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child class="h-10 border-slate-200 font-pulsar">
-                        <Link :href="route('curriculum.strands.edit', strand.id)"><Edit class="mr-2 h-4 w-4" />Modify Topic Metadata</Link>
+                        <Link :href="`/curriculum/strands/${strand.id}/edit`"><Edit class="mr-2 h-4 w-4" />Modify Topic Metadata</Link>
                     </Button>
                     <Button class="bg-violet-600 hover:bg-violet-700 h-10 font-pulsar shadow-lg border-0" as-child>
-                         <Link :href="route('curriculum.competencies.create', { strand_id: strand.id })">Initialize Indicator</Link>
+                         <Link :href="`/curriculum/competencies/create?strand_id=${strand.id}`">Initialize Indicator</Link>
                     </Button>
                 </div>
             </div>

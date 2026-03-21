@@ -55,14 +55,14 @@ watch(() => props.area, (newArea) => {
 
 const submit = () => {
   if (props.area) {
-    form.put(route('curriculum.learning-areas.update', props.area.id), {
+    form.put(`/curriculum/learning-areas/${props.area.id}`, {
       onSuccess: () => {
         emit('success');
         emit('close');
       },
     });
   } else {
-    form.post(route('curriculum.learning-areas.store'), {
+    form.post('/curriculum/learning-areas', {
       onSuccess: () => {
         emit('success');
         emit('close');

@@ -30,7 +30,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Curriculum', href: '/curriculum' },
     { title: 'Learning Areas', href: '/curriculum/learning-areas' },
-    { title: props.learningArea.name, href: route('curriculum.learning-areas.show', props.learningArea.id) },
+    { title: props.learningArea.name, href: `/curriculum/learning-areas/${props.learningArea.id}` },
 ];
 </script>
 
@@ -42,7 +42,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                        <Link :href="route('curriculum.learning-areas')"><ArrowLeft class="h-4 w-4" /></Link>
+                        <Link href="/curriculum/learning-areas"><ArrowLeft class="h-4 w-4" /></Link>
                     </Button>
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 shrink-0">
                         <BookOpenCheck class="h-6 w-6 text-emerald-600" />
@@ -54,10 +54,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child class="h-10 border-slate-200 font-pulsar">
-                        <Link :href="route('curriculum.learning-areas.edit', learningArea.id)"><Edit class="mr-2 h-4 w-4" />Modify Configuration</Link>
+                        <Link :href="`/curriculum/learning-areas/${learningArea.id}/edit`"><Edit class="mr-2 h-4 w-4" />Modify Configuration</Link>
                     </Button>
                     <Button class="bg-violet-600 hover:bg-violet-700 h-10 font-pulsar shadow-lg border-0" as-child>
-                         <Link :href="route('curriculum.subjects.create', { area_id: learningArea.id })">Initialize Subject</Link>
+                         <Link :href="`/curriculum/subjects/create?area_id=${learningArea.id}`">Initialize Subject</Link>
                     </Button>
                 </div>
             </div>
@@ -167,7 +167,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-400 hover:text-emerald-600" as-child>
-                                             <Link :href="route('curriculum.subjects.show', subject.id)"><ChevronRight class="h-4 w-4" /></Link>
+                                             <Link :href="`/curriculum/subjects/${subject.id}`"><ChevronRight class="h-4 w-4" /></Link>
                                         </Button>
                                     </td>
                                 </tr>

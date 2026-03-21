@@ -26,8 +26,8 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' }, 
     { title: 'Curriculum', href: '/curriculum' }, 
-    { title: 'Subjects Registry', href: route('curriculum.subjects') }, 
-    { title: props.subject.name, href: route('curriculum.subjects.show', props.subject.id) }
+    { title: 'Subjects Registry', href: '/curriculum/subjects' }, 
+    { title: props.subject.name, href: `/curriculum/subjects/${props.subject.id}` }
 ];
 </script>
 
@@ -39,7 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                        <Link :href="route('curriculum.subjects')"><ArrowLeft class="h-4 w-4" /></Link>
+                        <Link href="/curriculum/subjects"><ArrowLeft class="h-4 w-4" /></Link>
                     </Button>
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 shrink-0">
                         <BookOpen class="h-6 w-6 text-violet-600" />
@@ -51,10 +51,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child class="h-10 border-slate-200 font-pulsar">
-                        <Link :href="route('curriculum.subjects.edit', subject.id)"><Edit class="mr-2 h-4 w-4" />Modify Configuration</Link>
+                        <Link :href="`/curriculum/subjects/${subject.id}/edit`"><Edit class="mr-2 h-4 w-4" />Modify Configuration</Link>
                     </Button>
                     <Button class="bg-violet-600 hover:bg-violet-700 h-10 font-pulsar shadow-lg border-0" as-child>
-                         <Link :href="route('curriculum.subjects.allocate', subject.id)">Grade Allocation</Link>
+                         <Link :href="`/curriculum/subjects/${subject.id}/allocate`">Grade Allocation</Link>
                     </Button>
                 </div>
             </div>
@@ -159,7 +159,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                  <h3 class="text-sm font-bold text-slate-900 uppercase mb-1">No instructional strands found</h3>
                                  <p class="text-xs text-slate-400 italic">Initialize topic strands to begin instructional mapping.</p>
                                  <Button variant="outline" class="mt-6 font-pulsar h-9 text-[10px] uppercase tracking-widest border-slate-200" as-child>
-                                      <Link :href="route('curriculum.strands.create', { subject_id: subject.id })">Initialize first strand</Link>
+                                       <Link :href="`/curriculum/strands/create?subject_id=${subject.id}`">Initialize first strand</Link>
                                  </Button>
                             </div>
 
@@ -178,7 +178,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         {{ strand.is_active ? 'Active' : 'Dormant' }}
                                     </Badge>
                                     <Button variant="ghost" size="icon" class="h-9 w-9 text-slate-300 group-hover:text-violet-600 group-hover:bg-white group-hover:shadow-sm" as-child>
-                                         <Link :href="route('curriculum.strands.show', strand.id)"><ChevronRight class="h-5 w-5" /></Link>
+                                         <Link :href="`/curriculum/strands/${strand.id}`"><ChevronRight class="h-5 w-5" /></Link>
                                     </Button>
                                 </div>
                             </div>

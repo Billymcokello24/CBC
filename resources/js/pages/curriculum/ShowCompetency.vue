@@ -27,8 +27,8 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' }, 
     { title: 'Curriculum', href: '/curriculum' }, 
-    { title: 'Core Competencies', href: route('curriculum.competencies') }, 
-    { title: props.competency.name, href: route('curriculum.competencies.show', props.competency.id) }
+    { title: 'Core Competencies', href: '/curriculum/competencies' }, 
+    { title: props.competency.name, href: `/curriculum/competencies/${props.competency.id}` }
 ];
 </script>
 
@@ -40,7 +40,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                        <Link :href="route('curriculum.competencies')"><ArrowLeft class="h-4 w-4" /></Link>
+                        <Link href="/curriculum/competencies"><ArrowLeft class="h-4 w-4" /></Link>
                     </Button>
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 shrink-0">
                         <BrainCircuit class="h-6 w-6 text-violet-600" />
@@ -52,10 +52,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child class="h-10 border-slate-200 font-pulsar">
-                        <Link :href="route('curriculum.competencies.edit', competency.id)"><Edit class="mr-2 h-4 w-4" />Modify Pillar</Link>
+                        <Link :href="`/curriculum/competencies/${competency.id}/edit`"><Edit class="mr-2 h-4 w-4" />Modify Pillar</Link>
                     </Button>
                     <Button class="bg-violet-600 hover:bg-violet-700 h-10 font-pulsar shadow-lg border-0" as-child>
-                         <Link :href="route('curriculum.competencies.create')">Extend Matrix</Link>
+                         <Link href="/curriculum/competencies/create">Extend Matrix</Link>
                     </Button>
                 </div>
             </div>
@@ -165,7 +165,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                          </Badge>
                                     </div>
                                     <Button variant="ghost" size="icon" class="h-10 w-10 text-slate-300 group-hover:text-emerald-600 hover:bg-white hover:shadow-sm" as-child>
-                                         <Link :href="route('curriculum.competencies.edit', competency.id)"><ChevronRight class="h-6 w-6" /></Link>
+                                         <Link :href="`/curriculum/competencies/${competency.id}/edit`"><ChevronRight class="h-6 w-6" /></Link>
                                     </Button>
                                 </div>
                             </div>

@@ -83,7 +83,7 @@ let debounceTimeout: any = null;
 const updateFilters = () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-        router.get(route('curriculum.strands'), {
+        router.get('/curriculum/strands', {
             search: searchQuery.value,
             status: selectedStatus.value,
             subject: selectedSubject.value,
@@ -121,7 +121,7 @@ const confirmDelete = (strand: any) => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.delete(route('curriculum.strands.destroy', strand.id), {
+            router.delete(`/curriculum/strands/${strand.id}`, {
                 onFinish: () => {
                     showConfirm.value = false;
                     confirmConfig.value.loading = false;
@@ -163,7 +163,7 @@ const bulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.post(route('curriculum.strands.bulk-action'), {
+            router.post('/curriculum/strands/bulk-action', {
                 ids: selectedIds.value,
                 action: action
             }, {
@@ -330,7 +330,7 @@ const getStatusColor = (active: boolean) => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" class="w-48 font-pulsar">
                                         <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(strand)"><Edit class="mr-2 h-4 w-4 text-amber-600" /> Edit Metadata</DropdownMenuItem>
-                                        <DropdownMenuItem as-child><Link :href="route('curriculum.strands.show', strand.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Sub-Topics Matrix</Link></DropdownMenuItem>
+                                        <DropdownMenuItem as-child><Link :href="`/curriculum/strands/${strand.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Sub-Topics Matrix</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(strand)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Prune Strand</DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -366,7 +366,7 @@ const getStatusColor = (active: boolean) => {
                              <div class="flex items-center gap-2">
                                   <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">DISPLAY ORDER #{{ strand.display_order }}</span>
                              </div>
-                             <Link :href="route('curriculum.strands.show', strand.id)" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
+                             <Link :href="`/curriculum/strands/${strand.id}`" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
                                 Details Hub
                              </Link>
                         </div>
@@ -434,7 +434,7 @@ const getStatusColor = (active: boolean) => {
                                                 <Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-52 font-pulsar">
-                                                <DropdownMenuItem as-child><Link :href="route('curriculum.strands.show', strand.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Topic Details</Link></DropdownMenuItem>
+                                                <DropdownMenuItem as-child><Link :href="`/curriculum/strands/${strand.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Topic Details</Link></DropdownMenuItem>
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(strand)"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit Metadata</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(strand)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Prune Strand</DropdownMenuItem>

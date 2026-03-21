@@ -31,9 +31,9 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Subjects Registry', href: route('curriculum.subjects') },
-    { title: props.subject.name, href: route('curriculum.subjects.show', props.subject.id) },
-    { title: 'Grade Allocation', href: route('curriculum.subjects.allocate', props.subject.id) },
+    { title: 'Subjects Registry', href: '/curriculum/subjects' },
+    { title: props.subject.name, href: `/curriculum/subjects/${props.subject.id}` },
+    { title: 'Grade Allocation', href: `/curriculum/subjects/${props.subject.id}/allocate` },
 ];
 
 const form = useForm({
@@ -50,7 +50,7 @@ const form = useForm({
 const selectedCount = computed(() => form.allocations.filter((item) => item.selected).length);
 
 const submit = () => {
-    form.put(route('curriculum.subjects.allocate.save', props.subject.id));
+    form.put(`/curriculum/subjects/${props.subject.id}/allocate`);
 };
 
 const toggleSelect = (index: number) => {
@@ -66,7 +66,7 @@ const toggleSelect = (index: number) => {
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                        <Link :href="route('curriculum.subjects.show', subject.id)"><ArrowLeft class="h-4 w-4" /></Link>
+                        <Link :href="`/curriculum/subjects/${subject.id}`"><ArrowLeft class="h-4 w-4" /></Link>
                     </Button>
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 shrink-0">
                         <BookOpenCheck class="h-6 w-6 text-violet-600" />
@@ -193,7 +193,7 @@ const toggleSelect = (index: number) => {
                 </div>
                  <div class="flex gap-3">
                       <Button variant="outline" type="button" as-child class="bg-white/5 border-white/10 text-white hover:bg-white/20 h-10 font-bold px-6 rounded-xl text-xs uppercase tracking-widest">
-                           <Link :href="route('curriculum.subjects.show', subject.id)">Discard Changes</Link>
+                           <Link :href="`/curriculum/subjects/${subject.id}`">Discard Changes</Link>
                       </Button>
                       <Button @click="submit" :disabled="form.processing" class="bg-violet-600 hover:bg-violet-700 h-10 font-pulsar px-8 rounded-xl text-xs uppercase tracking-widest shadow-xl border-0">
                            Finalize Matrix

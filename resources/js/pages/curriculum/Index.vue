@@ -34,7 +34,7 @@ const modules = [
         count: props.stats.learning_areas,
         icon: GraduationCap,
         color: 'violet',
-        href: route('curriculum.learning-areas'),
+        href: '/curriculum/learning-areas',
         action: 'Configure Clusters'
     },
     {
@@ -43,7 +43,7 @@ const modules = [
         count: props.stats.subjects,
         icon: BookOpen,
         color: 'emerald',
-        href: route('curriculum.subjects'),
+        href: '/curriculum/subjects',
         action: 'Manage Registry'
     },
     {
@@ -52,7 +52,7 @@ const modules = [
         count: props.stats.strands,
         icon: Layers,
         color: 'blue',
-        href: route('curriculum.strands'),
+        href: '/curriculum/strands',
         action: 'Design Mapping'
     },
     {
@@ -61,7 +61,7 @@ const modules = [
         count: props.stats.competencies,
         icon: BrainCircuit,
         color: 'indigo',
-        href: route('curriculum.competencies'),
+        href: '/curriculum/competencies',
         action: 'Logic Control'
     }
 ];
@@ -104,10 +104,10 @@ const colors = {
                           </p>
                           <div class="flex flex-wrap gap-4 pt-6">
                                <Button variant="outline" class="bg-white/5 border-white/10 text-white hover:bg-white hover:text-slate-950 h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-xl" as-child>
-                                    <Link :href="route('curriculum.learning-areas')">Domain Registry</Link>
+                                    <Link href="/curriculum/learning-areas">Domain Registry</Link>
                                </Button>
                                <Button class="bg-violet-600 hover:bg-violet-700 h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-[0_0_25px_rgba(139,92,246,0.4)] border-0" as-child>
-                                    <Link :href="route('curriculum.subjects')">Matrix Control</Link>
+                                    <Link href="/curriculum/subjects">Matrix Control</Link>
                                </Button>
                           </div>
                      </div>
@@ -184,12 +184,12 @@ const colors = {
                                      <p class="text-xs text-slate-400 font-medium mt-1 italic uppercase tracking-wider">Latest updates within the curriculum library</p>
                                 </div>
                                 <Button variant="outline" class="h-9 font-pulsar border-slate-200 text-[10px] uppercase tracking-widest font-black rounded-xl" as-child>
-                                     <Link :href="route('curriculum.learning-areas')">View All Clusters</Link>
+                                     <Link href="/curriculum/learning-areas">View All Clusters</Link>
                                 </Button>
                            </div>
 
                            <div class="grid sm:grid-cols-2 gap-6">
-                                <Link v-for="area in recent_areas" :key="area.id" :href="route('curriculum.learning-areas.show', area.id)" class="group/item relative p-8 rounded-[2rem] border bg-white hover:shadow-xl hover:border-emerald-200 transition-all duration-500 overflow-hidden">
+                                <Link v-for="area in recent_areas" :key="area.id" :href="`/curriculum/learning-areas/${area.id}`" class="group/item relative p-8 rounded-[2rem] border bg-white hover:shadow-xl hover:border-emerald-200 transition-all duration-500 overflow-hidden">
                                      <div class="absolute -right-4 -bottom-4 opacity-[0.02] group-hover/item:scale-110 transition-transform duration-700">
                                           <GraduationCap class="h-24 w-24" />
                                      </div>
@@ -267,7 +267,7 @@ const colors = {
                 </div>
                  <div class="flex gap-4">
                       <Button class="bg-slate-950 hover:bg-black h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-xl border-0" as-child>
-                           <Link :href="route('curriculum.subjects')">Finalize Matrix Mapping</Link>
+                           <Link href="/curriculum/subjects">Finalize Matrix Mapping</Link>
                       </Button>
                  </div>
             </div>

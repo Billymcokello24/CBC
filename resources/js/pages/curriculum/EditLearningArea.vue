@@ -26,8 +26,8 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Learning Areas', href: route('curriculum.learning-areas') },
-    { title: 'Modify Domain', href: route('curriculum.learning-areas.edit', props.learningArea.id) },
+    { title: 'Learning Areas', href: '/curriculum/learning-areas' },
+    { title: 'Modify Domain', href: `/curriculum/learning-areas/${props.learningArea.id}/edit` },
 ];
 
 const form = useForm({
@@ -41,7 +41,7 @@ const form = useForm({
 
 const submit = () => {
     form.transform((data) => ({ ...data, display_order: Number(data.display_order), is_active: Boolean(data.is_active) }))
-        .put(route('curriculum.learning-areas.update', props.learningArea.id));
+        .put(`/curriculum/learning-areas/${props.learningArea.id}`);
 };
 </script>
 
@@ -52,7 +52,7 @@ const submit = () => {
             <!-- Header section -->
             <div class="flex items-center gap-4">
                 <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                    <Link :href="route('curriculum.learning-areas')"><ArrowLeft class="h-4 w-4" /></Link>
+                    <Link href="/curriculum/learning-areas"><ArrowLeft class="h-4 w-4" /></Link>
                 </Button>
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10 shrink-0">
                     <GraduationCap class="h-6 w-6 text-violet-600" />
@@ -110,7 +110,7 @@ const submit = () => {
 
                         <div class="pt-8 flex items-center justify-end gap-3 border-t border-slate-50">
                             <Button type="button" variant="outline" class="h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest" as-child>
-                                <Link :href="route('curriculum.learning-areas')">Discard Changes</Link>
+                                <Link href="/curriculum/learning-areas">Discard Changes</Link>
                             </Button>
                             <Button type="submit" :disabled="form.processing" class="bg-indigo-600 hover:bg-indigo-700 h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 min-w-[180px]">
                                 <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />

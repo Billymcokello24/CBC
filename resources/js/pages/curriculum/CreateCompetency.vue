@@ -14,8 +14,8 @@ import type { BreadcrumbItem } from '@/types';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Core Competencies', href: route('curriculum.competencies') },
-    { title: 'Initialize Pillar', href: route('curriculum.competencies.create') },
+    { title: 'Core Competencies', href: '/curriculum/competencies' },
+    { title: 'Initialize Pillar', href: '/curriculum/competencies/create' },
 ];
 
 const form = useForm({
@@ -32,7 +32,7 @@ const submit = () => {
         ...data,
         display_order: Number(data.display_order),
         is_active: Boolean(data.is_active)
-    })).post(route('curriculum.competencies.store'));
+    })).post('/curriculum/competencies');
 };
 </script>
 
@@ -43,7 +43,7 @@ const submit = () => {
             <!-- Header section -->
             <div class="flex items-center gap-4">
                 <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                    <Link :href="route('curriculum.competencies')"><ArrowLeft class="h-4 w-4" /></Link>
+                    <Link href="/curriculum/competencies"><ArrowLeft class="h-4 w-4" /></Link>
                 </Button>
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10 shrink-0">
                     <Plus class="h-6 w-6 text-indigo-600" />
@@ -101,7 +101,7 @@ const submit = () => {
 
                         <div class="pt-8 flex items-center justify-end gap-3 border-t border-slate-50">
                             <Button type="button" variant="outline" class="h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest" as-child>
-                                <Link :href="route('curriculum.competencies')">Discard</Link>
+                                <Link href="/curriculum/competencies">Discard</Link>
                             </Button>
                             <Button type="submit" :disabled="form.processing" class="bg-slate-900 hover:bg-black h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl border-0 min-w-[200px]">
                                 <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />

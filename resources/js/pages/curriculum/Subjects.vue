@@ -80,7 +80,7 @@ let debounceTimeout: any = null;
 const updateFilters = () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-        router.get(route('curriculum.subjects'), {
+        router.get('/curriculum/subjects', {
             search: searchQuery.value,
             status: selectedStatus.value,
             area: selectedArea.value,
@@ -117,7 +117,7 @@ const confirmDelete = (subject: any) => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.delete(route('curriculum.subjects.destroy', subject.id), {
+            router.delete(`/curriculum/subjects/${subject.id}`, {
                 onFinish: () => {
                     showConfirm.value = false;
                     confirmConfig.value.loading = false;
@@ -159,7 +159,7 @@ const bulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.post(route('curriculum.subjects.bulk-action'), {
+            router.post('/curriculum/subjects/bulk-action', {
                 ids: selectedIds.value,
                 action: action
             }, {
@@ -324,8 +324,8 @@ const getStatusColor = (active: boolean) => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" class="w-56 font-pulsar">
                                         <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(subject)"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit Subject</DropdownMenuItem>
-                                        <DropdownMenuItem as-child><Link :href="route('curriculum.subjects.show', subject.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Performance Analytics</Link></DropdownMenuItem>
-                                        <DropdownMenuItem as-child><Link :href="route('curriculum.subjects.allocate', subject.id)"><Layers class="mr-2 h-4 w-4 text-blue-600" /> Grade Allocations</Link></DropdownMenuItem>
+                                        <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${subject.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Performance Analytics</Link></DropdownMenuItem>
+                                        <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${subject.id}/allocate`"><Layers class="mr-2 h-4 w-4 text-blue-600" /> Grade Allocations</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(subject)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Delete Subject</DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -358,7 +358,7 @@ const getStatusColor = (active: boolean) => {
                              <div class="flex items-center gap-2">
                                   <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">SEQ INDEX #{{ subject.display_order }}</span>
                              </div>
-                             <Link :href="route('curriculum.subjects.show', subject.id)" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
+                             <Link :href="`/curriculum/subjects/${subject.id}`" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
                                 Matrix Hub
                              </Link>
                         </div>
@@ -426,8 +426,8 @@ const getStatusColor = (active: boolean) => {
                                                 <Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-56 font-pulsar">
-                                                <DropdownMenuItem as-child><Link :href="route('curriculum.subjects.show', subject.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Details</Link></DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('curriculum.update')" as-child><Link :href="route('curriculum.subjects.allocate', subject.id)"><Layers class="mr-2 h-4 w-4 text-blue-600" /> Allocations</Link></DropdownMenuItem>
+                                                <DropdownMenuItem as-child><Link :href="`/curriculum/subjects/${subject.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Details</Link></DropdownMenuItem>
+                                                <DropdownMenuItem v-if="hasPermission('curriculum.update')" as-child><Link :href="`/curriculum/subjects/${subject.id}/allocate`"><Layers class="mr-2 h-4 w-4 text-blue-600" /> Allocations</Link></DropdownMenuItem>
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(subject)"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(subject)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Purge</DropdownMenuItem>

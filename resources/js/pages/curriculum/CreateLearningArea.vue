@@ -14,8 +14,8 @@ import type { BreadcrumbItem } from '@/types';
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Learning Areas', href: route('curriculum.learning-areas') },
-    { title: 'Initialize Domain', href: route('curriculum.learning-areas.create') },
+    { title: 'Learning Areas', href: '/curriculum/learning-areas' },
+    { title: 'Initialize Domain', href: '/curriculum/learning-areas/create' },
 ];
 
 const form = useForm({
@@ -32,7 +32,7 @@ const submit = () => {
         ...data,
         display_order: Number(data.display_order),
         is_active: Boolean(data.is_active),
-    })).post(route('curriculum.learning-areas.store'));
+    })).post('/curriculum/learning-areas');
 };
 </script>
 
@@ -43,7 +43,7 @@ const submit = () => {
             <!-- Header section -->
             <div class="flex items-center gap-4">
                 <Button variant="outline" size="icon" as-child class="h-10 w-10 shrink-0 border-slate-200">
-                    <Link :href="route('curriculum.learning-areas')"><ArrowLeft class="h-4 w-4" /></Link>
+                    <Link href="/curriculum/learning-areas"><ArrowLeft class="h-4 w-4" /></Link>
                 </Button>
                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 shrink-0">
                     <Plus class="h-6 w-6 text-emerald-600" />
@@ -101,7 +101,7 @@ const submit = () => {
 
                         <div class="pt-8 flex items-center justify-end gap-3 border-t border-slate-50">
                             <Button type="button" variant="outline" class="h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest" as-child>
-                                <Link :href="route('curriculum.learning-areas')">Discard</Link>
+                                <Link href="/curriculum/learning-areas">Discard</Link>
                             </Button>
                             <Button type="submit" :disabled="form.processing" class="bg-slate-900 hover:bg-black h-12 px-8 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl border-0 min-w-[200px]">
                                 <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />

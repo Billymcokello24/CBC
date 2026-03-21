@@ -77,7 +77,7 @@ let debounceTimeout: any = null;
 const updateFilters = () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-        router.get(route('curriculum.competencies'), {
+        router.get('/curriculum/competencies', {
             search: searchQuery.value,
             status: selectedStatus.value,
             view: currentView.value,
@@ -113,7 +113,7 @@ const confirmDelete = (comp: any) => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.delete(route('curriculum.competencies.destroy', comp.id), {
+            router.delete(`/curriculum/competencies/${comp.id}`, {
                 onFinish: () => {
                     showConfirm.value = false;
                     confirmConfig.value.loading = false;
@@ -155,7 +155,7 @@ const bulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.post(route('curriculum.competencies.bulk-action'), {
+            router.post('/curriculum/competencies/bulk-action', {
                 ids: selectedIds.value,
                 action: action
             }, {
@@ -306,7 +306,7 @@ const getStatusColor = (active: boolean) => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" class="w-48 font-pulsar">
                                         <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(comp)"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit Metadata</DropdownMenuItem>
-                                        <DropdownMenuItem as-child><Link :href="route('curriculum.competencies.show', comp.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Logic Details</Link></DropdownMenuItem>
+                                        <DropdownMenuItem as-child><Link :href="`/curriculum/competencies/${comp.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Logic Details</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(comp)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Purge Node</DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -324,7 +324,7 @@ const getStatusColor = (active: boolean) => {
                              <div class="flex items-center gap-2">
                                   <Badge variant="outline" class="border-0 bg-white shadow-sm text-emerald-600 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg border-emerald-100">{{ comp.is_active ? 'Pulse Active' : 'Dormant' }}</Badge>
                              </div>
-                             <Link :href="route('curriculum.competencies.show', comp.id)" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
+                             <Link :href="`/curriculum/competencies/${comp.id}`" class="text-[10px] font-black text-violet-600 hover:underline uppercase tracking-tight">
                                 Matrix Details
                              </Link>
                         </div>
@@ -386,7 +386,7 @@ const getStatusColor = (active: boolean) => {
                                                 <Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-48 font-pulsar">
-                                                <DropdownMenuItem as-child><Link :href="route('curriculum.competencies.show', comp.id)"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Details Hub</Link></DropdownMenuItem>
+                                                <DropdownMenuItem as-child><Link :href="`/curriculum/competencies/${comp.id}`"><Eye class="mr-2 h-4 w-4 text-violet-600" /> Details Hub</Link></DropdownMenuItem>
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(comp)"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit Metadata</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(comp)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Purge Node</DropdownMenuItem>

@@ -55,14 +55,14 @@ watch(() => props.competency, (newComp) => {
 
 const submit = () => {
   if (props.competency) {
-    form.put(route('curriculum.competencies.update', props.competency.id), {
+    form.put(`/curriculum/competencies/${props.competency.id}`, {
       onSuccess: () => {
         emit('success');
         emit('close');
       },
     });
   } else {
-    form.post(route('curriculum.competencies.store'), {
+    form.post('/curriculum/competencies', {
       onSuccess: () => {
         emit('success');
         emit('close');

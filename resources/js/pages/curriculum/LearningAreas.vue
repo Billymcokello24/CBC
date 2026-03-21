@@ -77,7 +77,7 @@ let debounceTimeout: any = null;
 const updateFilters = () => {
     if (debounceTimeout) clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-        router.get(route('curriculum.learning-areas'), {
+        router.get('/curriculum/learning-areas', {
             search: searchQuery.value,
             status: selectedStatus.value,
             view: currentView.value,
@@ -113,7 +113,7 @@ const confirmDelete = (area: any) => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.delete(route('curriculum.learning-areas.destroy', area.id), {
+            router.delete(`/curriculum/learning-areas/${area.id}`, {
                 onFinish: () => {
                     showConfirm.value = false;
                     confirmConfig.value.loading = false;
@@ -156,7 +156,7 @@ const bulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
         loading: false,
         action: () => {
             confirmConfig.value.loading = true;
-            router.post(route('curriculum.learning-areas.bulk-action'), {
+            router.post('/curriculum/learning-areas/bulk-action', {
                 ids: selectedIds.value,
                 action: action
             }, {
@@ -307,7 +307,7 @@ const getStatusColor = (active: boolean) => {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" class="w-48 font-pulsar">
                                         <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(area)"><Edit class="mr-2 h-4 w-4" /> Edit Details</DropdownMenuItem>
-                                        <DropdownMenuItem as-child><Link :href="route('curriculum.learning-areas.show', area.id)"><Eye class="mr-2 h-4 w-4" /> View Logic</Link></DropdownMenuItem>
+                                        <DropdownMenuItem as-child><Link :href="`/curriculum/learning-areas/${area.id}`"><Eye class="mr-2 h-4 w-4" /> View Logic</Link></DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(area)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Delete Area</DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -339,7 +339,7 @@ const getStatusColor = (active: boolean) => {
                              <div class="flex items-center gap-2">
                                   <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">ORDER #{{ area.display_order }}</span>
                              </div>
-                             <Link :href="route('curriculum.learning-areas.show', area.id)" class="text-[10px] font-black text-violet-600 uppercase hover:underline">
+                             <Link :href="`/curriculum/learning-areas/${area.id}`" class="text-[10px] font-black text-violet-600 uppercase hover:underline">
                                 Expand Details
                              </Link>
                         </div>
@@ -404,7 +404,7 @@ const getStatusColor = (active: boolean) => {
                                                 <Button variant="ghost" size="icon" class="h-8 w-8"><MoreHorizontal class="h-4 w-4" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-48 font-pulsar">
-                                                <DropdownMenuItem as-child><Link :href="route('curriculum.learning-areas.show', area.id)"><Eye class="mr-2 h-4 w-4" /> Details</Link></DropdownMenuItem>
+                                                <DropdownMenuItem as-child><Link :href="`/curriculum/learning-areas/${area.id}`"><Eye class="mr-2 h-4 w-4" /> Details</Link></DropdownMenuItem>
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.update')" @click="openEdit(area)"><Edit class="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem v-if="hasPermission('curriculum.delete')" @click="confirmDelete(area)" class="text-rose-600 font-bold"><Trash2 class="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>

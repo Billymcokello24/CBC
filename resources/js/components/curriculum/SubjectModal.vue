@@ -60,14 +60,14 @@ watch(() => props.subject, (newSubject) => {
 
 const submit = () => {
   if (props.subject) {
-    form.put(route('curriculum.subjects.update', props.subject.id), {
+    form.put(`/curriculum/subjects/${props.subject.id}`, {
       onSuccess: () => {
         emit('success');
         emit('close');
       },
     });
   } else {
-    form.post(route('curriculum.subjects.store'), {
+    form.post('/curriculum/subjects', {
       onSuccess: () => {
         emit('success');
         emit('close');
