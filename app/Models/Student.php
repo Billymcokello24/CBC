@@ -135,6 +135,11 @@ class Student extends Model
         return $this->hasMany(\App\Models\Finance\StudentFee::class);
     }
 
+    public function assessmentResults(): HasMany
+    {
+        return $this->hasMany(\App\Models\Assessment\StudentAssessment::class, 'student_id');
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->middle_name} {$this->last_name}");

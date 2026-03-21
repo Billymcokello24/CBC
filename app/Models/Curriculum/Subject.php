@@ -29,6 +29,11 @@ class Subject extends Model
     {
         return $this->hasMany(\App\Models\Academic\SchoolSubject::class);
     }
+
+    public function timetableSlots(): HasMany
+    {
+        return $this->hasMany(\App\Models\Academic\TimetableSlot::class);
+    }
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

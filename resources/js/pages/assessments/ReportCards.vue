@@ -102,7 +102,7 @@ const status = ref('all');
                             <span class="text-xl font-black text-indigo-600">{{ student.first_name[0] }}{{ student.last_name[0] }}</span>
                         </div>
                         <h4 class="font-black text-gray-900 text-lg line-clamp-1">{{ student.first_name }} {{ student.last_name }}</h4>
-                        <p class="text-xs text-muted-foreground font-bold tracking-tight mb-4 uppercase">{{ student.admission_no }}</p>
+                        <p class="text-xs text-muted-foreground font-bold tracking-tight mb-4 uppercase">{{ student.admission_number }}</p>
                         
                         <div class="grid grid-cols-2 w-full gap-3 mb-5">
                             <div class="bg-gray-50 rounded-xl p-2">

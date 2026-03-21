@@ -266,6 +266,51 @@ class AcademicManagementController extends Controller
         return redirect()->route('classes.show', $class->id)->with('success', 'Class created successfully.');
     }
 
+    public function editClass(int $id): Response
+    {
+        $class = SchoolClass::findOrFail($id);
+
+        return Inertia::render('classes/Edit', [
+            'classroom' => $class,
+            'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
+            'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
+            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
+        ]);
+    }
+
+    public function updateClass(Request $request, int $id): RedirectResponse
+    {
+        $class = SchoolClass::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('classes', 'code')->ignore($class->id)],
+            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],
+            'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
+            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
+            'capacity' => ['required', 'integer', 'min:1'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $class->update($validated);
+
+        return redirect()->route('classes.show', $class->id)->with('success', 'Class updated successfully.');
+    }
+
+    public function destroyClass(int $id): RedirectResponse
+    {
+        $class = SchoolClass::findOrFail($id);
+        
+        // Check if class has students
+        if ($class->students()->exists()) {
+            return back()->with('error', 'Cannot delete class that has enrolled students.');
+        }
+
+        $class->delete();
+
+        return redirect()->route('classes.index')->with('success', 'Class deleted successfully.');
+    }
+
     public function bulkAction(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -603,6 +648,48 @@ class AcademicManagementController extends Controller
         $grade = GradeLevel::create(array_merge($validated, ['school_id' => $schoolId]));
 
         return redirect()->route('grades.show', $grade->id)->with('success', 'Grade created successfully.');
+    }
+
+    public function editGrade(int $id): Response
+    {
+        $grade = GradeLevel::findOrFail($id);
+
+        return Inertia::render('grades/Edit', [
+            'grade' => $grade,
+        ]);
+    }
+
+    public function updateGrade(Request $request, int $id): RedirectResponse
+    {
+        $grade = GradeLevel::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:50', Rule::unique('grade_levels', 'code')->ignore($grade->id)],
+            'category' => ['required', 'string', 'max:100'],
+            'level_order' => ['required', 'integer', 'min:1'],
+            'minimum_age' => ['nullable', 'integer', 'min:1'],
+            'maximum_age' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $grade->update($validated);
+
+        return redirect()->route('grades.show', $grade->id)->with('success', 'Grade updated successfully.');
+    }
+
+    public function destroyGrade(int $id): RedirectResponse
+    {
+        $grade = GradeLevel::findOrFail($id);
+
+        // Check if grade has classes
+        if ($grade->classes()->exists()) {
+            return back()->with('error', 'Cannot delete grade that has associated classes.');
+        }
+
+        $grade->delete();
+
+        return redirect()->route('grades.index')->with('success', 'Grade deleted successfully.');
     }
 
     public function bulkGradeAction(Request $request): RedirectResponse

@@ -72,7 +72,7 @@ const addLevel = () => {
     });
 };
 
-const removeLevel = (index: number) => {
+const removeLevel = (index: any) => {
     form.levels.splice(index, 1);
 };
 

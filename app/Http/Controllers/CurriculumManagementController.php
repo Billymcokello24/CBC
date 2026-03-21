@@ -15,6 +15,27 @@ use Inertia\Response;
 
 class CurriculumManagementController extends Controller
 {
+    public function index(): Response
+    {
+        return Inertia::render('curriculum/Index', [
+            'stats' => [
+                'learning_areas' => LearningArea::count(),
+                'subjects' => Subject::count(),
+                'strands' => DB::table('strands')->count(),
+                'competencies' => Competency::count(),
+            ],
+            'recent_areas' => LearningArea::query()
+                ->withCount('subjects')
+                ->orderBy('created_at', 'desc')
+                ->limit(6)
+                ->get(),
+            'recent_competencies' => Competency::query()
+                ->orderBy('display_order')
+                ->limit(4)
+                ->get(),
+        ]);
+    }
+
     public function learningAreas(Request $request): Response
     {
         $search = trim((string) $request->string('search'));

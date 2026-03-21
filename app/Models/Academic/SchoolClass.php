@@ -65,6 +65,11 @@ class SchoolClass extends Model
         return $this->hasMany(StudentEnrollment::class, 'class_id');
     }
 
+    public function timetables(): HasMany
+    {
+        return $this->hasMany(Timetable::class, 'class_id');
+    }
+
     public function activeStudents()
     {
         return $this->students()->where('status', 'active');

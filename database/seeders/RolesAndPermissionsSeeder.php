@@ -81,19 +81,19 @@ class RolesAndPermissionsSeeder extends Seeder
             'settings.view', 'settings.update', 'settings.system',
         ];
 
-        // Create permissions
+        // Create permissions (idempotent with firstOrCreate)
         foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Create roles and assign permissions
 
         // Super Admin - has all permissions
-        $superAdmin = Role::create(['name' => 'super_admin']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super_admin']);
         $superAdmin->givePermissionTo(Permission::all());
 
         // School Admin
-        $schoolAdmin = Role::create(['name' => 'school_admin']);
+        $schoolAdmin = Role::firstOrCreate(['name' => 'school_admin']);
         $schoolAdmin->givePermissionTo([
             'schools.view', 'schools.update', 'schools.settings',
             'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage',
@@ -117,7 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Principal
-        $principal = Role::create(['name' => 'principal']);
+        $principal = Role::firstOrCreate(['name' => 'principal']);
         $principal->givePermissionTo([
             'schools.view', 'schools.settings',
             'users.view',
@@ -136,7 +136,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Deputy Principal
-        $deputyPrincipal = Role::create(['name' => 'deputy_principal']);
+        $deputyPrincipal = Role::firstOrCreate(['name' => 'deputy_principal']);
         $deputyPrincipal->givePermissionTo([
             'schools.view',
             'students.view', 'students.update',
@@ -153,7 +153,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Head of Department (HOD)
-        $hod = Role::create(['name' => 'hod']);
+        $hod = Role::firstOrCreate(['name' => 'hod']);
         $hod->givePermissionTo([
             'students.view',
             'teachers.view',
@@ -167,7 +167,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Teacher
-        $teacher = Role::create(['name' => 'teacher']);
+        $teacher = Role::firstOrCreate(['name' => 'teacher']);
         $teacher->givePermissionTo([
             'students.view',
             'teachers.view_own',
@@ -181,7 +181,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Class Teacher
-        $classTeacher = Role::create(['name' => 'class_teacher']);
+        $classTeacher = Role::firstOrCreate(['name' => 'class_teacher']);
         $classTeacher->givePermissionTo([
             'students.view', 'students.update',
             'teachers.view_own',
@@ -197,7 +197,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Parent/Guardian
-        $parent = Role::create(['name' => 'parent']);
+        $parent = Role::firstOrCreate(['name' => 'parent']);
         $parent->givePermissionTo([
             'students.view_own',
             'guardians.view_own',
@@ -211,7 +211,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Student
-        $student = Role::create(['name' => 'student']);
+        $student = Role::firstOrCreate(['name' => 'student']);
         $student->givePermissionTo([
             'students.view_own',
             'assessments.view_own',
@@ -224,7 +224,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Finance Officer
-        $financeOfficer = Role::create(['name' => 'finance_officer']);
+        $financeOfficer = Role::firstOrCreate(['name' => 'finance_officer']);
         $financeOfficer->givePermissionTo([
             'students.view',
             'guardians.view',
@@ -234,7 +234,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Librarian
-        $librarian = Role::create(['name' => 'librarian']);
+        $librarian = Role::firstOrCreate(['name' => 'librarian']);
         $librarian->givePermissionTo([
             'students.view',
             'teachers.view',
@@ -243,11 +243,17 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // School Nurse
-        $nurse = Role::create(['name' => 'nurse']);
+        $nurse = Role::firstOrCreate(['name' => 'nurse']);
         $nurse->givePermissionTo([
             'students.view',
             'health.view', 'health.manage',
             'communication.notifications',
         ]);
+
+        // Auto-assign super_admin role to the first user if they have no role
+        $firstUser = \App\Models\User::first();
+        if ($firstUser && $firstUser->roles->isEmpty()) {
+            $firstUser->assignRole('super_admin');
+        }
     }
 }

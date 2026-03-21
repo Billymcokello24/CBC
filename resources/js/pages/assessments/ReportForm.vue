@@ -92,7 +92,7 @@ const printReport = () => {
                         </div>
                         <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 min-w-[200px] print:bg-gray-50 print:border-black">
                             <p class="text-xs font-bold uppercase tracking-widest opacity-70 mb-1 print:text-gray-500">Student ID</p>
-                            <p class="text-xl font-black tracking-widest">{{ student?.admission_no }}</p>
+                            <p class="text-xl font-black tracking-widest">{{ student?.admission_number }}</p>
                         </div>
                     </div>
                 </div>

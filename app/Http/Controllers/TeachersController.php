@@ -240,6 +240,7 @@ class TeachersController extends Controller
 
         return DB::transaction(function () use ($validated, $request, $teacher) {
             $user = $teacher->user;
+
             $userData = [
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
@@ -247,11 +248,27 @@ class TeachersController extends Controller
                 'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
             ];
 
-            if ($validated['password']) {
+            if (!empty($validated['password'])) {
                 $userData['password'] = Hash::make($validated['password']);
             }
 
-            $user->update($userData);
+            if ($user) {
+                // Update existing User record
+                $user->update($userData);
+            } else {
+                // Auto-create a User account for teachers that don't have one
+                if (empty($userData['password'])) {
+                    // Default password = email if none provided
+                    $userData['password'] = Hash::make($validated['email']);
+                }
+                $userData['email_verified_at'] = now();
+                $user = User::create($userData);
+                $teacher->user_id = $user->id;
+
+                if (Role::where('name', 'teacher')->exists()) {
+                    $user->assignRole('teacher');
+                }
+            }
 
             $teacherData = collect($validated)->except(['password', 'password_confirmation', 'photo'])->toArray();
 

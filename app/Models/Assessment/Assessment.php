@@ -49,4 +49,14 @@ class Assessment extends Model
     {
         return $this->belongsTo(\App\Models\Curriculum\Subject::class);
     }
+
+    public function gradingScale(): BelongsTo
+    {
+        return $this->belongsTo(GradingScale::class);
+    }
+
+    public function teacher(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'teacher_id');
+    }
 }

@@ -12,18 +12,63 @@ use Inertia\Response;
 
 class AssessmentController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $schoolId = $this->getSchoolId();
+        $user = auth()->user();
+        
+        $query = Assessment::where('school_id', $schoolId)
+            ->with(['class', 'subject', 'teacher', 'assessmentType']);
+
+        // ── Role-based query scoping ──
+        $this->applyRoleScope($query, $user);
+
+        // Filters
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhereHas('subject', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
+                  ->orWhereHas('class', fn($cq) => $cq->where('name', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('class_id') && $request->class_id !== 'all') {
+            $query->where('class_id', $request->class_id);
+        }
+
+        if ($request->filled('subject_id') && $request->subject_id !== 'all') {
+            $query->where('subject_id', $request->subject_id);
+        }
+
+        $stats = [
+            'total' => Assessment::where('school_id', $schoolId)->count(),
+            'thisWeek' => Assessment::where('school_id', $schoolId)
+                ->whereBetween('assessment_date', [now()->startOfWeek(), now()->endOfWeek()])
+                ->count(),
+            'pendingGrading' => Assessment::where('school_id', $schoolId)
+                ->where('status', 'published')
+                ->count(),
+            'avgScore' => 0 
+        ];
+
         return Inertia::render('assessments/Index', [
-            'assessments' => Assessment::with(['class', 'subject', 'teacher', 'assessmentType'])
-                ->latest()
-                ->paginate(20),
+            'assessments' => $query->latest()->paginate($request->input('per_page', 20)),
+            'stats' => $stats,
+            'filters' => $request->only(['search', 'status', 'class_id', 'subject_id', 'per_page', 'view']),
+            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
+            'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId))->get(),
         ]);
     }
 
+
     public function create(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
 
         return Inertia::render('assessments/Create', [
             'assessmentTypes' => AssessmentType::where('school_id', $schoolId)->where('is_active', true)->get(),
@@ -38,7 +83,7 @@ class AssessmentController extends Controller
 
     public function gradingIndex(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
         
         $assessments = Assessment::where('school_id', $schoolId)
             ->with(['class', 'subject', 'assessmentType'])
@@ -56,7 +101,7 @@ class AssessmentController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'class_id' => 'required|exists:school_classes,id',
+            'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
             'rubric_id' => 'required|exists:rubrics,id',
             'assessment_type_id' => 'required|exists:assessment_types,id',
@@ -70,7 +115,7 @@ class AssessmentController extends Controller
 
         $assessment = new Assessment();
         $assessment->fill($validated);
-        $assessment->school_id = auth()->user()->school_id;
+        $assessment->school_id = $this->getSchoolId();
         $assessment->teacher_id = auth()->user()->id; // Assuming the logged in user is the teacher
         $assessment->created_by = auth()->user()->id;
         
@@ -88,12 +133,12 @@ class AssessmentController extends Controller
 
     public function grading(int $id): Response
     {
-        $assessment = Assessment::with(['class', 'subject', 'assessmentType', 'gradingScale.descriptors'])
+        $assessment = Assessment::with(['class', 'subject', 'assessmentType', 'gradingScale.descriptors', 'rubric.criteria.levels'])
             ->findOrFail($id);
 
         $students = \App\Models\Student::where('current_class_id', $assessment->class_id)
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'admission_no', 'photo']);
+            ->get(['id', 'first_name', 'last_name', 'admission_number', 'photo']);
 
         $results = \App\Models\Assessment\StudentAssessment::where('assessment_id', $id)
             ->get()
@@ -108,7 +153,7 @@ class AssessmentController extends Controller
 
     public function storeGrading(Request $request, int $id)
     {
-        $assessment = Assessment::with('gradingScale.descriptors')->findOrFail($id);
+        $assessment = Assessment::with(['gradingScale.descriptors', 'rubric.criteria.levels'])->findOrFail($id);
         
         $validated = $request->validate([
             'results' => 'required|array',
@@ -124,11 +169,24 @@ class AssessmentController extends Controller
             $gradeLevel = null;
 
             if ($marks !== null && !$result['is_absent']) {
-                $gradeDescriptor = $assessment->gradingScale->descriptors
-                    ->where('min_score', '<=', $marks)
-                    ->where('max_score', '>=', $marks)
-                    ->first();
-                $gradeLevel = $gradeDescriptor?->level_code;
+                if ($assessment->grading_scale_id && $assessment->gradingScale) {
+                    $gradeDescriptor = $assessment->gradingScale->descriptors
+                        ->where('min_score', '<=', $marks)
+                        ->where('max_score', '>=', $marks)
+                        ->first();
+                    $gradeLevel = $gradeDescriptor?->level_code;
+                } elseif ($assessment->rubric_id && $assessment->rubric) {
+                    // For rubric-based assessments, we might have multiple criteria, 
+                    // but for a simple score-based lookup, we can find the level from the FIRST criterion
+                    $firstCriterion = $assessment->rubric->criteria->first();
+                    if ($firstCriterion) {
+                        $level = $firstCriterion->levels
+                            ->where('min_score', '<=', $marks)
+                            ->where('max_score', '>=', $marks)
+                            ->first();
+                        $gradeLevel = $level?->grade_code;
+                    }
+                }
             }
 
             \App\Models\Assessment\StudentAssessment::updateOrCreate(
@@ -151,7 +209,7 @@ class AssessmentController extends Controller
 
     public function reportCards(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
         $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
@@ -171,7 +229,7 @@ class AssessmentController extends Controller
     public function showReport(int $studentId): Response
     {
         $student = \App\Models\Student::with('currentClass')->findOrFail($studentId);
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
         $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
@@ -236,7 +294,7 @@ class AssessmentController extends Controller
 
     public function rubrics(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
         
         $rubrics = \App\Models\Assessment\Rubric::where('school_id', $schoolId)
             ->with(['subject', 'assessmentType', 'criteria.levels'])
@@ -255,7 +313,7 @@ class AssessmentController extends Controller
 
     public function rubricCreate(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
 
         return Inertia::render('assessments/RubricForm', [
             'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
@@ -283,7 +341,7 @@ class AssessmentController extends Controller
         ]);
 
         $rubric = \App\Models\Assessment\Rubric::create([
-            'school_id' => auth()->user()->school_id,
+            'school_id' => $this->getSchoolId(),
             'name' => $validated['name'],
             'description' => $validated['description'],
             'subject_id' => $validated['subject_id'] ?: null,
@@ -306,7 +364,7 @@ class AssessmentController extends Controller
 
     public function rubricEdit(int $id): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
         $rubric = \App\Models\Assessment\Rubric::with(['criteria.levels'])->findOrFail($id);
 
         return Inertia::render('assessments/RubricForm', [
@@ -364,21 +422,100 @@ class AssessmentController extends Controller
 
     public function results(): Response
     {
-        $schoolId = auth()->user()->school_id;
+        $schoolId = $this->getSchoolId();
+        $user = auth()->user();
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
         $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
-        // Fetch students with their assessment results for the current term
-        $students = \App\Models\Student::where('school_id', $schoolId)
-            ->with(['currentClass', 'assessmentResults.assessment.subject', 'assessmentResults.assessment.assessmentType'])
+        // Fetch students scoped by role
+        $query = \App\Models\Student::where('school_id', $schoolId);
+
+        // Teacher scoper: only students in their assigned classes
+        if ($user->hasRole('teacher') && !$user->hasAnyRole(['super_admin', 'school_admin'])) {
+            $classIds = \App\Models\TeacherSubject::where('teacher_id', $user->teacher->id)->pluck('class_id')
+                ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
+                ->unique();
+            $query->whereIn('current_class_id', $classIds);
+        }
+
+        $students = $query->with(['currentClass', 'assessmentResults.assessment.subject', 'assessmentResults.assessment.assessmentType'])
             ->paginate(20);
 
         return Inertia::render('assessments/Results', [
             'students' => $students,
             'activeYear' => $activeYear,
             'activeTerm' => $activeTerm,
-            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
+            'classes' => \App\Models\Academic\SchoolClass::whereIn('id', $classIds ?? \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->pluck('id'))->get(),
         ]);
+    }
+
+    public function bulkUploadView(): Response
+    {
+        $schoolId = $this->getSchoolId();
+        return Inertia::render('assessments/BulkUpload', [
+            'assessments' => \App\Models\Assessment\Assessment::where('school_id', $schoolId)->where('teacher_id', auth()->id())->get(),
+        ]);
+    }
+
+    public function bulkUpload(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'assessment_id' => 'required|exists:assessments,id',
+            'file' => 'required|file|mimes:csv,txt,xlsx',
+        ]);
+
+        $assessment = Assessment::findOrFail($request->assessment_id);
+        $file = $request->file('file');
+        
+        // Ensure teacher owns this assessment
+        if ($assessment->teacher_id !== auth()->id() && !auth()->user()->hasRole('super_admin')) {
+             return redirect()->back()->with('error', 'Unauthorized to upload marks for this assessment.');
+        }
+
+        $path = $file->getRealPath();
+        $data = array_map('str_getcsv', file($path));
+        
+        // Remove header
+        array_shift($data);
+
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($data as $row) {
+            if (count($row) < 2) continue;
+
+            $admissionNumber = trim($row[0]);
+            $score = (float) $row[1];
+
+            $student = \App\Models\Student::where('admission_number', $admissionNumber)->first();
+
+            if ($student && $score <= $assessment->max_marks) {
+                \App\Models\Assessment\StudentAssessment::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'assessment_id' => $assessment->id,
+                    ],
+                    [
+                        'marks_obtained' => $score,
+                        'graded_by' => auth()->id(),
+                        'graded_at' => now(),
+                        'grade_descriptor_id' => $this->calculateGradeDescriptor($score, $assessment),
+                    ]
+                );
+                $successCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+
+        return redirect()->back()->with('success', "Processed marks: $successCount successful, $errorCount errors.");
+    }
+
+    private function calculateGradeDescriptor($score, $assessment)
+    {
+        // Simple placeholder for grade calculation logic
+        // Should ideally look up from a Rubric or GradeScale
+        return null; 
     }
 
     public function exportResults()
@@ -404,4 +541,83 @@ class AssessmentController extends Controller
         // Placeholder for assessment import logic
         return redirect()->back()->with('success', 'Assessments imported successfully (Placeholder).');
     }
+
+    /**
+     * Apply role-based scoping to an assessment query.
+     * Admins/principals see all; teachers see own; HoDs see department; parents see children's classes.
+     */
+    private function applyRoleScope($query, $user)
+    {
+        if (!$user) return;
+
+        // Admin roles bypass scoping
+        if ($user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal'])) {
+            return;
+        }
+
+        // Teacher — only own assessments
+        if ($user->hasRole('teacher') && !$user->hasRole('class_teacher') && !$user->hasRole('hod')) {
+            $query->where('teacher_id', $user->id);
+            return;
+        }
+
+        // Class teacher — assessments for their class + own
+        if ($user->hasRole('class_teacher')) {
+            $classIds = \App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
+            $query->where(function($q) use ($user, $classIds) {
+                $q->where('teacher_id', $user->id)
+                  ->orWhereIn('class_id', $classIds);
+            });
+            return;
+        }
+
+        // HoD — assessments for subjects in their department
+        if ($user->hasRole('hod')) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            if ($teacher?->department_id) {
+                $subjectIds = \App\Models\Curriculum\Subject::where('department_id', $teacher->department_id)->pluck('id')->toArray();
+                $query->whereIn('subject_id', $subjectIds);
+            }
+            return;
+        }
+
+        // Parent — assessments for classes their children are in
+        if ($user->hasRole('parent')) {
+            $guardian = \App\Models\Guardian::where('user_id', $user->id)->first();
+            if ($guardian) {
+                $childClassIds = $guardian->students()->pluck('current_class_id')->filter()->toArray();
+                $query->whereIn('class_id', $childClassIds);
+            }
+            return;
+        }
+
+        // Student — only assessments for their class
+        if ($user->hasRole('student')) {
+            $student = \App\Models\Student::where('user_id', $user->id)->first();
+            if ($student) {
+                $query->where('class_id', $student->current_class_id);
+            }
+            return;
+        }
+    }
+
+    private function getSchoolId()
+    {
+        $user = auth()->user();
+        if (!$user) return null;
+
+        // Check if user is a teacher
+        if ($user->teacher) {
+            return $user->teacher->school_id;
+        }
+
+        // Check if user is a student
+        if ($user->student) {
+            return $user->student->school_id;
+        }
+
+        // Fallback to first school for admins
+        return \App\Models\School::first()?->id;
+    }
 }
+

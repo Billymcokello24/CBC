@@ -2,22 +2,23 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { BookMarked, Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, FileCode, Beaker } from 'lucide-vue-next';
 import { ref } from 'vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
-    rubrics: {
+    rubrics?: {
         data: Array<any>;
         links: Array<any>;
         meta: any;
     };
-    subjects: Array<any>;
 }>();
+
+// Safe fallback for props
+const rubrics = props.rubrics ?? { data: [], links: [], meta: {} };
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -31,7 +32,8 @@ const searchQuery = ref('');
 <template>
     <Head title="Rubrics" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-6xl mx-auto">
+        <!-- 80% width centered container for rubrics page -->
+        <div class="flex h-full flex-1 flex-col gap-6 p-6 w-4/5 mx-auto">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 border border-orange-200 shadow-sm">
@@ -79,11 +81,11 @@ const searchQuery = ref('');
             </div>
 
             <div v-else class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div v-for="rubric in rubrics.data" :key="rubric.id" 
+                <div v-for="rubric in rubrics.data" :key="rubric.id"
                     class="group relative bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden"
                 >
                     <div class="absolute -right-12 -top-12 h-40 w-40 bg-orange-50 rounded-full opacity-50 group-hover:scale-150 transition-transform duration-700"></div>
-                    
+
                     <div class="relative">
                         <div class="flex items-start justify-between mb-6">
                             <div class="h-14 w-14 bg-orange-100 rounded-2xl flex items-center justify-center text-orange-600 shadow-inner">
@@ -110,7 +112,7 @@ const searchQuery = ref('');
                                 {{ rubric.total_points }} Max Points
                             </Badge>
                         </div>
-                        
+
                         <p class="text-sm text-muted-foreground font-medium line-clamp-3 min-h-[60px] italic">
                             {{ rubric.description || 'Standardized grading criteria for evaluating student performance levels.' }}
                         </p>

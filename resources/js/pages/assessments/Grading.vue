@@ -29,7 +29,7 @@ const filteredStudents = computed(() => {
     const query = searchQuery.value.toLowerCase();
     return props.students.filter(s => 
         `${s.first_name} ${s.last_name}`.toLowerCase().includes(query) || 
-        s.admission_no.toLowerCase().includes(query)
+        s.admission_number.toLowerCase().includes(query)
     );
 });
 
@@ -135,7 +135,7 @@ const autoSave = (index: number) => {
                                         </Avatar>
                                         <div>
                                             <div class="font-bold text-gray-900 capitalize">{{ student.first_name }} {{ student.last_name }}</div>
-                                            <div class="text-xs text-muted-foreground font-medium">ADM: {{ student.admission_no }}</div>
+                                            <div class="text-xs text-muted-foreground font-medium">ADM: {{ student.admission_number }}</div>
                                         </div>
                                     </div>
                                 </td>

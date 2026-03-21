@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -33,10 +34,22 @@ class StudentsController extends Controller
         $county = trim((string) $request->string('county'));
         $perPage = min(max((int) $request->integer('per_page', 15), 5), 500);
 
+        $user = auth()->user();
         $query = Student::query()
             ->select('students.*')
-            ->with(['currentClass:id,name,code'])
-            ->when($search !== '', fn ($q) => $q->search($search))
+            ->with(['currentClass:id,name,code']);
+
+        // Scope to teacher's classes if not a super admin
+        if ($user && $user->hasRole('teacher') && !$user->hasRole('super_admin')) {
+            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
+            $myClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->pluck('class_id')
+                ->merge(DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id'))
+                ->unique()
+                ->toArray();
+            $query->whereIn('current_class_id', $myClassIds);
+        }
+
+        $query->when($search !== '', fn ($q) => $q->search($search))
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))
             ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
@@ -810,7 +823,7 @@ class StudentsController extends Controller
             'name' => trim((string) $data['name']),
             'email' => $data['email'],
             'phone' => $data['phone'],
-            'password' => $data['password'],
+            'password' => Hash::make($data['password']),
             'status' => 'active',
             'locale' => config('app.locale'),
             'timezone' => config('app.timezone'),
@@ -865,7 +878,7 @@ class StudentsController extends Controller
                 'name' => $data['name'] ?: $existingGuardian->full_name,
                 'email' => $data['email'] ?: $existingGuardian->email,
                 'phone' => $data['phone'] ?: $existingGuardian->phone,
-                'password' => $data['password'] ?: null,
+                'password' => $data['password'] ? Hash::make($data['password']) : null,
             ], fn ($value) => $value !== null && $value !== ''));
 
             $existingGuardian->update([

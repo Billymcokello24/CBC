@@ -114,6 +114,11 @@ class Teacher extends Model
         return $this->hasMany(SchoolClass::class, 'class_teacher_id', 'user_id');
     }
 
+    public function timetableSlots(): HasMany
+    {
+        return $this->hasMany(\App\Models\Academic\TimetableSlot::class, 'teacher_id');
+    }
+
     public function getFullNameAttribute(): string
     {
         return trim("{$this->first_name} {$this->middle_name} {$this->last_name}");

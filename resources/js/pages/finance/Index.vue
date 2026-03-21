@@ -8,17 +8,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
+const props = defineProps<{
+    recentPayments: any[];
+    stats: {
+        total_collections: number;
+        pending_fees: number;
+        today_collection: number;
+        overdue: number;
+    };
+}>();
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Finance', href: '/finance' },
 ];
-const recentPayments = ref([
-    { id: 1, student: 'John Kamau', amount: 25000, date: '2026-03-10', method: 'M-Pesa', status: 'completed' },
-    { id: 2, student: 'Mary Wanjiku', amount: 15000, date: '2026-03-10', method: 'Bank Transfer', status: 'completed' },
-    { id: 3, student: 'Peter Ochieng', amount: 30000, date: '2026-03-09', method: 'M-Pesa', status: 'completed' },
-    { id: 4, student: 'Sarah Muthoni', amount: 20000, date: '2026-03-09', method: 'Cash', status: 'pending' },
-]);
-const formatCurrency = (amount: number) => new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', minimumFractionDigits: 0 }).format(amount);
+
+const formatCurrency = (amount: number | string) => {
+    const value = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('en-KE', { 
+        style: 'currency', 
+        currency: 'KES', 
+        minimumFractionDigits: 0 
+    }).format(value || 0);
+};
 </script>
 <template>
     <Head title="Finance" />
@@ -27,7 +39,7 @@ const formatCurrency = (amount: number) => new Intl.NumberFormat('en-KE', { styl
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
                     <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10">
-                        <DollarSign class="h-6 w-6 text-green-600" />
+                        <span class="text-green-600 font-bold text-xl">KES</span>
                     </div>
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight">Finance</h1>
@@ -40,42 +52,44 @@ const formatCurrency = (amount: number) => new Intl.NumberFormat('en-KE', { styl
                 </div>
             </div>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-6 dark:from-green-950/50 dark:to-green-900/30">
+                <div class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-6 dark:from-green-950/50 dark:to-green-900/30 font-pulsar">
                     <div class="flex items-center justify-between">
                         <div class="rounded-lg bg-green-500/10 p-2"><TrendingUp class="h-5 w-5 text-green-600" /></div>
-                        <span class="flex items-center text-sm text-green-600"><ArrowUpRight class="h-4 w-4" />12%</span>
+                        <span class="flex items-center text-sm text-green-600 font-medium"><ArrowUpRight class="h-4 w-4 mr-1" />Total Collection</span>
                     </div>
                     <div class="mt-4">
                         <p class="text-sm text-muted-foreground">Total Collections</p>
-                        <p class="text-2xl font-bold text-green-600">{{ formatCurrency(2850000) }}</p>
+                        <p class="text-2xl font-bold text-green-600 font-pulsar">{{ formatCurrency(stats.total_collections) }}</p>
                     </div>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-amber-50 to-amber-100/50 p-6 dark:from-amber-950/50 dark:to-amber-900/30">
                     <div class="flex items-center justify-between">
                         <div class="rounded-lg bg-amber-500/10 p-2"><PiggyBank class="h-5 w-5 text-amber-600" /></div>
-                        <span class="flex items-center text-sm text-amber-600"><ArrowDownRight class="h-4 w-4" />5%</span>
+                        <span class="flex items-center text-sm text-amber-600">Pending</span>
                     </div>
                     <div class="mt-4">
                         <p class="text-sm text-muted-foreground">Pending Fees</p>
-                        <p class="text-2xl font-bold text-amber-600">{{ formatCurrency(450000) }}</p>
+                        <p class="text-2xl font-bold text-amber-600">{{ formatCurrency(stats.pending_fees) }}</p>
                     </div>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 dark:from-blue-950/50 dark:to-blue-900/30">
                     <div class="flex items-center justify-between">
                         <div class="rounded-lg bg-blue-500/10 p-2"><CreditCard class="h-5 w-5 text-blue-600" /></div>
+                        <span class="flex items-center text-sm text-blue-600 font-medium">Daily</span>
                     </div>
                     <div class="mt-4">
                         <p class="text-sm text-muted-foreground">Today's Collection</p>
-                        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(125000) }}</p>
+                        <p class="text-2xl font-bold text-blue-600">{{ formatCurrency(stats.today_collection) }}</p>
                     </div>
                 </div>
                 <div class="rounded-xl border bg-gradient-to-br from-red-50 to-red-100/50 p-6 dark:from-red-950/50 dark:to-red-900/30">
                     <div class="flex items-center justify-between">
                         <div class="rounded-lg bg-red-500/10 p-2"><TrendingDown class="h-5 w-5 text-red-600" /></div>
+                        <span class="flex items-center text-sm text-red-600 font-medium font-pulsar">Overdue</span>
                     </div>
                     <div class="mt-4">
                         <p class="text-sm text-muted-foreground">Overdue</p>
-                        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(85000) }}</p>
+                        <p class="text-2xl font-bold text-red-600">{{ formatCurrency(stats.overdue) }}</p>
                     </div>
                 </div>
             </div>
