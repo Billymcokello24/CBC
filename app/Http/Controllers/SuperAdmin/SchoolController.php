@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers\SuperAdmin;
+
+use App\Http\Controllers\Controller;
+use App\Models\School;
+use App\Models\SchoolType;
+use App\Models\SchoolLevel;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class SchoolController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return Inertia::render('super-admin/schools/Index', [
+            'schools' => School::withCount(['users', 'students'])
+                ->latest()
+                ->paginate(10)
+                ->withQueryString(),
+        ]);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return Inertia::render('super-admin/schools/Create', [
+            'schoolTypes' => SchoolType::all(),
+            'schoolLevels' => SchoolLevel::all(),
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:schools,code',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'county' => 'required|string|max:100',
+            'school_type_id' => 'required|exists:school_types,id',
+            'school_level_id' => 'required|exists:school_levels,id',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        School::create($validated);
+
+        return redirect()->route('super-admin.schools.index')
+            ->with('success', 'School created successfully.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(School $school)
+    {
+        return Inertia::render('super-admin/schools/Show', [
+            'school' => $school->load(['users', 'schoolType', 'schoolLevel']),
+            'stats' => [
+                'users_count' => $school->users()->count(),
+                'students_count' => $school->students()->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(School $school)
+    {
+        return Inertia::render('super-admin/schools/Edit', [
+            'school' => $school,
+            'schoolTypes' => SchoolType::all(),
+            'schoolLevels' => SchoolLevel::all(),
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, School $school)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
+            'phone' => 'required|string|max:20',
+            'county' => 'required|string|max:100',
+            'status' => 'required|in:active,inactive',
+        ]);
+
+        $school->update($validated);
+
+        return redirect()->route('super-admin.schools.index')
+            ->with('success', 'School updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(School $school)
+    {
+        // For safety, we might want to just deactivate instead of delete
+        $school->delete();
+
+        return redirect()->route('super-admin.schools.index')
+            ->with('success', 'School deleted successfully.');
+    }
+}

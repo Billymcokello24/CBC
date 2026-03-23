@@ -170,7 +170,7 @@ const teacherGrowthDirection = computed(() => props.stats.teacher_growth >= 0 ? 
             <!-- Stats Grid -->
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
-                    title="Total Students"
+                    title="Total Learners"
                     :value="props.stats.total_students.toLocaleString()"
                     description="from last term"
                     :icon="GraduationCap"

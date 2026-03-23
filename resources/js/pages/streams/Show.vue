@@ -37,52 +37,86 @@ const breadcrumbs: BreadcrumbItem[] = [
 <template>
     <Head :title="stream.name" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div class="flex items-center justify-between gap-4">
+        <div class="w-full py-12 px-4 sm:px-6 lg:px-8 space-y-12 animate-in fade-in duration-500">
+            <!-- Header Section -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10">
-                        <Rows3 class="h-6 w-6 text-cyan-600" />
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg text-white">
+                        <Rows3 class="h-6 w-6" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">{{ stream.name }}</h1>
-                        <p class="text-muted-foreground">{{ stream.code }}</p>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{ stream.name }}</h1>
+                            <Badge variant="secondary" class="rounded-full px-3 py-0.5 h-5 text-[10px] font-bold bg-blue-50 text-blue-600 border-none uppercase">{{ stream.code }}</Badge>
+                        </div>
+                        <p class="text-sm text-muted-foreground mt-1">Management overview for academic stream.</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Button variant="outline" as-child><Link :href="`/streams/${stream.id}/edit`">Edit Stream</Link></Button>
-                    <Button variant="outline" as-child><Link href="/streams">Back to Streams</Link></Button>
+                    <Button variant="outline" class="h-11 rounded-xl border-slate-200 text-xs font-bold uppercase tracking-wider px-6 hover:bg-slate-50 transition-all shadow-sm" as-child><Link :href="`/streams/${stream.id}/edit`">Stream Settings</Link></Button>
+                    <Button variant="ghost" class="h-11 rounded-xl text-slate-500 hover:text-slate-700 text-xs font-bold uppercase tracking-wider px-4" as-child><Link href="/streams">Back to Streams</Link></Button>
                 </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Lead</div><div class="mt-1 font-semibold">{{ stream.lead_name || 'Not assigned' }}</div></div>
-                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Capacity</div><div class="mt-1 text-2xl font-bold">{{ stream.capacity ?? '—' }}</div></div>
-                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Classes</div><div class="mt-1 text-2xl font-bold text-blue-600">{{ classes.length }}</div></div>
-                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Status</div><div class="mt-1"><Badge>{{ stream.is_active ? 'Active' : 'Inactive' }}</Badge></div></div>
-            </div>
-
-            <div class="rounded-xl border bg-card p-6">
-                <div class="mb-4 flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold">Classes Under {{ stream.name }}</h2>
-                        <p class="text-sm text-muted-foreground">Open any class to manage its students and operations</p>
+            <!-- Stats Bar -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-2xl border bg-white p-6 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Stream Head</p>
+                    <div class="flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600">{{ stream.lead_name?.charAt(0) || '?' }}</div>
+                        <p class="font-bold text-slate-900">{{ stream.lead_name || 'Not assigned' }}</p>
                     </div>
                 </div>
-                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <Link v-for="classroom in classes" :key="classroom.id" :href="`/classes/${classroom.id}`" class="rounded-xl border bg-card p-5 transition hover:border-primary/40 hover:shadow-md">
-                        <div class="flex items-start justify-between gap-4">
+                <div class="rounded-2xl border bg-white p-6 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Class Capacity</p>
+                    <p class="text-3xl font-bold text-slate-900">{{ stream.capacity ?? '—' }}</p>
+                </div>
+                <div class="rounded-2xl border bg-white p-6 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Total Classes</p>
+                    <p class="text-3xl font-bold text-blue-600">{{ classes.length }}</p>
+                </div>
+                <div class="rounded-2xl border bg-white p-6 shadow-sm">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Stream Status</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <div class="h-2 w-2 rounded-full" :class="stream.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'"></div>
+                        <span class="text-sm font-bold" :class="stream.is_active ? 'text-emerald-600' : 'text-slate-400'">{{ stream.is_active ? 'Active' : 'Inactive' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classes Section -->
+            <div class="space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Classes in this Stream</h2>
+                    <p class="text-sm text-muted-foreground mt-1">Open any class to manage its learners and operations.</p>
+                </div>
+                
+                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <Link v-for="classroom in classes" :key="classroom.id" :href="`/classes/${classroom.id}`" class="group rounded-2xl border bg-white p-6 transition-all hover:shadow-lg hover:border-blue-100 border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="flex items-start justify-between gap-4 mb-6">
                             <div>
-                                <h3 class="text-lg font-semibold">{{ classroom.name }}</h3>
-                                <p class="text-sm text-muted-foreground">{{ classroom.code }}<span v-if="classroom.grade"> • {{ classroom.grade }}</span></p>
-                                <p class="mt-1 text-xs text-muted-foreground">Teacher: {{ classroom.teacher || 'Not assigned' }}</p>
+                                <h3 class="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase">{{ classroom.name }}</h3>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{{ classroom.code }}<span v-if="classroom.grade" class="ml-2">• {{ classroom.grade }}</span></p>
                             </div>
-                            <div class="rounded-full bg-primary/10 p-2 text-primary">
-                                <School class="h-4 w-4" />
+                            <div class="rounded-xl bg-blue-50 p-2.5 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                <School class="h-5 w-5" />
                             </div>
                         </div>
-                        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Students</div><div class="mt-1 font-semibold">{{ classroom.students_count }}</div></div>
-                            <div class="rounded-lg border p-3"><div class="text-muted-foreground">Capacity</div><div class="mt-1 font-semibold">{{ classroom.capacity ?? '—' }}</div></div>
+
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl mb-6">
+                            <div class="h-7 w-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600 uppercase">{{ classroom.teacher?.charAt(0) || '?' }}</div>
+                            <p class="text-[10px] font-bold text-slate-600 uppercase truncate">Teacher: {{ classroom.teacher || 'Not assigned' }}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="rounded-xl border border-slate-100 p-4 bg-white shadow-sm">
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">Learners</p>
+                                <p class="text-base font-bold text-blue-600">{{ classroom.students_count }}</p>
+                            </div>
+                            <div class="rounded-xl border border-slate-100 p-4 bg-white shadow-sm">
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1">Capacity</p>
+                                <p class="text-base font-bold text-slate-900">{{ classroom.capacity ?? '—' }}</p>
+                            </div>
                         </div>
                     </Link>
                 </div>

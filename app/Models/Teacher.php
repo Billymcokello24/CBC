@@ -13,13 +13,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+use App\Traits\BelongsToSchool;
+
 class Teacher extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, BelongsToSchool;
 
     protected $fillable = [
-        'user_id', 'school_id', 'department_id', 'staff_category_id', 'staff_designation_id',
-        'staff_number', 'tsc_number', 'first_name', 'middle_name', 'last_name', 'gender',
+        'school_id',
+        'user_id',
+        'staff_number',
+        'department_id', 'staff_category_id', 'staff_designation_id',
+        'tsc_number', 'first_name', 'middle_name', 'last_name', 'gender',
         'date_of_birth', 'id_number', 'nationality', 'email', 'phone', 'alternate_phone',
         'address', 'county', 'sub_county', 'photo', 'date_joined', 'date_left',
         'contract_type', 'employment_type', 'marital_status', 'blood_group',

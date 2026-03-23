@@ -6,14 +6,16 @@ use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToSchool;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AcademicTerm extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'academic_year_id', 'name', 'term_number', 'start_date',
-        'end_date', 'total_weeks', 'is_current', 'status'
+        'school_id', 'academic_year_id', 'name', 'start_date',
+        'end_date', 'is_current', 'status'
     ];
 
     protected $casts = [

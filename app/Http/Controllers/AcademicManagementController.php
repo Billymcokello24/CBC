@@ -181,16 +181,23 @@ class AcademicManagementController extends Controller
 
     public function classes(Request $request): Response
     {
-        $search = trim((string) $request->string('search'));
-        $gradeId = $request->integer('grade_id');
-        $view = (string) $request->string('view', 'grid');
-        $perPage = min(max((int) $request->integer('per_page', 20), 5), 1000);
+        $search = trim((string) $request->input('search'));
+        $gradeId = $request->input('grade_id');
+        $status = $request->input('status');
+        $academicYearId = $request->input('academic_year_id');
+        $view = $request->input('view', 'grid');
+        $perPage = min(max((int) $request->input('per_page', 20), 5), 1000);
 
         $classes = SchoolClass::query()
-            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name'])
+            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name'])
             ->withCount(['students as students_count' => fn ($q) => $q->where('status', 'active')])
-            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
-            ->when($gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
+            ->when($request->filled('search'), function ($q) use ($search) {
+                $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('grade_id') && $gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
+            ->when($request->filled('status') && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->when($request->filled('academic_year_id') && $academicYearId > 0, fn ($q) => $q->where('academic_year_id', $academicYearId))
             ->orderBy('name')
             ->paginate($perPage)
             ->withQueryString();
@@ -203,11 +210,12 @@ class AcademicManagementController extends Controller
                 'grade' => $class->gradeLevel?->name,
                 'stream' => $class->stream?->name,
                 'stream_code' => $class->stream?->code,
-                'teacher' => null,
+                'teacher' => $class->classTeacher?->name,
                 'students' => $class->students_count,
                 'capacity' => $class->capacity,
                 'academic_year' => $class->academicYear?->name,
                 'utilization' => $class->capacity ? round(($class->students_count / $class->capacity) * 100) : 0,
+                'is_active' => (bool) $class->is_active,
             ];
         });
 
@@ -221,11 +229,19 @@ class AcademicManagementController extends Controller
             ],
             'filters' => [
                 'search' => $search,
-                'grade_id' => $gradeId ?: null,
+                'grade_id' => $gradeId ? (int) $gradeId : null,
+                'status' => $status ?: 'all',
+                'academic_year_id' => $academicYearId ? (int) $academicYearId : null,
                 'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
                 'per_page' => $perPage,
             ],
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
+            'academicYears' => DB::table('academic_years')->orderByDesc('start_date')->get(['id', 'name']),
+            'statusOptions' => [
+                ['value' => 'all', 'label' => 'All Statuses'],
+                ['value' => 'active', 'label' => 'Active'],
+                ['value' => 'inactive', 'label' => 'Inactive'],
+            ],
         ]);
     }
 
@@ -309,6 +325,18 @@ class AcademicManagementController extends Controller
         $class->delete();
 
         return redirect()->route('classes.index')->with('success', 'Class deleted successfully.');
+    }
+
+    public function activateClass(int $id): RedirectResponse
+    {
+        SchoolClass::whereKey($id)->update(['is_active' => true]);
+        return back()->with('success', 'Class activated successfully.');
+    }
+
+    public function deactivateClass(int $id): RedirectResponse
+    {
+        SchoolClass::whereKey($id)->update(['is_active' => false]);
+        return back()->with('success', 'Class deactivated successfully.');
     }
 
     public function bulkAction(Request $request): RedirectResponse
@@ -690,6 +718,18 @@ class AcademicManagementController extends Controller
         $grade->delete();
 
         return redirect()->route('grades.index')->with('success', 'Grade deleted successfully.');
+    }
+
+    public function activateGrade(int $id): RedirectResponse
+    {
+        GradeLevel::whereKey($id)->update(['is_active' => true]);
+        return back()->with('success', 'Grade activated successfully.');
+    }
+
+    public function deactivateGrade(int $id): RedirectResponse
+    {
+        GradeLevel::whereKey($id)->update(['is_active' => false]);
+        return back()->with('success', 'Grade deactivated successfully.');
     }
 
     public function bulkGradeAction(Request $request): RedirectResponse
@@ -1411,6 +1451,18 @@ class AcademicManagementController extends Controller
         return back()->with('success', 'Department deleted successfully.');
     }
 
+    public function activateDepartment(int $id): RedirectResponse
+    {
+        \App\Models\Academic\Department::whereKey($id)->update(['is_active' => true]);
+        return back()->with('success', 'Department activated successfully.');
+    }
+
+    public function deactivateDepartment(int $id): RedirectResponse
+    {
+        \App\Models\Academic\Department::whereKey($id)->update(['is_active' => false]);
+        return back()->with('success', 'Department deactivated successfully.');
+    }
+
     public function showDepartment(int $id): Response
     {
         $dept = \App\Models\Academic\Department::with('headOfDepartment')->findOrFail($id);
@@ -1640,15 +1692,22 @@ class AcademicManagementController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function bulkDeleteDepartments(Request $request): RedirectResponse
+    public function bulkDepartmentAction(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'ids' => ['required', 'array'],
-            'ids.*' => ['exists:departments,id'],
+            'department_ids' => ['required', 'array', 'min:1'],
+            'department_ids.*' => ['integer', 'exists:departments,id'],
+            'action' => ['required', Rule::in(['activate', 'deactivate', 'delete'])],
         ]);
 
-        \App\Models\Academic\Department::whereIn('id', $validated['ids'])->delete();
+        $query = \App\Models\Academic\Department::query()->whereIn('id', $validated['department_ids']);
+        
+        match ($validated['action']) {
+            'activate' => $query->update(['is_active' => true]),
+            'deactivate' => $query->update(['is_active' => false]),
+            'delete' => $query->delete(),
+        };
 
-        return back()->with('success', count($validated['ids']) . ' departments deleted successfully.');
+        return back()->with('success', 'Bulk department action completed successfully.');
     }
 }

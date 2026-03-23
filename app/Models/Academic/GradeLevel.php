@@ -6,13 +6,14 @@ use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\BelongsToSchool;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GradeLevel extends Model
 {
-    protected $fillable = [
-        'school_id', 'name', 'code', 'level_order', 'category',
-        'minimum_age', 'maximum_age', 'description', 'is_active'
-    ];
+    use SoftDeletes, BelongsToSchool;
+
+    protected $fillable = ['school_id', 'name', 'code', 'level_index', 'status'];
 
     protected $casts = ['is_active' => 'boolean'];
 

@@ -260,14 +260,14 @@ const confirmAction = () => {
 };
 
 const modalTitle = computed(() => {
-    if (confirmMode.value === 'activate') return 'Activate student';
-    if (confirmMode.value === 'delete') return 'Delete student';
-    if (confirmMode.value === 'bulkDelete') return 'Delete selected students';
-    return 'Suspend student';
+    if (confirmMode.value === 'activate') return 'Activate learner';
+    if (confirmMode.value === 'delete') return 'Delete learner';
+    if (confirmMode.value === 'bulkDelete') return 'Delete selected learners';
+    return 'Suspend learner';
 });
 
 const modalMessage = computed(() => {
-    if (confirmMode.value === 'bulkDelete') return `Are you sure you want to delete ${selectedStudentIds.value.length} selected students? This action cannot be undone.`;
+    if (confirmMode.value === 'bulkDelete') return `Are you sure you want to delete ${selectedStudentIds.value.length} selected learners? This action cannot be undone.`;
     if (!selectedStudent.value) return '';
     if (confirmMode.value === 'activate') return `Activate ${selectedStudent.value.name}?`;
     if (confirmMode.value === 'delete') return `Delete ${selectedStudent.value.name}? This action will remove the record from the active list.`;
@@ -355,8 +355,8 @@ const getStatusColor = (active: boolean) => {
                         <Users class="h-6 w-6 text-blue-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">Student Registry</h1>
-                        <p class="text-muted-foreground font-medium uppercase text-[9px] tracking-widest mt-1.5 italic">Centralized database of all active and historical enrollments</p>
+                        <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">Learner Registry</h1>
+                        <p class="text-muted-foreground font-medium uppercase text-[9px] tracking-widest mt-1.5 italic">All learners and enrollment records</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -369,7 +369,7 @@ const getStatusColor = (active: boolean) => {
                         Bulk Upload
                     </Button>
                     <Button v-if="hasPermission('students.create')" @click="router.visit('/students/create')" class="bg-blue-600 hover:bg-blue-700 font-pulsar shadow-lg h-9 border-0 text-[10px] font-black uppercase tracking-widest px-6 rounded-xl text-white">
-                        <Plus class="mr-2 h-3.5 w-3.5" />New Admission
+                        <Plus class="mr-2 h-3.5 w-3.5" />Add Learner
                     </Button>
                 </div>
             </div>
@@ -380,7 +380,7 @@ const getStatusColor = (active: boolean) => {
                     <div class="rounded-lg bg-blue-500/10 p-2.5 group-hover:bg-blue-500 group-hover:text-white transition-all"><Users class="h-4 w-4 text-blue-600 group-hover:text-white" /></div>
                     <div>
                         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Enrollment</p>
-                        <p class="text-lg font-black text-slate-900">{{ stats.total.toLocaleString() }} Scholars</p>
+                        <p class="text-lg font-black text-slate-900">{{ stats.total.toLocaleString() }} Learners</p>
                     </div>
                 </div>
                 <div class="rounded-2xl border bg-card p-4 shadow-sm border-l-4 border-l-emerald-500 flex items-center gap-3 group hover:shadow-md transition-all">
@@ -569,7 +569,7 @@ const getStatusColor = (active: boolean) => {
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Pagination Section -->
                 <div class="flex flex-col gap-4 border-t bg-slate-50/50 px-6 py-4 md:flex-row md:items-center md:justify-between">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">{{ pageLabel }}</p>
@@ -626,8 +626,8 @@ const getStatusColor = (active: boolean) => {
             @click.self="closeActionModal"
         >
             <div class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
-                <h2 class="text-lg font-semibold">{{ modalTitle }}</h2>
-                <p class="mt-2 text-sm text-muted-foreground">{{ modalMessage }}</p>
+                <h2 class="text-lg font-semibold">Confirm</h2>
+                <p class="mt-2 text-sm text-muted-foreground">{{ modalMessage.replace('student', 'learner') }}</p>
                 <div class="mt-6 flex justify-end gap-2">
                     <Button variant="outline" @click="closeActionModal">Cancel</Button>
                     <Button
@@ -647,9 +647,9 @@ const getStatusColor = (active: boolean) => {
             @click.self="closePromoteModal"
         >
             <div class="w-full max-w-lg rounded-xl border bg-background p-6 shadow-xl">
-                <h2 class="text-lg font-semibold">Promote Selected Students</h2>
+                <h2 class="text-lg font-semibold">Promote Selected Learners</h2>
                 <p class="mt-2 text-sm text-muted-foreground">
-                    {{ selectedCount }} selected active student{{ selectedCount === 1 ? '' : 's' }} will be moved to the next grade while keeping the same stream where a matching class exists.
+                    {{ selectedCount }} selected active learner{{ selectedCount === 1 ? '' : 's' }} will be moved to the next grade if a matching class exists.
                 </p>
                 <div class="mt-4 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
                     Example: <span class="font-medium text-foreground">Grade 8 West</span> → <span class="font-medium text-foreground">Grade 9 West</span>

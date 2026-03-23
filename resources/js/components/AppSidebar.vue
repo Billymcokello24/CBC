@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { 
-    LayoutDashboard, Users, BookOpen, ClipboardList, 
+import {
+    LayoutDashboard, Users, BookOpen, ClipboardList,
     Calendar, Clock, Settings, LogOut, ChevronRight,
     Search, Bell, User, GraduationCap, School,
     BookMarked, Bus, Building2, Heart, Trophy,
-    TrendingUp, DollarSign, MessageSquare, ChevronDown
+    TrendingUp, DollarSign, MessageSquare, ChevronDown, ShieldCheck
 } from 'lucide-vue-next';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
+import { 
+    Sidebar, 
+    SidebarContent, 
+    SidebarHeader, 
+    SidebarFooter,
+    SidebarMenu,
+    SidebarMenuItem,
+    SidebarMenuButton,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarGroupContent
+} from '@/components/ui/sidebar';
 
 const { props } = usePage();
 const user = computed(() => props.auth.user);
@@ -22,7 +34,44 @@ const canAny = (perms: string[]) => {
     return perms.some(p => hasPermission(p));
 };
 
+const isSuperAdmin = computed(() => props.auth.is_super_admin);
+const isImpersonating = computed(() => props.auth.impersonating?.active);
+
+const saasNavigation = [
+    {
+        title: 'SaaS Management',
+        items: [
+            {
+                title: 'System Dashboard',
+                href: '/super-admin/dashboard',
+                icon: LayoutDashboard,
+            },
+            {
+                title: 'Manage Schools',
+                href: '/super-admin/schools',
+                icon: School,
+            },
+            {
+                title: 'System Settings',
+                href: '/super-admin/settings',
+                icon: Settings,
+            },
+            {
+                title: 'Maintenance',
+                href: '/super-admin/maintenance',
+                icon: ShieldCheck,
+                children: [
+                    { title: 'Backups', href: '/super-admin/backups' },
+                    { title: 'Logs', href: '/super-admin/logs' },
+                    { title: 'Performance', href: '/super-admin/performance' },
+                ]
+            }
+        ],
+    },
+];
+
 const navigation = [
+// ... (rest of the navigation array remains same)
     {
         title: 'Core',
         items: [
@@ -32,12 +81,12 @@ const navigation = [
                 icon: LayoutDashboard,
             },
             {
-                title: 'Students',
+                title: 'Learners', // changed from 'Students' to 'Learners' (UI label only)
                 href: '/students',
                 icon: Users,
                 permissions: ['students.view', 'students.view_own'],
                 children: [
-                    { title: 'All Students', href: '/students', permissions: ['students.view'] },
+                    { title: 'All Learners', href: '/students', permissions: ['students.view'] },
                     { title: 'Admission', href: '/students/create', permissions: ['students.create'] },
                     { title: 'Enrollments', href: '/students/enrollments', permissions: ['students.enroll'] },
                     { title: 'Graduates', href: '/students/graduates', permissions: ['students.view'] },
@@ -69,6 +118,18 @@ const navigation = [
                     { title: 'Subjects', href: '/curriculum/subjects' },
                     { title: 'Strands', href: '/curriculum/strands' },
                     { title: 'Competencies', href: '/curriculum/competencies' },
+                ],
+            },
+            {
+                title: 'School Structure',
+                href: '/grades',
+                icon: School,
+                permissions: ['classes.view'],
+                children: [
+                    { title: 'Grades', href: '/grades' },
+                    { title: 'Classes', href: '/classes' },
+                    { title: 'Streams', href: '/streams' },
+                    { title: 'Departments', href: '/departments' },
                 ],
             },
             {
@@ -234,10 +295,23 @@ const filterNavItem = (item: any) => {
 };
 
 const filteredNavigation = computed(() => {
-    return navigation.map(group => ({
+    let result: any[] = [];
+    
+    // Show SaaS Management only for Super Admins when NOT impersonating
+    if (isSuperAdmin.value && !isImpersonating.value) {
+        result = [...saasNavigation];
+    }
+    
+    // Process regular navigation
+    const contextNav = navigation.map(group => ({
         ...group,
-        items: group.items.filter(filterNavItem)
+        items: group.items.map(item => ({
+            ...item,
+            children: item.children ? item.children.filter(child => !child.permissions || canAny(child.permissions)) : undefined
+        })).filter(filterNavItem)
     })).filter(group => group.items.length > 0);
+    
+    return [...result, ...contextNav];
 });
 
 const filteredBottomNavigation = computed(() => {
@@ -251,71 +325,70 @@ const toggleItem = (title: string) => {
 </script>
 
 <template>
-    <aside class="flex h-screen w-64 flex-col border-r bg-white">
-        <!-- Logo -->
-        <div class="flex h-16 items-center border-b px-6">
+    <Sidebar collapsible="offcanvas">
+        <SidebarHeader class="h-16 border-b px-6 flex items-center justify-between">
             <Link href="/" class="flex items-center gap-2 font-black text-violet-600">
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
                     <School class="h-5 w-5" />
                 </div>
                 <span class="text-xl tracking-tighter">CBC.edu</span>
             </Link>
-        </div>
+        </SidebarHeader>
 
-        <!-- Scrollable Navigation -->
-        <div class="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
-            <div v-for="group in filteredNavigation" :key="group.title" class="mb-8 last:mb-0">
-                <h3 class="mb-4 px-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+        <SidebarContent class="custom-scrollbar">
+            <SidebarGroup v-for="group in filteredNavigation" :key="group.title">
+                <SidebarGroupLabel class="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
                     {{ group.title }}
-                </h3>
-                <div class="space-y-1">
-                    <div v-for="item in group.items" :key="item.title">
-                        <div v-if="item.children">
-                            <button 
-                                @click="toggleItem(item.title)"
-                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600 group"
-                                :class="{ 'bg-violet-50 text-violet-600': activeItem === item.title }"
-                            >
-                                <div class="flex items-center gap-3">
-                                    <component :is="item.icon" class="h-4 w-4" />
-                                    <span>{{ item.title }}</span>
-                                </div>
-                                <ChevronDown 
-                                    class="h-3 w-3 transition-transform duration-300"
-                                    :class="{ 'rotate-180': activeItem === item.title }"
-                                />
-                            </button>
-                            <!-- Dropdown -->
-                            <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
-                                <Link 
-                                    v-for="child in item.children" 
-                                    :key="child.title"
-                                    :href="child.href"
-                                    class="block rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                    <SidebarMenu class="space-y-1">
+                        <SidebarMenuItem v-for="item in group.items" :key="item.title">
+                            <div v-if="item.children">
+                                <SidebarMenuButton
+                                    @click="toggleItem(item.title)"
+                                    class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600 group"
+                                    :class="{ 'bg-violet-50 text-violet-600': activeItem === item.title }"
                                 >
-                                    {{ child.title }}
-                                </Link>
+                                    <div class="flex items-center gap-3">
+                                        <component :is="item.icon" class="h-4 w-4" />
+                                        <span>{{ item.title }}</span>
+                                    </div>
+                                    <ChevronDown
+                                        class="h-3 w-3 transition-transform duration-300"
+                                        :class="{ 'rotate-180': activeItem === item.title }"
+                                    />
+                                </SidebarMenuButton>
+                                <!-- Dropdown -->
+                                <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
+                                    <Link
+                                        v-for="child in item.children"
+                                        :key="child.title"
+                                        :href="child.href"
+                                        class="block rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                                    >
+                                        {{ child.title }}
+                                    </Link>
+                                </div>
                             </div>
-                        </div>
-                        <Link 
-                            v-else
-                            :href="item.href"
-                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600"
-                        >
-                            <component :is="item.icon" class="h-4 w-4" />
-                            <span>{{ item.title }}</span>
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            <Link
+                                v-else
+                                :href="item.href"
+                                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600"
+                            >
+                                <component :is="item.icon" class="h-4 w-4" />
+                                <span>{{ item.title }}</span>
+                            </Link>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroupContent>
+            </SidebarGroup>
+        </SidebarContent>
 
-        <!-- User Section -->
-        <div class="mt-auto border-t p-4">
+        <SidebarFooter class="border-t p-4">
             <div class="space-y-1">
                 <div v-for="item in filteredBottomNavigation" :key="item.title">
                      <div v-if="item.children">
-                            <button 
+                            <SidebarMenuButton
                                 @click="toggleItem(item.title)"
                                 class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600 group"
                                 :class="{ 'bg-violet-50 text-violet-600': activeItem === item.title }"
@@ -324,14 +397,14 @@ const toggleItem = (title: string) => {
                                     <component :is="item.icon" class="h-4 w-4" />
                                     <span>{{ item.title }}</span>
                                 </div>
-                                <ChevronDown 
+                                <ChevronDown
                                     class="h-3 w-3 transition-transform duration-300"
                                     :class="{ 'rotate-180': activeItem === item.title }"
                                 />
-                            </button>
+                            </SidebarMenuButton>
                             <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
-                                <Link 
-                                    v-for="child in item.children" 
+                                <Link
+                                    v-for="child in item.children"
                                     :key="child.title"
                                     :href="child.href"
                                     class="block rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
@@ -340,7 +413,7 @@ const toggleItem = (title: string) => {
                                 </Link>
                             </div>
                         </div>
-                        <Link 
+                        <Link
                             v-else
                             :href="item.href"
                             class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600"
@@ -353,26 +426,26 @@ const toggleItem = (title: string) => {
 
             <!-- Profile Info -->
             <div class="mt-4 flex items-center justify-between rounded-xl bg-gray-50 p-3">
-                <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-full border-2 border-white bg-violet-600 flex items-center justify-center font-black text-white text-xs">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="h-10 w-10 shrink-0 rounded-full border-2 border-white bg-violet-600 flex items-center justify-center font-black text-white text-xs">
                         {{ user?.name?.[0]?.toUpperCase() }}
                     </div>
-                    <div class="flex flex-col overflow-hidden">
+                    <div class="flex flex-col min-w-0">
                         <span class="truncate text-xs font-black text-gray-900">{{ user?.name }}</span>
                         <span class="truncate text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{{ user?.role || 'User' }}</span>
                     </div>
                 </div>
-                <Link 
-                    href="/logout" 
-                    method="post" 
+                <Link
+                    href="/logout"
+                    method="post"
                     as="button"
                     class="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
                 >
                     <LogOut class="h-4 w-4" />
                 </Link>
             </div>
-        </div>
-    </aside>
+        </SidebarFooter>
+    </Sidebar>
 </template>
 
 <style scoped>

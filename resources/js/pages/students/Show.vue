@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { 
-    ArrowLeft, Calendar, GraduationCap, MapPin, Phone, 
-    ShieldPlus, UserRound, HeartPulse, ShieldCheck, 
+import {
+    ArrowLeft, Calendar, GraduationCap, MapPin, Phone,
+    ShieldPlus, UserRound, HeartPulse, ShieldCheck,
     Truck, Users, Camera, Save, Loader2, Edit2, Mail,
     CreditCard, ExternalLink, Activity
 } from 'lucide-vue-next';
@@ -75,14 +75,14 @@ const form = useForm({
     withdrawal_date: props.student.withdrawal_date ?? '',
     withdrawal_reason: props.student.withdrawal_reason ?? '',
     photo: null as any,
-    
+
     // Guardian details
     guardian_name: props.student.guardians?.[0]?.name ?? '',
     guardian_email: props.student.guardians?.[0]?.email ?? '',
     guardian_phone: props.student.guardians?.[0]?.phone ?? '',
     guardian_password: '',
     guardian_password_confirmation: '',
-    
+
     _method: 'PUT',
 });
 
@@ -169,11 +169,11 @@ const getStatusColor = (status: string) => {
                                 </Badge>
                             </div>
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                                <span class="text-blue-600 font-black">{{ student.class_name || 'UNASSIGNED_NODE' }}</span> 
+                                <span class="text-blue-600 font-black">{{ student.class_name || 'UNASSIGNED' }}</span>
                                 <span class="h-1 w-1 bg-slate-300 rounded-full"></span>
                                 {{ student.admission_number || 'NO_ADM_ID' }}
                                 <span class="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                <span class="text-slate-500 italic">{{ student.age }} Earth Years</span>
+                                <span class="text-slate-500 italic">{{ student.age }} yrs</span>
                             </p>
                         </div>
                     </div>
@@ -181,7 +181,7 @@ const getStatusColor = (status: string) => {
                 <div class="flex items-center gap-2">
                     <Button v-if="hasPermission('students.update') && !isEditing" variant="outline" class="font-pulsar h-9 border-slate-200 px-4 rounded-xl hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest" @click="isEditing = true">
                         <Edit2 class="mr-2 h-3.5 w-3.5 text-amber-500" />
-                        Edit Metadata
+                        Edit
                     </Button>
                     <Button v-if="hasPermission('finance.view')" variant="outline" class="font-pulsar h-9 border-slate-200 px-4 rounded-xl hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest" as-child>
                         <Link :href="`/students/fees/${student.id}`">
@@ -201,13 +201,13 @@ const getStatusColor = (status: string) => {
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <div class="lg:col-span-3 space-y-4 lg:sticky lg:top-6">
                     <div class="flex flex-col gap-2">
-                        <button 
-                        v-for="tab in tabs" 
+                        <button
+                        v-for="tab in tabs"
                         :key="tab.id"
                         @click="activeTab = tab.id"
                         class="flex items-center gap-3 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 whitespace-nowrap group"
-                        :class="activeTab === tab.id 
-                            ? 'bg-slate-900 text-white shadow-xl scale-[1.02] z-10' 
+                        :class="activeTab === tab.id
+                            ? 'bg-slate-900 text-white shadow-xl scale-[1.02] z-10'
                             : 'bg-white border text-slate-400 hover:text-slate-900 hover:border-slate-300'"
                         >
                             <component :is="tab.icon" class="h-4 w-4" :class="activeTab === tab.id ? 'text-blue-400' : 'group-hover:text-blue-600'" />
@@ -218,10 +218,7 @@ const getStatusColor = (status: string) => {
 
                     <!-- Quick Stats Card -->
                     <div class="hidden lg:flex flex-col p-5 rounded-[2rem] bg-blue-600 text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
-                        <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
-                             <GraduationCap class="h-24 w-24 text-white" />
-                        </div>
-                        <p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-80 mb-4 italic">Academic pulse</p>
+                        <p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-80 mb-4 italic">Academic overview</p>
                         <div class="space-y-3 relative z-10">
                             <div class="flex justify-between items-center">
                                 <span class="text-[10px] font-bold opacity-70">Presence</span>
@@ -244,10 +241,10 @@ const getStatusColor = (status: string) => {
                         <!-- Identity Matrix Section -->
                         <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-all duration-500">
                             <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight italic">Identity Matrix</h3>
-                                <Badge variant="outline" class="text-[8px] font-black uppercase tracking-widest px-2 border-slate-200 text-slate-400 italic">Core Node</Badge>
+                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight italic">Identity</h3>
+                                <Badge variant="outline" class="text-[8px] font-black uppercase tracking-widest px-2 border-slate-200 text-slate-400 italic">Core</Badge>
                             </div>
-                            
+
                             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 <!-- First & Last Name (Editing) -->
                                 <div v-if="isEditing" class="space-y-4 md:col-span-2">
@@ -266,7 +263,7 @@ const getStatusColor = (status: string) => {
                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Scholar Identity</p>
                                     <p class="text-sm font-black text-slate-900 uppercase tracking-tight">{{ student.name }}</p>
                                 </div>
-                                
+
                                 <div class="space-y-1">
                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Admission ID</p>
                                     <div v-if="isEditing">
@@ -291,7 +288,7 @@ const getStatusColor = (status: string) => {
                                             <option v-for="g in grades" :key="g.id" :value="String(g.id)">{{ g.name }}</option>
                                         </select>
                                     </div>
-                                    <p v-else class="text-sm font-black text-slate-900 uppercase">{{ student.grade_name || 'NULL_LEVEL' }}</p>
+                                    <p v-else class="text-sm font-black text-slate-900 uppercase">{{ student.grade_name || 'Unassigned' }}</p>
                                 </div>
 
                                 <div class="space-y-1">
@@ -370,7 +367,7 @@ const getStatusColor = (status: string) => {
                             <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                                 <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight italic">{{ activeTab }} Information Matrix</h3>
                             </div>
-                            
+
                             <!-- Placeholder for actual fields if they exist in props -->
                             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 <div class="space-y-1">
@@ -386,7 +383,7 @@ const getStatusColor = (status: string) => {
                                     <p class="text-xs font-black text-slate-900 uppercase">{{ student.nationality || 'KENYAN' }}</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Guardian Matrix if and only if family tab -->
                             <div v-if="activeTab === 'family'" class="mt-8 space-y-6">
                                 <div class="flex items-center gap-4 text-slate-300">
@@ -395,7 +392,7 @@ const getStatusColor = (status: string) => {
                                     <div v-if="hasPermission('students.update')" @click="isEditing = true" class="text-blue-600 cursor-pointer hover:underline text-[9px] font-black uppercase tracking-widest">Add Kin</div>
                                     <div class="h-[1px] flex-1 bg-slate-100"></div>
                                 </div>
-                                
+
                                 <div v-if="student.guardians?.length" class="grid gap-4 md:grid-cols-2">
                                     <div v-for="guardian in student.guardians" :key="guardian.id" class="rounded-2xl border border-slate-100 p-5 bg-white shadow-sm hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-600 relative group">
                                         <div class="flex items-start justify-between">

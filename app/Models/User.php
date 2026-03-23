@@ -15,10 +15,12 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
+use App\Traits\BelongsToSchool;
+
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, SoftDeletes, LogsActivity, HasApiTokens;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, SoftDeletes, LogsActivity, HasApiTokens, BelongsToSchool;
 
     /**
      * The attributes that are mass assignable.
@@ -26,6 +28,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'school_id',
         'name',
         'email',
         'password',

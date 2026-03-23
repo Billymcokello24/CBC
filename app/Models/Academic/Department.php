@@ -10,13 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Traits\BelongsToSchool;
+
 class Department extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToSchool;
 
-    protected $fillable = [
-        'school_id', 'name', 'code', 'description', 'head_of_department_id', 'is_active'
-    ];
+    protected $fillable = ['school_id', 'name', 'code', 'description', 'status'];
 
     protected $casts = ['is_active' => 'boolean'];
 

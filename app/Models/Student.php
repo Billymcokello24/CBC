@@ -10,15 +10,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+use App\Traits\BelongsToSchool;
+
 class Student extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity, BelongsToSchool;
 
     protected $fillable = [
-        'user_id', 'school_id', 'admission_number', 'upi', 'first_name', 'middle_name', 'last_name',
+        'school_id',
+        'user_id',
+        'admission_number',
+        'upi', 'first_name', 'middle_name', 'last_name',
         'gender', 'date_of_birth', 'birth_certificate_number', 'nationality', 'religion',
         'home_address', 'county', 'sub_county', 'ward', 'photo', 'admission_date',
         'admission_class_id', 'current_class_id', 'blood_group', 'medical_conditions', 'allergies',

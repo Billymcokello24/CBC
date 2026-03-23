@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SuperAdmin\SuperAdminDashboardController;
+use App\Http\Controllers\SuperAdmin\SchoolController;
 use App\Http\Controllers\StudentsController;
 use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\Academic\TimetableController;
@@ -28,6 +30,16 @@ Route::inertia('/', 'Welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard — accessible to ALL authenticated users (role-specific data returned by controller)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Super Admin Routes
+    Route::middleware(['role:super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
+        Route::get('dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');
+        Route::post('impersonate/{school}', [SuperAdminDashboardController::class, 'impersonate'])->name('impersonate');
+        Route::post('stop-impersonating', [SuperAdminDashboardController::class, 'stopImpersonating'])->name('stop-impersonating');
+
+        // Schools Management
+        Route::resource('schools', SchoolController::class);
+    });
 
     // ──────────────────────────────────────────────
     // STUDENTS
@@ -124,24 +136,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('classes', [AcademicManagementController::class, 'classes'])->name('classes.index');
         Route::get('classes/allocations', [AcademicManagementController::class, 'allocations'])->name('classes.allocations');
         Route::get('classes/allocation', [AcademicManagementController::class, 'allocations'])->name('classes.allocation');
-        Route::get('classes/{id}/subjects', [AcademicManagementController::class, 'classSubjects'])->name('classes.subjects');
-        Route::get('classes/{id}', [AcademicManagementController::class, 'showClass'])->name('classes.show');
 
         // Grades
         Route::get('grades', [AcademicManagementController::class, 'grades'])->name('grades.index');
-        Route::get('grades/{id}/subjects', [AcademicManagementController::class, 'gradeSubjects'])->name('grades.subjects');
-        Route::get('grades/{id}/students', [AcademicManagementController::class, 'gradeStudents'])->name('grades.students');
-        Route::get('grades/{id}', [AcademicManagementController::class, 'showGrade'])->name('grades.show');
 
         // Streams
         Route::get('streams', [AcademicManagementController::class, 'streams'])->name('streams.index');
-        Route::get('streams/{id}', [AcademicManagementController::class, 'showStream'])->name('streams.show');
 
         // Departments
         Route::get('departments', [AcademicManagementController::class, 'departments'])->name('departments.index');
-        Route::get('departments/{id}', [AcademicManagementController::class, 'showDepartment'])->name('departments.show');
-        Route::get('departments/{id}/export-results', [AcademicManagementController::class, 'exportDepartmentResults'])->name('departments.export-results');
         Route::get('departments/export', [AcademicManagementController::class, 'exportDepartments'])->name('departments.export');
+        Route::get('departments/create', [AcademicManagementController::class, 'createDepartment'])->name('departments.create');
     });
 
     Route::middleware(['check_permission:classes.create'])->group(function () {
@@ -156,9 +161,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('streams/create', [AcademicManagementController::class, 'createStream'])->name('streams.create');
         Route::post('streams', [AcademicManagementController::class, 'storeStream'])->name('streams.store');
 
-        Route::get('departments/create', [AcademicManagementController::class, 'createDepartment'])->name('departments.create');
         Route::post('departments', [AcademicManagementController::class, 'storeDepartment'])->name('departments.store');
         Route::post('departments/{id}/subjects', [AcademicManagementController::class, 'storeDepartmentSubject'])->name('departments.subjects.store');
+    });
+
+    Route::middleware(['check_permission:classes.view'])->group(function () {
+        // Classes View Details
+        Route::get('classes/{id}/subjects', [AcademicManagementController::class, 'classSubjects'])->name('classes.subjects');
+        Route::get('classes/{id}', [AcademicManagementController::class, 'showClass'])->name('classes.show');
+
+        // Grades View Details
+        Route::get('grades/{id}/subjects', [AcademicManagementController::class, 'gradeSubjects'])->name('grades.subjects');
+        Route::get('grades/{id}/students', [AcademicManagementController::class, 'gradeStudents'])->name('grades.students');
+        Route::get('grades/{id}', [AcademicManagementController::class, 'showGrade'])->name('grades.show');
+
+        // Streams View Details
+        Route::get('streams/{id}', [AcademicManagementController::class, 'showStream'])->name('streams.show');
+
+        // Departments View Details
+        Route::get('departments/{id}', [AcademicManagementController::class, 'showDepartment'])->name('departments.show');
+        Route::get('departments/{id}/export-results', [AcademicManagementController::class, 'exportDepartmentResults'])->name('departments.export-results');
     });
 
     Route::middleware(['check_permission:classes.update'])->group(function () {
@@ -166,6 +188,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('classes/{id}', [AcademicManagementController::class, 'updateClass'])->name('classes.update');
         Route::put('classes/allocations/{id}', [AcademicManagementController::class, 'updateAllocation'])->name('classes.allocations.update');
         Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
+        Route::patch('classes/{id}/activate', [AcademicManagementController::class, 'activateClass'])->name('classes.activate');
+        Route::patch('classes/{id}/deactivate', [AcademicManagementController::class, 'deactivateClass'])->name('classes.deactivate');
 
         Route::get('grades/{id}/edit', [AcademicManagementController::class, 'editGrade'])->name('grades.edit');
         Route::put('grades/{id}', [AcademicManagementController::class, 'updateGrade'])->name('grades.update');
@@ -181,7 +205,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('departments/{id}/edit', [AcademicManagementController::class, 'editDepartment'])->name('departments.edit');
         Route::put('departments/{id}', [AcademicManagementController::class, 'updateDepartment'])->name('departments.update');
-        Route::patch('departments/{id}/toggle-status', [AcademicManagementController::class, 'toggleDepartmentStatus'])->name('departments.toggle-status');
+        Route::patch('departments/{id}/activate', [AcademicManagementController::class, 'activateDepartment'])->name('departments.activate');
+        Route::patch('departments/{id}/deactivate', [AcademicManagementController::class, 'deactivateDepartment'])->name('departments.deactivate');
     });
 
     Route::middleware(['check_permission:classes.delete'])->group(function () {
@@ -191,7 +216,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('streams/{id}', [AcademicManagementController::class, 'destroyStream'])->name('streams.destroy');
         Route::delete('departments/{id}', [AcademicManagementController::class, 'destroyDepartment'])->name('departments.destroy');
         Route::delete('departments/{id}/subjects/{subjectId}', [AcademicManagementController::class, 'destroyDepartmentSubject'])->name('departments.subjects.destroy');
-        Route::post('departments/bulk-delete', [AcademicManagementController::class, 'bulkDeleteDepartments'])->name('departments.bulk-delete');
+        Route::post('departments/bulk-action', [AcademicManagementController::class, 'bulkDepartmentAction'])->name('departments.bulk-action');
     });
 
     // Guardians

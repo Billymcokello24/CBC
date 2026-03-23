@@ -32,6 +32,10 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Route to role-specific dashboard
+        if ($user->hasRole('super_admin') && !session('viewing_school_id')) {
+            return redirect()->route('super-admin.dashboard');
+        }
+
         if ($user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal'])) {
             return $this->adminDashboard();
         }

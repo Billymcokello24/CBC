@@ -27,8 +27,8 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
-    { title: 'Add Student', href: '/students/create' },
+    { title: 'Learners', href: '/students' },
+    { title: 'Add Learner', href: '/students/create' },
 ];
 
 const form = useForm({
@@ -126,10 +126,10 @@ const uploadBulkStudents = () => {
                     </Button>
                     <div>
                         <div class="flex items-center gap-2">
-                            <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">New Admission</h1>
-                            <Badge variant="outline" class="rounded-full px-3 py-0.5 h-5 text-[7px] font-black uppercase tracking-[0.2em] border-blue-200 text-blue-500 italic bg-blue-50/50">Core Node Intake</Badge>
+                            <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">Add Learner</h1>
+                            <Badge variant="outline" class="rounded-full px-3 py-0.5 h-5 text-[7px] font-black uppercase tracking-[0.2em] border-blue-200 text-blue-500 italic bg-blue-50/50">Core Intake</Badge>
                         </div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5 opacity-70">Initialize a scholarship node within the vision matrix</p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1.5 opacity-70">Fill basic learner details and guardian contact</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -152,7 +152,7 @@ const uploadBulkStudents = () => {
                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-900/40">
                                 <Upload class="h-5 w-5 text-white" />
                             </div>
-                            <h2 class="text-lg font-black uppercase tracking-tight italic">Massive Data Ingestion</h2>
+                            <h2 class="text-lg font-black uppercase tracking-tight italic">Guardian & Access</h2>
                         </div>
                         <p class="text-slate-400 font-bold leading-relaxed text-[11px] opacity-80 uppercase tracking-tight">
                             Synchronize entire student populations via CSV matrix synchronization. Our engine maps academic structures in real-time.
@@ -167,7 +167,7 @@ const uploadBulkStudents = () => {
                         </Button>
                         <Button class="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[9px] tracking-widest h-10 px-8 rounded-xl shadow-lg shadow-blue-900/20 border-0" @click="bulkUploadOpen = true">
                             <Upload class="mr-2 h-3.5 w-3.5" />
-                            Execute Bulk Sync
+                            Upload CSV
                         </Button>
                     </div>
                 </div>
@@ -192,31 +192,31 @@ const uploadBulkStudents = () => {
                             <div class="p-8">
                                 <div class="grid gap-8 md:grid-cols-2">
                                     <div class="space-y-1.5">
-                                        <Label for="first_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Scholar First Name</Label>
+                                        <Label for="first_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Learner First Name</Label>
                                         <Input id="first_name" v-model="form.first_name" placeholder="John" class="h-11 rounded-xl border-slate-200 bg-slate-50 font-bold px-4 focus:ring-blue-500 text-xs" required />
                                         <InputError :message="form.errors.first_name" />
                                     </div>
                                     <div class="space-y-1.5">
-                                        <Label for="last_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Scholar Last Name</Label>
+                                        <Label for="last_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Learner Last Name</Label>
                                         <Input id="last_name" v-model="form.last_name" placeholder="Mwangi" class="h-11 rounded-xl border-slate-200 bg-slate-50 font-bold px-4 focus:ring-blue-500 text-xs" required />
                                         <InputError :message="form.errors.last_name" />
                                     </div>
                                     <div class="space-y-1.5">
-                                        <Label for="admission_number" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Admission Node ID</Label>
+                                        <Label for="admission_number" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Admission ID</Label>
                                         <Input id="admission_number" v-model="form.admission_number" placeholder="ADM-001" class="h-11 rounded-xl border-slate-200 bg-slate-50 font-black px-4 italic focus:ring-blue-500 text-xs uppercase tracking-tight" required />
                                         <InputError :message="form.errors.admission_number" />
                                     </div>
                                     <div class="space-y-1.5">
-                                        <Label for="gender" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Biological Identity</Label>
+                                        <Label for="gender" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Gender</Label>
                                         <select id="gender" v-model="form.gender" class="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-4 text-xs font-black uppercase tracking-widest focus:ring-blue-500 outline-none border transition-all">
-                                            <option value="male">Male Node</option>
-                                            <option value="female">Female Node</option>
-                                            <option value="other">Non-Binary Node</option>
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
                                         </select>
                                         <InputError :message="form.errors.gender" />
                                     </div>
                                     <div class="space-y-1.5 md:col-span-2">
-                                        <Label for="date_of_birth" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Temporal Origin (DOB)</Label>
+                                        <Label for="date_of_birth" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Date of Birth</Label>
                                         <Input id="date_of_birth" v-model="form.date_of_birth" type="date" class="h-11 rounded-xl border-slate-200 bg-slate-50 font-black px-4 focus:ring-blue-500 text-xs" required />
                                         <InputError :message="form.errors.date_of_birth" />
                                     </div>
@@ -229,14 +229,14 @@ const uploadBulkStudents = () => {
                              <div class="border-b border-slate-100 bg-slate-50/50 px-8 py-5">
                                 <h2 class="text-base font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 italic">
                                     <Save class="h-4 w-4 text-amber-500" />
-                                    Kin Link & Credentials
+                                    Guardian & Access
                                 </h2>
                                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 opacity-70">Parent portal synchronization</p>
                             </div>
                             <div class="p-8">
                                 <div class="grid gap-8 md:grid-cols-2">
                                     <div class="space-y-1.5">
-                                        <Label for="guardian_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Primary Guardian</Label>
+                                        <Label for="guardian_name" class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Guardian Name</Label>
                                         <Input id="guardian_name" v-model="form.guardian_name" placeholder="Full Name" class="h-11 rounded-xl border-slate-200 bg-slate-50 font-bold px-4 focus:ring-blue-500 text-xs" />
                                         <InputError :message="form.errors.guardian_name" />
                                     </div>
@@ -332,17 +332,14 @@ const uploadBulkStudents = () => {
                 <!-- Action Hub -->
                 <div class="flex flex-wrap items-center justify-between gap-6 pt-8 border-t border-slate-100">
                     <Button type="button" variant="ghost" class="text-slate-400 hover:text-slate-900 font-black uppercase text-[9px] tracking-widest h-11 px-8 rounded-xl" as-child>
-                        <Link href="/students">Abort Mission</Link>
+                        <Link href="/students">Cancel</Link>
                     </Button>
                     <div class="flex gap-3">
-                         <div class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 italic font-black uppercase text-[7px] tracking-[0.2em] animate-pulse">
-                            System Optimized <CheckCircle2 class="h-3 w-3" />
-                         </div>
-                        <Button type="submit" :disabled="form.processing" class="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[9px] tracking-widest h-11 px-10 rounded-xl shadow-lg shadow-slate-100 border-0">
-                            <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                            <Save v-else class="mr-2 h-4 w-4" />
-                            Establish Record
-                        </Button>
+                         <Button type="submit" :disabled="form.processing" class="bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[9px] tracking-widest h-11 px-10 rounded-xl shadow-lg shadow-slate-100 border-0">
+                             <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                             <Save v-else class="mr-2 h-4 w-4" />
+                             Save Learner
+                         </Button>
                     </div>
                 </div>
             </form>
@@ -357,7 +354,7 @@ const uploadBulkStudents = () => {
                     </div>
                     <div>
                         <h3 class="text-xl font-black text-slate-900 uppercase tracking-tight italic">Final Verification</h3>
-                        <p class="text-[11px] text-slate-500 font-bold mt-2 uppercase tracking-tight">Ready to authorize the creation of <span class="text-blue-600 underline decoration-blue-200 underline-offset-4">{{ form.first_name }} {{ form.last_name }}</span> in the vision matrix?</p>
+                        <p class="text-[11px] text-slate-500 font-bold mt-2 leading-relaxed uppercase tracking-tight">Ready to add <span class="text-blue-600 underline decoration-blue-200 underline-offset-4">{{ form.first_name }} {{ form.last_name }}</span>?</p>
                     </div>
                     <div class="grid grid-cols-2 gap-3 py-2">
                         <div class="rounded-xl bg-slate-50 p-4 border border-slate-100">
@@ -390,19 +387,19 @@ const uploadBulkStudents = () => {
                     <div>
                         <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tighter italic">Mission Success</h3>
                         <p class="text-[11px] text-slate-500 font-bold mt-2 leading-relaxed uppercase tracking-tight">
-                            Scholar node <span class="text-emerald-600">{{ form.first_name }} {{ form.last_name }}</span> has been synchronized within the vision core.
+                            Learner <span class="text-emerald-600">{{ form.first_name }} {{ form.last_name }}</span> has been added.
                         </p>
                     </div>
                 </div>
                 <div class="p-6 bg-slate-900 flex flex-col gap-2">
                     <Button variant="outline" @click="resetForm" class="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl h-12 font-black uppercase text-[9px] tracking-widest">
                         <UserPlus class="mr-2 h-3.5 w-3.5 text-emerald-400" />
-                        Init Next Node
+                        Add Another Learner
                     </Button>
                     <Button as-child class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-12 font-black uppercase text-[9px] tracking-widest shadow-lg shadow-blue-900/20">
                         <Link href="/students">
                             <GraduationCap class="mr-2 h-3.5 w-3.5" />
-                            Return to Matrix
+                            Back to Learners
                         </Link>
                     </Button>
                 </div>
