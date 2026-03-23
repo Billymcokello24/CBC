@@ -13,6 +13,7 @@ import {
     CheckCircle2
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
+import schoolsRoutes from '@/routes/super-admin/schools';
 import type { BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +62,7 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('super-admin.schools.store'), {
+    form.post(schoolsRoutes.store().url, {
         preserveScroll: true,
     });
 };
@@ -73,7 +74,7 @@ const submit = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-5xl mx-auto w-full">
             <div class="flex items-center gap-4">
-                <Link :href="route('super-admin.schools.index')">
+                <Link :href="schoolsRoutes.index().url">
                     <Button variant="ghost" size="icon" class="rounded-full hover:bg-violet-50 text-violet-600 transition-all active:scale-90">
                         <ChevronLeft class="h-5 w-5" />
                     </Button>
@@ -246,7 +247,7 @@ const submit = () => {
 
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-4 p-4">
-                    <Link :href="route('super-admin.schools.index')">
+                    <Link :href="schoolsRoutes.index().url">
                         <Button type="button" variant="ghost" class="font-bold text-gray-500 hover:bg-gray-100 h-12 px-8 rounded-xl">
                             Cancel
                         </Button>

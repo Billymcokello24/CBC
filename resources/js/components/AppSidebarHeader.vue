@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { stopImpersonating } from '@/routes/super-admin';
 import type { BreadcrumbItem } from '@/types';
 
 const props = withDefaults(
@@ -24,7 +25,7 @@ const props = withDefaults(
             <span>Viewing as: {{ $page.props.auth.impersonating.school_name }}</span>
         </div>
         <Link
-            :href="route('super-admin.stop-impersonating')"
+            :href="stopImpersonating().url"
             method="post"
             as="button"
             class="rounded bg-white/20 px-2 py-1 transition-colors hover:bg-white/30"

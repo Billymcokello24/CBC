@@ -7,12 +7,16 @@ use App\Models\Academic\SchoolClass;
 use App\Models\Curriculum\Subject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToSchool;
 
 class TeacherSubject extends Model
 {
+    use BelongsToSchool;
+
     protected $table = 'teacher_subjects';
 
     protected $fillable = [
+        'school_id',
         'teacher_id',
         'subject_id',
         'class_id',

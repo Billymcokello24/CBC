@@ -13,6 +13,8 @@ import {
     GraduationCap
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { impersonate } from '@/routes/super-admin';
+import schoolsRoutes from '@/routes/super-admin/schools';
 import type { BreadcrumbItem } from '@/types';
 import { 
     DropdownMenu,
@@ -64,7 +66,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <p class="text-muted-foreground text-sm font-medium">Manage and onboard educational institutions.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <Link :href="route('super-admin.schools.create')">
+                    <Link :href="schoolsRoutes.create().url">
                         <Button class="bg-violet-600 hover:bg-violet-700 text-white font-bold h-10 px-6 rounded-xl shadow-lg shadow-violet-200 transition-all active:scale-95">
                             <Plus class="mr-2 h-4 w-4" />
                             Onboard New School
@@ -133,14 +135,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                                         <DropdownMenuContent align="end" class="w-48 rounded-xl p-1 shadow-2xl">
                                             <DropdownMenuLabel class="px-2 py-1.5 text-[10px] font-black uppercase text-gray-400">Actions</DropdownMenuLabel>
                                             <DropdownMenuItem as-child>
-                                                <Link :href="route('super-admin.impersonate', school.id)" method="post" as="button" class="w-full text-left font-bold text-xs flex items-center px-2 py-2 rounded-lg cursor-pointer">
+                                                <Link :href="impersonate(school).url" method="post" as="button" class="w-full text-left font-bold text-xs flex items-center px-2 py-2 rounded-lg cursor-pointer">
                                                     <ExternalLink class="mr-2 h-4 w-4" />
                                                     Impersonate Admin
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem as-child>
-                                                <Link :href="route('super-admin.schools.edit', school.id)" class="font-bold text-xs flex items-center px-2 py-2 rounded-lg cursor-pointer">
+                                                <Link :href="schoolsRoutes.edit(school).url" class="font-bold text-xs flex items-center px-2 py-2 rounded-lg cursor-pointer">
                                                     <Edit class="mr-2 h-4 w-4" />
                                                     Edit Details
                                                 </Link>

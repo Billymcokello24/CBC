@@ -5,12 +5,14 @@ namespace App\Models\Library;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class BookLoan extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'book_copy_id',
         'library_card_id',
         'loan_date',

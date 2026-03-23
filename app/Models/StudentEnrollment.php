@@ -7,10 +7,14 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\SchoolClass;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToSchool;
 
 class StudentEnrollment extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'student_id', 'class_id', 'academic_year_id', 'academic_term_id',
         'enrollment_date', 'end_date', 'enrollment_type', 'status',
         'roll_number', 'notes', 'enrolled_by'

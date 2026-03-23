@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\BelongsToSchool;
 
 class SchoolSetting extends Model
 {
+    use BelongsToSchool;
     protected $fillable = [
         'school_id', 'key', 'value', 'type', 'group', 'description', 'is_public'
     ];

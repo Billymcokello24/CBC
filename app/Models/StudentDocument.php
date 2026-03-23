@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToSchool;
 
 class StudentDocument extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'student_id', 'title', 'document_type', 'file_path', 'file_type',
         'file_size', 'issue_date', 'expiry_date', 'notes', 'is_verified', 'uploaded_by'
     ];

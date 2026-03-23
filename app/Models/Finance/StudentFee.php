@@ -6,12 +6,14 @@ use App\Models\Student;
 use App\Models\Academic\AcademicTerm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class StudentFee extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'fee_structure_id',
         'academic_term_id',

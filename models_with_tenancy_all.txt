@@ -1,0 +1,9 @@
+app/Models/Academic/AcademicTerm.php
+app/Models/Academic/AcademicYear.php
+app/Models/Academic/Department.php
+app/Models/Academic/GradeLevel.php
+app/Models/Academic/SchoolClass.php
+app/Models/Academic/Stream.php
+app/Models/Student.php
+app/Models/Teacher.php
+app/Models/User.php

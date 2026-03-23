@@ -12,6 +12,7 @@ import {
     ShieldCheck
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { impersonate } from '@/routes/super-admin';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import ChartCard from '@/components/dashboard/ChartCard.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -146,7 +147,7 @@ const distributionChartData = {
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <Link
-                                                :href="route('super-admin.impersonate', school.id)"
+                                                :href="impersonate(school).url"
                                                 method="post"
                                                 as="button"
                                                 class="inline-flex h-8 items-center rounded-md border border-input bg-background px-3 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"

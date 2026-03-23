@@ -1,0 +1,3 @@
+app/Models/Student.php
+app/Models/Teacher.php
+app/Models/User.php

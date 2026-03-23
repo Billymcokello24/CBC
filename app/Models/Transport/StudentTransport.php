@@ -6,14 +6,16 @@ use App\Models\Student;
 use App\Models\Academic\AcademicYear;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class StudentTransport extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToSchool;
 
     protected $table = 'student_transport';
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'route_id',
         'pickup_stop_id',

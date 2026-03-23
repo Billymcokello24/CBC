@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class LoginLog extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'user_id',
         'ip_address',
         'user_agent',

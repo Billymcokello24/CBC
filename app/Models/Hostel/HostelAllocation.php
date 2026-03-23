@@ -7,12 +7,14 @@ use App\Models\Academic\AcademicYear;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class HostelAllocation extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'hostel_id',
         'room_id',
