@@ -9,11 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\BelongsToSchool;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SchoolSubject extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToSchool;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
         'school_id', 'subject_id', 'department_id', 'local_code', 'is_offered', 'notes'

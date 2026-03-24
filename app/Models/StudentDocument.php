@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BelongsToSchool;
 
 class StudentDocument extends Model
 {
-    use SoftDeletes, BelongsToSchool;
+    use BelongsToSchool;
 
     protected $fillable = [
         'school_id',

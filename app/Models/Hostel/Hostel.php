@@ -5,12 +5,11 @@ namespace App\Models\Hostel;
 use App\Models\School;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BelongsToSchool;
 
 class Hostel extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToSchool;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
         'school_id',

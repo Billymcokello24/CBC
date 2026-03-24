@@ -5,13 +5,12 @@ namespace App\Models\Academic;
 use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BelongsToSchool;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class AcademicTerm extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToSchool;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
         'school_id', 'academic_year_id', 'name', 'term_number', 'start_date',

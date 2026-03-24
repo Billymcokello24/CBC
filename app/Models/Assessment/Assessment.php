@@ -5,12 +5,11 @@ namespace App\Models\Assessment;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BelongsToSchool;
 
 class Assessment extends Model
 {
-    use SoftDeletes, BelongsToSchool;
+    use BelongsToSchool;
 
     protected $fillable = [
         'school_id',

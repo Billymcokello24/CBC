@@ -7,12 +7,11 @@ use App\Models\User;
 use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BelongsToSchool;
 
 class Club extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToSchool;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
         'school_id',

@@ -7,11 +7,9 @@ use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TimetableSlot extends Model
 {
-    use SoftDeletes;
     protected $fillable = [
         'timetable_id', 'subject_id', 'teacher_id', 'period_definition_id',
         'day_of_week', 'period_number', 'start_time', 'end_time',

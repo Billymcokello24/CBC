@@ -11,11 +11,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory; // Added HasFactory impor
 
 use App\Traits\BelongsToSchool;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TimetableTemplate extends Model
 {
-    use HasFactory, SoftDeletes, BelongsToSchool;
+    use HasFactory, BelongsToSchool;
 
     protected $fillable = [
         'school_id', 'name', 'description', 'template_type',

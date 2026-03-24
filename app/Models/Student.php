@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -18,7 +17,7 @@ use App\Traits\BelongsToSchool;
 
 class Student extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity, BelongsToSchool;
+    use HasFactory, LogsActivity, BelongsToSchool;
 
     protected $fillable = [
         'school_id',
@@ -60,8 +59,8 @@ class Student extends Model
             $student->attendance()->delete();
             $student->fees()->delete();
             
-            // For models with SoftDeletes, use forceDelete to completely remove
-            $student->documents()->forceDelete();
+            // Delete related documents
+            $student->documents()->delete();
             
             // Detach relationships
             $student->guardians()->detach();

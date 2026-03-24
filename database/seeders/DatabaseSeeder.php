@@ -13,13 +13,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Run seeders in order
+        // Run essential seeders in order
         $this->call([
             RolesAndPermissionsSeeder::class,
             SchoolTypesAndLevelsSeeder::class,
             CurriculumSeeder::class,
-            DashboardSeeder::class,
-            RubricSeeder::class,
         ]);
 
         // Create Super Admin user

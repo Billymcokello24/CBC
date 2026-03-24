@@ -6,13 +6,12 @@ use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes; // Added for SoftDeletes trait
 
 use App\Traits\BelongsToSchool;
 
 class Stream extends Model
 {
-    use SoftDeletes, BelongsToSchool;
+    use BelongsToSchool;
 
     protected $fillable = ['slug', 'school_id', 'name', 'code', 'capacity', 'is_active', 'status'];
 

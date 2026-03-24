@@ -8,11 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\BelongsToSchool;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GradeLevel extends Model
 {
-    use SoftDeletes, BelongsToSchool;
+    use BelongsToSchool;
 
     protected $fillable = [
         'slug',
