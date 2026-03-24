@@ -8,14 +8,16 @@ use App\Models\Academic\SchoolClass;
 use App\Models\Academic\AcademicTerm;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToSchool;
 
 class StudentAttendance extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToSchool;
 
     protected $table = 'student_attendance';
 
     protected $fillable = [
+        'school_id',
         'student_id',
         'class_id',
         'academic_year_id',

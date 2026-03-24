@@ -41,11 +41,12 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user,
+                'school' => $user ? $user->school : null,
                 'roles' => $user ? $user->getRoleNames() : [],
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
                 'is_super_admin' => $user ? $user->hasRole('super_admin') : false,
                 'impersonating' => [
-                    'active' => session()->has('viewing_school_id'),
+                    'active' => $user && $user->hasRole('super_admin') && session()->has('viewing_school_id'),
                     'school_name' => session()->has('viewing_school_id') ? \App\Models\School::find(session('viewing_school_id'))?->name : null,
                 ],
             ],

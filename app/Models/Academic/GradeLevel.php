@@ -7,15 +7,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\BelongsToSchool;
+
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GradeLevel extends Model
 {
     use SoftDeletes, BelongsToSchool;
 
-    protected $fillable = ['school_id', 'name', 'code', 'level_index', 'status'];
+    protected $fillable = [
+        'slug',
+        'school_id',
+        'name',
+        'code',
+        'level_order',
+        'category',
+        'minimum_age',
+        'maximum_age',
+        'description',
+        'status',
+        'is_active',
+    ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function school(): BelongsTo
     {

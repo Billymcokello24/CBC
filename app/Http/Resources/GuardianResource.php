@@ -34,7 +34,7 @@ class GuardianResource extends JsonResource
                 'id' => $this->school->id,
                 'name' => $this->school->name,
             ]),
-            'students' => $this->whenLoaded('students', fn() =>
+            'learners' => $this->whenLoaded('students', fn() =>
                 $this->students->map(fn($s) => [
                     'id' => $s->id,
                     'full_name' => $s->full_name,

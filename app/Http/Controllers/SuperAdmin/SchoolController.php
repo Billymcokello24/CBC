@@ -9,8 +9,17 @@ use App\Models\SchoolLevel;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use App\Services\SchoolOnboardingService;
+
 class SchoolController extends Controller
 {
+    protected $onboardingService;
+
+    public function __construct(SchoolOnboardingService $onboardingService)
+    {
+        $this->onboardingService = $onboardingService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -41,6 +50,7 @@ class SchoolController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            // School fields
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:schools,code',
             'email' => 'required|email|max:255',
@@ -49,12 +59,26 @@ class SchoolController extends Controller
             'school_type_id' => 'required|exists:school_types,id',
             'school_level_id' => 'required|exists:school_levels,id',
             'status' => 'required|in:active,inactive',
+
+            // Admin account fields
+            'admin_name' => 'required|string|max:255',
+            'admin_email' => 'required|email|unique:users,email',
+            'admin_phone' => 'nullable|string|max:20',
+            'admin_password' => 'required|string|min:8',
         ]);
 
-        School::create($validated);
+        $schoolData = collect($validated)->except(['admin_name', 'admin_email', 'admin_phone', 'admin_password'])->toArray();
+        $adminData = [
+            'name' => $validated['admin_name'],
+            'email' => $validated['admin_email'],
+            'phone' => $validated['admin_phone'],
+            'password' => $validated['admin_password'],
+        ];
+
+        $this->onboardingService->register($schoolData, $adminData);
 
         return redirect()->route('super-admin.schools.index')
-            ->with('success', 'School created successfully.');
+            ->with('success', 'School and Admin account created successfully.');
     }
 
     /**

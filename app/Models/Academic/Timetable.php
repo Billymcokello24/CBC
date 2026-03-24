@@ -4,17 +4,21 @@ namespace App\Models\Academic;
 
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToSchool;
 
 class Timetable extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'class_id', 'academic_year_id', 'academic_term_id',
+        'school_id',
+        'school_class_id',
+        'class_id', 'academic_year_id', 'academic_term_id',
         'timetable_template_id', 'name', 'effective_from', 'effective_to',
         'status', 'is_published', 'created_by', 'approved_by', 'approved_at'
     ];

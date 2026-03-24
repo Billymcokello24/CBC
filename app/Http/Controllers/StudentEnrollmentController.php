@@ -58,10 +58,10 @@ class StudentEnrollmentController extends Controller
                     'grade_name' => $class?->gradeLevel?->name,
                     'stream_name' => $class?->stream?->name,
                     'academic_year' => $first?->academicYear?->name,
-                    'total_students' => $items->count(),
-                    'active_students' => $items->where('status', 'active')->count(),
+                    'total_learners' => $items->count(),
+                    'active_learners' => $items->where('status', 'active')->count(),
                     'new_enrollments' => $items->where('enrollment_type', 'new')->count(),
-                    'promoted_students' => $items->where('enrollment_type', 'promoted')->count(),
+                    'promoted_learners' => $items->where('enrollment_type', 'promoted')->count(),
                 ];
             })
             ->filter(fn ($group) => $group['class_id'] !== null)
@@ -141,10 +141,10 @@ class StudentEnrollmentController extends Controller
 
             return [
                 'enrollment_id' => $enrollment->id,
-                'student_id' => $enrollment->student_id,
-                'student_name' => $student ? trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name) : 'Unknown Student',
+                'learner_id' => $enrollment->student_id,
+                'learner_name' => $student ? trim($student->first_name . ' ' . ($student->middle_name ? $student->middle_name . ' ' : '') . $student->last_name) : 'Unknown Learner',
                 'admission_number' => $student?->admission_number,
-                'student_status' => $student?->status,
+                'learner_status' => $student?->status,
                 'enrollment_status' => $enrollment->status,
                 'enrollment_type' => $enrollment->enrollment_type,
                 'enrollment_date' => optional($enrollment->enrollment_date)?->format('Y-m-d'),
@@ -167,17 +167,17 @@ class StudentEnrollmentController extends Controller
                 'grade_name' => $class->gradeLevel?->name,
                 'stream_name' => $class->stream?->name,
                 'academic_year' => $class->academicYear?->name,
-                'total_students' => $students->count(),
-                'active_students' => $students->where('enrollment_status', 'active')->count(),
+                'total_learners' => $students->count(),
+                'active_learners' => $students->where('enrollment_status', 'active')->count(),
             ],
-            'students' => $students,
+            'learners' => $students,
             'filters' => [
                 'search' => $search,
-                'student_status' => $studentStatus === '' ? 'all' : $studentStatus,
+                'learner_status' => $studentStatus === '' ? 'all' : $studentStatus,
                 'enrollment_status' => $enrollmentStatus === '' ? 'all' : $enrollmentStatus,
             ],
-            'studentStatusOptions' => [
-                ['value' => 'all', 'label' => 'All Student Statuses'],
+            'learnerStatusOptions' => [
+                ['value' => 'all', 'label' => 'All Statuses'],
                 ['value' => 'active', 'label' => 'Active'],
                 ['value' => 'suspended', 'label' => 'Suspended'],
                 ['value' => 'inactive', 'label' => 'Inactive'],
@@ -201,6 +201,6 @@ class StudentEnrollmentController extends Controller
 
         StudentEnrollment::whereIn('id', $validated['enrollment_ids'])->delete();
 
-        return back()->with('success', count($validated['enrollment_ids']) . ' enrollment records removed successfully.');
+        return back()->with('success', count($validated['enrollment_ids']) . ' enrollment records removed.');
     }
 }

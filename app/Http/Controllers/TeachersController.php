@@ -19,8 +19,17 @@ use Inertia\Response;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+use App\Services\RoleTemplateService;
+
 class TeachersController extends Controller
 {
+    protected $roleService;
+
+    public function __construct(RoleTemplateService $roleService)
+    {
+        $this->roleService = $roleService;
+    }
+
     public function index(Request $request): Response
     {
         $search = trim((string) $request->string('search'));
@@ -61,6 +70,7 @@ class TeachersController extends Controller
             'categories' => StaffCategory::orderBy('name')->get(['id', 'name']),
             'designations' => StaffDesignation::orderBy('name')->get(['id', 'name']),
             'counties' => config('settings.counties', []),
+            'roles' => $this->roleService->getTemplates(), // Sourced from global templates
         ]);
     }
 
@@ -88,6 +98,8 @@ class TeachersController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
+            'role' => ['required', 'string'], // Use role from dropdown templates
+            // ... rest of validation untoched
             'alternate_phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'county' => ['nullable', 'string', 'max:100'],
@@ -107,7 +119,10 @@ class TeachersController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated, $request) {
+            $schoolId = auth()->user()->school_id;
+
             $user = User::create([
+                'school_id' => $schoolId,
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
@@ -115,13 +130,13 @@ class TeachersController extends Controller
                 'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
             ]);
 
-            if (Role::where('name', 'teacher')->exists()) {
-                $user->assignRole('teacher');
+            if ($this->roleService->isValidTemplate($validated['role'])) {
+                $user->assignRole($validated['role']);
             }
 
-            $teacherData = collect($validated)->except(['password', 'password_confirmation', 'photo'])->toArray();
+            $teacherData = collect($validated)->except(['password', 'password_confirmation', 'photo', 'role'])->toArray();
             $teacherData['user_id'] = $user->id;
-            $teacherData['school_id'] = DB::table('schools')->value('id');
+            $teacherData['school_id'] = $schoolId;
 
             if ($request->hasFile('photo')) {
                 $teacherData['photo'] = $request->file('photo')->store('teachers/photos', 'public');
@@ -352,8 +367,7 @@ class TeachersController extends Controller
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
         ]);
-
-        $schoolId = DB::table('schools')->value('id');
+        $schoolId = auth()->user()->school_id;
 
         try {
             $rows = $this->parseTeacherCsv($validated['file']->getRealPath());

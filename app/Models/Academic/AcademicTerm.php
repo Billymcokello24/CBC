@@ -14,7 +14,7 @@ class AcademicTerm extends Model
     use HasFactory, SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'academic_year_id', 'name', 'start_date',
+        'school_id', 'academic_year_id', 'name', 'term_number', 'start_date',
         'end_date', 'is_current', 'status'
     ];
 

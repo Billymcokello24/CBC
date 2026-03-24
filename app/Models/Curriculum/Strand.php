@@ -7,10 +7,14 @@ use App\Models\Curriculum\SubStrand;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\BelongsToSchool;
 
 class Strand extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'subject_id',
         'grade_level_id',
         'name',

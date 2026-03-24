@@ -33,19 +33,39 @@ return new class extends Migration
             'student_siblings',
             'teacher_subjects',
             'student_guardian',
+            'student_attendance',
 
             // Finance Sub-tables
             'invoice_items',
-            'fee_payments', // Wait, was it already there?
             
             // Health, Hostel, Library, Transport
             'medical_visits',
-            'student_health_records', // Check
+            'student_health_records',
             'hostel_allocations',
             'book_copies',
             'book_loans',
             'route_stops',
             'student_transport',
+
+            // Assessment Sub-tables
+            'student_assessments',
+            'grade_descriptors',
+            'rubric_criteria',
+            'rubric_levels',
+            'report_cards',
+
+            // Curriculum Sub-tables
+            'subjects',
+            'learning_areas',
+            'strands',
+            'sub_strands',
+            'competencies',
+            'competency_indicators',
+
+            // Communication & Events
+            'messages',
+            'communication_logs',
+            'club_memberships',
         ];
 
         foreach ($tables as $table) {

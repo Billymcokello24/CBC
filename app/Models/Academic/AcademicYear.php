@@ -15,7 +15,7 @@ class AcademicYear extends Model
 {
     use HasFactory, SoftDeletes, BelongsToSchool;
 
-    protected $fillable = ['school_id', 'name', 'start_date', 'end_date', 'is_current', 'status'];
+    protected $fillable = ['school_id', 'name', 'code', 'start_date', 'end_date', 'is_current', 'status'];
 
     protected $casts = [
         'start_date' => 'date',

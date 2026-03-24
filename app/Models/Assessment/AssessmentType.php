@@ -6,9 +6,11 @@ use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\BelongsToSchool;
 
 class AssessmentType extends Model
 {
+    use BelongsToSchool;
     protected $fillable = [
         'school_id', 'name', 'code', 'category', 'description',
         'default_weight', 'requires_rubric', 'is_active'

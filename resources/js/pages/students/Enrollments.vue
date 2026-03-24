@@ -22,10 +22,10 @@ interface EnrollmentGroup {
     grade_name: string | null;
     stream_name: string | null;
     academic_year: string | null;
-    total_students: number;
-    active_students: number;
+    total_learners: number;
+    active_learners: number;
     new_enrollments: number;
-    promoted_students: number;
+    promoted_learners: number;
 }
 
 interface Props {
@@ -54,7 +54,7 @@ const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
+    { title: 'Learners', href: '/students' },
     { title: 'Enrollments', href: '/students/enrollments' },
 ];
 
@@ -113,12 +113,12 @@ const clearFilters = () => {
                         <BookOpenCheck class="h-6 w-6 text-emerald-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">Enrollment Groups</h1>
-                        <p class="text-muted-foreground">Browse groups first, then open a group page to manage its students</p>
+                        <h1 class="text-2xl font-bold tracking-tight">Enrollments</h1>
+                        <p class="text-muted-foreground">Manage learner enrollments by class.</p>
                     </div>
                 </div>
                 <Button variant="outline" as-child>
-                    <Link href="/students">Back to Students</Link>
+                    <Link href="/students">Back to Learners</Link>
                 </Button>
             </div>
 
@@ -144,7 +144,7 @@ const clearFilters = () => {
             <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:flex-row md:items-center">
                 <div class="relative flex-1 md:max-w-sm">
                     <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input v-model="searchQuery" placeholder="Search group, class, or student..." class="pl-9" />
+                    <Input v-model="searchQuery" placeholder="Search..." class="pl-9" />
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" size="sm" @click="selectedView = 'grid'">
@@ -193,7 +193,7 @@ const clearFilters = () => {
             </div>
 
             <div v-if="groups.length === 0" class="rounded-xl border bg-card p-10 text-center text-sm text-muted-foreground">
-                No enrollment groups found.
+                No enrollments found.
             </div>
 
             <div v-else-if="selectedView === 'grid'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -217,12 +217,12 @@ const clearFilters = () => {
                     </div>
                     <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
                         <div class="rounded-lg border p-3">
-                            <div class="text-muted-foreground">Students</div>
-                            <div class="mt-1 font-semibold">{{ group.total_students }}</div>
+                            <div class="text-muted-foreground">Learners</div>
+                            <div class="mt-1 font-semibold">{{ group.total_learners }}</div>
                         </div>
                         <div class="rounded-lg border p-3">
                             <div class="text-muted-foreground">Active</div>
-                            <div class="mt-1 font-semibold text-green-600">{{ group.active_students }}</div>
+                            <div class="mt-1 font-semibold text-green-600">{{ group.active_learners }}</div>
                         </div>
                         <div class="rounded-lg border p-3">
                             <div class="text-muted-foreground">New</div>
@@ -230,7 +230,7 @@ const clearFilters = () => {
                         </div>
                         <div class="rounded-lg border p-3">
                             <div class="text-muted-foreground">Promoted</div>
-                            <div class="mt-1 font-semibold text-amber-600">{{ group.promoted_students }}</div>
+                            <div class="mt-1 font-semibold text-amber-600">{{ group.promoted_learners }}</div>
                         </div>
                     </div>
                 </Link>
@@ -243,7 +243,7 @@ const clearFilters = () => {
                             <tr class="border-b bg-muted/50">
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Group</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Academic Year</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Students</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Learners</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Active</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Promoted</th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Open</th>
@@ -256,12 +256,12 @@ const clearFilters = () => {
                                     <div class="text-xs text-muted-foreground">{{ group.grade_name || 'Unknown Grade' }}<span v-if="group.stream_name"> • {{ group.stream_name }}</span></div>
                                 </td>
                                 <td class="px-4 py-3 text-sm">{{ group.academic_year || '—' }}</td>
-                                <td class="px-4 py-3 text-sm">{{ group.total_students }}</td>
-                                <td class="px-4 py-3 text-sm text-green-600">{{ group.active_students }}</td>
-                                <td class="px-4 py-3 text-sm text-amber-600">{{ group.promoted_students }}</td>
+                                <td class="px-4 py-3 text-sm">{{ group.total_learners }}</td>
+                                <td class="px-4 py-3 text-sm text-green-600">{{ group.active_learners }}</td>
+                                <td class="px-4 py-3 text-sm text-amber-600">{{ group.promoted_learners }}</td>
                                 <td class="px-4 py-3 text-right">
                                     <Button variant="outline" size="sm" as-child>
-                                        <Link :href="`/students/enrollments/groups/${group.class_id}`">Open Group</Link>
+                                        <Link :href="`/students/enrollments/groups/${group.class_id}`">Open</Link>
                                     </Button>
                                 </td>
                             </tr>

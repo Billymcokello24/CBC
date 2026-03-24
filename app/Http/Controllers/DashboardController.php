@@ -144,7 +144,7 @@ class DashboardController extends Controller
                 'grade' => $c->gradeLevel?->name,
                 'stream' => $c->stream?->name,
                 'is_class_teacher' => true,
-                'student_count' => $c->active_students_count ?? $c->students()->where('status', 'active')->count()
+                'learner_count' => $c->active_students_count ?? $c->students()->where('status', 'active')->count()
             ])->merge(
                 $subjectAssignments->map(fn($a) => [
                     'id' => $a->schoolClass?->id,
@@ -153,7 +153,7 @@ class DashboardController extends Controller
                     'grade' => $a->schoolClass?->gradeLevel?->name,
                     'stream' => $a->schoolClass?->stream?->name,
                     'is_class_teacher' => false,
-                    'student_count' => $a->schoolClass?->students()->where('status', 'active')->count() ?? 0
+                    'learner_count' => $a->schoolClass?->students()->where('status', 'active')->count() ?? 0
                 ])
             )->unique('id')->filter()->values();
 
@@ -167,7 +167,7 @@ class DashboardController extends Controller
             ])->unique(fn($s) => $s['id'] . '-' . $s['class_name'])->values();
 
             $classIds = $myClasses->pluck('id')->toArray();
-            $totalStudents = Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+            $totalLearnersCount = Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
 
             // 3. Today's timetable
             $dayOfWeek = strtolower(date('l'));
@@ -446,21 +446,25 @@ class DashboardController extends Controller
     private function getStats(): array
     {
         try {
-            $totalStudents = Student::where('status', 'active')->count();
-            $previousTermStudents = Student::where('status', 'active')
-                ->where('created_at', '<', Carbon::now()->subMonths(3))
+            $totalStudents = Student::active()->count();
+            $previousTermDate = Carbon::now()->subMonths(3);
+            
+            $previousStudents = Student::active()
+                ->where('created_at', '<', $previousTermDate)
                 ->count();
-            $studentGrowth = $previousTermStudents > 0
-                ? round((($totalStudents - $previousTermStudents) / $previousTermStudents) * 100, 1)
-                : 5.2;
+            
+            $studentGrowth = $previousStudents > 0
+                ? round((($totalStudents - $previousStudents) / $previousStudents) * 100, 1)
+                : 0;
 
-            $totalTeachers = Teacher::where('status', 'active')->count();
-            $previousTeachers = Teacher::where('status', 'active')
-                ->where('created_at', '<', Carbon::now()->subMonths(3))
+            $totalTeachers = Teacher::active()->count();
+            $previousTeachersCount = Teacher::active()
+                ->where('created_at', '<', $previousTermDate)
                 ->count();
-            $teacherGrowth = $previousTeachers > 0
-                ? round((($totalTeachers - $previousTeachers) / $previousTeachers) * 100, 1)
-                : 2;
+            
+            $teacherGrowth = $previousTeachersCount > 0
+                ? round((($totalTeachers - $previousTeachersCount) / $previousTeachersCount) * 100, 1)
+                : 0;
 
             $totalClasses = SchoolClass::where('is_active', true)->count();
             $attendanceRate = $this->calculateAttendanceRate();
@@ -474,53 +478,52 @@ class DashboardController extends Controller
 
             $pendingFees = 0;
             if (Schema::hasTable('student_fees')) {
-                $pendingFees = StudentFee::where('status', 'pending')
-                    ->orWhere('status', 'partial')
+                $pendingFees = StudentFee::whereIn('status', ['pending', 'partial'])
                     ->sum(DB::raw('total_amount - paid_amount')) ?? 0;
             }
 
             $totalGuardians = Guardian::where('is_active', true)->count();
-            $totalSubjects = DB::table('subjects')->where('is_active', true)->count();
+            $totalSubjects = \App\Models\Curriculum\Subject::where('is_active', true)->count();
 
             return [
-                'total_students' => $totalStudents ?: 1250,
-                'student_growth' => $studentGrowth,
-                'total_teachers' => $totalTeachers ?: 85,
+                'total_learners' => $totalStudents,
+                'learner_growth' => $studentGrowth,
+                'total_teachers' => $totalTeachers,
                 'teacher_growth' => $teacherGrowth,
-                'total_classes' => $totalClasses ?: 42,
+                'total_classes' => $totalClasses,
                 'attendance_rate' => $attendanceRate,
-                'fee_collection' => $feeCollection ?: 2850000,
-                'pending_fees' => $pendingFees ?: 450000,
-                'total_guardians' => $totalGuardians ?: 890,
-                'total_subjects' => $totalSubjects ?: 24,
+                'fee_collection' => $feeCollection,
+                'pending_fees' => $pendingFees,
+                'total_guardians' => $totalGuardians,
+                'total_subjects' => $totalSubjects,
             ];
         } catch (\Exception $e) {
             Log::error('getStats error: ' . $e->getMessage());
-            return $this->getDefaultStats();
+            return $this->getZeroStats();
         }
     }
 
-    private function getDefaultStats(): array
+    private function getZeroStats(): array
     {
         return [
-            'total_students' => 1250, 'student_growth' => 5.2, 'total_teachers' => 85,
-            'teacher_growth' => 2, 'total_classes' => 42, 'attendance_rate' => 94.5,
-            'fee_collection' => 2850000, 'pending_fees' => 450000, 'total_guardians' => 890,
-            'total_subjects' => 24,
+            'total_learners' => 0, 'learner_growth' => 0, 'total_teachers' => 0,
+            'teacher_growth' => 0, 'total_classes' => 0, 'attendance_rate' => 0,
+            'fee_collection' => 0, 'pending_fees' => 0, 'total_guardians' => 0,
+            'total_subjects' => 0,
         ];
     }
 
     private function calculateAttendanceRate(): float
     {
         try {
-            if (!Schema::hasTable('student_attendances')) return 94.5;
+            if (!Schema::hasTable('student_attendances')) return 0;
             $startOfWeek = Carbon::now()->startOfWeek();
             $endOfWeek = Carbon::now()->endOfWeek();
             $totalRecords = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])->count();
             $presentRecords = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])->where('status', 'present')->count();
-            return $totalRecords === 0 ? 94.5 : round(($presentRecords / $totalRecords) * 100, 1);
+            return $totalRecords === 0 ? 0 : round(($presentRecords / $totalRecords) * 100, 1);
         } catch (\Exception $e) {
-            return 94.5;
+            return 0;
         }
     }
 
@@ -531,89 +534,203 @@ class DashboardController extends Controller
             for ($i = 5; $i >= 0; $i--) {
                 $date = Carbon::now()->subMonths($i);
                 $months[] = $date->format('M');
-                $newStudents[] = Student::whereMonth('admission_date', $date->month)->whereYear('admission_date', $date->year)->count() ?: rand(30, 70);
-                $withdrawals[] = Student::whereMonth('withdrawal_date', $date->month)->whereYear('withdrawal_date', $date->year)->where('status', 'withdrawn')->count() ?: rand(2, 8);
+                $newStudents[] = Student::whereMonth('admission_date', $date->month)->whereYear('admission_date', $date->year)->count();
+                $withdrawals[] = Student::whereMonth('withdrawal_date', $date->month)->whereYear('withdrawal_date', $date->year)->where('status', 'withdrawn')->count();
             }
             return ['labels' => $months, 'datasets' => [
                 ['label' => 'New Students', 'data' => $newStudents, 'color' => 'rgb(59, 130, 246)'],
                 ['label' => 'Withdrawals', 'data' => $withdrawals, 'color' => 'rgb(239, 68, 68)'],
             ]];
-        } catch (\Exception $e) { return $this->getDefaultEnrollmentTrends(); }
+        } catch (\Exception $e) { return ['labels' => [], 'datasets' => []]; }
     }
 
-    private function getDefaultEnrollmentTrends(): array
+    private function getClassPerformance(): array
     {
-        return ['labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], 'datasets' => [
-            ['label' => 'New Students', 'data' => [45, 52, 38, 65, 48, 73], 'color' => 'rgb(59, 130, 246)'],
-            ['label' => 'Withdrawals', 'data' => [5, 8, 3, 7, 4, 6], 'color' => 'rgb(239, 68, 68)'],
-        ]];
+        try {
+            $currentTerm = AcademicTerm::current()->first();
+            if (!$currentTerm) return $this->getEmptyClassPerformance();
+
+            $performanceData = DB::table('student_assessments')
+                ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
+                ->join('school_classes', 'assessments.class_id', '=', 'school_classes.id')
+                ->where('assessments.academic_term_id', $currentTerm->id)
+                ->whereNotNull('student_assessments.percentage');
+
+            // Manual scoping for performance data
+            $schoolId = Auth::user()->school_id ?? session('viewing_school_id');
+            if ($schoolId) {
+                $performanceData->where('assessments.school_id', $schoolId);
+            }
+
+            $results = $performanceData->select('school_classes.name', DB::raw('AVG(student_assessments.percentage) as average'))
+                ->groupBy('school_classes.id', 'school_classes.name')
+                ->orderBy('average', 'desc')
+                ->limit(6)
+                ->get();
+
+            if ($results->isEmpty()) return $this->getEmptyClassPerformance();
+
+            return [
+                'labels' => $results->pluck('name')->toArray(),
+                'datasets' => [
+                    [
+                        'label' => 'Average Score %',
+                        'data' => $results->pluck('average')->map(fn($v) => round($v, 1))->toArray(),
+                        'color' => 'rgb(16, 185, 129)'
+                    ],
+                ]
+            ];
+        } catch (\Exception $e) {
+            return $this->getEmptyClassPerformance();
+        }
     }
 
-    private function getClassPerformance(): array { return $this->getDefaultClassPerformance(); }
-
-    private function getDefaultClassPerformance(): array
+    private function getEmptyClassPerformance(): array
     {
-        return ['labels' => ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'], 'datasets' => [
-            ['label' => 'Average Score', 'data' => [72, 78, 65, 81, 75, 70], 'color' => 'rgb(16, 185, 129)'],
+        return ['labels' => [], 'datasets' => [
+            ['label' => 'Average Score', 'data' => [], 'color' => 'rgb(16, 185, 129)'],
         ]];
     }
 
     private function getGenderDistribution(): array
     {
         try {
-            $boys = Student::where('status', 'active')->where('gender', 'male')->count();
-            $girls = Student::where('status', 'active')->where('gender', 'female')->count();
-            if ($boys === 0 && $girls === 0) return $this->getDefaultGenderDistribution();
-            return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Students', 'data' => [$boys, $girls]]]];
-        } catch (\Exception $e) { return $this->getDefaultGenderDistribution(); }
+            $boys = Student::active()->where('gender', 'male')->count();
+            $girls = Student::active()->where('gender', 'female')->count();
+            if ($boys === 0 && $girls === 0) return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Learners', 'data' => [0, 0]]]];
+            return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Learners', 'data' => [$boys, $girls]]]];
+        } catch (\Exception $e) { return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Learners', 'data' => [0, 0]]]]; }
     }
 
-    private function getDefaultGenderDistribution(): array
+    private function getWeeklyAttendance(): array
     {
-        return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Students', 'data' => [620, 630]]]];
+        try {
+            if (!Schema::hasTable('student_attendances')) return $this->getEmptyWeeklyAttendance();
+            
+            $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            $presentData = [];
+            $absentData = [];
+            
+            $startOfWeek = Carbon::now()->startOfWeek();
+            
+            for ($i = 0; $i < 5; $i++) {
+                $date = $startOfWeek->copy()->addDays($i);
+                $total = StudentAttendance::whereDate('date', $date)->count();
+                $present = StudentAttendance::whereDate('date', $date)->where('status', 'present')->count();
+                
+                if ($total > 0) {
+                    $presentRate = round(($present / $total) * 100, 1);
+                    $absentRate = 100 - $presentRate;
+                } else {
+                    $presentRate = 0;
+                    $absentRate = 0;
+                }
+                
+                $presentData[] = $presentRate;
+                $absentData[] = $absentRate;
+            }
+            
+            return ['labels' => $days, 'datasets' => [
+                ['label' => 'Present %', 'data' => $presentData, 'color' => 'rgb(16, 185, 129)'],
+                ['label' => 'Absent %', 'data' => $absentData, 'color' => 'rgb(239, 68, 68)'],
+            ]];
+        } catch (\Exception $e) {
+            return $this->getEmptyWeeklyAttendance();
+        }
     }
 
-    private function getWeeklyAttendance(): array { return $this->getDefaultWeeklyAttendance(); }
-
-    private function getDefaultWeeklyAttendance(): array
+    private function getEmptyWeeklyAttendance(): array
     {
         return ['labels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], 'datasets' => [
-            ['label' => 'Present %', 'data' => [95, 92, 97, 94, 91], 'color' => 'rgb(16, 185, 129)'],
-            ['label' => 'Absent %', 'data' => [5, 8, 3, 6, 9], 'color' => 'rgb(239, 68, 68)'],
+            ['label' => 'Present %', 'data' => [0, 0, 0, 0, 0], 'color' => 'rgb(16, 185, 129)'],
+            ['label' => 'Absent %', 'data' => [0, 0, 0, 0, 0], 'color' => 'rgb(239, 68, 68)'],
         ]];
     }
 
-    private function getRecentActivities(): array { return $this->getDefaultRecentActivities(); }
-
-    private function getDefaultRecentActivities(): array
+    private function getRecentActivities(): array
     {
-        return [
-            ['id' => 1, 'title' => 'New Student Enrolled', 'description' => 'John Kamau was enrolled in Grade 4A', 'time' => '2 hours ago', 'type' => 'student', 'user' => ['name' => 'Admin User']],
-            ['id' => 2, 'title' => 'Fee Payment Received', 'description' => 'KES 25,000 received from Mary Wanjiku', 'time' => '3 hours ago', 'type' => 'payment', 'user' => ['name' => 'Finance Officer']],
-            ['id' => 3, 'title' => 'Assessment Published', 'description' => 'Mathematics CAT 1 published for Grade 5', 'time' => '5 hours ago', 'type' => 'assessment', 'user' => ['name' => 'Mr. Ochieng']],
-            ['id' => 4, 'title' => 'Attendance Marked', 'description' => 'Morning attendance completed for all classes', 'time' => '6 hours ago', 'type' => 'attendance', 'user' => ['name' => 'Class Teachers']],
-            ['id' => 5, 'title' => 'New Announcement', 'description' => 'Parents meeting scheduled for next Friday', 'time' => '1 day ago', 'type' => 'announcement', 'user' => ['name' => 'Principal']],
-        ];
+        try {
+            // Fetch recent activity logs that are relevant to this school
+            // Using spatie/laravel-activitylog if available
+            if (class_exists(\Spatie\Activitylog\Models\Activity::class)) {
+                return \Spatie\Activitylog\Models\Activity::latest()
+                    ->limit(10)
+                    ->get()
+                    ->map(fn($activity) => [
+                        'id' => $activity->id,
+                        'description' => $activity->description,
+                        'user' => $activity->causer?->name ?? 'System',
+                        'time' => $activity->created_at->diffForHumans(),
+                        'icon' => $this->getActivityIcon($activity->description),
+                        'color' => $this->getActivityColor($activity->description),
+                    ])
+                    ->toArray();
+            }
+            return [];
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
-    private function getUpcomingEvents(): array { return $this->getDefaultUpcomingEvents(); }
-
-    private function getDefaultUpcomingEvents(): array
+    private function getActivityIcon($description): string
     {
-        return [
-            ['id' => 1, 'title' => 'Term 1 Exams Begin', 'date' => '2026-03-15', 'type' => 'exam'],
-            ['id' => 2, 'title' => 'Staff Meeting', 'date' => '2026-03-12', 'time' => '2:00 PM', 'type' => 'meeting'],
-            ['id' => 3, 'title' => 'Sports Day', 'date' => '2026-03-20', 'type' => 'event'],
-            ['id' => 4, 'title' => 'Report Cards Due', 'date' => '2026-03-25', 'type' => 'deadline'],
-            ['id' => 5, 'title' => 'Good Friday', 'date' => '2026-04-03', 'type' => 'holiday'],
-        ];
+        $desc = strtolower($description);
+        if (str_contains($desc, 'student')) return 'Users';
+        if (str_contains($desc, 'teacher')) return 'GraduationCap';
+        if (str_contains($desc, 'fee') || str_contains($desc, 'payment')) return 'CreditCard';
+        if (str_contains($desc, 'class')) return 'School';
+        return 'Activity';
+    }
+
+    private function getActivityColor($description): string
+    {
+        $desc = strtolower($description);
+        if (str_contains($desc, 'created') || str_contains($desc, 'added')) return 'text-emerald-500';
+        if (str_contains($desc, 'updated') || str_contains($desc, 'modified')) return 'text-blue-500';
+        if (str_contains($desc, 'deleted') || str_contains($desc, 'removed')) return 'text-red-500';
+        return 'text-slate-500';
+    }
+
+    private function getUpcomingEvents(): array
+    {
+        try {
+            // Using the new scoped Event model
+            return Event::upcoming()
+                ->limit(5)
+                ->get()
+                ->map(fn($event) => [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'date' => $event->start_date->format('M d, Y'),
+                    'time' => $event->start_time ? Carbon::parse($event->start_time)->format('h:i A') : 'All Day',
+                    'type' => $event->event_type ?? 'General',
+                    'location' => $event->location ?? 'School Grounds',
+                ])
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     private function getNotificationsCount(): int
     {
         try {
             if (Auth::check()) {
-                return DB::table('notifications')->where('notifiable_id', Auth::id())->whereNull('read_at')->count();
+                $user = Auth::user();
+                $query = DB::table('notifications')
+                    ->where('notifiable_id', $user->id)
+                    ->where('notifiable_type', get_class($user))
+                    ->whereNull('read_at');
+                
+                // Manual scoping for notifications if school_id exists
+                if (Schema::hasColumn('notifications', 'school_id')) {
+                    $schoolId = $user->school_id ?? session('viewing_school_id');
+                    if ($schoolId) {
+                        $query->where('school_id', $schoolId);
+                    }
+                }
+                
+                return $query->count();
             }
             return 0;
         } catch (\Exception $e) { return 0; }

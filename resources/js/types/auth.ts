@@ -11,6 +11,12 @@ export type User = {
 
 export type Auth = {
     user: User;
+    school: {
+        id: number;
+        name: string;
+        logo?: string;
+        [key: string]: any;
+    } | null;
     roles: string[];
     permissions: string[];
     is_super_admin: boolean;

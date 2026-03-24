@@ -76,9 +76,9 @@ const closeModal = () => {
     <Dialog :open="open" @update:open="closeModal">
         <DialogContent class="sm:max-w-[500px]">
             <DialogHeader>
-                <DialogTitle>Bulk Upload Students</DialogTitle>
+                <DialogTitle>Bulk Upload Learners</DialogTitle>
                 <DialogDescription>
-                    Upload a CSV file to add multiple students at once. 
+                    Upload a CSV file to add multiple learners at once. 
                     Download the template below to ensure your data is formatted correctly.
                 </DialogDescription>
             </DialogHeader>

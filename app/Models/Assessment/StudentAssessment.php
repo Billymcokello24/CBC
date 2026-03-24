@@ -7,9 +7,14 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\BelongsToSchool;
+
 class StudentAssessment extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'student_id', 'assessment_id', 'marks_obtained', 'percentage',
         'grade_descriptor_id', 'grade_level', 'feedback', 'teacher_comments',
         'improvement_areas', 'is_absent', 'absence_reason', 'is_excused',

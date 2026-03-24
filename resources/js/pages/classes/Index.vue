@@ -17,7 +17,7 @@ interface ClassRow {
     stream: string | null;
     stream_code: string | null;
     teacher: string | null;
-    students: number;
+    learners: number;
     capacity: number | null;
     academic_year: string | null;
     utilization: number;
@@ -35,7 +35,7 @@ const props = defineProps<{
     };
     stats: {
         total_classes: number;
-        total_students: number;
+        total_learners: number;
         average_class_size: number;
         grades_count: number;
     };
@@ -121,7 +121,7 @@ const toggleClassSelection = (classId: number) => {
 const runBulkAction = (action: 'activate' | 'deactivate' | 'delete' | 'promote') => {
     if (!selectedClassIds.value.length) return;
     
-    if (action === 'promote' && !confirm('Are you sure you want to promote all students in the selected classes? This will move them to the next grade.')) {
+    if (action === 'promote' && !confirm('Are you sure you want to promote all learners in the selected classes? This will move them to the next grade.')) {
         return;
     }
 
@@ -181,7 +181,7 @@ const confirmDeleteClass = (cls: any) => {
                         <div class="rounded-xl bg-blue-50 p-3"><Users class="h-5 w-5 text-blue-600" /></div>
                         <div>
                             <p class="text-sm text-muted-foreground font-medium">Total Learners</p>
-                            <p class="text-xl font-bold text-blue-600">{{ stats.total_students }}</p>
+                            <p class="text-xl font-bold text-blue-600">{{ stats.total_learners }}</p>
                         </div>
                     </div>
                 </div>
@@ -335,7 +335,7 @@ const confirmDeleteClass = (cls: any) => {
                         <div class="pt-2">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-xs font-bold text-slate-400 tracking-tight uppercase">Capacity Usage</span>
-                                <span class="text-xs font-bold text-slate-900">{{ cls.students }} / {{ cls.capacity || '∞' }} <span class="text-[10px] text-slate-400 ml-1">LEARNERS</span></span>
+                                <span class="text-xs font-bold text-slate-900">{{ cls.learners }} / {{ cls.capacity || '∞' }} <span class="text-[10px] text-slate-400 ml-1">LEARNERS</span></span>
                             </div>
                             <div class="h-1.5 w-full rounded-full bg-slate-100">
                                 <div class="h-full rounded-full transition-all duration-1000 shadow-sm" :class="cls.utilization > 90 ? 'bg-rose-500' : cls.utilization > 70 ? 'bg-amber-500' : 'bg-blue-600'" :style="{ width: `${cls.utilization}%` }"></div>
@@ -400,7 +400,7 @@ const confirmDeleteClass = (cls: any) => {
                                 <td class="px-6 py-5 text-xs font-bold text-slate-600 uppercase tracking-tight">{{ cls.grade || '—' }}</td>
                                 <td class="px-6 py-5 text-xs font-bold text-slate-600 uppercase tracking-tight">{{ cls.academic_year || '—' }}</td>
                                 <td class="px-6 py-5 text-center">
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ cls.students }} / {{ cls.capacity || '∞' }}</span>
+                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">{{ cls.learners }} / {{ cls.capacity || '∞' }}</span>
                                 </td>
                                 <td class="px-6 py-5 min-w-[140px]">
                                     <div class="flex flex-col gap-1.5 pt-1">

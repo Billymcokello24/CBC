@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
-interface StudentRow {
+interface LearnerRow {
     id: number;
     name: string;
     admission_number: string | null;
@@ -44,7 +44,7 @@ const props = defineProps<{
         stream: string | null;
         academic_year: string | null;
         capacity: number | null;
-        students_count: number;
+        learners_count: number;
         utilization: number;
         is_active: boolean;
         teacher: string | null;
@@ -63,7 +63,7 @@ const props = defineProps<{
         is_primary_teacher: boolean;
         is_active: boolean;
     }>;
-    students: StudentRow[];
+    learners: LearnerRow[];
     filters: {
         search: string;
         status: string;
@@ -85,15 +85,15 @@ const breadcrumbs: BreadcrumbItem[] = [
 const searchQuery = ref(props.filters.search ?? '');
 const selectedStatus = ref(props.filters.status ?? 'all');
 const selectedGender = ref(props.filters.gender ?? 'all');
-const selectedStudentIds = ref<number[]>([]);
+const selectedLearnerIds = ref<number[]>([]);
 const transferTargetId = ref('');
 const showFilters = ref(true);
 const actionForm = useForm({});
-const bulkPromoteForm = useForm<{ student_ids: number[] }>({ student_ids: [] });
-const bulkTransferForm = useForm<{ student_ids: number[]; target_class_id: number | null }>({ student_ids: [], target_class_id: null });
+const bulkPromoteForm = useForm<{ learner_ids: number[] }>({ learner_ids: [] });
+const bulkTransferForm = useForm<{ learner_ids: number[]; target_class_id: number | null }>({ learner_ids: [], target_class_id: null });
 const confirmOpen = ref(false);
 const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'demote' | 'transfer' | 'promote'>('suspend');
-const selectedStudent = ref<StudentRow | null>(null);
+const selectedLearner = ref<LearnerRow | null>(null);
 const showToast = ref(false);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -121,9 +121,9 @@ watch(searchQuery, () => {
 watch([selectedStatus, selectedGender], () => applyFilters());
 
 watch(
-    () => props.students,
+    () => props.learners,
     () => {
-        selectedStudentIds.value = selectedStudentIds.value.filter((id) => props.students.some((student) => student.id === id));
+        selectedLearnerIds.value = selectedLearnerIds.value.filter((id) => props.learners.some((learner) => learner.id === id));
     },
     { deep: true },
 );
@@ -135,17 +135,17 @@ const clearFilters = () => {
     applyFilters();
 };
 
-const allSelected = computed(() => props.students.length > 0 && props.students.every((student) => selectedStudentIds.value.includes(student.id)));
-const selectedCount = computed(() => selectedStudentIds.value.length);
+const allSelected = computed(() => props.learners.length > 0 && props.learners.every((learner) => selectedLearnerIds.value.includes(learner.id)));
+const selectedCount = computed(() => selectedLearnerIds.value.length);
 
-const toggleAllStudents = () => {
-    selectedStudentIds.value = allSelected.value ? [] : props.students.map((student) => student.id);
+const toggleAllLearners = () => {
+    selectedLearnerIds.value = allSelected.value ? [] : props.learners.map((learner) => learner.id);
 };
 
-const toggleStudent = (studentId: number) => {
-    selectedStudentIds.value = selectedStudentIds.value.includes(studentId)
-        ? selectedStudentIds.value.filter((id) => id !== studentId)
-        : [...selectedStudentIds.value, studentId];
+const toggleLearner = (learnerId: number) => {
+    selectedLearnerIds.value = selectedLearnerIds.value.includes(learnerId)
+        ? selectedLearnerIds.value.filter((id) => id !== learnerId)
+        : [...selectedLearnerIds.value, learnerId];
 };
 
 const flashSuccess = computed(() => page.props.flash?.success ?? '');
@@ -160,65 +160,65 @@ watch(
     { immediate: true },
 );
 
-const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'demote' | 'transfer' | 'promote', student: StudentRow | null = null) => {
+const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'demote' | 'transfer' | 'promote', learner: LearnerRow | null = null) => {
     confirmMode.value = mode;
-    selectedStudent.value = student;
+    selectedLearner.value = learner;
     confirmOpen.value = true;
 };
 
 const closeActionModal = () => {
     confirmOpen.value = false;
-    selectedStudent.value = null;
+    selectedLearner.value = null;
 };
 
 const confirmAction = () => {
     if (confirmMode.value === 'promote') {
-        bulkPromoteForm.student_ids = [...selectedStudentIds.value];
+        bulkPromoteForm.learner_ids = [...selectedLearnerIds.value];
         bulkPromoteForm.post('/students/promote', { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
 
     if (confirmMode.value === 'transfer') {
-        if (!selectedStudentIds.value.length || !transferTargetId.value) return;
-        bulkTransferForm.student_ids = [...selectedStudentIds.value];
+        if (!selectedLearnerIds.value.length || !transferTargetId.value) return;
+        bulkTransferForm.learner_ids = [...selectedLearnerIds.value];
         bulkTransferForm.target_class_id = Number(transferTargetId.value);
-        selectedStudentIds.value.forEach((studentId) => {
+        selectedLearnerIds.value.forEach((learnerId) => {
             actionForm.transform(() => ({
                 target_class_id: Number(transferTargetId.value),
-            })).patch(`/students/${studentId}/transfer`, {
+            })).patch(`/students/${learnerId}/transfer`, {
                 preserveScroll: true,
             });
         });
         closeActionModal();
-        selectedStudentIds.value = [];
+        selectedLearnerIds.value = [];
         return;
     }
 
-    if (!selectedStudent.value) return;
+    if (!selectedLearner.value) return;
 
     if (confirmMode.value === 'suspend') {
-        actionForm.patch(`/students/${selectedStudent.value.id}/suspend`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.id}/suspend`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
     if (confirmMode.value === 'activate') {
-        actionForm.patch(`/students/${selectedStudent.value.id}/activate`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.id}/activate`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
     if (confirmMode.value === 'demote') {
-        actionForm.patch(`/students/${selectedStudent.value.id}/demote`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.id}/demote`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
-    actionForm.delete(`/students/${selectedStudent.value.id}`, { preserveScroll: true, onSuccess: closeActionModal });
+    actionForm.delete(`/students/${selectedLearner.value.id}`, { preserveScroll: true, onSuccess: closeActionModal });
 };
 
 const modalTitle = computed(() => {
     switch (confirmMode.value) {
-        case 'activate': return 'Activate learner';
-        case 'delete': return 'Delete learner';
-        case 'demote': return 'Demote learner';
-        case 'transfer': return 'Transfer selected learners';
-        case 'promote': return 'Promote selected learners';
-        default: return 'Suspend learner';
+        case 'activate': return 'Activate';
+        case 'delete': return 'Delete';
+        case 'demote': return 'Demote';
+        case 'transfer': return 'Transfer Learners';
+        case 'promote': return 'Promote Learners';
+        default: return 'Suspend';
     }
 });
 
@@ -311,7 +311,7 @@ const confirmSubjectAction = () => {
                 </div>
                 <div class="rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-all">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Active Learners</p>
-                    <p class="text-xl font-bold text-indigo-600 leading-none">{{ classroom.students_count }} <span class="text-[10px] text-slate-400 ml-1">ACT</span></p>
+                    <p class="text-xl font-bold text-indigo-600 leading-none">{{ classroom.learners_count }} <span class="text-[10px] text-slate-400 ml-1">ACT</span></p>
                 </div>
                 <div class="rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-all">
                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Class Teacher</p>
@@ -337,9 +337,9 @@ const confirmSubjectAction = () => {
                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md">
                                 <Users class="h-5 w-5" />
                             </div>
-                            <h2 class="text-xl font-bold text-slate-900">Learner List</h2>
+                            <h2 class="text-xl font-bold text-slate-900">Learners</h2>
                         </div>
-                        <p class="text-sm text-muted-foreground mt-1.5">Manage learner enrollments and distributions for this class.</p>
+                        <p class="text-sm text-muted-foreground mt-1.5">Manage class learners.</p>
                     </div>
                     <div class="flex flex-col items-end gap-2">
                         <div class="flex items-center gap-3 mb-2">
@@ -357,7 +357,7 @@ const confirmSubjectAction = () => {
                     <div class="flex flex-col gap-4 md:flex-row md:items-center">
                         <div class="relative flex-1 md:max-w-md">
                             <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input v-model="searchQuery" placeholder="Search learners by name or ID..." class="pl-9 h-11 border-slate-200 text-sm rounded-xl" />
+                            <Input v-model="searchQuery" placeholder="Search by name or number..." class="pl-9 h-11 border-slate-200 text-sm rounded-xl" />
                         </div>
                         <div class="flex items-center gap-2">
                             <Button variant="outline" class="h-11 rounded-xl border-slate-200 text-xs font-medium px-6 hover:bg-slate-50 transition-all" @click="showFilters = !showFilters">
@@ -369,13 +369,13 @@ const confirmSubjectAction = () => {
 
                     <div v-if="showFilters" class="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/50 p-6 animate-in slide-in-from-top-4 duration-300 md:grid-cols-2">
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Account Status</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Status</label>
                             <select v-model="selectedStatus" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-xs font-bold focus:ring-blue-600 transition-all outline-none shadow-sm">
                                 <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
                         </div>
                         <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Gender Filter</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider ml-1">Gender</label>
                             <select v-model="selectedGender" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-xs font-bold focus:ring-blue-600 transition-all outline-none shadow-sm">
                                 <option v-for="option in genderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                             </select>
@@ -391,11 +391,11 @@ const confirmSubjectAction = () => {
                         </div>
                         <div>
                             <p class="text-sm font-bold text-slate-900">{{ selectedCount }} Learner{{ selectedCount === 1 ? '' : 's' }} Selected</p>
-                            <p class="text-xs text-blue-600 font-medium">Ready for batch operation</p>
+                            <p class="text-xs text-blue-600 font-medium">Bulk Actions</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Button variant="ghost" class="h-10 text-slate-500 hover:text-slate-700 font-medium text-sm px-6" @click="selectedStudentIds = []">Cancel</Button>
+                        <Button variant="ghost" class="h-10 text-slate-500 hover:text-slate-700 font-medium text-sm px-6" @click="selectedLearnerIds = []">Cancel</Button>
                         <Button variant="outline" class="h-10 border-blue-200 text-blue-600 font-bold text-xs px-6 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm" @click="openActionModal('transfer')">
                             <ArrowRightLeft class="mr-2 h-4 w-4" />Transfer
                         </Button>
@@ -411,16 +411,16 @@ const confirmSubjectAction = () => {
                         <table class="w-full">
                             <thead>
                                 <tr class="border-b bg-slate-50/50">
-                                    <th class="w-16 px-6 py-5 text-center"><Checkbox :checked="allSelected" @update:checked="toggleAllStudents" class="rounded-md border-slate-300" /></th>
-                                    <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Learner Name</th>
-                                    <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Adm No.</th>
+                                    <th class="w-16 px-6 py-5 text-center"><Checkbox :checked="allSelected" @update:checked="toggleAllLearners" class="rounded-md border-slate-300" /></th>
+                                    <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Full Name</th>
+                                    <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Admission Number</th>
                                     <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Gender</th>
                                     <th class="px-6 py-5 text-left text-xs font-bold uppercase tracking-tight text-slate-400">Status</th>
                                     <th class="px-6 py-5 text-right text-xs font-bold uppercase tracking-tight text-slate-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50">
-                                <tr v-if="students.length === 0">
+                                <tr v-if="learners.length === 0">
                                     <td colspan="6" class="px-6 py-20 text-center">
                                         <div class="flex flex-col items-center gap-4">
                                             <div class="rounded-full bg-slate-50 p-6 shadow-inner"><Users class="h-10 w-10 text-slate-200" /></div>
@@ -428,31 +428,31 @@ const confirmSubjectAction = () => {
                                         </div>
                                     </td>
                                 </tr>
-                                <tr v-for="student in students" :key="student.id" class="group transition-all hover:bg-blue-50/20">
-                                    <td class="px-6 py-5 text-center"><Checkbox :checked="selectedStudentIds.includes(student.id)" @update:checked="toggleStudent(student.id)" class="rounded-md border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" /></td>
+                                <tr v-for="learner in learners" :key="learner.id" class="group transition-all hover:bg-blue-50/20">
+                                    <td class="px-6 py-5 text-center"><Checkbox :checked="selectedLearnerIds.includes(learner.id)" @update:checked="toggleLearner(learner.id)" class="rounded-md border-slate-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600" /></td>
                                     <td class="px-6 py-5">
                                         <div class="flex items-center gap-4">
-                                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-900 font-bold group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">{{ student.name.charAt(0) }}</div>
-                                            <div class="font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-none truncate max-w-[200px]">{{ student.name }}</div>
+                                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-900 font-bold group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">{{ learner.name.charAt(0) }}</div>
+                                            <div class="font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-none truncate max-w-[200px]">{{ learner.name }}</div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-5 text-xs font-bold text-slate-600 uppercase tracking-tight">{{ student.admission_number || '—' }}</td>
+                                    <td class="px-6 py-5 text-xs font-bold text-slate-600 uppercase tracking-tight">{{ learner.admission_number || '—' }}</td>
                                     <td class="px-6 py-5">
-                                        <span class="text-xs font-bold text-slate-600 uppercase">{{ student.gender }}</span>
+                                        <span class="text-xs font-bold text-slate-600 uppercase">{{ learner.gender }}</span>
                                     </td>
                                     <td class="px-6 py-5">
-                                        <Badge variant="secondary" class="rounded-xl px-2.5 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 border-none uppercase">{{ student.status }}</Badge>
+                                        <Badge variant="secondary" class="rounded-xl px-2.5 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 border-none uppercase">{{ learner.status }}</Badge>
                                     </td>
                                     <td class="px-6 py-5 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child><Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"><MoreHorizontal class="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-56 rounded-xl p-2 shadow-xl border-slate-100">
-                                                <DropdownMenuItem class="rounded-lg" as-child><Link :href="`/students/${student.id}`"><Eye class="mr-2 h-4 w-4 text-blue-500" /> View Profile</Link></DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" as-child><Link :href="`/students/${student.id}/edit`"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit Learner</Link></DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" v-if="student.status !== 'suspended'" @click="openActionModal('suspend', student)"><ShieldAlert class="mr-2 h-4 w-4 text-rose-500" /> Suspend Learner</DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" v-else @click="openActionModal('activate', student)"><UserCheck class="mr-2 h-4 w-4 text-emerald-500" /> Activate Learner</DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" @click="openActionModal('demote', student)"><ArrowDownCircle class="mr-2 h-4 w-4 text-amber-600" /> Demote Learner</DropdownMenuItem>
-                                                <DropdownMenuItem class="text-rose-600 font-bold rounded-lg" @click="openActionModal('delete', student)"><Trash2 class="mr-2 h-4 w-4" /> Delete Learner</DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg" as-child><Link :href="`/students/${learner.id}`"><Eye class="mr-2 h-4 w-4 text-blue-500" /> View</Link></DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg" as-child><Link :href="`/students/${learner.id}/edit`"><Edit class="mr-2 h-4 w-4 text-amber-500" /> Edit</Link></DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg" v-if="learner.status !== 'suspended'" @click="openActionModal('suspend', learner)"><ShieldAlert class="mr-2 h-4 w-4 text-rose-500" /> Suspend</DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg" v-else @click="openActionModal('activate', learner)"><UserCheck class="mr-2 h-4 w-4 text-emerald-500" /> Activate</DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg" @click="openActionModal('demote', learner)"><ArrowDownCircle class="mr-2 h-4 w-4 text-amber-600" /> Demote</DropdownMenuItem>
+                                                <DropdownMenuItem class="text-rose-600 font-bold rounded-lg" @click="openActionModal('delete', learner)"><Trash2 class="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </td>
@@ -564,13 +564,13 @@ const confirmSubjectAction = () => {
                                      </p>
                                 </div>
                             </div>
-                            <div v-else class="mt-4">
+                             <div v-else class="mt-4">
                                 <p class="text-sm font-medium text-slate-500 leading-relaxed mb-4">
                                     <template v-if="confirmMode === 'promote'">Are you sure you want to promote the selected {{ selectedCount }} learners to the next grade level?</template>
-                                    <template v-else-if="selectedStudent">{{ confirmMode === 'activate' ? `Are you sure you want to activate learner [${selectedStudent.name}]?` : confirmMode === 'delete' ? `Are you sure you want to permanently delete learner [${selectedStudent.name}]?` : confirmMode === 'demote' ? `Are you sure you want to demote learner [${selectedStudent.name}]?` : `Are you sure you want to suspend learner [${selectedStudent.name}]?` }}</template>
+                                    <template v-else-if="selectedLearner">{{ confirmMode === 'activate' ? `Are you sure you want to activate learner [${selectedLearner.name}]?` : confirmMode === 'delete' ? `Are you sure you want to permanently delete learner [${selectedLearner.name}]?` : confirmMode === 'demote' ? `Are you sure you want to demote learner [${selectedLearner.name}]?` : `Are you sure you want to suspend learner [${selectedLearner.name}]?` }}</template>
                                 </p>
                                 <div v-if="confirmMode === 'delete'" class="rounded-xl bg-rose-50 border border-rose-100 p-4">
-                                    <p class="text-xs font-bold text-rose-600 uppercase leading-relaxed">Warning: This action cannot be undone and will remove all learner records.</p>
+                                    <p class="text-xs font-bold text-rose-600 uppercase leading-relaxed text-center">Warning: This action cannot be undone.</p>
                                 </div>
                             </div>
 

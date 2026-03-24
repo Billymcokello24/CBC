@@ -4,7 +4,11 @@ import {
     Calendar, Clock, Settings, LogOut, ChevronRight,
     Search, Bell, User, GraduationCap, School,
     BookMarked, Bus, Building2, Heart, Trophy,
-    TrendingUp, DollarSign, MessageSquare, ChevronDown, ShieldCheck
+    TrendingUp, DollarSign, MessageSquare, ChevronDown, ShieldCheck,
+    Database, CreditCard, ToggleLeft, Layers, Lock,
+    Webhook, Mail, BarChart3, Server, LifeBuoy,
+    Terminal, Fingerprint, Activity, UserMinus, HardDrive,
+    Key, Zap, FileText, Globe, Cloud, Wrench, Code2
 } from 'lucide-vue-next';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -39,31 +43,192 @@ const isImpersonating = computed(() => props.auth.impersonating?.active);
 
 const saasNavigation = [
     {
-        title: 'SaaS Management',
+        title: 'Core System',
         items: [
             {
-                title: 'System Dashboard',
+                title: 'Dashboard',
                 href: '/super-admin/dashboard',
                 icon: LayoutDashboard,
             },
             {
-                title: 'Manage Schools',
+                title: 'Tenant Management',
                 href: '/super-admin/schools',
                 icon: School,
-            },
-            {
-                title: 'System Settings',
-                href: '/super-admin/settings',
-                icon: Settings,
-            },
-            {
-                title: 'Maintenance',
-                href: '/super-admin/maintenance',
-                icon: ShieldCheck,
                 children: [
-                    { title: 'Backups', href: '/super-admin/backups' },
-                    { title: 'Logs', href: '/super-admin/logs' },
-                    { title: 'Performance', href: '/super-admin/performance' },
+                    { title: 'All Schools', href: '/super-admin/schools' },
+                    { title: 'Registration Flow', href: '/super-admin/schools/create' },
+                    { title: 'Activation Status', href: '/super-admin/schools/status' },
+                    { title: 'Modular Config', href: '/super-admin/schools/modules' },
+                ]
+            },
+            {
+                title: 'User & Identity',
+                href: '/super-admin/users',
+                icon: Fingerprint,
+                children: [
+                    { title: 'Global Users', href: '/super-admin/users' },
+                    { title: 'Role Templates', href: '/super-admin/roles' },
+                    { title: 'Permission Sets', href: '/super-admin/permissions' },
+                    { title: 'Active Sessions', href: '/super-admin/sessions' },
+                ]
+            },
+            {
+                title: 'Impersonation',
+                href: '/super-admin/impersonation',
+                icon: UserMinus,
+                children: [
+                    { title: 'Quick Switch', href: '/super-admin/impersonation' },
+                    { title: 'Audit Logs', href: '/super-admin/impersonation/logs' },
+                    { title: 'Debug Mode', href: '/super-admin/debug' },
+                ]
+            }
+        ],
+    },
+    {
+        title: 'Operations',
+        items: [
+            {
+                title: 'System Monitoring',
+                href: '/super-admin/monitoring',
+                icon: Activity,
+                children: [
+                    { title: 'System Health', href: '/super-admin/health' },
+                    { title: 'Real-time Logs', href: '/super-admin/logs' },
+                    { title: 'Queue Workers', href: '/super-admin/queues' },
+                    { title: 'Live Performance', href: '/super-admin/performance' },
+                ]
+            },
+            {
+                title: 'Database & Storage',
+                href: '/super-admin/database',
+                icon: Database,
+                children: [
+                    { title: 'DB Snapshots', href: '/super-admin/backups' },
+                    { title: 'Storage Usage', href: '/super-admin/storage' },
+                    { title: 'Cloud Sync', href: '/super-admin/cloud' },
+                ]
+            },
+            {
+                title: 'Billing & Plans',
+                href: '/super-admin/billing',
+                icon: CreditCard,
+                children: [
+                    { title: 'Pricing Plans', href: '/super-admin/plans' },
+                    { title: 'Revenue Analytics', href: '/super-admin/revenue' },
+                    { title: 'Subscribers', href: '/super-admin/subscribers' },
+                    { title: 'Invoicing', href: '/super-admin/billing/invoices' },
+                ]
+            }
+        ],
+    },
+    {
+        title: 'Global Config',
+        items: [
+            {
+                title: 'Configuration',
+                href: '/super-admin/config',
+                icon: Settings,
+                children: [
+                    { title: 'Feature Flags', href: '/super-admin/config/flags', icon: ToggleLeft },
+                    { title: 'Global Templates', href: '/super-admin/config/templates' },
+                    { title: 'Integrations', href: '/super-admin/config/integrations' },
+                ]
+            },
+            {
+                title: 'Module Control',
+                href: '/super-admin/modules',
+                icon: Layers,
+                children: [
+                    { title: 'Core Modules', href: '/super-admin/modules/core' },
+                    { title: 'Premium Addons', href: '/super-admin/modules/premium' },
+                    { title: 'Beta Testing', href: '/super-admin/modules/beta' },
+                ]
+            },
+            {
+                title: 'Security',
+                href: '/super-admin/security',
+                icon: Lock,
+                children: [
+                    { title: 'Security Audit', href: '/super-admin/security/audit' },
+                    { title: 'Two-Factor Auth', href: '/super-admin/security/2fa' },
+                    { title: 'API Security', href: '/super-admin/security/api' },
+                    { title: 'Compliance', href: '/super-admin/security/compliance' },
+                ]
+            }
+        ],
+    },
+    {
+        title: 'Connectivity',
+        items: [
+            {
+                title: 'API & Webhooks',
+                href: '/super-admin/api',
+                icon: Webhook,
+                children: [
+                    { title: 'API Keys', href: '/super-admin/api/keys' },
+                    { title: 'Webhooks', href: '/super-admin/webhooks' },
+                    { title: 'Documentation', href: '/super-admin/api/docs' },
+                ]
+            },
+            {
+                title: 'Communication',
+                href: '/super-admin/communication',
+                icon: Mail,
+                children: [
+                    { title: 'System Alerts', href: '/super-admin/alerts' },
+                    { title: 'Broadcasts', href: '/super-admin/broadcasts' },
+                    { title: 'Email Templates', href: '/super-admin/email-templates' },
+                ]
+            }
+        ],
+    },
+    {
+        title: 'Insights',
+        items: [
+            {
+                title: 'Analytics',
+                href: '/super-admin/analytics',
+                icon: BarChart3,
+                children: [
+                    { title: 'Usage Trends', href: '/super-admin/analytics/usage' },
+                    { title: 'Growth Metrics', href: '/super-admin/analytics/growth' },
+                    { title: 'Custom Reports', href: '/super-admin/reports' },
+                ]
+            }
+        ],
+    },
+    {
+        title: 'Infrastructure',
+        items: [
+            {
+                title: 'DevOps',
+                href: '/super-admin/devops',
+                icon: Cloud,
+                children: [
+                    { title: 'Server Status', href: '/super-admin/devops/servers', icon: Server },
+                    { title: 'Deployments', href: '/super-admin/devops/deploys' },
+                    { title: 'Environment', href: '/super-admin/devops/env' },
+                ]
+            },
+            {
+                title: 'Support',
+                href: '/super-admin/support',
+                icon: LifeBuoy,
+                children: [
+                    { title: 'Support Tickets', href: '/super-admin/support/tickets' },
+                    { title: 'Knowledge Base', href: '/super-admin/support/kb' },
+                    { title: 'System Updates', href: '/super-admin/support/updates' },
+                ]
+            },
+            {
+                title: 'Developer',
+                href: '/super-admin/developer',
+                icon: Code2,
+                children: [
+                    { title: 'Terminal', href: '/super-admin/developer/terminal', icon: Terminal },
+                    { title: 'Database UI', href: '/super-admin/developer/db-ui' },
+                    { title: 'GraphQL Playground', href: '/super-admin/developer/graphql' },
+                    { title: 'Tools', href: '/super-admin/developer/tools', icon: Wrench },
                 ]
             }
         ],
@@ -295,14 +460,12 @@ const filterNavItem = (item: any) => {
 };
 
 const filteredNavigation = computed(() => {
-    let result: any[] = [];
-    
-    // Show SaaS Management only for Super Admins when NOT impersonating
+    // If Super Admin and NOT impersonating, ONLY show SaaS navigation
     if (isSuperAdmin.value && !isImpersonating.value) {
-        result = [...saasNavigation];
+        return [...saasNavigation];
     }
     
-    // Process regular navigation
+    // Otherwise (regular user OR impersonating Super Admin), show regular navigation
     const contextNav = navigation.map(group => ({
         ...group,
         items: group.items.map(item => ({
@@ -311,11 +474,23 @@ const filteredNavigation = computed(() => {
         })).filter(filterNavItem)
     })).filter(group => group.items.length > 0);
     
-    return [...result, ...contextNav];
+    // If impersonating, we might want to show a "Back to SaaS" or similar? 
+    // Usually impersonation has its own exit UI, but for now just showing contextNav.
+    return [...contextNav];
 });
 
 const filteredBottomNavigation = computed(() => {
-    return bottomNavigation.filter(filterNavItem);
+    const items = bottomNavigation.filter(filterNavItem);
+    
+    // If Super Admin and NOT impersonating, we might only want to show certain base items
+    if (isSuperAdmin.value && !isImpersonating.value) {
+        return items.map(group => ({
+            ...group,
+            children: group.children ? group.children.filter(child => child.title === 'Profile') : undefined
+        })).filter(group => group.children && group.children.length > 0 || !group.children);
+    }
+    
+    return items;
 });
 
 const activeItem = ref<string | null>(null);

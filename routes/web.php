@@ -39,6 +39,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Schools Management
         Route::resource('schools', SchoolController::class);
+
+        // Global RBAC Management
+        Route::resource('roles', \App\Http\Controllers\SuperAdmin\GlobalRolesController::class);
     });
 
     // ──────────────────────────────────────────────

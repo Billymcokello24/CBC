@@ -58,14 +58,14 @@ class StudentsController extends Controller
             ->orderBy('first_name')
             ->orderBy('last_name');
 
-        $students = $query
+        $learners = $query
             ->paginate($perPage)
             ->withQueryString()
-            ->through(fn (Student $student) => $this->transformStudentRow($student));
+            ->through(fn (Student $student) => $this->transformLearnerRow($student));
 
         $statsBase = Student::query();
-        $totalStudents = (clone $statsBase)->count();
-        $activeStudents = (clone $statsBase)->where('status', 'active')->count();
+        $totalLearners = (clone $statsBase)->count();
+        $activeLearners = (clone $statsBase)->where('status', 'active')->count();
         $boys = (clone $statsBase)->where('gender', 'male')->count();
         $girls = (clone $statsBase)->where('gender', 'female')->count();
         $newThisTerm = (clone $statsBase)->whereDate('admission_date', '>=', now()->subMonths(3))->count();
@@ -73,10 +73,10 @@ class StudentsController extends Controller
         $growth = $previousTerm > 0 ? round(($newThisTerm / $previousTerm) * 100, 1) : 0.0;
 
         return Inertia::render('students/Index', [
-            'students' => $students,
+            'learners' => $learners,
             'stats' => [
-                'total' => $totalStudents,
-                'active' => $activeStudents,
+                'total' => $totalLearners,
+                'active' => $activeLearners,
                 'boys' => $boys,
                 'girls' => $girls,
                 'growth' => $growth,
@@ -91,7 +91,7 @@ class StudentsController extends Controller
                 'per_page' => $perPage,
                 'show_filters' => filter_var($request->input('show_filters', true), FILTER_VALIDATE_BOOLEAN),
             ],
-            'classes' => DB::table('classes')->select('id', 'name')->orderBy('name')->get(),
+            'classes' => SchoolClass::query()->select('id', 'name')->orderBy('name')->get(),
             'counties' => Student::query()->whereNotNull('county')->distinct()->orderBy('county')->pluck('county'),
             'statusOptions' => [
                 ['value' => 'all', 'label' => 'All Statuses'],
@@ -118,12 +118,12 @@ class StudentsController extends Controller
 
     public function create(): Response
     {
-        $grades = DB::table('grade_levels')
+        $grades = GradeLevel::query()
             ->select('id', 'name', 'code', 'level_order')
             ->orderBy('level_order')
             ->get();
 
-        $classes = DB::table('classes')
+        $classes = SchoolClass::query()
             ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
             ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
             ->select(
@@ -177,7 +177,7 @@ class StudentsController extends Controller
             ]);
         }
 
-        $schoolId = DB::table('schools')->value('id');
+        $schoolId = auth()->user()->school_id;
 
         $student = DB::transaction(function () use ($validated, $schoolId, $guardianProvided) {
             $student = Student::create([
@@ -209,7 +209,7 @@ class StudentsController extends Controller
             return $student;
         });
 
-        return redirect()->route('students.show', $student)->with('success', 'Student added successfully.');
+        return redirect()->route('students.show', $student)->with('success', 'Learner added successfully.');
     }
 
     public function show(Student $student): Response
@@ -231,7 +231,7 @@ class StudentsController extends Controller
         ];
 
         return Inertia::render('students/Show', [
-            'student' => [
+            'learner' => [
                 'id' => $student->id,
                 'admission_number' => $student->admission_number,
                 'upi' => $student->upi,
@@ -278,8 +278,8 @@ class StudentsController extends Controller
                     'has_login' => (bool) $guardian->user_id,
                 ])->values(),
             ],
-            'grades' => DB::table('grade_levels')->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
-            'classes' => DB::table('classes')
+            'grades' => GradeLevel::query()->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'classes' => SchoolClass::query()
                 ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
                 ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
                 ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
@@ -296,7 +296,7 @@ class StudentsController extends Controller
         $linkedGuardian = $student->guardians->firstWhere('user_id', '!=', null);
 
         return Inertia::render('students/Edit', [
-            'student' => [
+            'learner' => [
                 'id' => $student->id,
                 'first_name' => $student->first_name,
                 'middle_name' => $student->middle_name,
@@ -316,8 +316,8 @@ class StudentsController extends Controller
                     'has_login' => (bool) $linkedGuardian->user_id,
                 ] : null,
             ],
-            'grades' => DB::table('grade_levels')->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
-            'classes' => DB::table('classes')
+            'grades' => GradeLevel::query()->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'classes' => SchoolClass::query()
                 ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
                 ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
                 ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
@@ -426,40 +426,40 @@ class StudentsController extends Controller
             }
         });
 
-        return redirect()->route('students.show', $student)->with('success', 'Student profile updated successfully.');
+        return redirect()->route('students.show', $student)->with('success', 'Learner profile updated successfully.');
     }
 
     public function suspend(Student $student): RedirectResponse
     {
         $student->update(['status' => 'suspended']);
 
-        return back()->with('success', 'Student suspended successfully.');
+        return back()->with('success', 'Learner suspended successfully.');
     }
 
     public function activate(Student $student): RedirectResponse
     {
         $student->update(['status' => 'active']);
 
-        return back()->with('success', 'Student activated successfully.');
+        return back()->with('success', 'Learner activated successfully.');
     }
 
     public function destroy(Student $student): RedirectResponse
     {
         $student->delete();
 
-        return redirect()->route('students.index')->with('success', 'Student deleted successfully.');
+        return redirect()->route('students.index')->with('success', 'Learner deleted successfully.');
     }
 
     public function bulkDelete(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'student_ids' => ['required', 'array', 'min:1'],
-            'student_ids.*' => ['integer', 'exists:students,id'],
+            'learner_ids' => ['required', 'array', 'min:1'],
+            'learner_ids.*' => ['integer', 'exists:students,id'],
         ]);
 
-        Student::whereIn('id', $validated['student_ids'])->delete();
+        Student::whereIn('id', $validated['learner_ids'])->delete();
 
-        return redirect()->route('students.index')->with('success', count($validated['student_ids']) . ' students deleted successfully.');
+        return redirect()->route('students.index')->with('success', count($validated['learner_ids']) . ' learners deleted successfully.');
     }
 
     public function exportPdf(Request $request)
@@ -491,17 +491,17 @@ class StudentsController extends Controller
     public function promote(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'student_ids' => ['required', 'array', 'min:1'],
-            'student_ids.*' => ['integer', 'exists:students,id'],
+            'learner_ids' => ['required', 'array', 'min:1'],
+            'learner_ids.*' => ['integer', 'exists:students,id'],
         ]);
 
-        $studentIds = collect($validated['student_ids'])->unique()->values();
+        $learnerIds = collect($validated['learner_ids'])->unique()->values();
 
         $students = DB::table('students')
             ->join('classes', 'classes.id', '=', 'students.current_class_id')
             ->join('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
             ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
-            ->whereIn('students.id', $studentIds)
+            ->whereIn('students.id', $learnerIds)
             ->where('students.status', 'active')
             ->select(
                 'students.id as student_id',
@@ -516,7 +516,7 @@ class StudentsController extends Controller
             ->get();
 
         if ($students->isEmpty()) {
-            return back()->with('error', 'No active students selected for promotion.');
+            return back()->with('error', 'No active learners selected for promotion.');
         }
 
         $promoted = 0;
@@ -631,10 +631,10 @@ class StudentsController extends Controller
         });
 
         if ($promoted === 0) {
-            return back()->with('error', 'Selected students could not be promoted. Check if next classes exist.');
+            return back()->with('error', 'Selected learners could not be promoted. Check if next classes exist.');
         }
 
-        $message = "Promoted {$promoted} student" . ($promoted === 1 ? '' : 's') . '.';
+        $message = "Promoted {$promoted} learner" . ($promoted === 1 ? '' : 's') . '.';
         if ($skipped > 0) {
             $message .= " {$skipped} skipped because no matching next class was found.";
         }
@@ -645,7 +645,7 @@ class StudentsController extends Controller
     public function demote(Student $student): RedirectResponse
     {
         if ($student->status !== 'active' || !$student->current_class_id) {
-            return back()->with('error', 'Only active students with a current class can be demoted.');
+            return back()->with('error', 'Only active learners with a current class can be demoted.');
         }
 
         $current = DB::table('classes')
@@ -664,7 +664,7 @@ class StudentsController extends Controller
             ->first();
 
         if (!$previousGrade) {
-            return back()->with('error', 'No previous grade exists for this student.');
+            return back()->with('error', 'No previous grade exists for this learner.');
         }
 
         $previousClassQuery = DB::table('classes')
@@ -679,7 +679,7 @@ class StudentsController extends Controller
         $previousClass = $previousClassQuery->first();
 
         if (!$previousClass) {
-            return back()->with('error', 'No matching previous class was found for this student.');
+            return back()->with('error', 'No matching previous class was found for this learner.');
         }
 
         DB::transaction(function () use ($student, $current, $previousClass) {
@@ -719,7 +719,7 @@ class StudentsController extends Controller
             }
         });
 
-        return back()->with('success', 'Student demoted successfully.');
+        return back()->with('success', 'Learner demoted successfully.');
     }
 
     public function transfer(Request $request, Student $student): RedirectResponse
@@ -729,7 +729,7 @@ class StudentsController extends Controller
         ]);
 
         if (!$student->current_class_id) {
-            return back()->with('error', 'Student has no current class to transfer from.');
+            return back()->with('error', 'Learner has no current class to transfer from.');
         }
 
         $currentClass = DB::table('classes')->where('id', $student->current_class_id)->first();
@@ -772,10 +772,10 @@ class StudentsController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Student transferred successfully.');
+        return back()->with('success', 'Learner transferred successfully.');
     }
 
-    private function transformStudentRow(Student $student): array
+    private function transformLearnerRow(Student $student): array
     {
         return [
             'id' => $student->id,
@@ -914,7 +914,7 @@ class StudentsController extends Controller
                 'email' => $guardian->email,
                 'phone' => $guardian->phone,
             ],
-            'students' => $guardian->students->map(fn ($student) => [
+            'learners' => $guardian->students->map(fn ($student) => [
                 'id' => $student->id,
                 'name' => $student->full_name,
                 'admission_number' => $student->admission_number,
@@ -928,7 +928,7 @@ class StudentsController extends Controller
     {
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="students_bulk_upload_template.csv"',
+            'Content-Disposition' => 'attachment; filename="learners_bulk_upload_template.csv"',
         ];
 
         $columns = [
@@ -996,23 +996,27 @@ class StudentsController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
         ]);
 
-        $schoolId = DB::table('schools')->value('id');
-        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id')
-            ?? DB::table('academic_years')->orderByDesc('start_date')->value('id');
+        $schoolId = auth()->user()->school_id ?: session('viewing_school_id');
+        $academicYearId = DB::table('academic_years')->where('is_current', true)
+            ->when($schoolId, fn($q) => $q->where('school_id', $schoolId))
+            ->value('id')
+            ?? DB::table('academic_years')
+            ->when($schoolId, fn($q) => $q->where('school_id', $schoolId))
+            ->orderByDesc('start_date')->value('id');
 
         if (!$schoolId || !$academicYearId) {
-            return back()->with('error', 'School or academic year setup is missing, so bulk upload cannot continue.');
+            return back()->with('error', 'School context (ID) or academic year setup is missing, so bulk upload cannot continue.');
         }
 
         try {
-            $rows = $this->parseStudentCsv($validated['file']->getRealPath());
+            $rows = $this->parseLearnerCsv($validated['file']->getRealPath());
 
             if (count($rows) === 0) {
                 return back()->with('error', 'The uploaded CSV file is empty.');
             }
 
-            $createdStudents = 0;
-            $updatedStudents = 0;
+            $createdLearners = 0;
+            $updatedLearners = 0;
             $createdGrades = 0;
             $createdStreams = 0;
             $createdClasses = 0;
@@ -1022,8 +1026,8 @@ class StudentsController extends Controller
                 $rows,
                 $schoolId,
                 $academicYearId,
-                &$createdStudents,
-                &$updatedStudents,
+                &$createdLearners,
+                &$updatedLearners,
                 &$createdGrades,
                 &$createdStreams,
                 &$createdClasses,
@@ -1031,12 +1035,15 @@ class StudentsController extends Controller
             ) {
                 foreach ($rows as $index => $row) {
                     $line = $index + 2;
-                    $normalized = $this->normalizeStudentImportRow($row, $line);
+                    $normalized = $this->normalizeLearnerImportRow($row, $line);
                     $grade = $this->firstOrCreateImportGrade($schoolId, $normalized, $createdGrades);
                     $stream = $this->firstOrCreateImportStream($schoolId, $normalized, $createdStreams);
                     $class = $this->firstOrCreateImportClass($schoolId, $academicYearId, $grade, $stream, $normalized, $createdClasses);
 
-                    $student = Student::query()->where('admission_number', $normalized['admission_number'])->first();
+                    $learner = Student::query()
+                        ->where('school_id', $schoolId)
+                        ->where('admission_number', $normalized['admission_number'])
+                        ->first();
 
                     $studentPayload = [
                         'school_id' => $schoolId,
@@ -1055,25 +1062,25 @@ class StudentsController extends Controller
                         'nationality' => 'Kenyan',
                     ];
 
-                    if ($student) {
-                        $student->update($studentPayload);
-                        $updatedStudents++;
+                    if ($learner) {
+                        $learner->update($studentPayload);
+                        $updatedLearners++;
                     } else {
-                        $student = Student::create($studentPayload);
-                        $createdStudents++;
+                        $learner = Student::create($studentPayload);
+                        $createdLearners++;
                     }
 
                     if ($class) {
-                        $this->syncEnrollmentForImportedStudent($student, $class->id, $academicYearId);
+                        $this->syncEnrollmentForImportedLearner($learner, $class->id, $academicYearId);
                     }
 
                     if ($normalized['guardian_name'] && $normalized['guardian_email'] && $normalized['guardian_phone'] && $normalized['guardian_password']) {
-                        $this->upsertImportedGuardian($student, $normalized, $guardianAccounts);
+                        $this->upsertImportedGuardian($learner, $normalized, $guardianAccounts);
                     }
                 }
             });
 
-            $message = "Bulk upload complete: {$createdStudents} created, {$updatedStudents} updated, {$createdGrades} grades added, {$createdStreams} streams added, {$createdClasses} classes added";
+            $message = "Bulk upload complete: {$createdLearners} created, {$updatedLearners} updated, {$createdGrades} grades added, {$createdStreams} streams added, {$createdClasses} classes added";
             if ($guardianAccounts > 0) {
                 $message .= ", {$guardianAccounts} guardian accounts processed";
             }
@@ -1085,7 +1092,7 @@ class StudentsController extends Controller
         }
     }
 
-    protected function parseStudentCsv(string $path): array
+    protected function parseLearnerCsv(string $path): array
     {
         $handle = fopen($path, 'r');
         if (!$handle) {
@@ -1128,7 +1135,7 @@ class StudentsController extends Controller
         return $rows;
     }
 
-    protected function normalizeStudentImportRow(array $row, int $line): array
+    protected function normalizeLearnerImportRow(array $row, int $line): array
     {
         $firstName = trim((string) ($row['first_name'] ?? ''));
         $lastName = trim((string) ($row['last_name'] ?? ''));
@@ -1192,7 +1199,6 @@ class StudentsController extends Controller
         }
 
         $grade = GradeLevel::query()
-            ->where('school_id', $schoolId)
             ->where(function ($query) use ($data) {
                 $query->where('name', $data['grade_name']);
                 if ($data['grade_code']) {
@@ -1211,7 +1217,7 @@ class StudentsController extends Controller
             'school_id' => $schoolId,
             'name' => $data['grade_name'],
             'code' => $data['grade_code'] ?: Str::upper(Str::slug($data['grade_name'], '')),
-            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::query()->where('school_id', $schoolId)->max('level_order') + 1),
+            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::query()->max('level_order') + 1),
             'category' => $data['grade_category'],
             'is_active' => true,
         ]);
@@ -1224,7 +1230,6 @@ class StudentsController extends Controller
         }
 
         $stream = Stream::query()
-            ->where('school_id', $schoolId)
             ->where(function ($query) use ($data) {
                 $query->where('name', $data['stream_name']);
                 if ($data['stream_code']) {
@@ -1255,7 +1260,6 @@ class StudentsController extends Controller
         }
 
         $query = SchoolClass::query()
-            ->where('school_id', $schoolId)
             ->where('academic_year_id', $academicYearId)
             ->where('grade_level_id', $grade->id)
             ->where('name', $data['class_name']);
@@ -1284,7 +1288,7 @@ class StudentsController extends Controller
         ]);
     }
 
-    protected function syncEnrollmentForImportedStudent(Student $student, int $classId, int $academicYearId): void
+    protected function syncEnrollmentForImportedLearner(Student $student, int $classId, int $academicYearId): void
     {
         $currentTermId = DB::table('academic_terms')->where('is_current', true)->value('id');
 

@@ -3,9 +3,12 @@ namespace App\Models\Curriculum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\BelongsToSchool;
 class Subject extends Model
 {
+    use BelongsToSchool;
     protected $fillable = [
+        'school_id',
         'learning_area_id', 'department_id', 'name', 'code', 'description',
         'subject_type', 'is_examinable', 'display_order', 'is_active'
     ];

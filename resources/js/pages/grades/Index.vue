@@ -37,7 +37,7 @@ interface GradeRow {
     maximum_age: number | null;
     is_active: boolean;
     classes_count: number;
-    students_count: number;
+    learners_count: number;
     lead_name: string | null;
 }
 
@@ -47,7 +47,7 @@ const props = defineProps<{
         total_grades: number;
         active_grades: number;
         total_classes: number;
-        total_students: number;
+        total_learners: number;
     };
     filters: {
         search: string;
@@ -198,7 +198,7 @@ watch(
                 <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Total Grades</div><div class="mt-1 text-3xl font-bold">{{ stats.total_grades }}</div></div>
                 <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Active Grades</div><div class="mt-1 text-3xl font-bold text-green-600">{{ stats.active_grades }}</div></div>
                 <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Total Classes</div><div class="mt-1 text-3xl font-bold text-blue-600">{{ stats.total_classes }}</div></div>
-                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Total Students</div><div class="mt-1 text-3xl font-bold text-indigo-600">{{ stats.total_students }}</div></div>
+                <div class="rounded-xl border bg-card p-4"><div class="text-sm text-muted-foreground">Total Learners</div><div class="mt-1 text-3xl font-bold text-indigo-600">{{ stats.total_learners }}</div></div>
             </div>
 
             <div class="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm">
@@ -301,7 +301,7 @@ watch(
                             </div>
                             <div class="rounded-xl border border-slate-100 p-3 bg-white shadow-sm">
                                 <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Learners</p>
-                                <p class="text-base font-bold text-blue-600">{{ grade.students_count }}</p>
+                                <p class="text-base font-bold text-blue-600">{{ grade.learners_count }}</p>
                             </div>
                         </div>
 
@@ -376,7 +376,7 @@ watch(
                                     <Badge variant="outline" class="rounded-lg h-6 border-slate-200 text-slate-900 font-bold text-[10px] px-3 uppercase bg-white">{{ grade.classes_count }} Classes</Badge>
                                 </td>
                                 <td class="px-6 py-5 text-center">
-                                    <span class="text-xs font-bold text-blue-600">{{ grade.students_count }}</span>
+                                    <span class="text-xs font-bold text-blue-600">{{ grade.learners_count }}</span>
                                 </td>
                                 <td class="px-6 py-5">
                                     <div class="flex items-center gap-2">

@@ -2,9 +2,14 @@
 namespace App\Models\Curriculum;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\BelongsToSchool;
+
 class LearningArea extends Model
 {
+    use BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'name', 'code', 'description', 'category', 'display_order', 'is_active'
     ];
     protected $casts = ['is_active' => 'boolean'];

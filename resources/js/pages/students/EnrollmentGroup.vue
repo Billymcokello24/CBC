@@ -32,16 +32,16 @@ interface GroupInfo {
     grade_name: string | null;
     stream_name: string | null;
     academic_year: string | null;
-    total_students: number;
-    active_students: number;
+    total_learners: number;
+    active_learners: number;
 }
 
-interface GroupStudentRow {
+interface GroupLearnerRow {
     enrollment_id: number;
-    student_id: number;
-    student_name: string;
+    learner_id: number;
+    learner_name: string;
     admission_number: string | null;
-    student_status: string | null;
+    learner_status: string | null;
     enrollment_status: string;
     enrollment_type: string;
     enrollment_date: string | null;
@@ -56,13 +56,13 @@ interface GroupStudentRow {
 
 interface Props {
     group: GroupInfo;
-    students: GroupStudentRow[];
+    learners: GroupLearnerRow[];
     filters: {
         search: string;
-        student_status: string;
+        learner_status: string;
         enrollment_status: string;
     };
-    studentStatusOptions: Array<{ value: string; label: string }>;
+    learnerStatusOptions: Array<{ value: string; label: string }>;
     enrollmentStatusOptions: Array<{ value: string; label: string }>;
 }
 
@@ -71,19 +71,19 @@ const page = usePage<{ flash?: { success?: string; error?: string } }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Students', href: '/students' },
+    { title: 'Learners', href: '/students' },
     { title: 'Enrollments', href: '/students/enrollments' },
     { title: props.group.class_name, href: `/students/enrollments/groups/${props.group.class_id}` },
 ];
 
 const searchQuery = ref(props.filters.search ?? '');
-const selectedStudentStatus = ref(props.filters.student_status ?? 'all');
+const selectedLearnerStatus = ref(props.filters.learner_status ?? 'all');
 const selectedEnrollmentStatus = ref(props.filters.enrollment_status ?? 'all');
 const showFilters = ref(true);
 const actionForm = useForm({});
 const confirmOpen = ref(false);
 const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'demote'>('suspend');
-const selectedStudent = ref<GroupStudentRow | null>(null);
+const selectedLearner = ref<GroupLearnerRow | null>(null);
 const showToast = ref(false);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -93,7 +93,7 @@ const applyFilters = () => {
         `/students/enrollments/groups/${props.group.class_id}`,
         {
             search: searchQuery.value || undefined,
-            student_status: selectedStudentStatus.value !== 'all' ? selectedStudentStatus.value : undefined,
+            learner_status: selectedLearnerStatus.value !== 'all' ? selectedLearnerStatus.value : undefined,
             enrollment_status: selectedEnrollmentStatus.value !== 'all' ? selectedEnrollmentStatus.value : undefined,
         },
         {
@@ -108,23 +108,23 @@ watch(searchQuery, () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => applyFilters(), 350);
 });
-watch([selectedStudentStatus, selectedEnrollmentStatus], () => applyFilters());
+watch([selectedLearnerStatus, selectedEnrollmentStatus], () => applyFilters());
 
 const clearFilters = () => {
     searchQuery.value = '';
-    selectedStudentStatus.value = 'all';
+    selectedLearnerStatus.value = 'all';
     selectedEnrollmentStatus.value = 'all';
     applyFilters();
 };
 
 const selectedEnrollmentIds = ref<number[]>([]);
-const isAllSelected = computed(() => props.students.length > 0 && selectedEnrollmentIds.value.length === props.students.length);
+const isAllSelected = computed(() => props.learners.length > 0 && selectedEnrollmentIds.value.length === props.learners.length);
 
 const toggleSelectAll = () => {
     if (isAllSelected.value) {
         selectedEnrollmentIds.value = [];
     } else {
-        selectedEnrollmentIds.value = props.students.map((s) => s.enrollment_id);
+        selectedEnrollmentIds.value = props.learners.map((s) => s.enrollment_id);
     }
 };
 
@@ -151,9 +151,9 @@ watch(
     { immediate: true },
 );
 
-const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'demote', student: GroupStudentRow) => {
+const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'demote', learner: GroupLearnerRow) => {
     confirmMode.value = mode;
-    selectedStudent.value = student;
+    selectedLearner.value = learner;
     confirmOpen.value = true;
 };
 
@@ -179,46 +179,46 @@ const confirmBulkDelete = () => {
 
 const closeActionModal = () => {
     confirmOpen.value = false;
-    selectedStudent.value = null;
+    selectedLearner.value = null;
 };
 
 const confirmAction = () => {
-    if (!selectedStudent.value) return;
+    if (!selectedLearner.value) return;
 
     if (confirmMode.value === 'suspend') {
-        actionForm.patch(`/students/${selectedStudent.value.student_id}/suspend`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.learner_id}/suspend`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
 
     if (confirmMode.value === 'activate') {
-        actionForm.patch(`/students/${selectedStudent.value.student_id}/activate`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.learner_id}/activate`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
 
     if (confirmMode.value === 'demote') {
-        actionForm.patch(`/students/${selectedStudent.value.student_id}/demote`, { preserveScroll: true, onSuccess: closeActionModal });
+        actionForm.patch(`/students/${selectedLearner.value.learner_id}/demote`, { preserveScroll: true, onSuccess: closeActionModal });
         return;
     }
 
-    actionForm.delete(`/students/${selectedStudent.value.student_id}`, { preserveScroll: true, onSuccess: closeActionModal });
+    actionForm.delete(`/students/${selectedLearner.value.learner_id}`, { preserveScroll: true, onSuccess: closeActionModal });
 };
 
 const modalTitle = computed(() => {
     switch (confirmMode.value) {
-        case 'activate': return 'Activate student';
-        case 'delete': return 'Delete student';
-        case 'demote': return 'Demote student';
-        default: return 'Suspend student';
+        case 'activate': return 'Activate';
+        case 'delete': return 'Delete';
+        case 'demote': return 'Demote';
+        default: return 'Suspend';
     }
 });
 
 const modalMessage = computed(() => {
-    if (!selectedStudent.value) return '';
+    if (!selectedLearner.value) return '';
     switch (confirmMode.value) {
-        case 'activate': return `Activate ${selectedStudent.value.student_name}?`;
-        case 'delete': return `Delete ${selectedStudent.value.student_name}? This removes the student from active records.`;
-        case 'demote': return `Demote ${selectedStudent.value.student_name} to the previous grade while keeping the same stream?`;
-        default: return `Suspend ${selectedStudent.value.student_name}?`;
+        case 'activate': return `Activate [${selectedLearner.value.learner_name}]?`;
+        case 'delete': return `Permanently delete [${selectedLearner.value.learner_name}]?`;
+        case 'demote': return `Demote [${selectedLearner.value.learner_name}] to the previous grade?`;
+        default: return `Suspend [${selectedLearner.value.learner_name}]?`;
     }
 });
 </script>
@@ -253,26 +253,26 @@ const modalMessage = computed(() => {
                     Delete Selected ({{ selectedEnrollmentIds.length }})
                 </Button>
                 <Button variant="outline" as-child>
-                    <Link href="/students/enrollments">Back to Groups</Link>
+                    <Link href="/students/enrollments">Back to Enrollments</Link>
                 </Button>
             </div>
         </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
                 <div class="rounded-xl border bg-card p-4">
-                    <div class="text-sm text-muted-foreground">Total Students</div>
-                    <div class="mt-1 text-3xl font-bold">{{ group.total_students }}</div>
+                    <div class="text-sm text-muted-foreground">Total Learners</div>
+                    <div class="mt-1 text-3xl font-bold">{{ group.total_learners }}</div>
                 </div>
                 <div class="rounded-xl border bg-card p-4">
-                    <div class="text-sm text-muted-foreground">Active Students</div>
-                    <div class="mt-1 text-3xl font-bold text-green-600">{{ group.active_students }}</div>
+                    <div class="text-sm text-muted-foreground">Active Learners</div>
+                    <div class="mt-1 text-3xl font-bold text-green-600">{{ group.active_learners }}</div>
                 </div>
             </div>
 
             <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:flex-row md:items-center">
                 <div class="relative flex-1 md:max-w-sm">
                     <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input v-model="searchQuery" placeholder="Search student or admission number..." class="pl-9" />
+                    <Input v-model="searchQuery" placeholder="Search by name or number..." class="pl-9" />
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" size="sm" @click="showFilters = !showFilters">
@@ -285,9 +285,9 @@ const modalMessage = computed(() => {
 
             <div v-if="showFilters" class="grid gap-4 rounded-xl border bg-card p-4 md:grid-cols-2">
                 <div class="space-y-2">
-                    <label class="text-sm font-medium">Student Status</label>
-                    <select v-model="selectedStudentStatus" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                        <option v-for="option in studentStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    <label class="text-sm font-medium">Status</label>
+                    <select v-model="selectedLearnerStatus" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <option v-for="option in learnerStatusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                     </select>
                 </div>
                 <div class="space-y-2">
@@ -311,38 +311,38 @@ const modalMessage = computed(() => {
                                         @change="toggleSelectAll"
                                     />
                                 </th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Student</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Learner</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Adm. No</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Type</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Enrollment</th>
-                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Student Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
                                 <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Date</th>
                                 <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="students.length === 0">
-                                <td colspan="8" class="px-4 py-10 text-center text-sm text-muted-foreground">No students found in this group.</td>
+                            <tr v-if="learners.length === 0">
+                                <td colspan="8" class="px-4 py-10 text-center text-sm text-muted-foreground">No learners found in this group.</td>
                             </tr>
-                            <tr v-for="student in students" :key="student.enrollment_id" class="border-b transition-colors hover:bg-muted/50" :class="{ 'bg-primary/5': selectedEnrollmentIds.includes(student.enrollment_id) }">
+                            <tr v-for="learner in learners" :key="learner.enrollment_id" class="border-b transition-colors hover:bg-muted/50" :class="{ 'bg-primary/5': selectedEnrollmentIds.includes(learner.enrollment_id) }">
                                 <td class="px-4 py-3">
                                     <input
                                         type="checkbox"
                                         class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                        :checked="selectedEnrollmentIds.includes(student.enrollment_id)"
-                                        @change="toggleSelection(student.enrollment_id)"
+                                        :checked="selectedEnrollmentIds.includes(learner.enrollment_id)"
+                                        @change="toggleSelection(learner.enrollment_id)"
                                     />
                                 </td>
-                                <td class="px-4 py-3 font-medium">{{ student.student_name }}</td>
-                                <td class="px-4 py-3 text-sm">{{ student.admission_number || '—' }}</td>
-                                <td class="px-4 py-3 text-sm capitalize">{{ student.enrollment_type.replace('_', ' ') }}</td>
+                                <td class="px-4 py-3 font-medium">{{ learner.learner_name }}</td>
+                                <td class="px-4 py-3 text-sm">{{ learner.admission_number || '—' }}</td>
+                                <td class="px-4 py-3 text-sm capitalize">{{ learner.enrollment_type.replace('_', ' ') }}</td>
                                 <td class="px-4 py-3">
-                                    <Badge :variant="student.enrollment_status === 'active' ? 'default' : 'secondary'">{{ student.enrollment_status }}</Badge>
+                                    <Badge :variant="learner.enrollment_status === 'active' ? 'default' : 'secondary'">{{ learner.enrollment_status }}</Badge>
                                 </td>
                                 <td class="px-4 py-3">
-                                    <Badge :variant="student.student_status === 'active' ? 'default' : 'secondary'">{{ student.student_status }}</Badge>
+                                    <Badge :variant="learner.learner_status === 'active' ? 'default' : 'secondary'">{{ learner.learner_status }}</Badge>
                                 </td>
-                                <td class="px-4 py-3 text-sm">{{ student.enrollment_date || '—' }}</td>
+                                <td class="px-4 py-3 text-sm">{{ learner.enrollment_date || '—' }}</td>
                                 <td class="px-4 py-3 text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
@@ -350,36 +350,36 @@ const modalMessage = computed(() => {
                                                 <MoreHorizontal class="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
+                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem as-child>
-                                                <Link :href="`/students/${student.student_id}`">
+                                                <Link :href="`/students/${learner.learner_id}`">
                                                     <Eye class="mr-2 h-4 w-4" /> View
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem as-child>
-                                                <Link :href="`/students/${student.student_id}/edit`">
+                                                <Link :href="`/students/${learner.learner_id}/edit`">
                                                     <Edit class="mr-2 h-4 w-4" /> Edit
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                v-if="student.student_status !== 'suspended'"
-                                                @click="openActionModal('suspend', student)"
+                                                v-if="learner.learner_status !== 'suspended'"
+                                                @click="openActionModal('suspend', learner)"
                                             >
                                                 <ShieldAlert class="mr-2 h-4 w-4" /> Suspend
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 v-else
-                                                @click="openActionModal('activate', student)"
+                                                @click="openActionModal('activate', learner)"
                                             >
                                                 <CheckCircle2 class="mr-2 h-4 w-4" /> Activate
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
-                                                :disabled="!student.can_demote"
-                                                @click="openActionModal('demote', student)"
+                                                :disabled="!learner.can_demote"
+                                                @click="openActionModal('demote', learner)"
                                             >
                                                 <ArrowDownCircle class="mr-2 h-4 w-4" /> Demote
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem class="text-destructive" @click="openActionModal('delete', student)">
+                                            <DropdownMenuItem class="text-destructive" @click="openActionModal('delete', learner)">
                                                 <Trash2 class="mr-2 h-4 w-4" /> Delete
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -413,10 +413,10 @@ const modalMessage = computed(() => {
             <div class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
                 <div class="flex items-center gap-3 text-destructive mb-2">
                     <AlertTriangle class="h-6 w-6" />
-                    <h2 class="text-xl font-bold">Confirm Bulk Removal</h2>
+                    <h2 class="text-xl font-bold">Remove Enrollments</h2>
                 </div>
                 <p class="mt-3 text-sm text-muted-foreground leading-relaxed">
-                    Are you sure you want to remove <span class="font-bold text-foreground">{{ selectedEnrollmentIds.length }}</span> selected students from this enrollment group? 
+                    Are you sure you want to remove <span class="font-bold text-foreground">{{ selectedEnrollmentIds.length }}</span> selected learners from this enrollment group?
                     This action will delete their enrollment records for this class.
                 </p>
                 <div class="mt-6 flex justify-end gap-3">

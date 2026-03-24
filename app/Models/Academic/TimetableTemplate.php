@@ -7,9 +7,16 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // Added HasFactory import
+
+use App\Traits\BelongsToSchool;
+
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TimetableTemplate extends Model
 {
+    use HasFactory, SoftDeletes, BelongsToSchool;
+
     protected $fillable = [
         'school_id', 'name', 'description', 'template_type',
         'is_default', 'is_active', 'created_by'

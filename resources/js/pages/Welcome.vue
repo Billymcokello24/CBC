@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 defineProps<{ canLogin?: boolean; canRegister?: boolean }>();
 const mobileMenuOpen = ref(false);
 const features = [
-    { icon: GraduationCap, title: 'Student Management', description: 'Complete student lifecycle management from admission to graduation with CBC competency tracking.' },
+    { icon: GraduationCap, title: 'Learner Management', description: 'Complete learner lifecycle management from admission to graduation with CBC competency tracking.' },
     { icon: Users, title: 'Teacher Portal', description: 'Empower teachers with tools for lesson planning, assessments, and performance tracking.' },
     { icon: BookOpen, title: 'CBC Curriculum', description: 'Full Kenya CBC curriculum support with competency-based assessments and rubrics.' },
     { icon: BarChart3, title: 'Analytics & Reports', description: 'Real-time insights and comprehensive reports for data-driven decisions.' },
@@ -15,7 +15,7 @@ const features = [
 ];
 const stats = [
     { value: '500+', label: 'Schools' },
-    { value: '50K+', label: 'Students' },
+    { value: '50K+', label: 'Learners' },
     { value: '5K+', label: 'Teachers' },
     { value: '99.9%', label: 'Uptime' },
 ];

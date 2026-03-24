@@ -14,7 +14,7 @@ class Stream extends Model
 {
     use SoftDeletes, BelongsToSchool;
 
-    protected $fillable = ['school_id', 'name', 'code', 'capacity', 'status'];
+    protected $fillable = ['slug', 'school_id', 'name', 'code', 'capacity', 'is_active', 'status'];
 
     protected $casts = ['is_active' => 'boolean'];
 

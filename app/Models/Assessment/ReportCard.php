@@ -10,12 +10,14 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToSchool;
 
 class ReportCard extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
         'student_id', 'class_id', 'academic_year_id', 'academic_term_id',
         'total_subjects', 'average_score', 'overall_grade', 'class_rank',
         'stream_rank', 'total_students_in_class', 'class_teacher_comments',

@@ -12,7 +12,7 @@ defineProps<{
         email: string | null;
         phone: string | null;
     };
-    students: Array<{
+    learners: Array<{
         id: number;
         name: string;
         admission_number: string | null;
@@ -23,7 +23,7 @@ defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/guardian/portal' },
-    { title: 'My Students', href: '/guardian/portal' },
+    { title: 'Connected Learners', href: '/guardian/portal' },
 ];
 </script>
 
@@ -34,7 +34,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <div class="rounded-xl border bg-card p-6">
                 <h1 class="text-2xl font-bold tracking-tight">Welcome, {{ guardian.name }}</h1>
-                <p class="mt-2 text-sm text-muted-foreground">You can only access the students linked to your guardian account.</p>
+                <p class="mt-2 text-sm text-muted-foreground">You can only access the learners linked to your guardian account.</p>
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <div>
                         <div class="text-sm text-muted-foreground">Email</div>
@@ -50,26 +50,26 @@ const breadcrumbs: BreadcrumbItem[] = [
             <div class="rounded-xl border bg-card p-6">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 class="text-lg font-semibold">Linked Students</h2>
-                        <p class="text-sm text-muted-foreground">Open a student below to view only their profile and related content available to guardians.</p>
+                        <h2 class="text-lg font-semibold">Connected Learners</h2>
+                        <p class="text-sm text-muted-foreground">Open a learner below to view their profile and related academic content.</p>
                     </div>
-                    <div class="text-sm text-muted-foreground">{{ students.length }} student(s)</div>
+                    <div class="text-sm text-muted-foreground">{{ learners.length }} learner(s)</div>
                 </div>
 
-                <div v-if="students.length === 0" class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
-                    No students are linked to this guardian account yet.
+                <div v-if="learners.length === 0" class="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+                    No learners are linked to this guardian account yet.
                 </div>
 
                 <div v-else class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <div v-for="student in students" :key="student.id" class="rounded-xl border p-5">
-                        <h3 class="text-lg font-semibold">{{ student.name }}</h3>
-                        <p class="text-sm text-muted-foreground">{{ student.admission_number || 'No admission number' }}</p>
+                    <div v-for="learner in learners" :key="learner.id" class="rounded-xl border p-5 transition-all hover:bg-slate-50/50">
+                        <h3 class="text-lg font-semibold">{{ learner.name }}</h3>
+                        <p class="text-sm text-muted-foreground">{{ learner.admission_number || 'No admission number' }}</p>
                         <div class="mt-4 space-y-2 text-sm">
-                            <div>Class: <span class="font-medium">{{ student.class || 'Unassigned' }}</span></div>
-                            <div class="flex items-center gap-2">Status: <Badge>{{ student.status }}</Badge></div>
+                            <div>Class: <span class="font-medium text-slate-900 font-bold uppercase">{{ learner.class || 'Unassigned' }}</span></div>
+                            <div class="flex items-center gap-2">Status: <Badge class="rounded-lg">{{ learner.status }}</Badge></div>
                         </div>
                         <div class="mt-4">
-                            <Button as-child size="sm"><Link :href="`/students/${student.id}`">Open Student</Link></Button>
+                            <Button as-child size="sm" class="rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg"><Link :href="`/students/${learner.id}`">Open Profile</Link></Button>
                         </div>
                     </div>
                 </div>

@@ -28,7 +28,6 @@ class IdentifySchool
                 // For regular users, the school is fixed to their profile
                 if ($user->school_id) {
                     config(['app.current_school_id' => $user->school_id]);
-                    session(['viewing_school_id' => $user->school_id]);
                 }
             }
         }

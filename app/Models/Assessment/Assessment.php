@@ -6,13 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToSchool;
 
 class Assessment extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToSchool;
 
     protected $fillable = [
-        'school_id', 'class_id', 'subject_id', 'teacher_id',
+        'school_id',
+        'class_id', 'subject_id', 'teacher_id',
         'academic_year_id', 'academic_term_id', 'assessment_type_id',
         'grading_scale_id', 'rubric_id', 'title', 'description',
         'instructions', 'assessment_date', 'start_time', 'end_time',
