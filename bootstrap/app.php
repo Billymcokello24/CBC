@@ -35,6 +35,22 @@ return Application::configure(basePath: dirname(__DIR__))
             'check_permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
     })
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        // Prune Telescope entries older than 48 hours to keep the DB lean
+        $schedule->command('telescope:prune --hours=48')->daily();
+
+        // Capture Horizon metrics for the dashboard
+        $schedule->command('horizon:snapshot')->everyFiveMinutes();
+
+        // Clean up old activity logs
+        $schedule->command('activitylog:clean')->daily();
+
+        // Remove orphaned media files
+        $schedule->command('medialibrary:clean')->daily();
+
+        // Prune expired Sanctum tokens
+        $schedule->command('sanctum:prune-expired --hours=24')->daily();
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

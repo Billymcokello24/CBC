@@ -92,10 +92,10 @@ const saasNavigation = [
                 href: '/super-admin/monitoring',
                 icon: Activity,
                 children: [
-                    { title: 'System Health', href: '/super-admin/health' },
-                    { title: 'Real-time Logs', href: '/super-admin/logs' },
-                    { title: 'Queue Workers', href: '/super-admin/queues' },
-                    { title: 'Live Performance', href: '/super-admin/performance' },
+                    { title: 'System Health', href: '/super-admin/dashboard' },
+                    { title: 'Activity Logs', href: '/super-admin/activity-logs' },
+                    { title: 'Queue Management', href: '/super-admin/queues' },
+                    { title: 'Live Telemetry', href: '/super-admin/dashboard' },
                 ]
             },
             {
@@ -129,6 +129,7 @@ const saasNavigation = [
                 href: '/super-admin/config',
                 icon: Settings,
                 children: [
+                    { title: 'System Settings', href: '/super-admin/settings' },
                     { title: 'Feature Flags', href: '/super-admin/config/flags', icon: ToggleLeft },
                     { title: 'Global Templates', href: '/super-admin/config/templates' },
                     { title: 'Integrations', href: '/super-admin/config/integrations' },
@@ -501,18 +502,24 @@ const toggleItem = (title: string) => {
 
 <template>
     <Sidebar collapsible="offcanvas">
-        <SidebarHeader class="h-16 border-b px-6 flex items-center justify-between">
-            <Link href="/" class="flex items-center gap-2 font-black text-violet-600">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white">
-                    <School class="h-5 w-5" />
+        <SidebarHeader class="h-16 border-b border-sidebar-border px-6 flex items-center justify-between">
+            <Link href="/super-admin/dashboard" v-if="isSuperAdmin && !isImpersonating" class="flex items-center gap-3 font-black text-sidebar-foreground">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                    <span class="text-xl font-black">S</span>
                 </div>
-                <span class="text-xl tracking-tighter">CBC.edu</span>
+                <span class="text-xl tracking-tight font-black uppercase">SUPERADMIN</span>
+            </Link>
+            <Link href="/" v-else class="flex items-center gap-3 font-black text-sidebar-foreground">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                    <span class="text-xl font-black">T</span>
+                </div>
+                <span class="text-xl tracking-tight font-black">TailPanel</span>
             </Link>
         </SidebarHeader>
 
         <SidebarContent class="custom-scrollbar">
             <SidebarGroup v-for="group in filteredNavigation" :key="group.title">
-                <SidebarGroupLabel class="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+                <SidebarGroupLabel class="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-sidebar-foreground/40">
                     {{ group.title }}
                 </SidebarGroupLabel>
                 <SidebarGroupContent>
@@ -521,25 +528,25 @@ const toggleItem = (title: string) => {
                             <div v-if="item.children">
                                 <SidebarMenuButton
                                     @click="toggleItem(item.title)"
-                                    class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600 group"
-                                    :class="{ 'bg-violet-50 text-violet-600': activeItem === item.title }"
+                                    class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
+                                    :class="{ 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm': activeItem === item.title }"
                                 >
                                     <div class="flex items-center gap-3">
-                                        <component :is="item.icon" class="h-4 w-4" />
+                                        <component :is="item.icon" class="h-5 w-5 opacity-70 group-hover:opacity-100 transition-opacity" />
                                         <span>{{ item.title }}</span>
                                     </div>
                                     <ChevronDown
-                                        class="h-3 w-3 transition-transform duration-300"
+                                        class="h-3 w-3 transition-transform duration-300 opacity-50"
                                         :class="{ 'rotate-180': activeItem === item.title }"
                                     />
                                 </SidebarMenuButton>
                                 <!-- Dropdown -->
-                                <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
+                                <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l border-sidebar-border pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
                                     <Link
                                         v-for="child in item.children"
                                         :key="child.title"
                                         :href="child.href"
-                                        class="block rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                                        class="block rounded-lg px-3 py-2 text-xs font-bold text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                                     >
                                         {{ child.title }}
                                     </Link>
@@ -548,9 +555,10 @@ const toggleItem = (title: string) => {
                             <Link
                                 v-else
                                 :href="item.href"
-                                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600"
+                                class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
+                                :class="{ 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm': $page.url === item.href }"
                             >
-                                <component :is="item.icon" class="h-4 w-4" />
+                                <component :is="item.icon" class="h-5 w-5 opacity-70 group-hover:opacity-100 transition-opacity" />
                                 <span>{{ item.title }}</span>
                             </Link>
                         </SidebarMenuItem>
@@ -559,30 +567,30 @@ const toggleItem = (title: string) => {
             </SidebarGroup>
         </SidebarContent>
 
-        <SidebarFooter class="border-t p-4">
+        <SidebarFooter class="border-t border-sidebar-border p-4">
             <div class="space-y-1">
                 <div v-for="item in filteredBottomNavigation" :key="item.title">
                      <div v-if="item.children">
                             <SidebarMenuButton
                                 @click="toggleItem(item.title)"
-                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600 group"
-                                :class="{ 'bg-violet-50 text-violet-600': activeItem === item.title }"
+                                class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
+                                :class="{ 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm': activeItem === item.title }"
                             >
                                 <div class="flex items-center gap-3">
-                                    <component :is="item.icon" class="h-4 w-4" />
+                                    <component :is="item.icon" class="h-4 w-4 opacity-70" />
                                     <span>{{ item.title }}</span>
                                 </div>
                                 <ChevronDown
-                                    class="h-3 w-3 transition-transform duration-300"
+                                    class="h-3 w-3 transition-transform duration-300 opacity-50"
                                     :class="{ 'rotate-180': activeItem === item.title }"
                                 />
                             </SidebarMenuButton>
-                            <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
+                            <div v-if="activeItem === item.title" class="mt-1 ml-4 border-l border-sidebar-border pl-4 space-y-1 animate-in slide-in-from-top-2 duration-300">
                                 <Link
                                     v-for="child in item.children"
                                     :key="child.title"
                                     :href="child.href"
-                                    class="block rounded-lg px-3 py-2 text-xs font-bold text-gray-500 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+                                    class="block rounded-lg px-3 py-2 text-xs font-bold text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                                 >
                                     {{ child.title }}
                                 </Link>
@@ -591,30 +599,30 @@ const toggleItem = (title: string) => {
                         <Link
                             v-else
                             :href="item.href"
-                            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-bold text-gray-600 transition-colors hover:bg-violet-50 hover:text-violet-600"
+                            class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group"
                         >
-                            <component :is="item.icon" class="h-4 w-4" />
+                            <component :is="item.icon" class="h-4 w-4 opacity-70" />
                             <span>{{ item.title }}</span>
                         </Link>
                 </div>
             </div>
 
             <!-- Profile Info -->
-            <div class="mt-4 flex items-center justify-between rounded-xl bg-gray-50 p-3">
+            <div class="mt-4 flex items-center justify-between rounded-2xl bg-sidebar-accent/50 p-4 border border-sidebar-border">
                 <div class="flex items-center gap-3 overflow-hidden">
-                    <div class="h-10 w-10 shrink-0 rounded-full border-2 border-white bg-violet-600 flex items-center justify-center font-black text-white text-xs">
+                    <div class="h-10 w-10 shrink-0 rounded-xl border border-sidebar-border bg-primary/10 flex items-center justify-center font-black text-primary text-xs shrink-0">
                         {{ user?.name?.[0]?.toUpperCase() }}
                     </div>
                     <div class="flex flex-col min-w-0">
-                        <span class="truncate text-xs font-black text-gray-900">{{ user?.name }}</span>
-                        <span class="truncate text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{{ user?.role || 'User' }}</span>
+                        <span class="truncate text-xs font-black text-sidebar-foreground leading-none">{{ user?.name }}</span>
+                        <span class="truncate text-[9px] font-black text-sidebar-foreground/40 uppercase tracking-widest mt-1">{{ user?.role || 'Super Admin' }}</span>
                     </div>
                 </div>
                 <Link
                     href="/logout"
                     method="post"
                     as="button"
-                    class="rounded-lg p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                    class="rounded-xl p-2 text-sidebar-foreground/40 hover:bg-rose-500/10 hover:text-rose-500 transition-colors"
                 >
                     <LogOut class="h-4 w-4" />
                 </Link>

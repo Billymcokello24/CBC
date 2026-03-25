@@ -14,8 +14,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Mail\UserCreatedMail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -859,6 +861,9 @@ class StudentsController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Send Welcome Email
+        Mail::to($user->email)->send(new UserCreatedMail($user, $data['password']));
 
         return $guardian;
     }

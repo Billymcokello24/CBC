@@ -34,6 +34,38 @@ class SchoolController extends Controller
     }
 
     /**
+     * Display activation status of all schools.
+     */
+    public function status()
+    {
+        return Inertia::render('super-admin/schools/Status', [
+            'schools' => School::select('id', 'name', 'code', 'status', 'created_at')
+                ->latest()
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Display modular configuration for all schools.
+     */
+    public function modules()
+    {
+        return Inertia::render('super-admin/schools/Modules', [
+            'schools' => School::select('id', 'name', 'code', 'status')
+                ->withCount(['users', 'students'])
+                ->get(),
+            // In a real app, you'd fetch available modules from a config or DB
+            'available_modules' => [
+                ['id' => 'finance', 'name' => 'Finance & Fees'],
+                ['id' => 'transport', 'name' => 'Transport Management'],
+                ['id' => 'library', 'name' => 'Library System'],
+                ['id' => 'hostel', 'name' => 'Hostel Management'],
+                ['id' => 'health', 'name' => 'Medical Records'],
+            ]
+        ]);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

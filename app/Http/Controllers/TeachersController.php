@@ -12,7 +12,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use App\Mail\UserCreatedMail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -143,6 +145,9 @@ class TeachersController extends Controller
             }
 
             Teacher::create($teacherData);
+
+            // Send Welcome Email
+            Mail::to($user->email)->send(new UserCreatedMail($user, $validated['password']));
 
             return redirect()->route('teachers.index')->with('success', 'Teacher created successfully.');
         });
@@ -416,6 +421,9 @@ class TeachersController extends Controller
 
                         Teacher::create($teacherData);
                         $createdTeachers++;
+
+                        // Send Welcome Email
+                        Mail::to($user->email)->send(new UserCreatedMail($user, $normalized['password'] ?? 'Password123'));
                     }
                 }
             });

@@ -10,6 +10,7 @@ use App\Models\Teacher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Spatie\Activitylog\Models\Activity;
 
 class SuperAdminDashboardController extends Controller
 {
@@ -26,7 +27,16 @@ class SuperAdminDashboardController extends Controller
                 'total_learners' => Student::count(),
                 'total_teachers' => Teacher::count(),
                 'system_performance' => $this->getSystemPerformance(),
+                'recent_activities_count' => Activity::where('created_at', '>=', now()->subHours(24))->count(),
             ],
+            'monitoring_urls' => [
+                'telescope' => url('/telescope'),
+                'horizon' => url('/horizon'),
+            ],
+            'recent_activities' => Activity::with('causer')
+                ->latest()
+                ->limit(8)
+                ->get(),
             'recent_schools' => School::withCount(['users', 'students as learners_count'])
                 ->latest()
                 ->limit(5)

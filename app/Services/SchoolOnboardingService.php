@@ -8,7 +8,9 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AcademicTerm;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Mail\SchoolWelcomeMail;
 
 class SchoolOnboardingService
 {
@@ -42,6 +44,9 @@ class SchoolOnboardingService
 
             // 4. Initial Setup (Academic Year & Term)
             $this->initializeSchool($school);
+
+            // 5. Send Welcome Email
+            Mail::to($admin->email)->send(new SchoolWelcomeMail($school, $admin));
 
             return [
                 'school' => $school,

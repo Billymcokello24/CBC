@@ -13,6 +13,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ResetPasswordMail;
 
 use App\Traits\BelongsToSchool;
 
@@ -128,5 +130,16 @@ class User extends Authenticatable
     public function getFullNameAttribute(): string
     {
         return $this->name;
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        Mail::to($this->email)->send(new ResetPasswordMail($token, $this));
     }
 }
