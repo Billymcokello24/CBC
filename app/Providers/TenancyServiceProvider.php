@@ -78,8 +78,16 @@ class TenancyServiceProvider extends ServiceProvider
             ],
 
             Events\BootstrappingTenancy::class => [],
-            Events\TenancyBootstrapped::class => [],
-            Events\RevertingToCentralContext::class => [],
+            Events\TenancyBootstrapped::class => [
+                function (Events\TenancyBootstrapped $event) {
+                    \Spatie\Permission\PermissionRegistrar::forgetCachedPermissions();
+                },
+            ],
+            Events\RevertingToCentralContext::class => [
+                function (Events\RevertingToCentralContext $event) {
+                    \Spatie\Permission\PermissionRegistrar::forgetCachedPermissions();
+                },
+            ],
             Events\RevertedToCentralContext::class => [],
 
             // Resource syncing
