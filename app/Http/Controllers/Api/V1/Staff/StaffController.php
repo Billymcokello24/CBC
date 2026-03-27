@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Teacher;
+namespace App\Http\Controllers\Api\V1\Staff;
 
 use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Resources\TeacherResource;
@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class TeacherController extends ApiController
+class StaffController extends ApiController
 {
     /**
-     * Display a listing of teachers.
+     * Display a listing of staffs.
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,7 +38,7 @@ class TeacherController extends ApiController
     }
 
     /**
-     * Store a newly created teacher.
+     * Store a newly created staff.
      */
     public function store(Request $request): JsonResponse
     {
@@ -75,16 +75,16 @@ class TeacherController extends ApiController
 
             return $this->created(
                 new TeacherResource($teacher->load(['school', 'department'])),
-                'Teacher created successfully'
+                'Staff created successfully'
             );
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create teacher: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create staff: ' . $e->getMessage(), 500);
         }
     }
 
     /**
-     * Display the specified teacher.
+     * Display the specified staff.
      */
     public function show(Teacher $teacher): JsonResponse
     {
@@ -102,7 +102,7 @@ class TeacherController extends ApiController
     }
 
     /**
-     * Update the specified teacher.
+     * Update the specified staff.
      */
     public function update(Request $request, Teacher $teacher): JsonResponse
     {
@@ -127,18 +127,18 @@ class TeacherController extends ApiController
 
         return $this->success(
             new TeacherResource($teacher->fresh(['school', 'department'])),
-            'Teacher updated successfully'
+            'Staff updated successfully'
         );
     }
 
     /**
-     * Remove the specified teacher (soft delete).
+     * Remove the specified staff (soft delete).
      */
     public function destroy(Teacher $teacher): JsonResponse
     {
         $teacher->delete();
 
-        return $this->success(null, 'Teacher deleted successfully');
+        return $this->success(null, 'Staff deleted successfully');
     }
 
     /**

@@ -85,6 +85,7 @@ class DashboardController extends Controller
                 'genderDistribution' => $this->getGenderDistribution(),
                 'weeklyAttendance' => $this->getWeeklyAttendance(),
                 'recentActivities' => $this->getRecentActivities(),
+                'recentEnrollments' => $this->getRecentEnrollments(),
                 'upcomingEvents' => $this->getUpcomingEvents(),
                 'notificationsCount' => $this->getNotificationsCount(),
                 'currentYear' => $currentYear,
@@ -100,6 +101,7 @@ class DashboardController extends Controller
                 'genderDistribution' => $this->getDefaultGenderDistribution(),
                 'weeklyAttendance' => $this->getDefaultWeeklyAttendance(),
                 'recentActivities' => $this->getDefaultRecentActivities(),
+                'recentEnrollments' => [],
                 'upcomingEvents' => $this->getDefaultUpcomingEvents(),
                 'notificationsCount' => 0,
                 'currentYear' => null,
@@ -467,19 +469,43 @@ class DashboardController extends Controller
                 : 0;
 
             $totalClasses = SchoolClass::where('is_active', true)->count();
+            $previousClasses = SchoolClass::where('is_active', true)
+                ->where('created_at', '<', $previousTermDate)
+                ->count();
+            $classGrowth = $previousClasses > 0
+                ? round((($totalClasses - $previousClasses) / $previousClasses) * 100, 1)
+                : 0;
+
             $attendanceRate = $this->calculateAttendanceRate();
 
             $feeCollection = 0;
-            if (Schema::hasTable('fee_payments')) {
-                $feeCollection = FeePayment::whereMonth('payment_date', Carbon::now()->month)
-                    ->whereYear('payment_date', Carbon::now()->year)
-                    ->sum('amount') ?? 0;
+            $previousCollections = 0;
+            try {
+                if (Schema::hasTable('fee_payments') && Schema::hasColumn('fee_payments', 'school_id')) {
+                    $feeCollection = FeePayment::whereMonth('payment_date', Carbon::now()->month)
+                        ->whereYear('payment_date', Carbon::now()->year)
+                        ->sum('amount') ?? 0;
+                    
+                    $previousCollections = FeePayment::whereMonth('payment_date', Carbon::now()->subMonth()->month)
+                        ->whereYear('payment_date', Carbon::now()->subMonth()->year)
+                        ->sum('amount') ?? 0;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Fee collection query failed: ' . $e->getMessage());
             }
 
+            $collectionGrowth = $previousCollections > 0
+                ? round((($feeCollection - $previousCollections) / $previousCollections) * 100, 1)
+                : 0;
+
             $pendingFees = 0;
-            if (Schema::hasTable('student_fees')) {
-                $pendingFees = StudentFee::whereIn('status', ['pending', 'partial'])
-                    ->sum(DB::raw('total_amount - paid_amount')) ?? 0;
+            try {
+                if (Schema::hasTable('student_fees') && Schema::hasColumn('student_fees', 'school_id')) {
+                    $pendingFees = StudentFee::whereIn('status', ['pending', 'partial'])
+                        ->sum(DB::raw('total_amount - paid_amount')) ?? 0;
+                }
+            } catch (\Exception $e) {
+                Log::warning('Pending fees query failed: ' . $e->getMessage());
             }
 
             $totalGuardians = Guardian::where('is_active', true)->count();
@@ -491,8 +517,10 @@ class DashboardController extends Controller
                 'total_teachers' => $totalTeachers,
                 'teacher_growth' => $teacherGrowth,
                 'total_classes' => $totalClasses,
+                'class_growth' => $classGrowth,
                 'attendance_rate' => $attendanceRate,
                 'fee_collection' => $feeCollection,
+                'collection_growth' => $collectionGrowth,
                 'pending_fees' => $pendingFees,
                 'total_guardians' => $totalGuardians,
                 'total_subjects' => $totalSubjects,
@@ -645,6 +673,27 @@ class DashboardController extends Controller
             ['label' => 'Present %', 'data' => [0, 0, 0, 0, 0], 'color' => 'rgb(16, 185, 129)'],
             ['label' => 'Absent %', 'data' => [0, 0, 0, 0, 0], 'color' => 'rgb(239, 68, 68)'],
         ]];
+    }
+
+    private function getRecentEnrollments(): array
+    {
+        try {
+            return Student::with(['currentClass:id,name'])
+                ->latest('admission_date')
+                ->limit(5)
+                ->get()
+                ->map(fn($student) => [
+                    'id' => $student->id,
+                    'name' => $student->full_name,
+                    'class_name' => $student->currentClass?->name ?? 'Unassigned',
+                    'date' => $student->admission_date ? $student->admission_date->format('M d, Y') : 'N/A',
+                    'status' => $student->status,
+                    'initials' => strtoupper(substr($student->first_name, 0, 1) . substr($student->last_name, 0, 1))
+                ])
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     private function getRecentActivities(): array

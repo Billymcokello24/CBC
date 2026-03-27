@@ -40,7 +40,7 @@ class Student extends Model
         'has_special_needs' => 'boolean',
     ];
 
-    protected $appends = ['full_name', 'age'];
+    protected $appends = ['full_name', 'age', 'photo_url'];
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -143,6 +143,11 @@ class Student extends Model
     public function assessmentResults(): HasMany
     {
         return $this->hasMany(\App\Models\Assessment\StudentAssessment::class, 'student_id');
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo ? asset('storage/' . $this->photo) : null;
     }
 
     public function getFullNameAttribute(): string

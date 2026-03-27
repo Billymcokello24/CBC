@@ -27,7 +27,7 @@ const chartRef = ref<HTMLCanvasElement | null>(null);
 // Calculate max value for scaling
 const maxValue = computed(() => {
     const allValues = props.data.datasets.flatMap(d => d.data);
-    return Math.max(...allValues) * 1.1;
+    return Math.max(...allValues, 1) * 1.1;
 });
 
 // Colors for datasets
@@ -50,23 +50,23 @@ const getColor = (index: number, dataset: any) => {
 </script>
 
 <template>
-    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5">
+    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 h-full flex flex-col">
         <div class="mb-8 flex items-center justify-between">
             <div class="space-y-1">
-                <h3 class="text-sm font-black uppercase tracking-widest text-foreground">{{ title }}</h3>
-                <p class="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tight">Analytical insights from cluster data</p>
+                <h3 class="text-base font-semibold text-foreground">{{ title }}</h3>
+                <p class="text-[13px] text-muted-foreground">Analytical insights from current data</p>
             </div>
             <div class="flex items-center gap-4">
                 <div
                     v-for="(dataset, index) in data.datasets"
                     :key="index"
-                    class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                    class="flex items-center gap-2 text-[11px] font-medium text-muted-foreground"
                 >
                     <span
                         class="h-2 w-2 rounded-full"
                         :style="{ backgroundColor: getColor(index, dataset) }"
                     ></span>
-                    <span class="text-muted-foreground">{{ dataset.label }}</span>
+                    <span>{{ dataset.label }}</span>
                 </div>
             </div>
         </div>
@@ -81,26 +81,26 @@ const getColor = (index: number, dataset: any) => {
         </div>
 
         <!-- Simple Bar Chart -->
-        <div v-else-if="chartType === 'bar'" class="relative" :style="{ height: `${height}px` }">
+        <div v-else-if="chartType === 'bar'" class="relative flex-1" :style="{ minHeight: `${height}px` }">
             <!-- Y-axis labels -->
-            <div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[9px] font-black text-muted-foreground/40 uppercase">
+            <div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[10px] text-muted-foreground/40">
                 <span>{{ Math.round(maxValue) }}</span>
                 <span>{{ Math.round(maxValue / 2) }}</span>
                 <span>0</span>
             </div>
 
             <!-- Chart area -->
-            <div class="ml-10 flex h-full items-end gap-3 border-b border-l border-border/50 pb-8">
+            <div class="ml-10 h-[calc(100%-30px)] flex items-end gap-3 border-b border-border/50 pb-2">
                 <div
                     v-for="(label, labelIndex) in data.labels"
                     :key="labelIndex"
-                    class="flex flex-1 flex-col items-center gap-2"
+                    class="flex flex-1 flex-col items-center gap-2 h-full"
                 >
-                    <div class="flex w-full items-end justify-center gap-1.5" :style="{ height: `${height - 40}px` }">
+                    <div class="flex w-full items-end justify-center gap-1.5 h-full">
                         <div
                             v-for="(dataset, datasetIndex) in data.datasets"
                             :key="datasetIndex"
-                            class="w-full max-w-10 rounded-t-lg transition-all duration-500 hover:opacity-80"
+                            class="w-full max-w-[12px] rounded-t-sm transition-all duration-500 hover:opacity-80"
                             :style="{
                                 height: `${getBarHeight(dataset.data[labelIndex])}%`,
                                 backgroundColor: getColor(datasetIndex, dataset)
@@ -111,13 +111,13 @@ const getColor = (index: number, dataset: any) => {
             </div>
              <!-- X-axis labels inline with bars -->
              <div class="absolute bottom-0 left-10 right-0 flex justify-between px-2">
-                 <span v-for="(label, i) in data.labels" :key="i" class="text-[9px] font-black text-muted-foreground/40 uppercase truncate max-w-[40px]">{{ label }}</span>
+                 <span v-for="(label, i) in data.labels" :key="i" class="text-[10px] text-muted-foreground/40 truncate max-w-[40px]">{{ label }}</span>
              </div>
         </div>
 
         <!-- Simple Area/Line Chart -->
-        <div v-else-if="chartType === 'line' || chartType === 'area'" class="relative" :style="{ height: `${height}px` }">
-            <svg class="w-full h-full" preserveAspectRatio="none">
+        <div v-else-if="chartType === 'line' || chartType === 'area'" class="relative flex-1" :style="{ minHeight: `${height}px` }">
+            <svg class="w-full h-[calc(100%-30px)]" preserveAspectRatio="none">
                 <defs>
                     <linearGradient
                         v-for="(dataset, index) in data.datasets"
@@ -139,8 +139,8 @@ const getColor = (index: number, dataset: any) => {
                         v-if="chartType === 'area'"
                         :d="(() => {
                             const points = dataset.data.map((value, i) => {
-                                const x = (i / (dataset.data.length - 1)) * 100;
-                                const y = 10 - (value / maxValue) * 90; // Padding from top/bottom
+                                const x = (i / Math.max(dataset.data.length - 1, 1)) * 100;
+                                const y = 10 - (value / maxValue) * 90;
                                 return `${x}%,${y}%`;
                             }).join(' L');
                             return `M0%,100% L${points} L100%,100% Z`;
@@ -151,13 +151,13 @@ const getColor = (index: number, dataset: any) => {
                     <!-- Line -->
                     <polyline
                         :points="dataset.data.map((value, i) => {
-                            const x = (i / (dataset.data.length - 1)) * 100;
+                            const x = (i / Math.max(dataset.data.length - 1, 1)) * 100;
                             const y = 10 - (value / maxValue) * 90;
                             return `${x}%,${y}%`;
                         }).join(' ')"
                         fill="none"
                         :stroke="getColor(datasetIndex, dataset)"
-                        stroke-width="3"
+                        stroke-width="2"
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         class="drop-shadow-sm"
@@ -166,17 +166,17 @@ const getColor = (index: number, dataset: any) => {
             </svg>
 
             <!-- X-axis labels -->
-            <div class="absolute bottom-0 left-0 right-0 flex justify-between text-[9px] font-black text-muted-foreground/40 uppercase px-2">
+            <div class="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] text-muted-foreground/40 px-2">
                 <span v-for="(label, i) in data.labels" :key="i">{{ label }}</span>
             </div>
         </div>
 
         <!-- Doughnut Chart -->
-        <div v-else-if="chartType === 'doughnut'" class="flex items-center justify-between gap-10" :style="{ height: `${height}px` }">
+        <div v-else-if="chartType === 'doughnut'" class="flex items-center justify-between gap-10 flex-1" :style="{ minHeight: `${height}px` }">
             <div class="relative flex-1 flex items-center justify-center">
                 <svg width="180" height="180" viewBox="0 0 200 200">
                     <g transform="translate(100, 100)">
-                        <circle cx="0" cy="0" r="75" fill="none" stroke="currentColor" stroke-width="25" class="text-muted/10" />
+                        <circle cx="0" cy="0" r="75" fill="none" stroke="currentColor" stroke-width="20" class="text-muted/10" />
                         <circle
                             v-for="(value, index) in data.datasets[0]?.data || []"
                             :key="index"
@@ -185,17 +185,17 @@ const getColor = (index: number, dataset: any) => {
                             r="75"
                             fill="none"
                             :stroke="getColor(index, {})"
-                            stroke-width="25"
-                            :stroke-dasharray="`${(value / data.datasets[0].data.reduce((a, b) => a + b, 0)) * 471.2} 471.2`"
-                            :stroke-dashoffset="`${-data.datasets[0].data.slice(0, index).reduce((a, b) => a + (b / data.datasets[0].data.reduce((c, d) => c + d, 0)) * 471.2, 0)}`"
+                            stroke-width="20"
+                            :stroke-dasharray="`${(value / Math.max(data.datasets[0].data.reduce((a, b) => a + b, 0), 1)) * 471.2} 471.2`"
+                            :stroke-dashoffset="`${-data.datasets[0].data.slice(0, index).reduce((a, b) => a + (b / Math.max(data.datasets[0].data.reduce((c, d) => c + d, 0), 1)) * 471.2, 0)}`"
                             stroke-linecap="round"
                             class="transition-all duration-700 ease-out"
                         />
                     </g>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <span class="text-3xl font-black tracking-tighter text-foreground">{{ data.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0 }}</span>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Total Units</span>
+                    <span class="text-3xl font-bold tracking-tight text-foreground">{{ data.datasets[0]?.data.reduce((a, b) => a + b, 0) || 0 }}</span>
+                    <span class="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">Total</span>
                 </div>
             </div>
 
@@ -211,9 +211,9 @@ const getColor = (index: number, dataset: any) => {
                             class="h-2 w-2 rounded-full"
                             :style="{ backgroundColor: getColor(index, {}) }"
                         ></span>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">{{ label }}</span>
+                        <span class="text-[11px] font-medium text-muted-foreground group-hover:text-foreground transition-colors">{{ label }}</span>
                     </div>
-                    <span class="text-[11px] font-black text-foreground">{{ data.datasets[0]?.data[index] || 0 }}</span>
+                    <span class="text-[11px] font-semibold text-foreground">{{ data.datasets[0]?.data[index] || 0 }}</span>
                 </div>
             </div>
         </div>

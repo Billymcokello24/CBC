@@ -189,7 +189,7 @@ class AcademicManagementController extends Controller
         $perPage = min(max((int) $request->input('per_page', 20), 5), 1000);
 
         $classes = SchoolClass::query()
-            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name', 'class_teacher:id,name'])
+            ->with(['gradeLevel:id,name', 'stream:id,name,code', 'academicYear:id,name', 'classTeacher:id,name'])
             ->withCount(['students as learners_count' => fn ($q) => $q->where('status', 'active')])
             ->when($request->filled('search'), function ($q) use ($search) {
                 $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")

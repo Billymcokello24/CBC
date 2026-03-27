@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Academic\SchoolClass;
+use App\Models\Student;
 use App\Models\StudentEnrollment;
+use App\Models\Academic\SchoolClass;
+use App\Models\Academic\AcademicYear;
+use App\Models\Academic\AcademicTerm;
+use App\Models\Academic\Stream;
+use App\Models\Academic\GradeLevel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
@@ -60,8 +65,8 @@ class StudentEnrollmentController extends Controller
                     'academic_year' => $first?->academicYear?->name,
                     'total_learners' => $items->count(),
                     'active_learners' => $items->where('status', 'active')->count(),
-                    'new_enrollments' => $items->where('enrollment_type', 'new')->count(),
-                    'promoted_learners' => $items->where('enrollment_type', 'promoted')->count(),
+                    'new_enrollments' => $items->whereIn('enrollment_type', ['new', 'transfer'])->count(),
+                    'promoted_learners' => $items->where('enrollment_type', 'continuing')->count(),
                 ];
             })
             ->filter(fn ($group) => $group['class_id'] !== null)
@@ -75,8 +80,8 @@ class StudentEnrollmentController extends Controller
             'stats' => [
                 'total' => (clone $statsBase)->count(),
                 'active' => (clone $statsBase)->where('status', 'active')->count(),
-                'new' => (clone $statsBase)->where('enrollment_type', 'new')->count(),
-                'promoted' => (clone $statsBase)->where('enrollment_type', 'promoted')->count(),
+                'new' => (clone $statsBase)->whereIn('enrollment_type', ['new', 'transfer'])->count(),
+                'promoted' => (clone $statsBase)->where('enrollment_type', 'continuing')->count(),
             ],
             'filters' => [
                 'search' => $search,
@@ -106,6 +111,71 @@ class StudentEnrollmentController extends Controller
                 ['value' => 'rejoined', 'label' => 'Rejoined'],
             ],
         ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        return Inertia::render('students/enrollments/Create', [
+            'academicYears' => AcademicYear::active()->orderByDesc('start_date')->get(['id', 'name']),
+            'academicTerms' => AcademicTerm::active()->orderBy('name')->get(['id', 'name']),
+            'classes' => \App\Models\Academic\SchoolClass::active()->with(['gradeLevel', 'stream'])->get()->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'grade_id' => $c->grade_level_id,
+                'stream_id' => $c->stream_id,
+            ]),
+            'streams' => Stream::active()->orderBy('name')->get(['id', 'name']),
+            'grades' => GradeLevel::active()->orderBy('level_order')->get(['id', 'name']),
+            'studentId' => $request->query('student_id'),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'academic_term_id' => 'nullable|exists:academic_terms,id',
+            'class_id' => 'required|exists:classes,id',
+            'stream_id' => 'nullable|exists:streams,id',
+            'admission_number' => 'required|string',
+            'enrollment_date' => 'required|date',
+            'status' => 'required|in:active,completed,transferred,withdrawn,promoted,repeated',
+            'entry_type' => 'required|in:new,transfer,continuing',
+            'boarding_status' => 'required|in:day,boarding',
+            'sponsor_type' => 'nullable|string',
+            'previous_school' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Unique check for student + academic year
+        $exists = StudentEnrollment::where('student_id', $validated['student_id'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors(['academic_year_id' => 'This student is already enrolled for the selected academic year.']);
+        }
+
+        DB::transaction(function () use ($validated) {
+            $enrollment = StudentEnrollment::create(array_merge($validated, [
+                'school_id' => auth()->user()->school_id,
+                'enrolled_by' => auth()->id(),
+                'enrollment_type' => $validated['entry_type'],
+            ]));
+
+            // Update student bio record
+            $student = Student::find($validated['student_id']);
+            $student->update([
+                'current_class_id' => $validated['class_id'],
+                'status' => $validated['status'] === 'active' ? 'active' : $student->status,
+                'admission_number' => $validated['admission_number'],
+                'boarding_status' => $validated['boarding_status'],
+            ]);
+        });
+
+        return redirect()->route('students.enrollments')
+            ->with('success', "{$student->full_name} enrolled successfully in {$enrollment->class->name}.");
     }
 
     public function show(Request $request, SchoolClass $class): Response

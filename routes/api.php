@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\School\SchoolController;
 use App\Http\Controllers\Api\V1\Student\StudentController;
 use App\Http\Controllers\Api\V1\Student\GuardianController;
-use App\Http\Controllers\Api\V1\Teacher\TeacherController;
+use App\Http\Controllers\Api\V1\Staff\StaffController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,15 +61,15 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::get('{student}/academic-performance', [StudentController::class, 'academicPerformance']);
     });
 
-    // Teachers Management
-    Route::prefix('teachers')->group(function () {
-        Route::get('/', [TeacherController::class, 'index']);
-        Route::post('/', [TeacherController::class, 'store'])->middleware('permission:teachers.create');
-        Route::get('{teacher}', [TeacherController::class, 'show']);
-        Route::put('{teacher}', [TeacherController::class, 'update'])->middleware('permission:teachers.update');
-        Route::delete('{teacher}', [TeacherController::class, 'destroy'])->middleware('permission:teachers.delete');
-        Route::get('{teacher}/subjects', [TeacherController::class, 'subjects']);
-        Route::get('{teacher}/timetable', [TeacherController::class, 'timetable']);
+    // Staffs Management (formerly Teachers)
+    Route::prefix('staffs')->group(function () {
+        Route::get('/', [StaffController::class, 'index']);
+        Route::post('/', [StaffController::class, 'store'])->middleware('permission:staffs.create');
+        Route::get('{teacher}', [StaffController::class, 'show']);
+        Route::put('{teacher}', [StaffController::class, 'update'])->middleware('permission:staffs.update');
+        Route::delete('{teacher}', [StaffController::class, 'destroy'])->middleware('permission:staffs.delete');
+        Route::get('{teacher}/subjects', [StaffController::class, 'subjects']);
+        Route::get('{teacher}/timetable', [StaffController::class, 'timetable']);
     });
 
     // Guardians Management

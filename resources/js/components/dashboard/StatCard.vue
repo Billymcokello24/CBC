@@ -18,33 +18,38 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const iconWrappers = {
-    primary: 'bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
-    success: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-    info: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
-    warning: 'bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-    danger: 'bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+    primary: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
+    success: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+    info: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+    warning: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
+    danger: 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400',
+};
+
+const trendColors = {
+    up: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
+    down: 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
 };
 </script>
 
 <template>
     <div class="group relative overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition-all hover:shadow-md dark:border-white/5">
-        <div class="flex items-center justify-between gap-4">
-            <div class="space-y-1">
-                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">{{ title }}</p>
-                <div class="flex items-baseline gap-2">
-                    <h3 class="text-2xl font-black tracking-tight text-foreground">{{ value }}</h3>
-                    <div v-if="trend" :class="['flex items-center gap-0.5 text-[10px] font-black', trend.direction === 'up' ? 'text-emerald-500' : 'text-rose-500']">
-                        <component :is="trend.direction === 'up' ? TrendingUp : TrendingDown" class="h-3 w-3" />
-                        {{ trend.value }}%
-                    </div>
+        <div class="flex items-center justify-between">
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <p class="text-[13px] font-medium text-muted-foreground whitespace-nowrap">{{ title }}</p>
+                    <h3 class="text-3xl font-bold tracking-tight text-foreground">{{ value }}</h3>
+                </div>
+                
+                <div v-if="trend" :class="['inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold', trendColors[trend.direction]]">
+                    <component :is="trend.direction === 'up' ? TrendingUp : TrendingDown" class="h-3.5 w-3.5" />
+                    {{ trend.value }}%
+                    <span class="text-muted-foreground/60 font-normal ml-1">vs last month</span>
                 </div>
             </div>
-            <div :class="['flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors', iconWrappers[variant]]">
+            
+            <div :class="['flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-110 duration-500', iconWrappers[variant]]">
                 <component :is="icon" class="h-6 w-6" />
             </div>
         </div>
-        <p v-if="description" class="mt-4 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tight">
-            {{ description }}
-        </p>
     </div>
 </template>

@@ -11,7 +11,8 @@ use App\Http\Controllers\Academic\TimetableController;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\AcademicManagementController;
 use App\Http\Controllers\CurriculumManagementController;
-use App\Http\Controllers\TeachersController;
+use App\Http\Controllers\StaffsController;
+use App\Http\Controllers\ParentsController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\Finance\FinanceController;
 use App\Http\Controllers\Library\LibraryController;
@@ -118,37 +119,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ──────────────────────────────────────────────
-    // TEACHERS
+    // USERS & STAFFS
     // ──────────────────────────────────────────────
-    // NOTE: Specific routes (create, template) MUST come before wildcard {teacher} routes
-    Route::middleware(['check_permission:teachers.create'])->group(function () {
-        Route::get('teachers/create', [TeachersController::class, 'create'])->name('teachers.create');
-        Route::get('teachers/template/download', [TeachersController::class, 'downloadTemplate'])->name('teachers.template.download');
-        Route::post('teachers', [TeachersController::class, 'store'])->name('teachers.store');
-        Route::post('teachers/bulk-upload', [TeachersController::class, 'bulkUpload'])->name('teachers.bulk-upload');
+    Route::middleware(['check_permission:staffs.view'])->group(function () {
+        Route::get('staffs/directory', [StaffsController::class, 'directory'])->name('staffs.directory');
+        Route::get('staffs/directory/{role}', [StaffsController::class, 'roleDirectory'])->name('staffs.role-directory');
+        Route::get('staffs/template/download', [StaffsController::class, 'downloadTemplate'])->name('staffs.template.download');
     });
 
-    Route::middleware(['check_permission:teachers.delete'])->group(function () {
-        Route::post('teachers/bulk-delete', [TeachersController::class, 'bulkDelete'])->name('teachers.bulk-delete');
+    Route::middleware(['check_permission:staffs.create'])->group(function () {
+        Route::get('staffs/create', [StaffsController::class, 'create'])->name('staffs.create');
+        Route::post('staffs', [StaffsController::class, 'store'])->name('staffs.store');
+        Route::post('staffs/bulk-upload', [StaffsController::class, 'bulkUpload'])->name('staffs.bulk-upload');
     });
 
-    // Wildcard routes AFTER specific routes
-    Route::middleware(['check_permission:teachers.view,teachers.view_own'])->group(function () {
-        Route::get('teachers', [TeachersController::class, 'index'])->name('teachers.index');
-        Route::get('teachers/{teacher}', [TeachersController::class, 'show'])->name('teachers.show');
+    Route::middleware(['check_permission:staffs.delete'])->group(function () {
+        Route::post('staffs/bulk-delete', [StaffsController::class, 'bulkDelete'])->name('staffs.bulk-delete');
+        Route::delete('staffs/{staff}', [StaffsController::class, 'destroy'])->name('staffs.destroy');
     });
 
-    Route::middleware(['check_permission:teachers.update'])->group(function () {
-        Route::get('teachers/{teacher}/edit', [TeachersController::class, 'edit'])->name('teachers.edit');
-        Route::put('teachers/{teacher}', [TeachersController::class, 'update'])->name('teachers.update');
+    Route::middleware(['check_permission:staffs.view,staffs.view_own'])->group(function () {
+        Route::get('staffs', [StaffsController::class, 'index'])->name('staffs.index');
+        Route::get('staffs/{teacher}', [StaffsController::class, 'show'])->name('staffs.show');
     });
 
-    Route::middleware(['check_permission:teachers.assign_subjects'])->group(function () {
-        Route::post('teachers/{teacher}/assign-class-teacher', [TeachersController::class, 'assignClassTeacher'])->name('teachers.assign-class-teacher');
+    Route::middleware(['check_permission:staffs.update'])->group(function () {
+        Route::get('staffs/{teacher}/edit', [StaffsController::class, 'edit'])->name('staffs.edit');
+        Route::put('staffs/{teacher}', [StaffsController::class, 'update'])->name('staffs.update');
     });
 
-    Route::middleware(['check_permission:teachers.delete'])->group(function () {
-        Route::delete('teachers/{teacher}', [TeachersController::class, 'destroy'])->name('teachers.destroy');
+    Route::middleware(['check_permission:staffs.assign_subjects'])->group(function () {
+        Route::post('staffs/{teacher}/assign-class-teacher', [StaffsController::class, 'assignClassTeacher'])->name('staffs.assign-class-teacher');
+    });
+
+    // ──────────────────────────────────────────────
+    // PARENTS
+    // ──────────────────────────────────────────────
+    Route::middleware(['check_permission:guardians.view'])->group(function () {
+        Route::resource('parents', ParentsController::class);
     });
 
     // ──────────────────────────────────────────────

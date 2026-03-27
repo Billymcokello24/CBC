@@ -19,7 +19,8 @@ import {
     Users,
     TrendingUp,
     CheckSquare,
-    Square
+    Square,
+    UserPlus
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +45,7 @@ interface LearnerRow {
     class_id: number | null;
     status: string;
     photo: string | null;
+    photo_url: string | null;
     age: number | null;
     admission_date: string | null;
 }
@@ -72,8 +74,8 @@ interface Props {
     stats: {
         total: number;
         active: number;
-        boys: number;
-        girls: number;
+        withdrawn: number;
+        new_this_month: number;
         growth: number;
     };
     filters: {
@@ -347,291 +349,262 @@ const getStatusColor = (active: boolean) => {
             </div>
         </div>
 
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 font-pulsar mt-2 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-            <!-- Header section -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-6">
-                <div class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
-                        <Users class="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">Learners</h1>
-                        <p class="text-muted-foreground font-medium uppercase text-[9px] tracking-widest mt-1.5 italic">View and manage all learners</p>
-                    </div>
+        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
+            <!-- Page Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="space-y-1">
+                    <h1 class="text-3xl font-bold tracking-tight text-foreground">Learner Management</h1>
+                    <p class="text-[15px] text-muted-foreground">
+                        Manage your students, track their enrollment status and academic placement.
+                    </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" class="font-pulsar h-9 border-slate-200 text-[10px] font-black uppercase tracking-widest px-4 rounded-xl" @click="exportToPDF">
-                        <FileText class="mr-2 h-3.5 w-3.5 text-rose-500" />
-                        Export PDF
+                
+                <div class="flex items-center gap-3">
+                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted" @click="openBulkUploadModal">
+                        <Download class="mr-2 h-4 w-4 opacity-70" />
+                        Export
                     </Button>
-                    <Button v-if="hasPermission('students.create')" variant="outline" class="font-pulsar h-9 border-slate-200 text-[10px] font-black uppercase tracking-widest px-4 rounded-xl" @click="openBulkUploadModal">
-                        <Download class="mr-2 h-3.5 w-3.5 text-emerald-500" />
-                        Bulk Upload
-                    </Button>
-                    <Button v-if="hasPermission('students.create')" @click="router.visit('/students/create')" class="bg-blue-600 hover:bg-blue-700 font-pulsar shadow-lg h-9 border-0 text-[10px] font-black uppercase tracking-widest px-6 rounded-xl text-white">
-                        <Plus class="mr-2 h-3.5 w-3.5" />Add Learner
-                    </Button>
+                    <Link
+                        v-if="hasPermission('students.create')"
+                        href="/students/create"
+                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
+                    >
+                        <Plus class="mr-2 h-4 w-4" />
+                        Enroll Learner
+                    </Link>
                 </div>
             </div>
 
-            <!-- Stats section -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                 <div class="rounded-2xl border bg-card p-4 shadow-sm border-l-4 border-l-blue-500 flex items-center gap-3 group hover:shadow-md transition-all">
-                    <div class="rounded-lg bg-blue-500/10 p-2.5 group-hover:bg-blue-500 group-hover:text-white transition-all"><Users class="h-4 w-4 text-blue-600 group-hover:text-white" /></div>
+            <!-- Stats Grid -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Learners</p>
-                        <p class="text-lg font-black text-slate-900">{{ stats.total.toLocaleString() }} Learners</p>
+                        <p class="text-sm font-medium text-muted-foreground mb-1">Total Learners</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ stats.total.toLocaleString() }}</h3>
+                    </div>
+                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                        <Users class="h-6 w-6" />
                     </div>
                 </div>
-                <div class="rounded-2xl border bg-card p-4 shadow-sm border-l-4 border-l-emerald-500 flex items-center gap-3 group hover:shadow-md transition-all">
-                    <div class="rounded-lg bg-emerald-500/10 p-2.5 group-hover:bg-emerald-500 group-hover:text-white transition-all"><CheckCircle2 class="h-4 w-4 text-emerald-600 group-hover:text-white" /></div>
-                    <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Learners</p>
-                        <p class="text-lg font-black text-emerald-600">{{ stats.active.toLocaleString() }} Active</p>
-                    </div>
-                </div>
-                <div class="rounded-2xl border bg-card p-4 shadow-sm border-l-4 border-l-sky-500 flex items-center gap-3 group hover:shadow-md transition-all">
-                    <div class="rounded-lg bg-sky-500/10 p-2.5 group-hover:bg-sky-500 group-hover:text-white transition-all"><TrendingUp class="h-4 w-4 text-sky-600 group-hover:text-white" /></div>
-                    <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Enrollment Growth</p>
-                        <p class="text-lg font-black text-slate-900">+{{ stats.growth }}%</p>
-                    </div>
-                </div>
-                <div class="rounded-2xl border bg-card p-4 shadow-sm border-l-4 border-l-slate-900 flex items-center gap-3 group hover:shadow-md transition-all">
-                    <div class="rounded-lg bg-slate-900/10 p-2.5 group-hover:bg-slate-900 group-hover:text-white transition-all"><ShieldAlert class="h-4 w-4 text-slate-900 group-hover:text-white" /></div>
-                    <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">System Security</p>
-                        <p class="text-lg font-black text-slate-900 uppercase tracking-tighter">SECURED</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Toolbar Section -->
-            <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 shadow-sm">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-                    <div class="flex flex-1 items-center gap-2 max-w-2xl">
-                        <div class="relative flex-1">
-                            <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground font-medium" />
-                            <Input v-model="searchQuery" placeholder="Search by name, admission ID or UPI..." class="pl-9 h-10 border-slate-200 text-xs rounded-xl" />
+                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-muted-foreground mb-1">Active</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ stats.active.toLocaleString() }}</h3>
+                    </div>
+                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                         <div class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse mr-2" v-if="stats.active > 0"></div>
+                         <CheckCircle2 class="h-6 w-6" v-else />
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-muted-foreground mb-1">Withdrawn</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ stats.withdrawn.toLocaleString() }}</h3>
+                    </div>
+                    <div class="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                        <ShieldAlert class="h-6 w-6" />
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-muted-foreground mb-1">New this Month</p>
+                        <div class="flex items-baseline gap-2">
+                             <h3 class="text-2xl font-bold text-foreground">{{ stats.new_this_month }}</h3>
+                             <span class="text-xs font-semibold text-emerald-600" v-if="stats.growth > 0">+{{ stats.growth }}%</span>
                         </div>
-                        <Button variant="outline" class="h-10 border-slate-200 font-pulsar px-4 rounded-xl text-[10px] font-black uppercase tracking-widest" @click="toggleFilters">
-                            <Filter class="mr-2 h-3.5 w-3.5 text-blue-500" /> {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-                        </Button>
-                        <Button variant="ghost" class="h-10 text-slate-400 hover:text-slate-600 font-black uppercase text-[10px] tracking-widest px-4" @click="clearFilters">Reset</Button>
                     </div>
+                    <div class="h-12 w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600">
+                        <TrendingUp class="h-6 w-6" />
+                    </div>
+                </div>
+            </div>
 
-                    <div class="flex items-center gap-3">
-                         <div v-if="selectedCount > 0" class="animate-in slide-in-from-right-4 duration-300">
-                             <DropdownMenu>
+            <!-- Table Card -->
+            <div class="rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden">
+                <!-- Toolbar -->
+                <div class="p-6 border-b border-border/50 space-y-4">
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                        <div class="relative w-full md:max-w-md">
+                            <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input v-model="searchQuery" placeholder="Search by name, ID or UPI..." class="pl-10 h-11 bg-muted/50 border-border rounded-xl focus:bg-background transition-all" />
+                        </div>
+                        
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <Button variant="outline" class="h-11 border-border font-semibold px-4 rounded-xl whitespace-nowrap bg-background" @click="toggleFilters">
+                                <Filter class="mr-2 h-4 w-4 opacity-70" /> {{ showFilters ? 'Hide Filters' : 'More Filters' }}
+                            </Button>
+                            
+                            <DropdownMenu v-if="selectedCount > 0">
                                 <DropdownMenuTrigger as-child>
-                                    <Button class="bg-slate-900 text-white hover:bg-black font-black text-[10px] uppercase tracking-widest h-10 px-4 shadow-lg border-0 rounded-xl">
-                                        Batch Actions ({{ selectedCount }}) <ChevronDown class="ml-2 h-4 w-4" />
+                                    <Button class="bg-foreground text-background hover:bg-foreground/90 font-semibold h-11 px-4 rounded-xl shadow-sm">
+                                        Batch ({{ selectedCount }}) <ChevronDown class="ml-2 h-4 w-4 opacity-70" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" class="w-56 font-pulsar">
-                                    <DropdownMenuItem @click="openPromoteModal"><ArrowUpCircle class="mr-2 h-4 w-4 text-emerald-500" /> Promote Learners</DropdownMenuItem>
-                                    <DropdownMenuItem class="text-rose-600 font-bold" @click="openActionModal('bulkDelete')"><Trash2 class="mr-2 h-4 w-4" /> Delete selected</DropdownMenuItem>
+                                <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border">
+                                    <DropdownMenuItem @click="openPromoteModal" class="rounded-lg"><ArrowUpCircle class="mr-2 h-4 w-4 text-emerald-500" /> Promote Selected</DropdownMenuItem>
+                                    <DropdownMenuSeparator class="my-1 bg-border/50" />
+                                    <DropdownMenuItem class="text-rose-500 rounded-lg group" @click="openActionModal('bulkDelete')"><Trash2 class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" /> Delete Selected</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                         </div>
-                    </div>
-                </div>
 
-                <div v-if="showFilters" class="grid gap-4 pt-4 border-t border-slate-50 md:grid-cols-2 lg:grid-cols-5 animate-in slide-in-from-top-2 duration-300">
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Status</label>
-                        <select v-model="selectedStatus" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="outline" class="h-11 w-11 p-0 rounded-xl border-border bg-background">
+                                        <MoreHorizontal class="h-5 w-5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-48 p-2 rounded-xl border border-border">
+                                     <DropdownMenuItem @click="exportToPDF" class="rounded-lg"><FileText class="mr-2 h-4 w-4 text-rose-500" /> Export PDF</DropdownMenuItem>
+                                     <DropdownMenuItem @click="openBulkUploadModal" class="rounded-lg"><Download class="mr-2 h-4 w-4" /> Import Excel</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+
+                    <!-- Filters Drawer -->
+                    <div v-if="showFilters" class="grid gap-4 pt-4 md:grid-cols-2 lg:grid-cols-4 animate-in slide-in-from-top-2 duration-200">
+                        <select v-model="selectedStatus" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all">
                             <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                         </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Class</label>
-                        <select v-model="selectedClassId" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
+                        <select v-model="selectedClassId" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all">
                             <option value="">All Classes</option>
                             <option v-for="schoolClass in classes" :key="schoolClass.id" :value="String(schoolClass.id)">{{ schoolClass.name }}</option>
                         </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Gender</label>
-                        <select v-model="selectedGender" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
+                        <select v-model="selectedGender" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all">
                             <option v-for="option in genderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                         </select>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">Boarding Status</label>
-                        <select v-model="selectedBoardingStatus" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
+                        <select v-model="selectedBoardingStatus" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all">
                             <option v-for="option in boardingOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                         </select>
                     </div>
-                    <div class="space-y-1.5">
-                        <label class="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-1">County</label>
-                        <select v-model="selectedCounty" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
-                            <option value="">All Counties</option>
-                            <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
-                        </select>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Table section -->
-            <div class="rounded-[1.5rem] border bg-card shadow-sm overflow-hidden border-t-4 border-t-blue-600">
+                <!-- Main Table -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="bg-slate-50/50 border-b font-pulsar">
-                                <th class="w-12 px-6 py-4 text-center">
-                                     <button @click="toggleAllLearners" class="h-5 w-5 rounded-lg border-2 flex items-center justify-center transition-all bg-white mx-auto shadow-sm" :class="allSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'">
-                                          <component :is="allSelected ? CheckSquare : Square" class="h-3 w-3" />
+                            <tr class="bg-muted/30 text-muted-foreground border-b border-border/50">
+                                <th class="w-12 h-12 px-6">
+                                     <button @click="toggleAllLearners" class="h-5 w-5 rounded-md border-2 border-border flex items-center justify-center transition-all bg-background" :class="allSelected ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : ''">
+                                          <component :is="allSelected ? CheckSquare : Square" class="h-3.5 w-3.5" />
                                      </button>
                                 </th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Name</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Admission ID</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Sex</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Class</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Age</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase text-slate-400 tracking-widest">Status</th>
-                                <th class="px-6 py-4 text-right text-[9px] font-black uppercase text-slate-400 tracking-widest">Actions</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Learner Profile</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Class / Grade</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Admission Date</th>
+                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y text-xs">
-                            <tr v-for="learner in learners.data" :key="learner.id" class="group hover:bg-slate-50/70 transition-all duration-300 cursor-default">
+                        <tbody class="divide-y divide-border/30">
+                            <tr v-for="learner in learners.data" :key="learner.id" class="hover:bg-muted/30 transition-colors group">
                                 <td class="px-6 py-4 text-center">
-                                     <button @click="toggleLearner(learner.id)" class="h-5 w-5 rounded-lg border-2 flex items-center justify-center transition-all bg-white mx-auto shadow-sm" :class="selectedLearnerIds.includes(learner.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-200'">
+                                     <button @click="toggleLearner(learner.id)" class="h-5 w-5 rounded-md border-2 border-border flex items-center justify-center transition-all bg-background" :class="selectedLearnerIds.includes(learner.id) ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : ''">
                                           <component :is="selectedLearnerIds.includes(learner.id) ? CheckSquare : Square" class="h-3 w-3" />
                                      </button>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="relative">
-                                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/10 font-black text-blue-700 shadow-inner group-hover:bg-blue-600 group-hover:text-white transition-all text-sm uppercase">
-                                                {{ learner.name.charAt(0) }}
-                                            </div>
-                                            <div v-if="learner.status === 'active'" class="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 shadow-sm"></div>
+                                <td class="px-6 py-4 text-sm">
+                                    <div class="flex items-center gap-4">
+                                        <div v-if="learner.photo_url" class="h-10 w-10 flex-shrink-0 rounded-2xl overflow-hidden shadow-sm border border-blue-100 group-hover:border-blue-400 transition-all">
+                                            <img :src="learner.photo_url" class="h-full w-full object-cover" />
                                         </div>
-                                        <div>
-                                            <p class="font-black text-slate-900 group-hover:text-blue-700 transition-colors text-sm leading-none mb-1">{{ learner.name }}</p>
-                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest italic leading-none">{{ learner.admission_date ?? 'PENDING' }}</p>
+                                        <div v-else class="h-10 w-10 flex-shrink-0 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center font-bold text-blue-600 text-xs">
+                                             {{ learner.name.split(' ').map(n => n[0]).join('').substring(0, 2) }}
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-bold text-foreground">{{ learner.name }}</span>
+                                            <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">{{ learner.admission_number || 'No ID' }}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <span class="text-[9px] font-black text-slate-900 tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200 uppercase shadow-sm italic">{{ learner.admission_number || 'N/A' }}</span>
+                                <td class="px-6 py-4 text-sm font-medium">
+                                    <div class="flex flex-col">
+                                        <span class="text-foreground">{{ learner.class || 'Unassigned' }}</span>
+                                        <span class="text-[10px] text-muted-foreground uppercase font-semibold">{{ learner.gender }}</span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span :class="learner.gender === 'Male' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-rose-50 text-rose-700 border-rose-100'" class="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border">
-                                        {{ learner.gender }}
-                                    </span>
+                                     <Badge :variant="learner.status === 'active' ? 'outline' : 'secondary'" class="rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider" :class="learner.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-100 text-slate-600'">
+                                         {{ learner.status }}
+                                     </Badge>
                                 </td>
-                                <td class="px-6 py-4">
-                                     <div class="flex flex-col">
-                                         <span class="font-black text-xs text-slate-700 group-hover:text-blue-600 transition-colors">{{ learner.class || 'No Class' }}</span>
-                                         <span class="text-[8px] font-black text-slate-400 uppercase tracking-tight italic">{{ learner.status === 'active' ? 'Active' : 'Inactive' }}</span>
-                                     </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="font-black text-slate-900 text-sm leading-none">{{ learner.age ?? '--' }}</span>
-                                    <span class="text-[8px] font-black text-slate-400 uppercase ml-0.5 opacity-50 italic">yrs</span>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <Badge :class="getStatusColor(learner.status === 'active')" class="rounded-full px-2 py-0 h-4 text-[7px] font-black uppercase tracking-widest border-0">
-                                        {{ learner.status }}
-                                    </Badge>
+                                <td class="px-6 py-4 text-sm text-muted-foreground font-medium">
+                                    {{ learner.admission_date || '--' }}
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end gap-1.5 outline-none">
-                                        <Button v-if="hasPermission('students.view')" variant="ghost" size="icon" class="h-8 w-8 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" as-child>
-                                            <Link :href="`/students/${learner.id}`"><Eye class="h-3.5 w-3.5" /></Link>
-                                        </Button>
-                                        <Button v-if="hasPermission('students.update')" variant="ghost" size="icon" class="h-8 w-8 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg" as-child>
-                                            <Link :href="`/students/${learner.id}/edit`"><Edit class="h-3.5 w-3.5" /></Link>
-                                        </Button>
+                                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Link :href="`/students/${learner.id}`" class="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all text-muted-foreground border border-transparent hover:border-blue-100 shadow-none"><Eye class="h-4.5 w-4.5" /></Link>
+                                        <Link v-if="hasPermission('students.update')" :href="`/students/${learner.id}/edit`" class="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-amber-50 hover:text-amber-600 transition-all text-muted-foreground border border-transparent hover:border-amber-100 shadow-none"><Edit class="h-4.5 w-4.5" /></Link>
+                                        
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg"><MoreHorizontal class="h-3.5 w-3.5" /></Button>
+                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl"><MoreHorizontal class="h-4.5 w-4.5" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-48 font-pulsar">
-                                                <DropdownMenuItem v-if="hasPermission('students.view')" as-child><Link :href="`/students/${learner.id}`"><Eye class="mr-2 h-3.5 w-3.5 text-blue-600" /> View Profile</Link></DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('students.update')" as-child><Link :href="`/students/${learner.id}/edit`"><Edit class="mr-2 h-3.5 w-3.5 text-amber-500" /> Edit Learner</Link></DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openActionModal('suspend', learner)"><ShieldAlert class="mr-2 h-3.5 w-3.5 text-amber-600" /> Suspend</DropdownMenuItem>
-                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openActionModal('activate', learner)"><CheckCircle2 class="mr-2 h-3.5 w-3.5 text-emerald-600" /> Activate</DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('students.delete')" class="text-rose-600 font-bold" @click="openActionModal('delete', learner)"><Trash2 class="mr-2 h-3.5 w-3.5" /> Delete</DropdownMenuItem>
+                                            <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border">
+                                                <DropdownMenuItem as-child class="rounded-lg"><Link :href="`/students/${learner.id}`"><Eye class="mr-2 h-4 w-4" /> View Details</Link></DropdownMenuItem>
+                                                <DropdownMenuItem v-if="hasPermission('students.update')" as-child class="rounded-lg">
+                                                    <Link :href="`/students/enrollments/create?student_id=${learner.id}`">
+                                                        <UserPlus class="mr-2 h-4 w-4" /> Enroll Student
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem v-if="hasPermission('students.update')" as-child class="rounded-lg"><Link :href="`/students/${learner.id}/edit`"><Edit class="mr-2 h-4 w-4" /> Edit Profile</Link></DropdownMenuItem>
+                                                <DropdownMenuSeparator class="my-1 bg-border/50" />
+                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openActionModal('suspend', learner)" class="rounded-lg"><ShieldAlert class="mr-2 h-4 w-4 text-amber-500" /> Suspend Student</DropdownMenuItem>
+                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openActionModal('activate', learner)" class="rounded-lg"><CheckCircle2 class="mr-2 h-4 w-4 text-emerald-500" /> Activate Student</DropdownMenuItem>
+                                                <DropdownMenuItem v-if="hasPermission('students.delete')" class="text-rose-600 rounded-lg group" @click="openActionModal('delete', learner)"><Trash2 class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" /> Delete Record</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="learners.data.length === 0">
-                                <td colspan="8" class="px-6 py-20 text-center text-muted-foreground italic font-medium bg-slate-50/30">
-                                    No learners found.
+                                <td colspan="6" class="px-6 py-24 text-center text-muted-foreground italic font-medium">
+                                    No records found matching your criteria.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Pagination Section -->
-                <div class="flex flex-col gap-4 border-t bg-slate-50/50 px-6 py-4 md:flex-row md:items-center md:justify-between">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">{{ pageLabel }}</p>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border shadow-sm">
-                            <label class="text-[8px] font-black text-slate-400 uppercase tracking-tight">Show:</label>
-                            <select v-model="perPage" class="h-6 border-0 bg-transparent px-1 text-[10px] font-black outline-none cursor-pointer">
-                                <option :value="15">15 Learners</option>
-                                <option :value="50">50 Learners</option>
-                                <option :value="100">100 Learners</option>
-                            </select>
+                <!-- Pagination -->
+                <div class="px-6 py-6 border-t border-border/50 bg-muted/10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <p class="text-[13px] font-medium text-muted-foreground">{{ pageLabel }}</p>
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-2">
+                             <span class="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Show</span>
+                             <select v-model="perPage" class="bg-background text-xs font-bold border border-border px-3 py-1.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-600/10 cursor-pointer">
+                                 <option :value="15">15</option>
+                                 <option :value="50">50</option>
+                                 <option :value="100">100</option>
+                             </select>
                         </div>
                         <div class="flex items-center gap-2">
-                            <Button variant="outline" size="sm" class="h-8 px-4 rounded-xl font-black text-[9px] uppercase border-slate-200 tracking-widest" :disabled="learners.current_page <= 1" @click="applyFilters(learners.current_page - 1)">
-                                Previous
-                            </Button>
-                            <div class="h-8 min-w-[3rem] items-center justify-center rounded-xl bg-blue-600 flex font-pulsar text-[9px] font-black text-white px-3 shadow-md shadow-blue-200 uppercase tracking-widest">
-                                {{ learners.current_page }} / {{ learners.last_page }}
-                            </div>
-                            <Button variant="outline" size="sm" class="h-8 px-4 rounded-xl font-black text-[9px] uppercase border-slate-200 tracking-widest" :disabled="learners.current_page >= learners.last_page" @click="applyFilters(learners.current_page + 1)">
-                                Next
-                            </Button>
+                            <Button variant="outline" size="sm" class="h-9 px-4 rounded-xl border-border font-bold text-xs" :disabled="learners.current_page <= 1" @click="applyFilters(learners.current_page - 1)">Previous</Button>
+                            <div class="flex items-center justify-center h-9 px-4 rounded-xl bg-blue-600 text-white text-xs font-bold">{{ learners.current_page }} / {{ learners.last_page }}</div>
+                            <Button variant="outline" size="sm" class="h-9 px-4 rounded-xl border-border font-bold text-xs" :disabled="learners.current_page >= learners.last_page" @click="applyFilters(learners.current_page + 1)">Next</Button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Global Matrix Pulse -->
-            <div class="mt-2 p-6 rounded-[2rem] bg-slate-950 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl border-4 border-slate-900 transition-all hover:bg-slate-900 group relative overflow-hidden">
-                <div class="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-all duration-700 text-blue-500">
-                     <Users class="h-48 w-48 text-white" />
-                </div>
-                <div class="flex items-center gap-4 relative z-10">
-                    <div class="h-12 w-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-blue-600 transition-all duration-500">
-                         <GraduationCap class="h-6 w-6 text-blue-400 group-hover:text-white" />
-                    </div>
-                    <div>
-                        <h3 class="font-black text-base tracking-tight text-white uppercase italic">Learner Records</h3>
-                        <p class="text-slate-400 text-[9px] mt-0.5 tracking-widest font-black uppercase opacity-70 leading-relaxed italic">Basic information about all learners in the school.</p>
-                    </div>
-                </div>
-                <div class="flex gap-4 relative z-10">
-                    <div class="flex flex-col items-end">
-                         <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">Status</span>
-                         <span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">Secure</span>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Action Modals -->
         <div
             v-if="confirmOpen"
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             @click.self="closeActionModal"
         >
-            <div class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl">
-                <h2 class="text-lg font-semibold">Confirm</h2>
+            <div class="w-full max-w-md rounded-2xl border bg-background p-6 shadow-xl animate-in zoom-in-95 duration-200">
+                <h2 class="text-lg font-bold">{{ modalTitle }}</h2>
                 <p class="mt-2 text-sm text-muted-foreground">{{ modalMessage }}</p>
-                <div class="mt-6 flex justify-end gap-2">
-                    <Button variant="outline" @click="closeActionModal">Cancel</Button>
+                <div class="mt-6 flex justify-end gap-3">
+                    <Button variant="outline" class="rounded-xl" @click="closeActionModal">Cancel</Button>
                     <Button
-                        :variant="confirmMode === 'delete' ? 'destructive' : 'default'"
+                        :variant="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'destructive' : 'default'"
+                        class="rounded-xl px-6"
                         :disabled="actionForm.processing"
                         @click="confirmAction"
                     >
@@ -646,18 +619,20 @@ const getStatusColor = (active: boolean) => {
             class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
             @click.self="closePromoteModal"
         >
-            <div class="w-full max-w-lg rounded-xl border bg-background p-6 shadow-xl">
-                <h2 class="text-lg font-semibold">Promote Selected Learners</h2>
-                <p class="mt-2 text-sm text-muted-foreground">
-                    {{ selectedCount }} selected active learner{{ selectedCount === 1 ? '' : 's' }} will be moved to the next grade if a matching class exists.
-                </p>
-                <div class="mt-4 rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    Example: <span class="font-medium text-foreground">Grade 8 West</span> → <span class="font-medium text-foreground">Grade 9 West</span>
+            <div class="w-full max-w-lg rounded-2xl border bg-background p-8 shadow-xl animate-in zoom-in-95 duration-200">
+                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                     <ArrowUpCircle class="h-6 w-6" />
                 </div>
-                <div class="mt-6 flex justify-end gap-2">
-                    <Button variant="outline" @click="closePromoteModal">Cancel</Button>
-                    <Button :disabled="promotionForm.processing" @click="promoteSelectedLearners">
-                        <ArrowUpCircle class="mr-2 h-4 w-4" />
+                <h2 class="text-xl font-bold">Promote Selected Learners</h2>
+                <p class="mt-2 text-sm text-muted-foreground">
+                    {{ selectedCount }} selected learner{{ selectedCount === 1 ? '' : 's' }} will be moved to the next grade if a matching class exists.
+                </p>
+                <div class="mt-4 rounded-xl border bg-muted/30 p-4 text-xs font-medium text-muted-foreground">
+                    Example: <span class="font-bold text-foreground">Grade 8 West</span> → <span class="font-bold text-foreground">Grade 9 West</span>
+                </div>
+                <div class="mt-8 flex justify-end gap-3">
+                    <Button variant="outline" class="rounded-xl px-6" @click="closePromoteModal">Cancel</Button>
+                    <Button class="rounded-xl px-6 bg-blue-600 hover:bg-blue-700" :disabled="promotionForm.processing" @click="promoteSelectedLearners">
                         Confirm Promotion
                     </Button>
                 </div>
@@ -667,10 +642,14 @@ const getStatusColor = (active: boolean) => {
     </AppLayout>
 </template>
 
-<style>
-/* Fix class name issues */
-.bg-gradient-to-br {
-  @apply bg-linear-to-br;
+<style scoped>
+/* Ensure clean styles */
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
 }
 </style>
 

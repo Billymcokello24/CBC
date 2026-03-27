@@ -41,7 +41,9 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user,
-                'school' => $user ? $user->school : null,
+                'school' => $user ? array_merge($user->school->toArray(), [
+                    'logo' => $user->school->logo ? (str_starts_with($user->school->logo, 'http') ? $user->school->logo : \Illuminate\Support\Facades\Storage::url($user->school->logo)) : null,
+                ]) : null,
                 'roles' => $user ? $user->getRoleNames() : [],
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
                 'is_super_admin' => $user ? $user->hasRole('super_admin') : false,

@@ -133,6 +133,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Scope a query to only include users of a given role.
+     */
+    public function scopeWithRole($query, $role)
+    {
+        return $query->whereHas('roles', function ($q) use ($role) {
+            $q->where('name', $role);
+        });
+    }
+
+    /**
      * Send the password reset notification.
      *
      * @param  string  $token

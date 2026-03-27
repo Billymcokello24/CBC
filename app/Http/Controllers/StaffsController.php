@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 use App\Services\RoleTemplateService;
 
-class TeachersController extends Controller
+class StaffsController extends Controller
 {
     protected $roleService;
 
@@ -32,47 +32,156 @@ class TeachersController extends Controller
         $this->roleService = $roleService;
     }
 
-    public function index(Request $request): Response
+    /**
+     * Safely count users with the given roles, ignoring roles that don't exist.
+     */
+    protected function safeRoleCount(array $roleNames): int
     {
+        $existingRoles = Role::whereIn('name', $roleNames)
+            ->where('guard_name', 'web')
+            ->pluck('name')
+            ->toArray();
+
+        if (empty($existingRoles)) {
+            return 0;
+        }
+
+        return User::role($existingRoles)->count();
+    }
+
+    public function directory(): Response
+    {
+        $roles = $this->roleService->getTemplates()->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
+                'count' => User::role($role->name)->count(),
+            ];
+        });
+
+        // Add Parents/Guardians specifically to the directory view
+        $roles_array = $roles->toArray();
+        $roles_array[] = [
+            'id' => 999,
+            'name' => 'parent',
+            'display_name' => 'Parents',
+            'count' => \App\Models\Guardian::count(),
+            'is_custom' => true,
+            'href' => '/parents'
+        ];
+
+        return Inertia::render('staffs/Directory', [
+            'roles' => $roles_array,
+        ]);
+    }
+
+    public function roleDirectory(Request $request, string $roleName)
+    {
+        if ($roleName === 'parent') {
+            return redirect()->route('parents.index');
+        }
+
+        $role = Role::where('name', $roleName)->firstOrFail();
+        
         $search = trim((string) $request->string('search'));
-        $status = (string) $request->string('status');
         $departmentId = (string) $request->string('department_id');
 
-        $teachers = Teacher::query()
-            ->with(['department:id,name', 'user:id,status'])
+        $query = Teacher::query()
+            ->whereHas('user', function ($q) use ($roleName) {
+                $q->role($roleName);
+            })
+            ->with(['department:id,name', 'user.roles'])
             ->when($search !== '', fn ($q) => $q->search($search))
-            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
-            ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId))
-            ->orderBy('first_name')
+            ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId));
+
+        $staffs = $query->orderBy('first_name')
             ->paginate($request->integer('per_page', 20))
             ->withQueryString();
 
-        return Inertia::render('teachers/Index', [
-            'teachers' => $teachers,
-            'departments' => Department::orderBy('name')->get(['id', 'name']),
-            'stats' => [
-                'total' => Teacher::count(),
-                'active' => Teacher::where('status', 'active')->count(),
-                'on_leave' => Teacher::where('status', 'on_leave')->count(),
-                'departments' => Department::count(),
+        return Inertia::render('staffs/RoleDirectory', [
+            'role' => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
             ],
+            'staffs' => $staffs,
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
             'filters' => [
                 'search' => $search,
-                'status' => $status === '' ? 'all' : $status,
                 'department_id' => $departmentId === '' ? 'all' : $departmentId,
                 'view' => $request->string('view', 'grid'),
             ],
         ]);
     }
 
-    public function create(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('teachers/Create', [
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $departmentId = (string) $request->string('department_id');
+        $roleName = (string) $request->string('role');
+
+        $query = Teacher::query()
+            ->with(['department:id,name', 'user.roles'])
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId));
+
+        if ($roleName !== '' && $roleName !== 'all') {
+            $query->whereHas('user', function ($q) use ($roleName) {
+                $q->withRole($roleName);
+            });
+        }
+
+        $teachers = $query->orderBy('first_name')
+            ->paginate($request->integer('per_page', 20))
+            ->withQueryString();
+
+        // Calculate detailed stats
+        $stats = [
+            'total' => Teacher::count(),
+            'active' => Teacher::where('status', 'active')->count(),
+            'teaching' => $this->safeRoleCount(['teacher', 'hod', 'class_teacher']),
+            'admins' => $this->safeRoleCount(['school_admin', 'principal', 'deputy_principal']),
+            'non_teaching' => $this->safeRoleCount(['librarian', 'nurse', 'finance_officer', 'clerk', 'security', 'driver']),
+            'on_leave' => Teacher::where('status', 'on_leave')->count(),
+            'departments' => Department::count(),
+        ];
+
+        return Inertia::render('staffs/Index', [
+            'teachers' => $teachers,
+            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'roles' => $this->roleService->getTemplates(),
+            'availableClasses' => SchoolClass::active()
+                ->forCurrentYear()
+                ->with(['gradeLevel', 'stream'])
+                ->get()
+                ->map(fn ($cls) => [
+                    'id' => $cls->id,
+                    'name' => "{$cls->gradeLevel?->name} {$cls->stream?->name}",
+                ]),
+            'availableSubjects' => \App\Models\Curriculum\Subject::active()->orderBy('name')->get(['id', 'name', 'code']),
+            'stats' => $stats,
+            'filters' => [
+                'search' => $search,
+                'status' => $status === '' ? 'all' : $status,
+                'department_id' => $departmentId === '' ? 'all' : $departmentId,
+                'role' => $roleName === '' ? 'all' : $roleName,
+                'view' => $request->string('view', 'grid'),
+            ],
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        return Inertia::render('staffs/Create', [
             'departments' => Department::orderBy('name')->get(['id', 'name']),
             'categories' => StaffCategory::orderBy('name')->get(['id', 'name']),
             'designations' => StaffDesignation::orderBy('name')->get(['id', 'name']),
             'counties' => config('settings.counties', []),
             'roles' => $this->roleService->getTemplates(), // Sourced from global templates
+            'preselectedRole' => $request->query('role'),
         ]);
     }
 
@@ -101,7 +210,6 @@ class TeachersController extends Controller
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
             'role' => ['required', 'string'], // Use role from dropdown templates
-            // ... rest of validation untoched
             'alternate_phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'county' => ['nullable', 'string', 'max:100'],
@@ -141,7 +249,7 @@ class TeachersController extends Controller
             $teacherData['school_id'] = $schoolId;
 
             if ($request->hasFile('photo')) {
-                $teacherData['photo'] = $request->file('photo')->store('teachers/photos', 'public');
+                $teacherData['photo'] = $request->file('photo')->store('staffs/photos', 'public');
             }
 
             Teacher::create($teacherData);
@@ -149,7 +257,7 @@ class TeachersController extends Controller
             // Send Welcome Email
             Mail::to($user->email)->send(new UserCreatedMail($user, $validated['password']));
 
-            return redirect()->route('teachers.index')->with('success', 'Teacher created successfully.');
+            return redirect()->route('staffs.index')->with('success', 'Staff member created successfully.');
         });
     }
 
@@ -166,7 +274,7 @@ class TeachersController extends Controller
             'subjectAssignments.schoolClass'
         ]);
 
-        return Inertia::render('teachers/Show', [
+        return Inertia::render('staffs/Show', [
             'teacher' => $teacher,
             'departments' => Department::orderBy('name')->get(['id', 'name']),
             'categories' => StaffCategory::orderBy('name')->get(['id', 'name']),
@@ -190,29 +298,88 @@ class TeachersController extends Controller
     {
         $validated = $request->validate([
             'class_id' => ['required', 'exists:classes,id'],
-            'role' => ['required', Rule::in(['primary', 'assistant'])],
+            'assignment_role' => ['required', Rule::in(['primary', 'assistant'])],
         ]);
 
         $class = SchoolClass::findOrFail($validated['class_id']);
         
-        if ($validated['role'] === 'primary') {
+        if ($validated['assignment_role'] === 'primary') {
             $class->update(['class_teacher_id' => $teacher->user_id]);
         } else {
             $class->update(['assistant_teacher_id' => $teacher->user_id]);
         }
 
-        return back()->with('success', "Teacher assigned as {$validated['role']} teacher for {$class->name}.");
+        return back()->with('success', "Staff member assigned as {$validated['assignment_role']} teacher for {$class->name}.");
+    }
+
+    public function changeRole(Request $request, Teacher $teacher): RedirectResponse
+    {
+        $validated = $request->validate([
+            'role' => ['required', 'string'],
+        ]);
+
+        if ($this->roleService->isValidTemplate($validated['role'])) {
+            $teacher->user->syncRoles([$validated['role']]);
+            return back()->with('success', "System role updated to " . strtoupper($validated['role']) . ".");
+        }
+
+        return back()->with('error', "Invalid role template selected.");
+    }
+
+    public function assignHOD(Request $request, Teacher $teacher): RedirectResponse
+    {
+        $validated = $request->validate([
+            'department_id' => ['required', 'exists:departments,id'],
+        ]);
+
+        $department = Department::findOrFail($validated['department_id']);
+        $department->update(['head_id' => $teacher->user_id]);
+        
+        // Ensure they have the HOD role too
+        if (!$teacher->user->hasRole('hod')) {
+            $teacher->user->assignRole('hod');
+        }
+
+        return back()->with('success', "Staff assigned as HOD for {$department->name}.");
+    }
+
+    public function assignSubjects(Request $request, Teacher $teacher): RedirectResponse
+    {
+        $validated = $request->validate([
+            'assignments' => ['required', 'array'],
+            'assignments.*.subject_id' => ['required', 'exists:subjects,id'],
+            'assignments.*.class_id' => ['required', 'exists:classes,id'],
+        ]);
+
+        DB::transaction(function () use ($teacher, $validated) {
+            // Clear existing assignments if necessary, or just sync
+            // For now, let's assume we are adding or replacing
+            $teacher->subjectAssignments()->delete();
+            
+            foreach ($validated['assignments'] as $assign) {
+                $teacher->subjectAssignments()->create([
+                    'school_id' => $teacher->school_id,
+                    'subject_id' => $assign['subject_id'],
+                    'class_id' => $assign['class_id'],
+                    'academic_year_id' => AcademicYear::current()->id ?? 1,
+                    'status' => 'active',
+                ]);
+            }
+        });
+
+        return back()->with('success', "Subject assignments updated successfully.");
     }
 
     public function edit(Teacher $teacher): Response
     {
-        $teacher->load('user');
-        return Inertia::render('teachers/Edit', [
+        $teacher->load('user.roles');
+        return Inertia::render('staffs/Edit', [
             'teacher' => $teacher,
             'departments' => Department::orderBy('name')->get(['id', 'name']),
             'categories' => StaffCategory::orderBy('name')->get(['id', 'name']),
             'designations' => StaffDesignation::orderBy('name')->get(['id', 'name']),
             'counties' => config('settings.counties', []),
+            'roles' => $this->roleService->getTemplates(),
         ]);
     }
 
@@ -256,6 +423,7 @@ class TeachersController extends Controller
             'nssf_number' => ['nullable', 'string', 'max:100'],
             'kra_pin' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
+            'role' => ['required', 'string'],
         ]);
 
         return DB::transaction(function () use ($validated, $request, $teacher) {
@@ -275,18 +443,22 @@ class TeachersController extends Controller
             if ($user) {
                 // Update existing User record
                 $user->update($userData);
+                
+                // Update role
+                if ($this->roleService->isValidTemplate($validated['role'])) {
+                    $user->syncRoles([$validated['role']]);
+                }
             } else {
-                // Auto-create a User account for teachers that don't have one
+                // Auto-create a User account for staff that don't have one
                 if (empty($userData['password'])) {
-                    // Default password = email if none provided
                     $userData['password'] = Hash::make($validated['email']);
                 }
                 $userData['email_verified_at'] = now();
                 $user = User::create($userData);
                 $teacher->user_id = $user->id;
 
-                if (Role::where('name', 'teacher')->exists()) {
-                    $user->assignRole('teacher');
+                if ($this->roleService->isValidTemplate($validated['role'])) {
+                    $user->assignRole($validated['role']);
                 }
             }
 
@@ -296,12 +468,12 @@ class TeachersController extends Controller
                 if ($teacher->photo) {
                     Storage::disk('public')->delete($teacher->photo);
                 }
-                $teacherData['photo'] = $request->file('photo')->store('teachers/photos', 'public');
+                $teacherData['photo'] = $request->file('photo')->store('staffs/photos', 'public');
             }
 
             $teacher->update($teacherData);
 
-            return back()->with('success', 'Teacher updated successfully.');
+            return back()->with('success', 'Staff member updated successfully.');
         });
     }
 
@@ -312,7 +484,7 @@ class TeachersController extends Controller
             $teacher->delete();
             $user?->delete();
 
-            return redirect()->route('teachers.index')->with('success', 'Teacher deleted successfully.');
+            return redirect()->route('staffs.index')->with('success', 'Staff member deleted successfully.');
         });
     }
 
@@ -332,26 +504,46 @@ class TeachersController extends Controller
             }
         });
 
-        return back()->with('success', 'Selected teachers deleted successfully.');
+        return back()->with('success', 'Selected staff members deleted successfully.');
+    }
+
+    public function bulkUpdateStatus(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:teachers,id'],
+            'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            $teachers = Teacher::whereIn('id', $validated['ids'])->get();
+            foreach ($teachers as $teacher) {
+                $teacher->update(['status' => $validated['status']]);
+                // Sync user status - active remains active, others map to inactive for system access
+                $teacher->user->update(['status' => $validated['status'] === 'active' ? 'active' : 'inactive']);
+            }
+        });
+
+        return back()->with('success', 'Selected staff status updated successfully.');
     }
 
     public function downloadTemplate(): StreamedResponse
     {
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="teachers_bulk_upload_template.csv"',
+            'Content-Disposition' => 'attachment; filename="staffs_bulk_upload_template.csv"',
         ];
 
         $columns = [
             'first_name', 'middle_name', 'last_name', 'staff_number', 'tsc_number',
-            'email', 'phone', 'gender', 'date_of_birth', 'id_number', 'nationality',
+            'email', 'phone', 'gender', 'role', 'date_of_birth', 'id_number', 'nationality',
             'department_name', 'staff_category_name', 'staff_designation_name',
             'contract_type', 'employment_type', 'date_joined', 'basic_salary', 'password'
         ];
 
         $sample = [
             'John', 'Doe', 'Smith', 'TCH1001', 'TSC123456',
-            'john.smith@example.com', '+254700000001', 'male', '1985-05-20', '12345678', 'Kenyan',
+            'john.smith@example.com', '+254700000001', 'male', 'teacher', '1985-05-20', '12345678', 'Kenyan',
             'Mathematics', 'Teaching Staff', 'Senior Teacher',
             'Permanent', 'Full-time', '2020-01-01', '50000', 'Password123'
         ];
@@ -410,8 +602,9 @@ class TeachersController extends Controller
                             'status' => 'active',
                         ]);
 
-                        if (Role::where('name', 'teacher')->exists()) {
-                            $user->assignRole('teacher');
+                        $roleName = strtolower($normalized['role'] ?? 'teacher');
+                        if ($this->roleService->isValidTemplate($roleName)) {
+                            $user->assignRole($roleName);
                         }
 
                         $teacherData = collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray();
@@ -435,6 +628,7 @@ class TeachersController extends Controller
     }
 
     protected function parseTeacherCsv(string $path): array
+
     {
         $handle = fopen($path, 'r');
         if (!$handle) {
@@ -444,7 +638,7 @@ class TeachersController extends Controller
         $header = fgetcsv($handle) ?: [];
         $header = array_map(fn ($value) => trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value)), $header);
 
-        $requiredHeaders = ['first_name', 'last_name', 'staff_number', 'email', 'phone'];
+        $requiredHeaders = ['first_name', 'last_name', 'staff_number', 'email', 'phone', 'role'];
 
         foreach ($requiredHeaders as $required) {
             if (!in_array($required, $header, true)) {
@@ -499,6 +693,7 @@ class TeachersController extends Controller
             'email' => $row['email'],
             'phone' => $row['phone'],
             'gender' => strtolower($row['gender'] ?? 'male'),
+            'role' => strtolower($row['role'] ?? 'teacher'),
             'date_of_birth' => $row['date_of_birth'] ?? null,
             'id_number' => $row['id_number'] ?? null,
             'nationality' => $row['nationality'] ?? 'Kenyan',

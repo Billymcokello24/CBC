@@ -43,6 +43,12 @@ interface Teacher {
     department_id: number | null;
     staff_category_id: number | null;
     staff_designation_id: number | null;
+    photo_url: string | null;
+    user: {
+        id: number;
+        status: string;
+        roles: Array<{ id: number; name: string }>;
+    };
 }
 
 const props = defineProps<{
@@ -51,15 +57,17 @@ const props = defineProps<{
     categories: Array<{ id: number; name: string }>;
     designations: Array<{ id: number; name: string }>;
     counties: string[];
+    roles: Array<{ id: number; name: string }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Teachers', href: '/teachers' },
-    { title: 'Edit Teacher', href: `/teachers/${props.teacher.id}/edit` },
+    { title: 'Staffs', href: '/staffs' },
+    { title: 'Edit Staff', href: `/staffs/${props.teacher.id}/edit` },
 ];
 
 const form = useForm({
+    _method: 'PUT',
     first_name: props.teacher.first_name,
     middle_name: props.teacher.middle_name ?? '',
     last_name: props.teacher.last_name,
@@ -81,6 +89,7 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     status: props.teacher.status,
+    role: props.teacher.user?.roles?.[0]?.name ?? '',
     photo: null as File | null,
 });
 
@@ -93,7 +102,8 @@ const submit = () => {
 
 const confirmSubmit = () => {
     confirmOpen.value = false;
-    form.put(`/teachers/${props.teacher.id}`, {
+    // Note: Using post with _method: 'PUT' for file upload compatibility
+    form.post(`/staffs/${props.teacher.id}`, {
         onSuccess: () => {
             // Success handling via flash messages
         },
@@ -102,7 +112,7 @@ const confirmSubmit = () => {
 
 const deleteTeacher = () => {
     deleteOpen.value = false;
-    form.delete(`/teachers/${props.teacher.id}`, {
+    form.delete(`/staffs/${props.teacher.id}`, {
         onSuccess: () => {
             // Redirect happens in controller
         }
@@ -118,27 +128,36 @@ const deleteTeacher = () => {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <Button variant="ghost" size="icon" as-child>
-                        <Link :href="`/teachers/${teacher.id}`"><ArrowLeft class="h-5 w-5" /></Link>
+                        <Link :href="`/staffs/${teacher.id}`"><ArrowLeft class="h-5 w-5" /></Link>
                     </Button>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">Edit Teacher</h1>
+                        <h1 class="text-2xl font-bold tracking-tight">Edit Staff</h1>
                         <p class="text-muted-foreground">Modify professional profile for {{ teacher.first_name }} {{ teacher.last_name }}</p>
                     </div>
                 </div>
                 <Button variant="destructive" size="sm" @click="deleteOpen = true">
                     <Trash2 class="mr-2 h-4 w-4" />
-                    Delete Teacher
+                    Delete Staff
                 </Button>
             </div>
 
             <form @submit.prevent="submit" class="space-y-8">
                 <!-- Personal Information -->
                 <div class="overflow-hidden rounded-xl border bg-card shadow-sm">
-                    <div class="border-b bg-muted/30 px-6 py-4">
-                        <h2 class="flex items-center gap-2 text-lg font-semibold">
-                            <User class="h-5 w-5 text-purple-600" />
-                            Personal Information
-                        </h2>
+                    <div class="border-b bg-muted/30 px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h2 class="flex items-center gap-2 text-lg font-semibold">
+                                <User class="h-5 w-5 text-purple-600" />
+                                Personal Information
+                            </h2>
+                        </div>
+
+                        <!-- Photo Upload Trigger -->
+                        <ProfilePhotoUpload 
+                            v-model="form.photo" 
+                            :error="form.errors.photo"
+                            :current-image="teacher.photo_url"
+                        />
                     </div>
                     <div class="p-6">
                         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -265,18 +284,26 @@ const deleteTeacher = () => {
                                 <Label for="password_confirmation">Confirm New Password</Label>
                                 <Input id="password_confirmation" v-model="form.password_confirmation" type="password" />
                             </div>
+                            <div class="space-y-2">
+                                <Label for="role">System Access Role *</Label>
+                                <select id="role" v-model="form.role" class="h-10 w-full rounded-md border bg-background px-3 text-sm" required>
+                                    <option value="">Select Role</option>
+                                    <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
+                                </select>
+                                <InputError :message="form.errors.role" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-4">
                     <Button type="button" variant="outline" as-child>
-                        <Link :href="`/teachers/${teacher.id}`">Cancel</Link>
+                        <Link :href="`/staffs/${teacher.id}`">Cancel</Link>
                     </Button>
                     <Button type="submit" :disabled="form.processing">
                         <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
                         <Save v-else class="mr-2 h-4 w-4" />
-                        Update Teacher
+                        Update Staff
                     </Button>
                 </div>
             </form>
@@ -304,9 +331,9 @@ const deleteTeacher = () => {
         <Dialog :open="deleteOpen" @update:open="deleteOpen = $event">
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle class="text-destructive">Delete teacher account?</DialogTitle>
+                    <DialogTitle class="text-destructive">Delete staff account?</DialogTitle>
                     <DialogDescription>
-                        This will permanently delete the teacher record and their associated user account. This action cannot be undone.
+                        This will permanently delete the staff record and their associated user account. This action cannot be undone.
                     </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>

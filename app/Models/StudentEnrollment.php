@@ -15,9 +15,10 @@ class StudentEnrollment extends Model
 
     protected $fillable = [
         'school_id',
-        'student_id', 'class_id', 'academic_year_id', 'academic_term_id',
+        'student_id', 'admission_number', 'class_id', 'stream_id', 'academic_year_id', 'academic_term_id',
         'enrollment_date', 'end_date', 'enrollment_type', 'status',
-        'roll_number', 'notes', 'enrolled_by'
+        'roll_number', 'notes', 'enrolled_by',
+        'previous_school', 'entry_type', 'sponsor_type', 'boarding_status'
     ];
 
     protected $casts = [
@@ -33,6 +34,11 @@ class StudentEnrollment extends Model
     public function class(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    public function stream(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Academic\Stream::class);
     }
 
     public function academicYear(): BelongsTo

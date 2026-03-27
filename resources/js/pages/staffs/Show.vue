@@ -71,6 +71,7 @@ interface Teacher {
     nssf_number: string | null;
     kra_pin: string | null;
     notes: string | null;
+    photo_url: string | null;
     department: { id: number; name: string } | null;
     staff_category: { id: number; name: string } | null;
     staff_designation: { id: number; name: string } | null;
@@ -100,14 +101,15 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Teachers', href: '/teachers' },
-    { title: props.teacher.full_name, href: `/teachers/${props.teacher.id}` },
+    { title: 'Staffs', href: '/staffs' },
+    { title: props.teacher.full_name, href: `/staffs/${props.teacher.id}` },
 ];
 
 const activeTab = ref('overview');
 const isEditing = ref(false);
 
 const form = useForm({
+    _method: 'PUT',
     first_name: props.teacher.first_name,
     middle_name: props.teacher.middle_name ?? '',
     last_name: props.teacher.last_name,
@@ -155,27 +157,21 @@ const assignClassForm = useForm({
 });
 
 const saveChanges = () => {
-    form.put(`/teachers/${props.teacher.id}`, {
+    // Note: Using post with _method: 'PUT' for file upload compatibility
+    form.post(`/staffs/${props.teacher.id}`, {
         preserveScroll: true,
         onSuccess: () => isEditing.value = false,
     });
 };
 
 const submitClassAssignment = () => {
-    assignClassForm.post(`/teachers/${props.teacher.id}/assign-class-teacher`, {
+    assignClassForm.post(`/staffs/${props.teacher.id}/assign-class-teacher`, {
         preserveScroll: true,
         onSuccess: () => {
             assignClassOpen.value = false;
             assignClassForm.reset();
         },
     });
-};
-
-const handlePhotoChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    if (target.files?.length) {
-        form.photo = target.files[0];
-    }
 };
 </script>
 
@@ -192,16 +188,18 @@ const handlePhotoChange = (e: Event) => {
                 <div class="relative flex flex-col gap-6 p-6 md:flex-row md:items-center">
                     <!-- Photo Section -->
                     <div class="relative group">
-                        <div class="h-32 w-32 overflow-hidden rounded-full border-4 border-background bg-muted shadow-md">
-                            <img v-if="teacher.photo" :src="`/storage/${teacher.photo}`" class="h-full w-full object-cover" />
-                            <div v-else class="flex h-full w-full items-center justify-center text-4xl font-bold text-purple-600">
+                        <div v-if="!isEditing" class="h-32 w-32 overflow-hidden rounded-full border-4 border-background bg-muted shadow-md flex items-center justify-center">
+                            <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
+                            <div v-else class="text-4xl font-bold text-purple-600">
                                 {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
                             </div>
                         </div>
-                        <div v-if="isEditing" class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full cursor-pointer transition-opacity">
-                            <Camera class="h-6 w-6 text-white mb-1" />
-                            <span class="text-[10px] text-white font-medium">CHANGE</span>
-                            <input type="file" @change="handlePhotoChange" class="hidden" accept="image/*" />
+                        <div v-else class="h-32 w-32 flex items-center justify-center">
+                             <ProfilePhotoUpload 
+                                v-model="form.photo" 
+                                :error="form.errors.photo"
+                                :current-image="teacher.photo_url"
+                            />
                         </div>
                     </div>
 

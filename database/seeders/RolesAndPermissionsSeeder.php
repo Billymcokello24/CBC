@@ -25,9 +25,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'students.view', 'students.create', 'students.update', 'students.delete',
             'students.view_own', 'students.enroll', 'students.transfer',
 
-            // Teachers
-            'teachers.view', 'teachers.create', 'teachers.update', 'teachers.delete',
-            'teachers.view_own', 'teachers.assign_subjects',
+            // Staffs (formerly Teachers)
+            'staffs.view', 'staffs.create', 'staffs.update', 'staffs.delete',
+            'staffs.view_own', 'staffs.assign_subjects',
 
             // Guardians
             'guardians.view', 'guardians.create', 'guardians.update', 'guardians.delete',
@@ -98,7 +98,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'schools.view', 'schools.update', 'schools.settings',
             'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage',
             'students.view', 'students.create', 'students.update', 'students.delete', 'students.enroll', 'students.transfer',
-            'teachers.view', 'teachers.create', 'teachers.update', 'teachers.delete', 'teachers.assign_subjects',
+            'staffs.view', 'staffs.create', 'staffs.update', 'staffs.delete', 'staffs.assign_subjects',
             'guardians.view', 'guardians.create', 'guardians.update', 'guardians.delete',
             'classes.view', 'classes.create', 'classes.update', 'classes.delete', 'classes.assign_students', 'classes.assign_teachers',
             'curriculum.view', 'curriculum.create', 'curriculum.update',
@@ -122,7 +122,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'schools.view', 'schools.settings',
             'users.view',
             'students.view', 'students.create', 'students.update', 'students.enroll',
-            'teachers.view', 'teachers.create', 'teachers.update', 'teachers.assign_subjects',
+            'staffs.view', 'staffs.create', 'staffs.update', 'staffs.assign_subjects',
             'guardians.view',
             'classes.view', 'classes.create', 'classes.update', 'classes.assign_students', 'classes.assign_teachers',
             'curriculum.view',
@@ -140,7 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $deputyPrincipal->givePermissionTo([
             'schools.view',
             'students.view', 'students.update',
-            'teachers.view', 'teachers.update',
+            'staffs.view', 'staffs.update',
             'guardians.view',
             'classes.view', 'classes.update', 'classes.assign_students',
             'curriculum.view',
@@ -156,7 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $hod = Role::firstOrCreate(['name' => 'hod']);
         $hod->givePermissionTo([
             'students.view',
-            'teachers.view',
+            'staffs.view',
             'classes.view',
             'curriculum.view', 'curriculum.update',
             'assessments.view', 'assessments.create', 'assessments.update', 'assessments.grade',
@@ -170,7 +170,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $teacher = Role::firstOrCreate(['name' => 'teacher']);
         $teacher->givePermissionTo([
             'students.view',
-            'teachers.view_own',
+            'staffs.view_own',
             'classes.view',
             'curriculum.view',
             'assessments.view', 'assessments.create', 'assessments.update', 'assessments.grade', 'assessments.view_own',
@@ -184,7 +184,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $classTeacher = Role::firstOrCreate(['name' => 'class_teacher']);
         $classTeacher->givePermissionTo([
             'students.view', 'students.update',
-            'teachers.view_own',
+            'staffs.view_own',
             'guardians.view',
             'classes.view',
             'curriculum.view',
@@ -237,7 +237,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $librarian = Role::firstOrCreate(['name' => 'librarian']);
         $librarian->givePermissionTo([
             'students.view',
-            'teachers.view',
+            'staffs.view',
             'library.view', 'library.manage', 'library.issue_books',
             'communication.notifications',
         ]);
@@ -247,6 +247,28 @@ class RolesAndPermissionsSeeder extends Seeder
         $nurse->givePermissionTo([
             'students.view',
             'health.view', 'health.manage',
+            'communication.notifications',
+        ]);
+
+        // Clerk/Office Assistant
+        $clerk = Role::firstOrCreate(['name' => 'clerk']);
+        $clerk->givePermissionTo([
+            'students.view',
+            'staffs.view',
+            'communication.notifications',
+            'reports.view',
+        ]);
+
+        // Security
+        $security = Role::firstOrCreate(['name' => 'security']);
+        $security->givePermissionTo([
+            'communication.notifications',
+        ]);
+
+        // Driver
+        $driver = Role::firstOrCreate(['name' => 'driver']);
+        $driver->givePermissionTo([
+            'transport.view',
             'communication.notifications',
         ]);
 

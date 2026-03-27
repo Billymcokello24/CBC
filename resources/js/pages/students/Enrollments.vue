@@ -9,6 +9,8 @@ import {
     List,
     Search,
     Users,
+    UserPlus,
+    GraduationCap,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -54,7 +56,7 @@ const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Learners', href: '/students' },
+    { title: 'Learner Registry', href: '/students' },
     { title: 'Enrollments', href: '/students/enrollments' },
 ];
 
@@ -109,17 +111,24 @@ const clearFilters = () => {
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-                        <BookOpenCheck class="h-6 w-6 text-emerald-600" />
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600/10">
+                        <GraduationCap class="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">Enrollments</h1>
-                        <p class="text-muted-foreground">Manage learner enrollments by class.</p>
+                        <h1 class="text-2xl font-bold tracking-tight">Enrollment Registry</h1>
+                        <p class="text-muted-foreground">Formal academic assignments and class history.</p>
                     </div>
                 </div>
-                <Button variant="outline" as-child>
-                    <Link href="/students">Back to Learners</Link>
-                </Button>
+                <div class="flex items-center gap-3">
+                    <Button variant="outline" as-child>
+                        <Link href="/students">View Learners</Link>
+                    </Button>
+                    <Button as-child class="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20">
+                        <Link href="/students/enrollments/create">
+                            <UserPlus class="mr-2 h-4 w-4" /> Enroll Learner
+                        </Link>
+                    </Button>
+                </div>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

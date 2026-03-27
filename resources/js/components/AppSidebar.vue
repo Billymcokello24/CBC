@@ -259,14 +259,14 @@ const navigation = [
                 ],
             },
             {
-                title: 'Teachers',
-                href: '/teachers',
-                icon: GraduationCap,
-                permissions: ['teachers.view', 'teachers.view_own'],
+                title: 'Users',
+                href: '/staffs/directory', // Pointing to the hub as default
+                icon: Users,
+                permissions: ['staffs.view', 'staffs.view_own'],
                 children: [
-                    { title: 'All Teachers', href: '/teachers', permissions: ['teachers.view'] },
-                    { title: 'Staff Directory', href: '/teachers/directory', permissions: ['teachers.view'] },
-                    { title: 'Assignments', href: '/teachers/assignments', permissions: ['teachers.manage'] },
+                    { title: 'Staff Directory', href: '/staffs', permissions: ['staffs.view'] },
+                    { title: 'Parent Directory', href: '/parents', permissions: ['guardians.view'] },
+                    { title: 'Role HUB', href: '/staffs/directory', permissions: ['staffs.view'] },
                 ],
             },
         ],
@@ -425,24 +425,21 @@ const navigation = [
                     { title: 'Announcements', href: '/communication/announcements', permissions: ['communication.announcements'] },
                 ],
             },
+            {
+                title: 'Settings',
+                href: '/settings',
+                icon: Settings,
+                children: [
+                    { title: 'Profile', href: '/settings/profile' },
+                    { title: 'School Settings', href: '/settings/school', permissions: ['settings.update'] },
+                    { title: 'System', href: '/settings/system', permissions: ['settings.system'] },
+                ],
+            },
         ],
     },
 ];
 
-const bottomNavigation = [
-    {
-        title: 'Settings',
-        href: '/settings',
-        icon: Settings,
-        children: [
-            { title: 'Profile', href: '/settings/profile' },
-            { title: 'School Settings', href: '/settings/school', permissions: ['settings.update'] },
-            { title: 'Academic Year', href: '/settings/academic-year', permissions: ['settings.update'] },
-            { title: 'Users & Roles', href: '/settings/users', permissions: ['users.manage'] },
-            { title: 'System', href: '/settings/system', permissions: ['settings.system'] },
-        ],
-    },
-];
+const bottomNavigation: any[] = [];
 
 const filterNavItem = (item: any) => {
     if (!item.permissions) return true;
@@ -481,14 +478,14 @@ const filteredNavigation = computed(() => {
 });
 
 const filteredBottomNavigation = computed(() => {
-    const items = bottomNavigation.filter(filterNavItem);
+    const items = (bottomNavigation as any[]).filter(filterNavItem);
     
     // If Super Admin and NOT impersonating, we might only want to show certain base items
     if (isSuperAdmin.value && !isImpersonating.value) {
-        return items.map(group => ({
+        return items.map((group: any) => ({
             ...group,
-            children: group.children ? group.children.filter(child => child.title === 'Profile') : undefined
-        })).filter(group => group.children && group.children.length > 0 || !group.children);
+            children: group.children ? group.children.filter((child: any) => child.title === 'Profile') : undefined
+        })).filter((group: any) => group.children && group.children.length > 0 || !group.children);
     }
     
     return items;
@@ -502,22 +499,32 @@ const toggleItem = (title: string) => {
 
 <template>
     <Sidebar collapsible="offcanvas">
-        <SidebarHeader class="h-16 border-b border-sidebar-border px-6 flex items-center justify-between">
+        <SidebarHeader class="h-auto border-b border-sidebar-border px-6 py-6 flex flex-col items-center justify-center">
+            <!-- Super Admin Context (Global) -->
             <Link href="/super-admin/dashboard" v-if="isSuperAdmin && !isImpersonating" class="flex items-center gap-3 font-black text-sidebar-foreground">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
                     <span class="text-xl font-black">S</span>
                 </div>
                 <span class="text-xl tracking-tight font-black uppercase">SUPERADMIN</span>
             </Link>
-            <Link href="/" v-else class="flex items-center gap-3 font-black text-sidebar-foreground">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                    <span class="text-xl font-black">T</span>
+
+            <!-- School/Tenant Context -->
+            <Link href="/dashboard" v-else class="flex flex-col items-center gap-3 font-black text-sidebar-foreground group w-full">
+                <div class="flex flex-col items-center min-w-0 w-full mb-1">
+                    <span class="text-[11px] tracking-[0.15em] font-black text-center truncate w-full uppercase leading-tight">{{ $page.props.auth.school?.name || 'TailPanel' }}</span>
+                    <div class="h-0.5 w-8 bg-primary/20 rounded-full mt-2"></div>
                 </div>
-                <span class="text-xl tracking-tight font-black">TailPanel</span>
+                
+                <div v-if="$page.props.auth.school?.logo" class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-sidebar-border bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/20">
+                    <img :src="$page.props.auth.school.logo" :alt="$page.props.auth.school.name" class="h-full w-full object-contain p-2" />
+                </div>
+                <div v-else class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all duration-300 group-hover:scale-105">
+                    <span class="text-2xl font-black">{{ $page.props.auth.school?.name?.[0] || 'T' }}</span>
+                </div>
             </Link>
         </SidebarHeader>
 
-        <SidebarContent class="custom-scrollbar">
+        <SidebarContent class="custom-scrollbar pb-32">
             <SidebarGroup v-for="group in filteredNavigation" :key="group.title">
                 <SidebarGroupLabel class="px-2 text-[10px] font-black uppercase tracking-[0.2em] text-sidebar-foreground/40">
                     {{ group.title }}
@@ -607,26 +614,6 @@ const toggleItem = (title: string) => {
                 </div>
             </div>
 
-            <!-- Profile Info -->
-            <div class="mt-4 flex items-center justify-between rounded-2xl bg-sidebar-accent/50 p-4 border border-sidebar-border">
-                <div class="flex items-center gap-3 overflow-hidden">
-                    <div class="h-10 w-10 shrink-0 rounded-xl border border-sidebar-border bg-primary/10 flex items-center justify-center font-black text-primary text-xs shrink-0">
-                        {{ user?.name?.[0]?.toUpperCase() }}
-                    </div>
-                    <div class="flex flex-col min-w-0">
-                        <span class="truncate text-xs font-black text-sidebar-foreground leading-none">{{ user?.name }}</span>
-                        <span class="truncate text-[9px] font-black text-sidebar-foreground/40 uppercase tracking-widest mt-1">{{ user?.role || 'Super Admin' }}</span>
-                    </div>
-                </div>
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    class="rounded-xl p-2 text-sidebar-foreground/40 hover:bg-rose-500/10 hover:text-rose-500 transition-colors"
-                >
-                    <LogOut class="h-4 w-4" />
-                </Link>
-            </div>
         </SidebarFooter>
     </Sidebar>
 </template>

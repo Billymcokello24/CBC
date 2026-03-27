@@ -4,7 +4,7 @@ import {
     ArrowLeft, Calendar, GraduationCap, MapPin, Phone,
     ShieldPlus, UserRound, HeartPulse, ShieldCheck,
     Truck, Users, Camera, Save, Loader2, Edit2, Mail,
-    CreditCard, ExternalLink, Activity
+    CreditCard, ExternalLink, Activity, TrendingUp, UserPlus
 } from 'lucide-vue-next';
 import { ref, computed, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -86,18 +86,6 @@ const form = useForm({
     _method: 'PUT',
 });
 
-const handlePhotoChange = (e: any) => {
-    const file = e.target.files[0];
-    if (file) {
-        form.photo = file;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            photoPreview.value = e.target?.result as string;
-        };
-        reader.readAsDataURL(file);
-    }
-};
-
 const submit = () => {
     form.post(`/students/${props.learner.id}`, {
         preserveScroll: true,
@@ -129,11 +117,13 @@ const tabs = [
 ];
 
 const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-        case 'active': return 'bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)]';
-        case 'suspended': return 'bg-rose-500 text-white';
-        case 'inactive': return 'bg-slate-400 text-white';
-        default: return 'bg-violet-500 text-white';
+    switch (status?.toLowerCase()) {
+        case 'active': return 'bg-emerald-500 text-white shadow-sm';
+        case 'suspended': return 'bg-rose-500 text-white shadow-sm';
+        case 'inactive':
+        case 'withdrawn': return 'bg-slate-400 text-white shadow-sm';
+        case 'graduated': return 'bg-blue-600 text-white shadow-sm';
+        default: return 'bg-indigo-500 text-white shadow-sm';
     }
 };
 </script>
@@ -142,170 +132,192 @@ const getStatusColor = (status: string) => {
     <Head :title="learner.name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 font-pulsar mt-2 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+        <div class="space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
             <!-- Header section -->
-            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-6">
+            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-5">
-                    <Button variant="ghost" size="icon" as-child class="h-10 w-10 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                    <Button variant="ghost" size="icon" as-child class="h-10 w-10 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100">
                         <Link href="/students"><ArrowLeft class="h-5 w-5" /></Link>
                     </Button>
-                    <div class="flex items-center gap-4">
+                    <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
                         <div class="relative group">
-                            <div class="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-0.5 shadow-lg shadow-blue-100 group-hover:scale-105 transition-transform duration-500">
-                                <div class="h-full w-full rounded-[14px] bg-white flex items-center justify-center overflow-hidden">
-                                     <UserRound v-if="!learner.photo" class="h-8 w-8 text-blue-200" />
-                                     <img v-else :src="learner.photo" class="h-full w-full object-cover" />
+                            <div v-if="!isEditing" class="h-32 w-32 rounded-[2.5rem] bg-card border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transition-all duration-500 hover:rotate-2 group-hover:scale-105">
+                                <img v-if="learner.photo_url" :src="learner.photo_url" class="h-full w-full object-cover" />
+                                <div v-else class="text-4xl font-black text-blue-600 bg-blue-50 w-full h-full flex items-center justify-center uppercase italic">
+                                     {{ learner.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2) }}
                                 </div>
                             </div>
-                            <div class="absolute -bottom-1 -right-1 h-5 w-5 rounded-lg bg-emerald-500 border-2 border-white flex items-center justify-center shadow-sm">
-                                <ShieldCheck class="h-3 w-3 text-white" />
+                            <div v-else class="h-32 w-32 flex items-center justify-center">
+                                 <ProfilePhotoUpload 
+                                    v-model="form.photo" 
+                                    :error="form.errors.photo"
+                                    :current-image="learner.photo_url"
+                                />
                             </div>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <h1 class="text-2xl font-black tracking-tight text-slate-900 leading-none">{{ learner.name }}</h1>
-                                <Badge :class="getStatusColor(learner.status)" class="rounded-full px-3 py-0.5 text-[8px] font-black uppercase tracking-[0.15em] border-0 h-5">
+                            <div class="flex items-center gap-3">
+                                <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ learner.name }}</h1>
+                                <Badge :class="getStatusColor(learner.status)" class="rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-0 shadow-sm">
                                     {{ learner.status }}
                                 </Badge>
                             </div>
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-2">
-                                <span class="text-blue-600 font-black">{{ learner.class_name || 'UNASSIGNED' }}</span>
-                                <span class="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                {{ learner.admission_number || 'NO ADMISSION ID' }}
-                                <span class="h-1 w-1 bg-slate-300 rounded-full"></span>
-                                <span class="text-slate-500 italic">{{ learner.age }} yrs</span>
-                            </p>
+                            <div class="flex items-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
+                                <span class="text-blue-600">{{ learner.class_name || 'Unassigned' }}</span>
+                                <span class="h-1 w-1 bg-border rounded-full"></span>
+                                <span>ID: {{ learner.admission_number || '--' }}</span>
+                                <span class="h-1 w-1 bg-border rounded-full"></span>
+                                <span>{{ learner.age }} Years Old</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button v-if="hasPermission('students.update') && !isEditing" variant="outline" class="font-pulsar h-9 border-slate-200 px-4 rounded-xl hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest" @click="isEditing = true">
-                        <Edit2 class="mr-2 h-3.5 w-3.5 text-amber-500" />
-                        Edit
+                <div class="flex items-center gap-3">
+                    <Button as-child variant="outline" class="h-11 px-5 rounded-xl border-blue-100 bg-blue-50/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-700 font-semibold shadow-sm transition-all" v-if="hasPermission('students.update') && !isEditing">
+                        <Link :href="`/students/enrollments/create?student_id=${learner.id}`">
+                            <UserPlus class="mr-2 h-4 w-4" />
+                            Enroll Learner
+                        </Link>
                     </Button>
-                    <Button v-if="hasPermission('finance.view')" variant="outline" class="font-pulsar h-9 border-slate-200 px-4 rounded-xl hover:bg-slate-50 text-[10px] font-black uppercase tracking-widest" as-child>
+                    <Button v-if="hasPermission('students.update') && !isEditing" variant="outline" class="h-11 px-5 rounded-xl border-border font-semibold shadow-sm hover:bg-muted" @click="isEditing = true">
+                        <Edit2 class="mr-2 h-4 w-4 text-amber-500" />
+                        Edit Profile
+                    </Button>
+                    <Button v-if="hasPermission('finance.view')" variant="outline" class="h-11 px-5 rounded-xl border-border font-semibold shadow-sm hover:bg-muted" as-child>
                         <Link :href="`/students/fees/${learner.id}`">
-                            <CreditCard class="mr-2 h-3.5 w-3.5 text-emerald-500" />
+                            <CreditCard class="mr-2 h-4 w-4 text-emerald-600" />
                             Fees & Payments
                         </Link>
                     </Button>
-                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="bg-blue-600 hover:bg-blue-700 font-pulsar h-9 px-6 shadow-lg shadow-blue-200 border-0 rounded-xl text-[10px] font-black uppercase tracking-widest text-white">
-                        <Loader2 v-if="form.processing" class="mr-2 h-3.5 w-3.5 animate-spin" />
-                        <Save v-else class="mr-2 h-3.5 w-3.5" />
+                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="bg-blue-600 hover:bg-blue-700 h-11 px-6 shadow-md rounded-xl font-semibold text-white">
+                        <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        <Save v-else class="mr-2 h-4 w-4" />
                         Save Changes
                     </Button>
                 </div>
             </div>
 
-            <!-- Tab Navigation Matrix -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div class="lg:col-span-3 space-y-4 lg:sticky lg:top-6">
-                    <div class="flex flex-col gap-2">
+            <!-- Main Content Layout -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Navigation Sidebar -->
+                <div class="lg:col-span-3 space-y-4">
+                    <div class="flex flex-col gap-1.5 rounded-2xl border border-border bg-card p-2 shadow-sm">
                         <button
                         v-for="tab in tabs"
                         :key="tab.id"
                         @click="activeTab = tab.id"
-                        class="flex items-center gap-3 px-5 py-3.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 whitespace-nowrap group"
+                        class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group relative"
                         :class="activeTab === tab.id
-                            ? 'bg-slate-900 text-white shadow-xl scale-[1.02] z-10'
-                            : 'bg-white border text-slate-400 hover:text-slate-900 hover:border-slate-300'"
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
                         >
-                            <component :is="tab.icon" class="h-4 w-4" :class="activeTab === tab.id ? 'text-blue-400' : 'group-hover:text-blue-600'" />
+                            <component :is="tab.icon" class="h-4.5 w-4.5" :class="activeTab === tab.id ? 'text-white' : 'text-muted-foreground/50 group-hover:text-foreground'" />
                             {{ tab.name }}
-                            <div v-if="activeTab === tab.id" class="ml-auto animate-pulse"><div class="h-1.5 w-1.5 bg-blue-400 rounded-full"></div></div>
+                            <div v-if="activeTab === tab.id" class="ml-auto">
+                                <div class="h-1.5 w-1.5 bg-blue-200 rounded-full animate-pulse"></div>
+                            </div>
                         </button>
                     </div>
 
-                    <!-- Quick Stats Card -->
-                    <div class="hidden lg:flex flex-col p-5 rounded-[2rem] bg-blue-600 text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
-                        <p class="text-[8px] font-black uppercase tracking-[0.2em] opacity-80 mb-4 italic">Academic overview</p>
-                        <div class="space-y-3 relative z-10">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[10px] font-bold opacity-70">Presence</span>
-                                <span class="text-xs font-black">98.4%</span>
+                    <!-- Quick Metrics Card -->
+                    <div class="rounded-2xl border border-border bg-blue-600 p-6 text-white shadow-xl shadow-blue-100 overflow-hidden relative group">
+                        <div class="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                             <TrendingUp class="h-32 w-32" />
+                        </div>
+                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-5 italic">Performance Score</p>
+                        <div class="space-y-4 relative z-10">
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <span class="text-xs font-semibold opacity-80">Attendance</span>
+                                    <span class="text-xs font-bold">98.4%</span>
+                                </div>
+                                <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-white h-full w-[98.4%] rounded-full"></div>
+                                </div>
                             </div>
-                            <div class="w-full bg-white/20 h-1 rounded-full overflow-hidden">
-                                <div class="bg-white h-full w-[98.4%]"></div>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-[10px] font-bold opacity-70">Performance</span>
-                                <span class="text-xs font-black text-emerald-300 italic">EXCEL</span>
+                            <div class="flex justify-between items-center pt-2">
+                                <span class="text-xs font-semibold opacity-80">Assessment Status</span>
+                                <Badge class="bg-blue-500 text-[9px] font-bold uppercase tracking-tighter border-0 rounded-md">Excellent</Badge>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Content Matrix -->
+                <!-- Tab Content Area -->
                 <div class="lg:col-span-9 space-y-6 animate-in slide-in-from-bottom-4 duration-700">
+                    <!-- Overview Tab -->
                     <div v-if="activeTab === 'overview'" class="space-y-6">
-                        <!-- Identity Matrix Section -->
-                        <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-all duration-500">
-                            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight italic text-blue-600">Basic Details</h3>
-                                <Badge variant="outline" class="text-[8px] font-black uppercase tracking-widest px-2 border-slate-200 text-slate-400 italic">Details</Badge>
+                        <div class="bg-card rounded-2xl border border-border p-8 shadow-sm">
+                            <div class="flex items-center justify-between border-b border-border/50 pb-5 mb-8">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                        <UserRound class="h-5 w-5" />
+                                    </div>
+                                    <h3 class="text-lg font-bold text-foreground">Basic Profile Information</h3>
+                                </div>
+                                <Badge variant="outline" class="text-[10px] font-bold uppercase tracking-wider px-3 border-border bg-muted/50">Core Data</Badge>
                             </div>
 
-                            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                <!-- First & Last Name (Editing) -->
+                            <div class="grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
                                 <div v-if="isEditing" class="space-y-4 md:col-span-2">
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="space-y-1.5">
-                                            <Label class="text-[9px] font-black uppercase text-slate-400 tracking-[0.1em]">First Name</Label>
-                                            <Input v-model="form.first_name" placeholder="First Name" class="rounded-xl border-slate-200 font-bold h-10 bg-slate-50 focus:ring-blue-500 text-xs" />
+                                            <Label class="text-xs font-bold text-muted-foreground uppercase tracking-wide">First Name</Label>
+                                            <Input v-model="form.first_name" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
                                         </div>
                                         <div class="space-y-1.5">
-                                            <Label class="text-[9px] font-black uppercase text-slate-400 tracking-[0.1em]">Last Name</Label>
-                                            <Input v-model="form.last_name" placeholder="Last Name" class="rounded-xl border-slate-200 font-bold h-10 bg-slate-50 focus:ring-blue-500 text-xs" />
+                                            <Label class="text-xs font-bold text-muted-foreground uppercase tracking-wide">Last Name</Label>
+                                            <Input v-model="form.last_name" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
                                         </div>
                                     </div>
                                 </div>
-                                <div v-else class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Full Name</p>
-                                    <p class="text-sm font-black text-slate-900 uppercase tracking-tight">{{ learner.name }}</p>
+                                <div v-else class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Full Legal Name</p>
+                                    <p class="text-[15px] font-bold text-foreground">{{ learner.name }}</p>
                                 </div>
 
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Admission Number</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Admission Number</p>
                                     <div v-if="isEditing">
-                                        <Input v-model="form.admission_number" placeholder="ADM-000" class="rounded-xl border-slate-200 font-black h-10 bg-slate-50 italic focus:ring-blue-500 text-xs" />
+                                        <Input v-model="form.admission_number" class="h-11 rounded-xl border-border bg-muted/30 font-bold text-blue-600" />
                                     </div>
-                                    <p v-else class="text-sm font-black text-blue-600 uppercase italic">{{ learner.admission_number }}</p>
+                                    <p v-else class="text-[15px] font-bold text-blue-600">{{ learner.admission_number || '--' }}</p>
                                 </div>
 
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">UPI Number</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">UPI Number</p>
                                     <div v-if="isEditing">
-                                        <Input v-model="form.upi" placeholder="UPI-XXXX" class="rounded-xl border-slate-200 font-bold h-10 bg-slate-50 focus:ring-blue-500 text-xs" />
+                                        <Input v-model="form.upi" class="h-11 rounded-xl border-border bg-muted/30 font-medium" />
                                     </div>
-                                    <p v-else class="text-sm font-black text-slate-900">{{ learner.upi || 'PENDING' }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ learner.upi || 'Not Assigned' }}</p>
                                 </div>
 
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Grade</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Academic Level / Grade</p>
                                     <div v-if="isEditing">
-                                        <select v-model="form.grade_id" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:14px] bg-[right_0.75rem_center] bg-no-repeat">
-                                            <option value="">Select Grade</option>
+                                        <select v-model="form.grade_id" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-semibold hover:bg-muted/50 transition-all outline-none focus:ring-2 focus:ring-blue-600/10 appearance-none cursor-pointer">
+                                            <option value="">Select Level</option>
                                             <option v-for="g in grades" :key="g.id" :value="String(g.id)">{{ g.name }}</option>
                                         </select>
                                     </div>
-                                    <p v-else class="text-sm font-black text-slate-900 uppercase">{{ learner.grade_name || 'Unassigned' }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ learner.grade_name || 'Unassigned' }}</p>
                                 </div>
 
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Stream</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Assigned Stream</p>
                                     <div v-if="isEditing">
-                                        <select v-model="form.current_class_id" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:14px] bg-[right_0.75rem_center] bg-no-repeat" :disabled="!form.grade_id">
+                                        <select v-model="form.current_class_id" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-semibold hover:bg-muted/50 transition-all outline-none focus:ring-2 focus:ring-blue-600/10 appearance-none cursor-pointer" :disabled="!form.grade_id">
                                             <option value="">Select Stream</option>
                                             <option v-for="c in filteredClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
                                         </select>
                                     </div>
-                                    <p v-else class="text-sm font-black text-slate-900 uppercase italic">{{ learner.class_name || 'NO STREAM' }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ learner.class_name || 'No stream assigned' }}</p>
                                 </div>
 
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Status</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Profile Status</p>
                                     <div v-if="isEditing">
-                                        <select v-model="form.status" class="h-10 w-full rounded-xl border-slate-200 bg-slate-50 px-3 text-[10px] font-black uppercase tracking-widest focus:ring-blue-500">
+                                        <select v-model="form.status" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-semibold hover:bg-muted/50 transition-all outline-none focus:ring-2 focus:ring-blue-600/10 cursor-pointer">
                                             <option value="active">Active</option>
                                             <option value="inactive">Inactive</option>
                                             <option value="graduated">Graduated</option>
@@ -315,7 +327,7 @@ const getStatusColor = (status: string) => {
                                         </select>
                                     </div>
                                     <div v-else>
-                                        <Badge :class="getStatusColor(learner.status)" class="rounded-full px-3 h-5 text-[8px] font-black uppercase tracking-widest border-0">
+                                        <Badge :class="getStatusColor(learner.status)" class="rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-0 shadow-sm">
                                             {{ learner.status }}
                                         </Badge>
                                     </div>
@@ -323,37 +335,37 @@ const getStatusColor = (status: string) => {
                             </div>
                         </div>
 
-                        <!-- Behavioral Matrix -->
+                        <!-- Secondary Summary Metrics -->
                         <div class="grid gap-6 md:grid-cols-2">
-                             <div class="bg-slate-900 rounded-[2rem] p-6 text-white relative overflow-hidden group">
-                                <div class="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-1000">
-                                     <Activity class="h-32 w-32 text-white" />
+                             <div class="bg-foreground rounded-2xl p-8 text-background shadow-lg relative overflow-hidden group">
+                                <div class="absolute -right-8 -top-8 opacity-5 group-hover:scale-125 transition-transform duration-1000">
+                                     <Activity class="h-48 w-48" />
                                 </div>
-                                <h3 class="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <Activity class="h-3.5 text-blue-400" />
-                                     Attendance
+                                <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] mb-6 flex items-center gap-2 text-muted-foreground">
+                                    <Activity class="h-4 w-4 text-blue-500" />
+                                     Attendance Trends
                                 </h3>
-                                <div class="flex items-end gap-1 h-16 mb-4">
-                                    <div v-for="i in 12" :key="i" :style="{height: Math.random() * 80 + 20 + '%'}" class="flex-1 bg-blue-500/40 rounded-t-lg transition-all duration-700 hover:bg-blue-400"></div>
+                                <div class="flex items-end gap-1.5 h-20 mb-6">
+                                    <div v-for="i in 15" :key="i" :style="{height: Math.random() * 80 + 20 + '%'}" class="flex-1 bg-blue-500/30 rounded-t-md transition-all duration-700 hover:bg-blue-500 hover:opacity-100"></div>
                                 </div>
-                                <p class="text-[9px] font-bold text-slate-400 leading-relaxed italic">
-                                    Attendance is at 98.4%.
+                                <p class="text-sm font-semibold text-muted-foreground leading-relaxed">
+                                    Recent attendance pulse shows <span class="text-blue-400 font-bold">consistent presence</span> across all academic modules.
                                 </p>
                              </div>
 
-                             <div class="bg-blue-50/50 rounded-[2rem] border border-blue-100 p-6 shadow-sm">
-                                <h3 class="text-[10px] font-black text-blue-900 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
-                                    <GraduationCap class="h-3.5 text-blue-600" />
+                             <div class="bg-blue-50/30 rounded-2xl border border-blue-100 p-8 shadow-sm">
+                                <h3 class="text-[11px] font-bold text-blue-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                    <GraduationCap class="h-4 w-4 text-blue-600" />
                                     Academic Highlights
                                 </h3>
-                                <div class="space-y-3">
-                                    <div v-for="i in 3" :key="i" class="flex items-center gap-3 bg-white/60 p-2.5 rounded-xl border border-blue-50">
-                                        <div class="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                                            <ShieldPlus class="h-4 w-4 text-blue-600" />
+                                <div class="space-y-4">
+                                    <div v-for="i in 3" :key="i" class="flex items-center gap-4 bg-background/50 p-3.5 rounded-2xl border border-blue-100/50 hover:bg-background transition-all duration-300">
+                                        <div class="h-10 w-10 rounded-xl bg-blue-100/50 flex items-center justify-center text-blue-600">
+                                            <ShieldPlus class="h-5 w-5" />
                                         </div>
                                         <div>
-                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none">Remark</p>
-                                            <p class="text-[11px] font-black text-slate-900 mt-1 uppercase italic">High Consistency: Core Cluster</p>
+                                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1">Observation</p>
+                                            <p class="text-[13px] font-bold text-foreground">Exceeds proficiency in core learning areas.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -361,93 +373,96 @@ const getStatusColor = (status: string) => {
                         </div>
                     </div>
 
-                    <!-- Personal/Family Data -->
+                    <!-- Personal/Family Sections -->
                     <div v-else-if="activeTab === 'personal' || activeTab === 'family'" class="space-y-6">
-                        <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm">
-                            <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                                <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight italic">{{ activeTab }} Information</h3>
+                        <div class="bg-card rounded-2xl border border-border p-8 shadow-sm">
+                            <div class="flex items-center justify-between border-b border-border/50 pb-5 mb-8">
+                                <h3 class="text-lg font-bold text-foreground capitalize">{{ activeTab }} Information</h3>
                             </div>
 
-                            <!-- Placeholder for actual fields if they exist in props -->
-                            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Gender</p>
-                                    <p class="text-xs font-black text-slate-900 uppercase">{{ learner.gender || 'UNDEFINED' }}</p>
+                            <div class="grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Gender</p>
+                                    <p class="text-[15px] font-bold text-foreground uppercase">{{ learner.gender || 'Not Specified' }}</p>
                                 </div>
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Date of Birth</p>
-                                    <p class="text-xs font-black text-slate-900">{{ learner.date_of_birth || 'UNKNOWN' }}</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Date of Birth</p>
+                                    <p class="text-[15px] font-bold text-foreground">{{ learner.date_of_birth || '--' }}</p>
                                 </div>
-                                <div class="space-y-1">
-                                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Nationality</p>
-                                    <p class="text-xs font-black text-slate-900 uppercase">{{ learner.nationality || 'KENYAN' }}</p>
+                                <div class="space-y-1.5">
+                                    <p class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Nationality</p>
+                                    <p class="text-[15px] font-bold text-foreground uppercase">{{ learner.nationality || 'Kenyan' }}</p>
                                 </div>
                             </div>
 
-                            <!-- Guardian Matrix if and only if family tab -->
-                            <div v-if="activeTab === 'family'" class="mt-8 space-y-6">
-                                <div class="flex items-center gap-4 text-slate-300">
-                                    <div class="h-[1px] flex-1 bg-slate-100"></div>
-                                     <span class="text-[9px] font-black uppercase tracking-widest">Parents / Guardians</span>
-                                     <div v-if="hasPermission('students.update')" @click="isEditing = true" class="text-blue-600 cursor-pointer hover:underline text-[9px] font-black uppercase tracking-widest">Add Parent / Guardian</div>
-                                    <div class="h-[1px] flex-1 bg-slate-100"></div>
+                            <!-- Guardian Section -->
+                            <div v-if="activeTab === 'family'" class="mt-12 space-y-6">
+                                <div class="flex items-center gap-4">
+                                     <span class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50">Primary Guardians</span>
+                                     <div class="h-px flex-1 bg-border/50"></div>
+                                     <button v-if="hasPermission('students.update')" @click="isEditing = true" class="text-blue-600 hover:text-blue-700 text-[10px] font-bold uppercase tracking-widest border border-blue-100 bg-blue-50/50 px-3 py-1 rounded-lg">Add Record</button>
                                 </div>
 
-                                <div v-if="learner.guardians?.length" class="grid gap-4 md:grid-cols-2">
-                                    <div v-for="guardian in learner.guardians" :key="guardian.id" class="rounded-2xl border border-slate-100 p-5 bg-white shadow-sm hover:shadow-lg transition-all duration-500 border-l-4 border-l-blue-600 relative group">
+                                <div v-if="learner.guardians?.length" class="grid gap-6 md:grid-cols-2">
+                                    <div v-for="guardian in learner.guardians" :key="guardian.id" class="rounded-2xl border border-border p-6 bg-card shadow-sm hover:shadow-md transition-all duration-300 border-l-4 border-l-blue-600 group relative">
                                         <div class="flex items-start justify-between">
                                             <div>
-                                                <p class="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1">{{ guardian.relationship || 'Guardian' }}</p>
-                                                <p class="font-black text-base text-slate-900 mb-4">{{ guardian.name }}</p>
-                                                <div class="space-y-2">
-                                                    <div class="flex items-center gap-2 text-slate-500 font-bold text-[10px]">
-                                                        <Phone class="h-3 w-3 text-slate-400" /> {{ guardian.phone || '—' }}
+                                                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5">{{ guardian.relationship || 'Guardian' }}</p>
+                                                <p class="font-bold text-lg text-foreground mb-5">{{ guardian.name }}</p>
+                                                <div class="space-y-2.5">
+                                                    <div class="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                                                        <div class="h-7 w-7 rounded-lg bg-muted flex items-center justify-center"><Phone class="h-3.5 w-3.5" /></div> {{ guardian.phone || '—' }}
                                                     </div>
-                                                    <div class="flex items-center gap-2 text-slate-500 font-bold text-[10px]">
-                                                        <Mail class="h-3 w-3 text-slate-400" /> {{ guardian.email || '—' }}
+                                                    <div class="flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                                                        <div class="h-7 w-7 rounded-lg bg-muted flex items-center justify-center"><Mail class="h-3.5 w-3.5" /></div> {{ guardian.email || '—' }}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Button variant="ghost" size="icon" class="h-8 w-8 text-slate-300 hover:text-blue-600 rounded-lg group-hover:bg-blue-50 transition-colors" as-child>
+                                            <Button variant="ghost" size="icon" class="h-9 w-9 text-muted-foreground hover:text-blue-600 rounded-xl group-hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100" as-child>
                                                 <Link :href="`/guardians/${guardian.id}/edit`"><Edit2 class="h-3.5 w-3.5" /></Link>
                                             </Button>
                                         </div>
                                     </div>
                                 </div>
-                                <div v-else class="text-center py-10 bg-slate-50/50 border border-dashed border-slate-200 rounded-3xl italic">
-                                    <Users class="h-10 w-10 text-slate-200 mx-auto mb-2" />
-                                    <p class="text-slate-400 font-black uppercase tracking-widest text-[9px]">No guardian details found.</p>
+                                <div v-else class="flex flex-col items-center justify-center py-12 bg-muted/20 border border-dashed border-border rounded-2xl text-center">
+                                    <div class="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                                        <Users class="h-6 w-6 text-muted-foreground/30" />
+                                    </div>
+                                    <p class="text-muted-foreground font-bold uppercase tracking-widest text-[10px]">No guardian profiles linked to this learner.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Other Tab Content -->
-                    <div v-else class="bg-white rounded-[2.5rem] border border-slate-100 p-12 flex flex-col items-center justify-center min-h-[400px] text-center italic">
-                        <div class="h-16 w-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-6">
-                            <component :is="tabs.find(t => t.id === activeTab)?.icon" class="h-6 w-6 text-slate-300" />
+                    <!-- Placeholder for Detailed Tabs -->
+                    <div v-else class="bg-card rounded-3xl border border-border p-16 flex flex-col items-center justify-center text-center">
+                        <div class="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center mb-8 shadow-inner">
+                            <component :is="tabs.find(t => t.id === activeTab)?.icon" class="h-8 w-8 text-muted-foreground/20" />
                         </div>
-                        <h3 class="text-lg font-black text-slate-900 uppercase tracking-tight">Viewing {{ activeTab }}</h3>
-                        <p class="text-slate-500 font-bold mt-2 max-w-sm text-xs">
-                             Detailed information for the <span class="text-blue-600 font-black uppercase">{{ activeTab }}</span> section is being loaded.
+                        <h3 class="text-xl font-bold text-foreground uppercase tracking-tight">Viewing {{ tabs.find(t => t.id === activeTab)?.name }}</h3>
+                        <p class="text-muted-foreground font-medium mt-3 max-w-sm text-sm">
+                             Detailed information and history for <span class="text-blue-600 font-bold uppercase tracking-wider">{{ activeTab }}</span> is currently being processed.
                         </p>
-                        <Button variant="outline" class="mt-8 rounded-xl h-9 px-6 font-black uppercase text-[9px] tracking-widest border-slate-200">Refresh</Button>
+                        <Button variant="outline" class="mt-8 rounded-xl h-11 px-8 font-bold uppercase text-[10px] tracking-widest border-border shadow-sm">Refresh Module</Button>
                     </div>
 
-                    <!-- Detail Footer Integrity -->
-                    <div class="bg-slate-50/30 border border-slate-100 rounded-[2rem] p-6 flex items-center justify-between">
-                         <div class="flex items-center gap-3">
-                             <div class="h-8 w-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center shadow-sm">
-                                 <ShieldCheck class="h-4 w-4 text-emerald-500" />
+                    <!-- Integrity Status Footer -->
+                    <div class="bg-muted/30 border border-border/50 rounded-2xl p-6 flex items-center justify-between">
+                         <div class="flex items-center gap-4">
+                             <div class="h-10 w-10 rounded-xl bg-white border border-border flex items-center justify-center shadow-sm">
+                                 <ShieldCheck class="h-5 w-5 text-emerald-500" />
                              </div>
                              <div>
-                                 <p class="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Status</p>
-                                 <p class="text-[10px] font-bold text-slate-700">Updated @ {{ new Date().toLocaleTimeString() }}</p>
+                                 <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1.5">Verification Status</p>
+                                 <p class="text-xs font-semibold text-foreground italic">Last synchronized: {{ new Date().toLocaleString() }}</p>
                              </div>
                          </div>
-                         <div class="flex gap-1.5 px-3 py-1.5 bg-white rounded-full border border-slate-100">
-                             <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                             <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 opacity-50"></div>
+                         <div class="flex items-center gap-2 group cursor-help" title="Data is synced and secured">
+                             <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Operational</span>
+                             <div class="flex gap-1.5 p-2 bg-white rounded-full border border-border shadow-sm">
+                                 <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                 <div class="h-2 w-2 rounded-full bg-emerald-500 opacity-30"></div>
+                             </div>
                          </div>
                     </div>
                 </div>

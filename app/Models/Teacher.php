@@ -39,7 +39,7 @@ class Teacher extends Model
         'basic_salary' => 'decimal:2',
     ];
 
-    protected $appends = ['full_name'];
+    protected $appends = ['full_name', 'photo_url'];
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -121,6 +121,11 @@ class Teacher extends Model
     public function timetableSlots(): HasMany
     {
         return $this->hasMany(\App\Models\Academic\TimetableSlot::class, 'teacher_id');
+    }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photo ? asset('storage/' . $this->photo) : null;
     }
 
     public function getFullNameAttribute(): string

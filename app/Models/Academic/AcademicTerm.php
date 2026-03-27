@@ -38,6 +38,11 @@ class AcademicTerm extends Model
         return $query->where('is_current', true);
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
     public function makeCurrent(): void
     {
         static::where('school_id', $this->school_id)->update(['is_current' => false]);

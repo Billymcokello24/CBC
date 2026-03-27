@@ -79,8 +79,8 @@ class StudentsController extends Controller
             'stats' => [
                 'total' => $totalLearners,
                 'active' => $activeLearners,
-                'boys' => $boys,
-                'girls' => $girls,
+                'withdrawn' => (clone $statsBase)->whereIn('status', ['withdrawn', 'inactive', 'transferred'])->count(),
+                'new_this_month' => $newThisTerm,
                 'growth' => $growth,
             ],
             'filters' => [
@@ -159,30 +159,13 @@ class StudentsController extends Controller
             'county' => ['nullable', 'string', 'max:255'],
             'boarding_status' => ['required', Rule::in(['day', 'boarding'])],
             'status' => ['required', Rule::in(['active', 'inactive', 'graduated', 'transferred', 'withdrawn', 'suspended'])],
-            'guardian_name' => ['nullable', 'string', 'max:255'],
-            'guardian_email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email'), Rule::unique('guardians', 'email')],
-            'guardian_phone' => ['nullable', 'string', 'max:50'],
-            'guardian_password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'photo' => ['nullable', 'image', 'max:2048'],
         ]);
-
-        $guardianProvided = filled($validated['guardian_name'] ?? null)
-            || filled($validated['guardian_email'] ?? null)
-            || filled($validated['guardian_phone'] ?? null)
-            || filled($validated['guardian_password'] ?? null);
-
-        if ($guardianProvided) {
-            $request->validate([
-                'guardian_name' => ['required', 'string', 'max:255'],
-                'guardian_email' => ['required', 'email', 'max:255', Rule::unique('users', 'email'), Rule::unique('guardians', 'email')],
-                'guardian_phone' => ['required', 'string', 'max:50'],
-                'guardian_password' => ['required', 'string', 'min:8', 'confirmed'],
-            ]);
-        }
 
         $schoolId = auth()->user()->school_id;
 
-        $student = DB::transaction(function () use ($validated, $schoolId, $guardianProvided) {
-            $student = Student::create([
+        $student = DB::transaction(function () use ($validated, $schoolId, $request) {
+            $studentData = [
                 'school_id' => $schoolId,
                 'first_name' => $validated['first_name'],
                 'middle_name' => $validated['middle_name'] ?? null,
@@ -197,18 +180,37 @@ class StudentsController extends Controller
                 'boarding_status' => $validated['boarding_status'],
                 'status' => $validated['status'],
                 'nationality' => 'Kenyan',
-            ]);
+            ];
 
-            if ($guardianProvided) {
-                $this->createGuardianAccountForStudent($student, [
-                    'name' => $validated['guardian_name'],
-                    'email' => $validated['guardian_email'],
-                    'phone' => $validated['guardian_phone'],
-                    'password' => $validated['guardian_password'],
-                ]);
+            if ($request->hasFile('photo')) {
+                $studentData['photo'] = $request->file('photo')->store('students/photos', 'public');
             }
 
-            return $student;
+            $s = Student::create($studentData);
+
+            // Create initial enrollment if class is provided
+            if ($validated['class_id']) {
+                $activeYear = \App\Models\Academic\AcademicYear::where('status', 'active')->first();
+                $activeTerm = \App\Models\Academic\AcademicTerm::where('status', 'active')->first();
+                
+                if ($activeYear) {
+                    \App\Models\StudentEnrollment::create([
+                        'school_id' => $schoolId,
+                        'student_id' => $s->id,
+                        'class_id' => $validated['class_id'],
+                        'academic_year_id' => $activeYear->id,
+                        'academic_term_id' => $activeTerm?->id,
+                        'admission_number' => $validated['admission_number'],
+                        'enrollment_date' => now()->toDateString(),
+                        'enrollment_type' => 'new',
+                        'status' => 'active',
+                        'boarding_status' => $validated['boarding_status'],
+                        'enrolled_by' => auth()->id(),
+                    ]);
+                }
+            }
+
+            return $s;
         });
 
         return redirect()->route('students.show', $student)->with('success', 'Learner added successfully.');

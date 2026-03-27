@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-vue-next';
 export type BreadcrumbItem = {
     title: string;
     href: NonNullable<InertiaLinkProps['href']>;
+    icon?: LucideIcon;
 };
 
 export type NavItem = {

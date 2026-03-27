@@ -114,13 +114,17 @@ const searchFocused = ref(false);
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator class="my-2" />
-                        <DropdownMenuItem class="rounded-xl px-3 py-2 cursor-pointer">
-                            <User class="mr-2 h-4 w-4 text-slate-500" />
-                            <span class="font-bold text-xs">Profile</span>
+                        <DropdownMenuItem as-child class="rounded-xl px-3 py-2 cursor-pointer">
+                            <Link href="/settings/profile" class="flex items-center w-full">
+                                <User class="mr-2 h-4 w-4 text-slate-500" />
+                                <span class="font-bold text-xs">Profile</span>
+                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem class="rounded-xl px-3 py-2 cursor-pointer">
-                            <Settings class="mr-2 h-4 w-4 text-slate-500" />
-                            <span class="font-bold text-xs">Settings</span>
+                        <DropdownMenuItem as-child class="rounded-xl px-3 py-2 cursor-pointer">
+                            <Link href="/settings/school" class="flex items-center w-full">
+                                <Settings class="mr-2 h-4 w-4 text-slate-500" />
+                                <span class="font-bold text-xs">Settings</span>
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator class="my-2" />
                         <DropdownMenuItem class="rounded-xl px-3 py-2 cursor-pointer text-rose-600 focus:bg-rose-50 focus:text-rose-600">
