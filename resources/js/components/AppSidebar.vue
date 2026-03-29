@@ -276,18 +276,30 @@ const navigation = [
         title: 'Academic',
         items: [
             {
-                title: 'Curriculum',
+                title: 'Curriculum & Planning',
                 href: '/curriculum',
                 icon: BookOpen,
                 permissions: ['curriculum.view'],
                 children: [
                     { title: 'Overview', href: '/curriculum' },
-                    { title: 'Learning Areas', href: '/curriculum/learning-areas' },
-                    { title: 'Strands & Sub-Strands', href: '/curriculum/strands' },
                     { title: 'Competencies', href: '/curriculum/competencies' },
-                    { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
+                    { title: 'Teaching Plans (Schemes)', href: '/curriculum/planner/schemes' },
+                    { title: 'Lesson Plans', href: '/curriculum/lesson-plans' },
+                    { title: 'Learning Resources', href: '/curriculum/resources' },
                     { title: 'Assignments', href: '/curriculum/assignments', icon: NotebookPen },
-                    { title: 'Resources', href: '/curriculum/resources' },
+                ],
+            },
+            {
+                title: 'CBC Evaluation',
+                href: '/assessments',
+                icon: ClipboardList,
+                permissions: ['assessments.view', 'assessments.view_own'],
+                children: [
+                    { title: 'Assessment Wizard', href: '/assessments/setup', permissions: ['assessments.create'] },
+                    { title: 'Class Evaluation', href: '/assessments/grading', permissions: ['assessments.grade'] },
+                    { title: 'Performance Results', href: '/assessments/results' },
+                    { title: 'Report Cards', href: '/assessments/report-cards' },
+                    { title: 'Portfolio Management', href: '/assessments/rubrics' },
                 ],
             },
             {
@@ -299,21 +311,6 @@ const navigation = [
                     { title: 'Grades', href: '/grades' },
                     { title: 'Classes', href: '/classes' },
                     { title: 'Streams', href: '/streams' },
-                    { title: 'Departments', href: '/departments' },
-                ],
-            },
-            {
-                title: 'Assessments',
-                href: '/assessments',
-                icon: ClipboardList,
-                permissions: ['assessments.view', 'assessments.view_own'],
-                children: [
-                    { title: 'Assessment Setup', href: '/assessments/setup', permissions: ['assessments.create'] },
-                    { title: 'Grading', href: '/assessments/grading', permissions: ['assessments.grade'] },
-                    { title: 'Results', href: '/assessments/results' },
-                    { title: 'Rubrics', href: '/assessments/rubrics' },
-                    { title: 'Report Cards', href: '/assessments/report-cards' },
-                    { title: 'Bulk Upload', href: '/assessments/bulk-upload' },
                 ],
             },
             {
@@ -537,7 +534,7 @@ const filteredNavigation = computed(() => {
         ...group,
         items: group.items.map(item => ({
             ...item,
-            children: item.children ? item.children.filter(child => !child.permissions || canAny(child.permissions)) : undefined
+            children: (item as any).children ? (item as any).children.filter((child: any) => !child.permissions || canAny(child.permissions)) : undefined
         })).filter(filterNavItem)
     })).filter(group => group.items.length > 0);
     

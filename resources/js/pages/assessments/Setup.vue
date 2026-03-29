@@ -30,11 +30,15 @@ const breadcrumbs = [
     { title: 'Setup Wizard', href: '/assessments/setup' },
 ];
 
+interface Strand { id: number; name: string; }
+interface SubStrand { id: number; name: string; }
+interface Indicator { id: number; indicator: string; }
+
 const currentStep = ref(1);
 const loading = ref(false);
-const strands = ref<any[]>([]);
-const subStrands = ref<any[]>([]);
-const indicators = ref<any[]>([]);
+const strands = ref<Strand[]>([]);
+const subStrands = ref<SubStrand[]>([]);
+const indicators = ref<Indicator[]>([]);
 
 const form = useForm({
     title: '',
@@ -72,7 +76,7 @@ watch(() => form.subject_id, async (val) => {
     loading.value = true;
     try {
         const res = await axios.get(route('assessments.strands', { subject_id: val }));
-        strands.value = res.data;
+        strands.value = res.data as Strand[];
         form.strand_id = '';
         form.sub_strand_id = '';
     } finally {
@@ -85,7 +89,7 @@ watch(() => form.strand_id, async (val) => {
     loading.value = true;
     try {
         const res = await axios.get(route('assessments.sub-strands', { strand_id: val }));
-        subStrands.value = res.data;
+        subStrands.value = res.data as SubStrand[];
         form.sub_strand_id = '';
     } finally {
         loading.value = false;
