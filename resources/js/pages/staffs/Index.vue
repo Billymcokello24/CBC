@@ -213,13 +213,16 @@ const deleteStaff = (id: number) => {
             <!-- Staff Grid -->
             <div v-if="viewMode === 'grid'" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <div v-for="teacher in teachers.data" :key="teacher.id" class="group relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl hover:shadow-indigo-100/50 hover:border-blue-400/30">
-                    <div class="flex flex-col items-center text-center space-y-4">
+                    <Link :href="`/staffs/${teacher.id}`" class="flex flex-col items-center text-center space-y-4">
                         <div class="relative">
-                            <div class="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center font-black text-2xl text-slate-400 ring-4 ring-white shadow-inner group-hover:scale-110 transition-transform duration-500">
-                                {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
+                            <div class="h-20 w-20 rounded-[2rem] overflow-hidden bg-slate-50 flex items-center justify-center ring-4 ring-white shadow-inner group-hover:scale-110 transition-transform duration-500">
+                                <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
+                                <div v-else class="font-black text-2xl text-slate-400">
+                                    {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
+                                </div>
                             </div>
                             <div class="absolute -bottom-1 -right-1 h-6 w-6 rounded-lg border-2 border-white shadow-sm flex items-center justify-center" :class="getStatusColor(teacher.status)">
-                                <BadgeCheck v-if="teacher.status === 'active'" class="h-3 w-3" />
+                                <BadgeCheck v-if="teacher.status === 'active'" class="h-3 w-3 text-white" />
                             </div>
                         </div>
 
@@ -233,15 +236,15 @@ const deleteStaff = (id: number) => {
                                 </Badge>
                             </div>
                         </div>
+                    </Link>
 
-                        <div class="grid grid-cols-2 gap-2 w-full pt-4 border-t border-slate-50">
-                            <Link :href="`/staffs/${teacher.id}`" class="flex items-center justify-center gap-2 h-10 rounded-2xl bg-slate-900 text-white font-bold text-xs hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
-                                <Eye class="h-3.5 w-3.5" /> View
-                            </Link>
-                            <Link :href="`/staffs/${teacher.id}/edit`" class="flex items-center justify-center gap-2 h-10 rounded-2xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-white hover:text-blue-600 hover:shadow-lg transition-all border border-slate-200">
-                                <Edit class="h-3.5 w-3.5" /> Edit
-                            </Link>
-                        </div>
+                    <div class="grid grid-cols-2 gap-2 w-full pt-4 border-t border-slate-50 mt-4">
+                        <Link :href="`/staffs/${teacher.id}`" class="flex items-center justify-center gap-2 h-10 rounded-2xl bg-slate-900 text-white font-bold text-xs hover:bg-blue-600 transition-all shadow-lg shadow-slate-200">
+                            <Eye class="h-3.5 w-3.5" /> View
+                        </Link>
+                        <Link :href="`/staffs/${teacher.id}/edit`" class="flex items-center justify-center gap-2 h-10 rounded-2xl bg-slate-100 text-slate-600 font-bold text-xs hover:bg-white hover:text-blue-600 hover:shadow-lg transition-all border border-slate-200">
+                            <Edit class="h-3.5 w-3.5" /> Edit
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -259,11 +262,12 @@ const deleteStaff = (id: number) => {
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
-                        <tr v-for="teacher in teachers.data" :key="teacher.id" class="group hover:bg-slate-50/40 transition-colors">
+                        <tr v-for="teacher in teachers.data" :key="teacher.id" @click="router.visit(`/staffs/${teacher.id}`)" class="group hover:bg-slate-50/40 transition-colors cursor-pointer">
                             <td class="p-6">
                                 <div class="flex items-center gap-4">
-                                    <div class="h-12 w-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-400 text-sm italic group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
-                                        {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
+                                    <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 flex items-center justify-center font-black text-slate-400 text-sm italic group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                                        <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
+                                        <template v-else>{{ teacher.first_name[0] }}{{ teacher.last_name[0] }}</template>
                                     </div>
                                     <div class="space-y-1">
                                         <p class="font-black text-slate-900 leading-none group-hover:text-blue-600 transition-colors">{{ teacher.first_name }} {{ teacher.last_name }}</p>

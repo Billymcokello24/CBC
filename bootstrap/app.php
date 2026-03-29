@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\IdentifySchool::class,
         ]);
 
         // Register Spatie Permission middleware aliases

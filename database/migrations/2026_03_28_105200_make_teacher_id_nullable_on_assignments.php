@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Drop the existing FK, make column nullable, re-add FK
+        Schema::table('assignments', function (Blueprint $table) {
+            $table->dropForeign(['teacher_id']);
+        });
+
+        DB::statement('ALTER TABLE assignments MODIFY teacher_id BIGINT UNSIGNED NULL');
+
+        Schema::table('assignments', function (Blueprint $table) {
+            $table->foreign('teacher_id')->references('id')->on('teachers')->nullOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('assignments', function (Blueprint $table) {
+            $table->dropForeign(['teacher_id']);
+        });
+
+        DB::statement('ALTER TABLE assignments MODIFY teacher_id BIGINT UNSIGNED NOT NULL');
+
+        Schema::table('assignments', function (Blueprint $table) {
+            $table->foreign('teacher_id')->references('id')->on('teachers')->cascadeOnDelete();
+        });
+    }
+};

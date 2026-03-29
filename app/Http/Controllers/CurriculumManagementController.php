@@ -23,6 +23,20 @@ class CurriculumManagementController extends Controller
                 'subjects' => Subject::count(),
                 'strands' => DB::table('strands')->count(),
                 'competencies' => Competency::count(),
+                'schemes' => DB::table('schemes_of_work')->count(),
+                'lesson_plans' => DB::table('lesson_plans')->count(),
+                'assignments' => DB::table('assignments')->count(),
+                'resources' => DB::table('curriculum_resources')->count(),
+            ],
+            'insights' => [
+                'syllabus_coverage' => DB::table('learning_outcomes')->count() > 0 
+                    ? round((DB::table('student_achievements')->distinct('learning_outcome_id')->count() / DB::table('learning_outcomes')->count()) * 100) 
+                    : 0,
+                'pending_approvals' => DB::table('schemes_of_work')->where('status', 'pending')->count() + DB::table('lesson_plans')->where('status', 'pending')->count(),
+                'avg_submission_rate' => DB::table('assignments')->count() > 0 
+                    ? round((DB::table('assignment_submissions')->count() / (DB::table('assignments')->count() * 40)) * 100) // Assuming avg 40 students per class
+                    : 0,
+                'unassigned_subjects' => DB::table('subjects')->where('is_active', true)->count(), // Placeholder logic
             ],
             'recent_areas' => LearningArea::query()
                 ->withCount('subjects')

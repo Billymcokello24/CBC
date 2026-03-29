@@ -234,6 +234,9 @@ class StudentsController extends Controller
             'Bungoma', 'Busia', 'Siaya', 'Kisumu', 'Homa Bay', 'Migori', 'Kisii', 'Nyamira', 'Nairobi'
         ];
 
+        $religions = ['Christian', 'Muslim', 'Hindu', 'Other', 'None'];
+        $languages = ['English', 'Kiswahili', 'French', 'German', 'Arabic', 'Chinese', 'Other'];
+
         return Inertia::render('students/Show', [
             'learner' => [
                 'id' => $student->id,
@@ -253,6 +256,7 @@ class StudentsController extends Controller
                 'sub_county' => $student->sub_county,
                 'ward' => $student->ward,
                 'photo' => $student->photo,
+                'photo_url' => $student->photo_url,
                 'admission_date' => optional($student->admission_date)->format('Y-m-d'),
                 'admission_class_id' => $student->admission_class_id,
                 'current_class_id' => $student->current_class_id,
@@ -291,6 +295,8 @@ class StudentsController extends Controller
                 ->orderBy('classes.name')
                 ->get(),
             'counties' => $counties,
+            'religions' => $religions,
+            'languages' => $languages,
         ]);
     }
 
@@ -790,6 +796,7 @@ class StudentsController extends Controller
             'class_id' => $student->current_class_id,
             'status' => $student->status,
             'photo' => $student->photo,
+            'photo_url' => $student->photo_url,
             'age' => $student->age,
             'admission_date' => optional($student->admission_date)?->format('Y-m-d'),
         ];

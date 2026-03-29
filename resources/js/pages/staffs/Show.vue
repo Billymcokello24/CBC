@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { 
     Users, ArrowLeft, Mail, Phone, MapPin, 
     Calendar, Briefcase, GraduationCap, 
@@ -7,7 +7,7 @@ import {
     Camera, CheckCircle2, ShieldCheck,
     Building2, Hash, Contact,
     Globe, Trash2, Save, X, Plus,
-    Loader2, AlertCircle
+    Loader2, AlertCircle, HeartPulse, ShieldPlus
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -23,6 +23,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import ProfilePhotoUpload from '@/components/forms/ProfilePhotoUpload.vue';
 import InputError from '@/components/InputError.vue';
 import type { BreadcrumbItem } from '@/types';
 
@@ -101,15 +109,15 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Staffs', href: '/staffs' },
+    { title: 'Staff Registry', href: '/staffs' },
     { title: props.teacher.full_name, href: `/staffs/${props.teacher.id}` },
 ];
 
-const activeTab = ref('overview');
+const activeTab = ref('personal');
 const isEditing = ref(false);
 
 const form = useForm({
-    _method: 'PUT',
+    _method: 'PATCH',
     first_name: props.teacher.first_name,
     middle_name: props.teacher.middle_name ?? '',
     last_name: props.teacher.last_name,
@@ -145,433 +153,580 @@ const form = useForm({
     kra_pin: props.teacher.kra_pin ?? '',
     notes: props.teacher.notes ?? '',
     status: props.teacher.status,
-    photo: null as File | null,
-    password: '',
-    password_confirmation: '',
-});
-
-const assignClassOpen = ref(false);
-const assignClassForm = useForm({
-    class_id: '',
-    role: 'primary',
+    role: props.teacher.staff_designation?.name.toLowerCase().includes('teacher') ? 'teacher' : 'staff', // Fallback
 });
 
 const saveChanges = () => {
-    // Note: Using post with _method: 'PUT' for file upload compatibility
     form.post(`/staffs/${props.teacher.id}`, {
         preserveScroll: true,
-        onSuccess: () => isEditing.value = false,
-    });
-};
-
-const submitClassAssignment = () => {
-    assignClassForm.post(`/staffs/${props.teacher.id}/assign-class-teacher`, {
-        preserveScroll: true,
         onSuccess: () => {
-            assignClassOpen.value = false;
-            assignClassForm.reset();
+            isEditing.value = false;
+            router.reload();
         },
     });
 };
+
+const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'active': return 'bg-emerald-500 text-white shadow-emerald-200/50';
+        case 'on_leave': return 'bg-amber-500 text-white shadow-amber-200/50';
+        case 'suspended': return 'bg-rose-500 text-white shadow-rose-200/50';
+        default: return 'bg-slate-400 text-white';
+    }
+};
+
+const tabs = [
+    { id: 'personal', label: 'Personal', icon: Users },
+    { id: 'employment', label: 'Employment', icon: Briefcase },
+    { id: 'academic', label: 'Academic', icon: GraduationCap },
+    { id: 'location', label: 'Location', icon: MapPin },
+    { id: 'financial', label: 'Financial', icon: ShieldCheck },
+    { id: 'security', label: 'Security', icon: ShieldPlus },
+];
 </script>
 
 <template>
     <Head :title="teacher.full_name" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <!-- Profile Header -->
-            <div class="relative overflow-hidden rounded-2xl border bg-card shadow-sm">
-                <!-- Background Decoration -->
-                <div class="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent"></div>
-                
-                <div class="relative flex flex-col gap-6 p-6 md:flex-row md:items-center">
-                    <!-- Photo Section -->
-                    <div class="relative group">
-                        <div v-if="!isEditing" class="h-32 w-32 overflow-hidden rounded-full border-4 border-background bg-muted shadow-md flex items-center justify-center">
-                            <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
-                            <div v-else class="text-4xl font-bold text-purple-600">
-                                {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
-                            </div>
-                        </div>
-                        <div v-else class="h-32 w-32 flex items-center justify-center">
-                             <ProfilePhotoUpload 
-                                v-model="form.photo" 
-                                :error="form.errors.photo"
-                                :current-image="teacher.photo_url"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Info Section -->
-                    <div class="flex-1 space-y-2">
-                        <div class="flex flex-wrap items-center gap-3">
-                            <h1 class="text-3xl font-bold tracking-tight">{{ teacher.full_name }}</h1>
-                            <Badge :variant="teacher.status === 'active' ? 'default' : 'secondary'" class="capitalize text-xs">
-                                {{ teacher.status }}
-                            </Badge>
-                        </div>
-                        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                            <div class="flex items-center gap-2">
-                                <Hash class="h-4 w-4" />
-                                <span>{{ teacher.staff_number }}</span>
-                            </div>
-                            <div v-if="teacher.tsc_number" class="flex items-center gap-2 text-purple-600 font-medium">
-                                <Contact class="h-4 w-4 text-purple-500" />
-                                <span>TSC: {{ teacher.tsc_number }}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <Building2 class="h-4 w-4" />
-                                <span>{{ teacher.department?.name || 'No Department' }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="flex flex-wrap items-center gap-2 md:self-start">
-                        <template v-if="!isEditing">
-                            <Button variant="outline" size="sm" @click="isEditing = true">
-                                <Edit class="mr-2 h-4 w-4" />
-                                Edit Profile
-                            </Button>
-                        </template>
-                        <template v-else>
-                            <Button variant="outline" size="sm" @click="isEditing = false">
-                                <X class="mr-2 h-4 w-4" />
-                                Cancel
-                            </Button>
-                            <Button size="sm" @click="saveChanges" :disabled="form.processing">
-                                <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                <Save v-else class="mr-2 h-4 w-4" />
-                                Save Changes
-                            </Button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Tabs Navigation -->
-                <div class="border-t bg-muted/30 px-6">
-                    <div class="flex gap-8 overflow-x-auto scrollbar-hide">
-                        <button 
-                            v-for="tab in [
-                                { id: 'overview', label: 'Overview', icon: Users },
-                                { id: 'professional', label: 'Professional', icon: Briefcase },
-                                { id: 'assignments', label: 'Assignments', icon: BookOpen },
-                                { id: 'qualifications', label: 'Qualifications', icon: GraduationCap },
-                            ]" 
-                            :key="tab.id"
-                            @click="activeTab = tab.id"
-                            class="flex items-center gap-2 border-b-2 py-4 text-sm font-medium transition-colors"
-                            :class="activeTab === tab.id ? 'border-purple-600 text-purple-600' : 'border-transparent text-muted-foreground hover:text-foreground'"
-                        >
-                            <component :is="tab.icon" class="h-4 w-4" />
-                            {{ tab.label }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab Content -->
-            <div class="grid gap-6">
-                <!-- Overview Tab -->
-                <div v-if="activeTab === 'overview'" class="space-y-6">
-                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <!-- Class Teacher Card -->
-                        <div class="rounded-xl border bg-card p-6 shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-semibold flex items-center gap-2">
-                                    <Users class="h-5 w-5 text-purple-600" />
-                                    Class Teacher
-                                </h3>
-                                <Button variant="outline" @click="assignClassOpen = true" class="h-7 px-2 text-[11px]">
-                                    <Plus class="h-3 w-3 mr-1" /> Assign
-                                </Button>
-                            </div>
-                            <div v-if="teacher.classes_as_teacher.length" class="space-y-3">
-                                <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                    <div class="flex items-center gap-3 min-w-0">
-                                        <div class="h-10 w-10 flex items-center justify-center rounded-lg bg-purple-100 text-purple-700 font-bold shrink-0">
-                                            {{ cls.name[0] }}
+        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1400px] mx-auto pb-20 p-6 md:p-8">
+            
+            <!-- Dynamic Subheader -->
+            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-center gap-5">
+                    <Button variant="ghost" size="icon" as-child class="h-10 w-10 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100">
+                        <Link href="/staffs"><ArrowLeft class="h-5 w-5" /></Link>
+                    </Button>
+                    <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+                        <!-- Profile Photo -->
+                        <div class="relative group">
+                            <ProfilePhotoUpload 
+                                :upload-url="`/staffs/${teacher.id}/photo`" 
+                                @uploaded="() => router.reload()"
+                            >
+                                <template #default="{ isUploading }">
+                                    <div class="h-28 w-28 md:h-36 rounded-[2.5rem] overflow-hidden border-4 border-white dark:border-zinc-900 shadow-2xl bg-muted ring-1 ring-slate-200/50 dark:ring-white/5 relative transition-transform duration-500 group-hover:scale-[1.02]">
+                                        <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
+                                        <div v-else class="h-full w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 to-indigo-600 text-white text-4xl font-black">
+                                            {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
                                         </div>
-                                        <div class="min-w-0">
-                                            <p class="font-medium text-sm truncate">{{ cls.name }}</p>
-                                            <p class="text-xs text-muted-foreground">{{ cls.grade_level.name }}</p>
+                                        <div class="absolute inset-0 bg-black/40 transition-opacity flex items-center justify-center cursor-pointer" :class="isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
+                                            <Loader2 v-if="isUploading" class="h-8 w-8 text-white animate-spin" />
+                                            <Camera v-else class="h-8 w-8 text-white" />
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" class="h-8 w-8 text-muted-foreground" as-child>
-                                        <Link :href="`/classes/${cls.id}`"><Eye class="h-4 w-4" /></Link>
-                                    </Button>
-                                </div>
-                            </div>
-                            <div v-else class="text-center py-8 text-muted-foreground text-sm border border-dashed rounded-lg">
-                                <div class="opacity-20 mb-2"><Users class="h-8 w-8 mx-auto" /></div>
-                                Not assigned as a class teacher.
-                            </div>
+                                </template>
+                            </ProfilePhotoUpload>
                         </div>
-
-                        <!-- Contact Details -->
-                        <div class="rounded-xl border bg-card p-6 shadow-sm">
-                            <h3 class="font-semibold mb-4 flex items-center gap-2">
-                                <Contact class="h-5 w-5 text-blue-600" />
-                                Contact Details
-                            </h3>
-                            <div class="space-y-4">
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">PRIMARY EMAIL</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.email }}</div>
-                                    <Input v-else v-model="form.email" class="h-8 text-sm" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">PHONE NUMBER</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.phone }}</div>
-                                    <Input v-else v-model="form.phone" class="h-8 text-sm" />
-                                </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="space-y-1">
-                                        <Label class="text-[10px] text-muted-foreground font-bold uppercase">GENDER</Label>
-                                        <div v-if="!isEditing" class="text-sm font-medium capitalize">{{ teacher.gender }}</div>
-                                        <select v-else v-model="form.gender" class="h-8 w-full rounded-md border bg-background px-2 text-sm">
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                        </select>
-                                    </div>
-                                    <div class="space-y-1">
-                                        <Label class="text-[10px] text-muted-foreground font-bold uppercase">DOB</Label>
-                                        <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.date_of_birth || '—' }}</div>
-                                        <Input v-else v-model="form.date_of_birth" type="date" class="h-8 text-sm px-1" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Emergency Contact -->
-                        <div class="rounded-xl border bg-card p-6 shadow-sm">
-                            <h3 class="font-semibold mb-4 flex items-center gap-2">
-                                <AlertCircle class="h-5 w-5 text-red-600" />
-                                Emergency Contact
-                            </h3>
-                            <div class="space-y-4">
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTACT NAME</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.emergency_contact_name || '—' }}</div>
-                                    <Input v-else v-model="form.emergency_contact_name" class="h-8 text-sm" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">RELATIONSHIP</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium capitalize">{{ teacher.emergency_contact_relationship || '—' }}</div>
-                                    <Input v-else v-model="form.emergency_contact_relationship" class="h-8 text-sm" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTACT PHONE</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.emergency_contact_phone || '—' }}</div>
-                                    <Input v-else v-model="form.emergency_contact_phone" class="h-8 text-sm" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Professional Tab -->
-                <div v-if="activeTab === 'professional'" class="space-y-6">
-                    <div class="grid gap-6 md:grid-cols-2">
-                        <!-- Employment & Payroll -->
-                        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
-                            <div class="border-b bg-muted/30 px-6 py-4">
-                                <h3 class="font-semibold flex items-center gap-2">
-                                    <Briefcase class="h-5 w-5 text-purple-600" />
-                                    Employment & Payroll
-                                </h3>
-                            </div>
-                            <div class="p-6 grid gap-6 sm:grid-cols-2">
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DEPARTMENT</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium truncate">{{ teacher.department?.name || '—' }}</div>
-                                    <select v-else v-model="form.department_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                        <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DESIGNATION</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium truncate">{{ teacher.staff_designation?.name || '—' }}</div>
-                                    <select v-else v-model="form.staff_designation_id" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                        <option v-for="desig in designations" :key="desig.id" :value="desig.id">{{ desig.name }}</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">CONTRACT TYPE</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.contract_type || '—' }}</div>
-                                    <select v-else v-model="form.contract_type" class="h-9 w-full rounded-md border bg-background px-3 text-sm">
-                                        <option value="Permanent">Permanent</option>
-                                        <option value="Contract">Contract</option>
-                                        <option value="Part-time">Part-time</option>
-                                    </select>
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">BASIC SALARY</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">KES {{ Number(teacher.basic_salary).toLocaleString() }}</div>
-                                    <Input v-else v-model="form.basic_salary" type="number" class="h-9" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">BANK NAME</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.bank_name || '—' }}</div>
-                                    <Input v-else v-model="form.bank_name" class="h-9" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">ACCOUNT NUMBER</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.bank_account_number || '—' }}</div>
-                                    <Input v-else v-model="form.bank_account_number" class="h-9" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Statutory Details -->
-                        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
-                            <div class="border-b bg-muted/30 px-6 py-4">
-                                <h3 class="font-semibold flex items-center gap-2">
-                                    <ShieldCheck class="h-5 w-5 text-indigo-600" />
-                                    Statutory Details
-                                </h3>
-                            </div>
-                            <div class="p-6 grid gap-6 sm:grid-cols-2">
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">KRA PIN</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.kra_pin || '—' }}</div>
-                                    <Input v-else v-model="form.kra_pin" class="h-9" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">NHIF NUMBER</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.nhif_number || '—' }}</div>
-                                    <Input v-else v-model="form.nhif_number" class="h-9" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">NSSF NUMBER</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.nssf_number || '—' }}</div>
-                                    <Input v-else v-model="form.nssf_number" class="h-9" />
-                                </div>
-                                <div class="space-y-1">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase">DATE JOINED</Label>
-                                    <div v-if="!isEditing" class="text-sm font-medium">{{ teacher.date_joined || '—' }}</div>
-                                    <Input v-else v-model="form.date_joined" type="date" class="h-9" />
-                                </div>
-                                <div class="col-span-full space-y-1 pt-4 border-t">
-                                    <Label class="text-[10px] text-muted-foreground font-bold uppercase italic">NOTES / REMARKS</Label>
-                                    <div v-if="!isEditing" class="text-sm text-muted-foreground leading-relaxed">{{ teacher.notes || 'No additional notes provided.' }}</div>
-                                    <textarea v-else v-model="form.notes" class="w-full rounded-md border bg-background p-3 text-sm min-h-[100px]"></textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Assignments Tab -->
-                <div v-if="activeTab === 'assignments'" class="space-y-6">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">Subject Allocations</h3>
-                        <Button size="sm" as-child>
-                            <Link href="/classes/allocations">
-                                <Plus class="h-4 w-4 mr-2" /> Manage Allocations
-                            </Link>
-                        </Button>
-                    </div>
-
-                    <div v-if="teacher.subject_assignments.length" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        <div v-for="assignment in teacher.subject_assignments" :key="assignment.id" class="rounded-xl border bg-card p-4 shadow-sm relative overflow-hidden group">
-                            <div v-if="assignment.is_primary_teacher" class="absolute -right-6 top-2 rotate-45 bg-purple-600 text-[10px] text-white py-1 px-8 font-bold shadow-sm">
-                                PRIMARY
-                            </div>
-                            
-                            <div class="flex items-start gap-3">
-                                <div class="h-10 w-10 flex items-center justify-center rounded-lg bg-purple-100 text-purple-700 font-bold shrink-0">
-                                    {{ assignment.subject.name[0] }}
-                                </div>
-                                <div class="min-w-0">
-                                    <h4 class="font-semibold truncate">{{ assignment.subject.name }}</h4>
-                                    <p class="text-xs text-muted-foreground">{{ assignment.subject.code }}</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 pt-4 border-t flex items-center justify-between">
-                                <div class="flex items-center gap-1.5 text-sm">
-                                    <Building2 class="h-4 w-4 text-muted-foreground" />
-                                    <span>{{ assignment.school_class.name }}</span>
-                                </div>
-                                <Badge :variant="assignment.is_active ? 'default' : 'secondary'" class="text-[10px]">
-                                    {{ assignment.is_active ? 'Active' : 'Inactive' }}
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ teacher.full_name }}</h1>
+                                <Badge :class="getStatusColor(teacher.status)" class="rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-0 shadow-sm">
+                                    {{ teacher.status }}
                                 </Badge>
                             </div>
+                            <div class="flex items-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
+                                <span class="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg border border-blue-100/50 font-bold uppercase tracking-tighter text-[10px]">{{ teacher.staff_number }}</span>
+                                <span class="h-1 w-1 rounded-full bg-slate-300"></span>
+                                <span>{{ teacher.department?.name || 'Unassigned' }}</span>
+                                <span v-if="teacher.tsc_number" class="h-1 w-1 rounded-full bg-slate-300"></span>
+                                <span v-if="teacher.tsc_number" class="text-indigo-600 font-bold italic">TSC: {{ teacher.tsc_number }}</span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div v-else class="rounded-xl border border-dashed bg-muted/10 p-12 text-center">
-                        <BookOpen class="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" />
-                        <h3 class="font-semibold text-lg text-muted-foreground">No Subjects Allocated</h3>
-                        <p class="text-sm text-muted-foreground mt-1 max-w-sm mx-auto italic">
-                            This teacher hasn't been assigned any subjects for the current academic year yet.
-                        </p>
                     </div>
                 </div>
 
-                <div v-if="activeTab === 'qualifications'" class="rounded-xl border border-dashed bg-muted/10 p-12 text-center">
-                    <GraduationCap class="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-30" />
-                    <h3 class="font-semibold text-lg text-muted-foreground">Academic Profile</h3>
-                    <p class="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                        Track certificates, degrees, and professional certifications.
-                    </p>
+                <div class="flex items-center gap-3 bg-white/50 dark:bg-zinc-900/50 p-2 rounded-2xl border border-slate-100 dark:border-zinc-800 backdrop-blur-sm self-center md:self-auto shadow-sm">
+                    <template v-if="!isEditing">
+                        <Button @click="isEditing = true" variant="ghost" class="rounded-xl h-11 px-6 font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-all gap-2">
+                            <Edit class="h-4 w-4" />
+                            Edit Personnel
+                        </Button>
+                        <Button variant="ghost" class="rounded-xl h-11 w-11 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all border border-transparent hover:border-rose-100">
+                            <Trash2 class="h-4 w-4" />
+                        </Button>
+                    </template>
+                    <template v-else>
+                        <Button @click="isEditing = false" variant="ghost" class="rounded-xl h-11 px-6 font-bold text-slate-500 hover:bg-slate-50 transition-all">
+                            Cancel
+                        </Button>
+                        <Button @click="saveChanges" :disabled="form.processing" class="rounded-xl h-11 px-8 font-bold bg-slate-900 hover:bg-black text-white shadow-xl shadow-slate-200 dark:shadow-none transition-all gap-2">
+                            <Loader2 v-if="form.processing" class="h-4 w-4 animate-spin" />
+                            <Save v-else class="h-4 w-4" />
+                            Save Profile
+                        </Button>
+                    </template>
                 </div>
             </div>
-        </div>
 
-        <!-- Assign Class Modal -->
-        <Dialog :open="assignClassOpen" @update:open="assignClassOpen = $event">
-            <DialogContent class="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Assign as Class Teacher</DialogTitle>
-                    <DialogDescription>
-                        Assign <strong>{{ teacher.full_name }}</strong> to manage a class.
-                    </DialogDescription>
-                </DialogHeader>
-                <div class="grid gap-4 py-4">
-                    <div class="space-y-2">
-                        <Label>Select Class</Label>
-                        <select v-model="assignClassForm.class_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                            <option value="">Choose class...</option>
-                            <option v-for="cls in availableClasses" :key="cls.id" :value="cls.id">
-                                {{ cls.name }} ({{ cls.grade }}) {{ cls.is_assigned ? ' - Already has teacher' : '' }}
-                            </option>
-                        </select>
-                        <InputError :message="assignClassForm.errors.class_id" />
+            <!-- Profile Content Area -->
+            <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+                <!-- Navigation Sidebar -->
+                <aside class="flex flex-col gap-2 p-2 bg-white/60 dark:bg-zinc-900/60 rounded-[2rem] border border-slate-100 dark:border-zinc-800 backdrop-blur-sm sticky top-24 shadow-sm">
+                    <button 
+                        v-for="tab in tabs" 
+                        :key="tab.id"
+                        @click="activeTab = tab.id"
+                        class="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold transition-all duration-300 group relative"
+                        :class="activeTab === tab.id 
+                            ? 'bg-slate-900 text-white shadow-lg shadow-slate-200 dark:shadow-none translate-x-1' 
+                            : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white'"
+                    >
+                        <component :is="tab.icon" class="h-4 w-4" :class="activeTab === tab.id ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-600'" />
+                        {{ tab.label }}
+                        <div v-if="activeTab === tab.id" class="absolute left-0 w-1 h-6 bg-blue-500 rounded-full"></div>
+                    </button>
+                </aside>
+
+                <!-- Information Cards -->
+                <main class="space-y-6">
+                    <!-- Personal Info Tab -->
+                    <div v-if="activeTab === 'personal'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <Users class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Personal Identity</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Core biographical information and records.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">First Name</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.first_name }}</div>
+                                        <Input v-else v-model="form.first_name" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                        <InputError :message="form.errors.first_name" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Middle Name</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.middle_name || '—' }}</div>
+                                        <Input v-else v-model="form.middle_name" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Last Name</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.last_name }}</div>
+                                        <Input v-else v-model="form.last_name" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Gender</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white capitalize">{{ props.teacher.gender }}</div>
+                                        <select v-else v-model="form.gender" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Date of Birth</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.date_of_birth || '—' }}</div>
+                                        <Input v-else v-model="form.date_of_birth" type="date" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">ID / Passport Number</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.id_number || '—' }}</div>
+                                        <Input v-else v-model="form.id_number" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Nationality</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.nationality }}</div>
+                                        <Input v-else v-model="form.nationality" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                    
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Marital Status</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.marital_status || '—' }}</div>
+                                        <select v-else v-model="form.marital_status" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                            <option value="">Select Status</option>
+                                            <option value="Single">Single</option>
+                                            <option value="Married">Married</option>
+                                            <option value="Divorced">Divorced</option>
+                                            <option value="Widowed">Widowed</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Blood Group</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.blood_group || '—' }}</div>
+                                        <Input v-else v-model="form.blood_group" class="h-11 rounded-xl border-slate-200 bg-white" placeholder="e.g O+" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <!-- Contact & Email Card -->
+                        <Card class="mt-8 border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <Mail class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Channels</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Primary contact and system access details.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Primary Email</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.email }}</div>
+                                        <Input v-else v-model="form.email" type="email" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                        <InputError :message="form.errors.email" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Primary Phone</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.phone }}</div>
+                                        <Input v-else v-model="form.phone" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                        <InputError :message="form.errors.phone" />
+                                    </div>
+                                    
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Alternate Phone</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.alternate_phone || '—' }}</div>
+                                        <Input v-else v-model="form.alternate_phone" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                    <div class="space-y-2">
-                        <Label>Teacher Role</Label>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 text-sm">
-                                <input type="radio" v-model="assignClassForm.role" value="primary" class="h-4 w-4 text-purple-600" />
-                                Primary Teacher
-                            </label>
-                            <label class="flex items-center gap-2 text-sm">
-                                <input type="radio" v-model="assignClassForm.role" value="assistant" class="h-4 w-4 text-purple-600" />
-                                Assistant Teacher
-                            </label>
-                        </div>
+
+                    <!-- Employment Tab -->
+                    <div v-if="activeTab === 'employment'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <Briefcase class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Career Record</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Institutional placement and contract terms.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Department</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.department?.name || 'Unassigned' }}</div>
+                                        <select v-else v-model="form.department_id" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                            <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Category</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.staff_category?.name || '—' }}</div>
+                                        <select v-else v-model="form.staff_category_id" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                            <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Designation</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.staff_designation?.name || '—' }}</div>
+                                        <select v-else v-model="form.staff_designation_id" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+                                            <option v-for="desig in designations" :key="desig.id" :value="desig.id">{{ desig.name }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Contract Type</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.contract_type || '—' }}</div>
+                                        <select v-else v-model="form.contract_type" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold">
+                                            <option value="Permanent">Permanent</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Probation">Probation</option>
+                                            <option value="Internship">Internship</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Employment Type</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.employment_type || '—' }}</div>
+                                        <select v-else v-model="form.employment_type" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold">
+                                            <option value="Full-time">Full-time</option>
+                                            <option value="Part-time">Part-time</option>
+                                            <option value="Consultant">Consultant</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Date Joined</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.date_joined || '—' }}</div>
+                                        <Input v-else v-model="form.date_joined" type="date" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                    
-                    <div v-if="assignClassForm.class_id && availableClasses.find(c => String(c.id) === String(assignClassForm.class_id))?.is_assigned" class="rounded-lg bg-amber-50 p-3 border border-amber-200">
-                        <div class="flex gap-2">
-                            <AlertCircle class="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                            <p class="text-xs text-amber-800">
-                                This class already has <strong>{{ availableClasses.find(c => String(c.id) === String(assignClassForm.class_id))?.current_teacher }}</strong> assigned. Proceeding will replace them.
-                            </p>
-                        </div>
+
+                    <!-- Academic/Assignments Tab -->
+                    <div v-if="activeTab === 'academic'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <BookOpen class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Active Assignments</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Class leadership and subject allocations.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-4">
+                                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <Building2 class="h-3.5 w-3.5" /> Class Teacher For
+                                        </h3>
+                                        <div v-if="teacher.classes_as_teacher.length" class="space-y-3">
+                                            <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800">
+                                                <div>
+                                                    <p class="font-black text-slate-900 dark:text-white">{{ cls.name }}</p>
+                                                    <p class="text-[10px] font-bold text-blue-600 uppercase">{{ cls.grade_level.name }}</p>
+                                                </div>
+                                                <Button size="icon" variant="ghost" class="h-10 w-10 text-slate-400 hover:text-blue-600 rounded-xl" as-child>
+                                                    <Link :href="`/classes/${cls.id}`"><Eye class="h-4 w-4" /></Link>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <div v-else class="h-32 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-slate-400">
+                                            <Users class="h-8 w-8 mb-2 opacity-20" />
+                                            <p class="text-xs font-medium uppercase italic">No Class Assigned</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-4">
+                                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                            <BookOpen class="h-3.5 w-3.5" /> Subject Allocations
+                                        </h3>
+                                        <div v-if="teacher.subject_assignments.length" class="grid gap-3">
+                                            <div v-for="assignment in teacher.subject_assignments" :key="assignment.id" class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex items-center justify-between group">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black italic">
+                                                        {{ assignment.subject.name[0] }}
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-bold text-slate-900 dark:text-white">{{ assignment.subject.name }}</p>
+                                                        <p class="text-[10px] text-slate-400 font-bold uppercase">{{ assignment.school_class.name }}</p>
+                                                    </div>
+                                                </div>
+                                                <Badge v-if="assignment.is_primary_teacher" class="bg-indigo-50 text-indigo-600 border-none text-[8px] font-black">HEAD</Badge>
+                                            </div>
+                                        </div>
+                                        <div v-else class="h-32 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-slate-400">
+                                            <BookOpen class="h-8 w-8 mb-2 opacity-20" />
+                                            <p class="text-xs font-medium uppercase italic">No Subjects Allocated</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
-                </div>
-                <DialogFooter>
-                    <Button variant="outline" @click="assignClassOpen = false">Cancel</Button>
-                    <Button @click="submitClassAssignment" :disabled="assignClassForm.processing">
-                        <Loader2 v-if="assignClassForm.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        Confirm Assignment
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+
+                    <!-- Location Tab -->
+                    <div v-if="activeTab === 'location'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <MapPin class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Residential Details</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Current address and geographical records.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">County</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.county || '—' }}</div>
+                                        <select v-else v-model="form.county" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold">
+                                            <option value="">Select County</option>
+                                            <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sub County</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.sub_county || '—' }}</div>
+                                        <Input v-else v-model="form.sub_county" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                    </div>
+
+                                    <div class="col-span-1 md:col-span-2 space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Detailed Address</Label>
+                                        <div v-if="!isEditing" class="min-h-[6rem] p-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-medium text-slate-600 dark:text-slate-400 italic">{{ props.teacher.address || 'No specific address details provided.' }}</div>
+                                        <textarea v-else v-model="form.address" class="w-full min-h-[6rem] rounded-xl border border-slate-200 bg-white p-4 text-sm font-bold"></textarea>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        
+                        <!-- Emergency Contacts -->
+                        <Card class="mt-8 border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-rose-600">
+                                        <AlertCircle class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Crisis Point</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Who to call in case of emergency.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Guardian Name</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.emergency_contact_name || '—' }}</div>
+                                        <Input v-else v-model="form.emergency_contact_name" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Relationship</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.emergency_contact_relationship || '—' }}</div>
+                                        <Input v-else v-model="form.emergency_contact_relationship" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Urgent Phone</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-rose-600 dark:text-rose-400 italic tracking-tighter">{{ props.teacher.emergency_contact_phone || '—' }}</div>
+                                        <Input v-else v-model="form.emergency_contact_phone" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <!-- Financial Tab -->
+                    <div v-if="activeTab === 'financial'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-blue-600">
+                                        <Globe class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Banking & Payroll</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">Salary disbursement and statutory records.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Bank Institution</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white">{{ props.teacher.bank_name || '—' }}</div>
+                                        <Input v-else v-model="form.bank_name" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Branch Name</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic">{{ props.teacher.bank_branch || '—' }}</div>
+                                        <Input v-else v-model="form.bank_branch" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Account Number</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold text-slate-900 dark:text-white italic tracking-tighter">{{ props.teacher.bank_account_number || '—' }}</div>
+                                        <Input v-else v-model="form.bank_account_number" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Basic Salary</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 font-black text-emerald-600 italic">KES {{ props.teacher.basic_salary ? Number(props.teacher.basic_salary).toLocaleString() : '0.00' }}</div>
+                                        <Input v-else v-model="form.basic_salary" type="number" class="h-11 rounded-xl border-slate-200 bg-white font-bold" />
+                                    </div>
+                                    
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">KRA PIN</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold">{{ props.teacher.kra_pin || '—' }}</div>
+                                        <Input v-else v-model="form.kra_pin" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                    
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">NHIF NUMBER</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold italic">{{ props.teacher.nhif_number || '—' }}</div>
+                                        <Input v-else v-model="form.nhif_number" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                    
+                                    <div class="space-y-2.5">
+                                        <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">NSSF NUMBER</Label>
+                                        <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold italic">{{ props.teacher.nssf_number || '—' }}</div>
+                                        <Input v-else v-model="form.nssf_number" class="h-11 rounded-xl border-slate-200 bg-white" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div v-if="activeTab === 'security'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <Card class="border-slate-200 dark:border-zinc-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden rounded-[2rem]">
+                            <CardHeader class="bg-slate-50/50 dark:bg-zinc-900/50 border-b border-slate-100 dark:border-zinc-800 p-8">
+                                <div class="flex items-center gap-4">
+                                    <div class="h-12 w-12 rounded-2xl bg-white dark:bg-zinc-800 shadow-sm flex items-center justify-center text-rose-600">
+                                        <ShieldPlus class="h-6 w-6" />
+                                    </div>
+                                    <div>
+                                        <CardTitle class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Vault & Access</CardTitle>
+                                        <CardDescription class="text-slate-500 font-medium tracking-tight">System permissions and security settings.</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="p-8">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="space-y-6">
+                                        <p class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 italic">Security overrides are restricted to administrators.</p>
+                                        <div class="space-y-4">
+                                            <div class="space-y-2.5">
+                                                <Label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Login Status</Label>
+                                                <div v-if="!isEditing" class="h-11 flex items-center px-4 rounded-xl bg-slate-50/50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 font-bold capitalize">{{ props.teacher.status }}</div>
+                                                <select v-else v-model="form.status" class="flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold">
+                                                    <option value="active">Active</option>
+                                                    <option value="inactive">Inactive</option>
+                                                    <option value="on_leave">On Leave</option>
+                                                    <option value="suspended">Suspended</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="p-6 rounded-[2rem] bg-slate-50 dark:bg-zinc-900 border border-slate-100 dark:border-zinc-800 flex flex-col items-center justify-center text-center">
+                                        <ShieldCheck class="h-12 w-12 text-slate-300 mb-4" />
+                                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest italic leading-relaxed">System logs for this user are available in the audit dashboard.</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </main>
+            </div>
+        </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

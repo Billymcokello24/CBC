@@ -5,7 +5,7 @@ import {
     Save, Upload, UserPlus, AlertTriangle, Briefcase, 
     User, Key, Fingerprint
 } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,6 +70,20 @@ const form = useForm({
     status: 'active',
     photo: null as File | null,
     role: props.preselectedRole || '', 
+});
+
+const photoPreview = ref<string | undefined>(undefined);
+
+watch(() => form.photo, (newPhoto) => {
+    if (newPhoto) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            photoPreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(newPhoto);
+    } else {
+        photoPreview.value = undefined;
+    }
 });
 
 const confirmOpen = ref(false);
@@ -152,199 +166,210 @@ const resetForm = () => {
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="grid gap-8 pb-12">
-                <!-- Personal Information -->
-                <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                    <div class="border-b border-border/50 bg-muted/20 px-8 py-5 flex items-center justify-between">
-                        <div>
+            <form @submit.prevent="submit" class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
+                <!-- Left Sidebar: Profile Photo & Key Info -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-xl shadow-purple-500/5 transition-all">
+                        <div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 text-white relative overflow-hidden">
+                            <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                            <div class="relative z-10 flex flex-col items-center gap-6">
+                                <ProfilePhotoUpload
+                                    v-model="form.photo"
+                                    :error="form.errors.photo"
+                                >
+                                    <template #default="{ isUploading }">
+                                        <div class="h-40 w-40 rounded-[2.5rem] overflow-hidden border-4 border-white/20 shadow-2xl bg-white/10 backdrop-blur-md relative group cursor-pointer transition-transform duration-500 hover:scale-[1.02]">
+                                            <div v-if="!form.photo" class="h-full w-full flex items-center justify-center text-white/40">
+                                                <User class="h-16 w-16" />
+                                            </div>
+                                            <div v-else class="h-full w-full">
+                                                <!-- Preview handled internally by ProfilePhotoUpload in non-auto mode? 
+                                                     Actually, I need to show the local preview here. -->
+                                                <img :src="photoPreview" v-if="photoPreview" class="h-full w-full object-cover" />
+                                            </div>
+                                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                <Camera class="h-8 w-8 text-white" />
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-white">Capture</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </ProfilePhotoUpload>
+                                <div class="text-center">
+                                    <h3 class="text-xl font-bold tracking-tight">Profile Picture</h3>
+                                    <p class="text-xs text-white/60 mt-1 font-medium">Capture a professional photo for the institutional directory.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-8 space-y-6">
+                            <div class="space-y-2">
+                                <Label for="role" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">System Access Role *</Label>
+                                <select id="role" v-model="form.role" class="h-12 w-full rounded-2xl border-border bg-muted/30 px-4 text-sm font-bold focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat uppercase tracking-tight" required>
+                                    <option value="">Select Role</option>
+                                    <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
+                                </select>
+                                <InputError :message="form.errors.role" />
+                            </div>
+                            <div class="space-y-2">
+                                <Label for="status" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Initial Status *</Label>
+                                <select id="status" v-model="form.status" class="h-12 w-full rounded-2xl border-border bg-muted/30 px-4 text-sm font-bold focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="on_leave">On Leave</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-[2rem] border border-border bg-card p-6 shadow-sm flex items-center justify-between group transition-all hover:bg-muted/30">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600">
+                                <Fingerprint class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Auth Protocol</p>
+                                <p class="text-sm font-bold text-foreground">Cloud Sync Active</p>
+                            </div>
+                        </div>
+                        <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Multi-section form -->
+                <div class="lg:col-span-8 space-y-8">
+                    <!-- Personal Information -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
                             <h2 class="text-base font-bold text-foreground flex items-center gap-2">
                                 <User class="h-5 w-5 text-purple-600" />
                                 Personal Information
                             </h2>
                             <p class="text-xs text-muted-foreground mt-0.5">Identity and demographic details</p>
                         </div>
-                        <ProfilePhotoUpload
-                            v-model="form.photo"
-                            :error="form.errors.photo"
-                        />
-                    </div>
-                    <div class="p-8">
-                        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            <div class="space-y-2">
-                                <Label for="first_name" class="text-xs font-semibold text-foreground ml-1">First Name *</Label>
-                                <Input id="first_name" v-model="form.first_name" placeholder="John" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.first_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="middle_name" class="text-xs font-semibold text-foreground ml-1">Middle Name</Label>
-                                <Input id="middle_name" v-model="form.middle_name" placeholder="Doe" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.middle_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="last_name" class="text-xs font-semibold text-foreground ml-1">Last Name *</Label>
-                                <Input id="last_name" v-model="form.last_name" placeholder="Smith" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.last_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="gender" class="text-xs font-semibold text-foreground ml-1">Gender *</Label>
-                                <select id="gender" v-model="form.gender" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                <InputError :message="form.errors.gender" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="date_of_birth" class="text-xs font-semibold text-foreground ml-1">Date of Birth</Label>
-                                <Input id="date_of_birth" v-model="form.date_of_birth" type="date" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.date_of_birth" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="id_number" class="text-xs font-semibold text-foreground ml-1">ID / Passport Number</Label>
-                                <Input id="id_number" v-model="form.id_number" placeholder="12345678" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.id_number" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="nationality" class="text-xs font-semibold text-foreground ml-1">Nationality</Label>
-                                <Input id="nationality" v-model="form.nationality" placeholder="Kenyan" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.nationality" />
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="first_name" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">First Name *</Label>
+                                    <Input id="first_name" v-model="form.first_name" placeholder="John" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.first_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="middle_name" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Middle Name</Label>
+                                    <Input id="middle_name" v-model="form.middle_name" placeholder="Doe" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.middle_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="last_name" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Last Name *</Label>
+                                    <Input id="last_name" v-model="form.last_name" placeholder="Smith" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.last_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="gender" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Gender *</Label>
+                                    <select id="gender" v-model="form.gender" class="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <InputError :message="form.errors.gender" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="date_of_birth" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Date of Birth</Label>
+                                    <Input id="date_of_birth" v-model="form.date_of_birth" type="date" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.date_of_birth" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="id_number" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">ID / Passport Number</Label>
+                                    <Input id="id_number" v-model="form.id_number" placeholder="12345678" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.id_number" />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Professional Details -->
-                <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                    <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
-                        <h2 class="text-base font-bold text-foreground flex items-center gap-2">
-                            <Briefcase class="h-5 w-5 text-purple-600" />
-                            Professional Details
-                        </h2>
-                        <p class="text-xs text-muted-foreground mt-0.5">Employment and assignment information</p>
-                    </div>
-                    <div class="p-8">
-                        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            <div class="space-y-2">
-                                <Label for="staff_number" class="text-xs font-semibold text-foreground ml-1">Staff Number *</Label>
-                                <Input id="staff_number" v-model="form.staff_number" placeholder="TCH1001" required class="h-11 rounded-xl border-border bg-muted/20 px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-bold uppercase tracking-tight" />
-                                <InputError :message="form.errors.staff_number" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="tsc_number" class="text-xs font-semibold text-foreground ml-1">TSC Number</Label>
-                                <Input id="tsc_number" v-model="form.tsc_number" placeholder="TSC123456" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.tsc_number" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="department_id" class="text-xs font-semibold text-foreground ml-1">Department *</Label>
-                                <select id="department_id" v-model="form.department_id" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
-                                    <option value="">Select Department</option>
-                                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
-                                </select>
-                                <InputError :message="form.errors.department_id" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="staff_category_id" class="text-xs font-semibold text-foreground ml-1">Staff Category</Label>
-                                <select id="staff_category_id" v-model="form.staff_category_id" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                    <option value="">Select Category</option>
-                                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-                                </select>
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="staff_designation_id" class="text-xs font-semibold text-foreground ml-1">Designation</Label>
-                                <select id="staff_designation_id" v-model="form.staff_designation_id" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                    <option value="">Select Designation</option>
-                                    <option v-for="desig in designations" :key="desig.id" :value="desig.id">{{ desig.name }}</option>
-                                </select>
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="contract_type" class="text-xs font-semibold text-foreground ml-1">Contract Type</Label>
-                                <select id="contract_type" v-model="form.contract_type" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                    <option value="Permanent">Permanent</option>
-                                    <option value="Contract">Contract</option>
-                                    <option value="Part-time">Part-time</option>
-                                    <option value="Internship">Internship</option>
-                                </select>
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="date_joined" class="text-xs font-semibold text-foreground ml-1">Date Joined</Label>
-                                <Input id="date_joined" v-model="form.date_joined" type="date" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.date_joined" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="basic_salary" class="text-xs font-semibold text-foreground ml-1">Basic Salary (KES)</Label>
-                                <Input id="basic_salary" v-model="form.basic_salary" type="number" placeholder="50000" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.basic_salary" />
+                    <!-- Professional Details -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
+                            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                                <Briefcase class="h-5 w-5 text-purple-600" />
+                                Professional Details
+                            </h2>
+                            <p class="text-xs text-muted-foreground mt-0.5">Employment and assignment information</p>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="staff_number" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Staff Number *</Label>
+                                    <Input id="staff_number" v-model="form.staff_number" placeholder="TCH1001" required class="h-12 rounded-2xl border-border bg-muted/20 px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-bold uppercase tracking-tight" />
+                                    <InputError :message="form.errors.staff_number" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="tsc_number" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">TSC Number</Label>
+                                    <Input id="tsc_number" v-model="form.tsc_number" placeholder="TSC123456" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.tsc_number" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="department_id" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Department *</Label>
+                                    <select id="department_id" v-model="form.department_id" class="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
+                                        <option value="">Select Department</option>
+                                        <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                    </select>
+                                    <InputError :message="form.errors.department_id" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="contract_type" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Contract Type</Label>
+                                    <select id="contract_type" v-model="form.contract_type" class="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
+                                        <option value="Permanent">Permanent</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Part-time">Part-time</option>
+                                        <option value="Internship">Internship</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Account Setup -->
-                <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                    <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
-                        <h2 class="text-base font-bold text-foreground flex items-center gap-2">
-                            <Key class="h-5 w-5 text-purple-600" />
-                            Account Setup
-                        </h2>
-                        <p class="text-xs text-muted-foreground mt-0.5">Login credentials and communication</p>
-                    </div>
-                    <div class="p-8">
-                        <div class="grid gap-6 md:grid-cols-2">
-                            <div class="space-y-2">
-                                <Label for="email" class="text-xs font-semibold text-foreground ml-1">Email Address *</Label>
-                                <Input id="email" v-model="form.email" type="email" placeholder="teacher@example.com" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.email" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="phone" class="text-xs font-semibold text-foreground ml-1">Phone Number *</Label>
-                                <Input id="phone" v-model="form.phone" placeholder="+2547XXXXXXXX" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.phone" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="password" class="text-xs font-semibold text-foreground ml-1">Password *</Label>
-                                <Input id="password" v-model="form.password" type="password" placeholder="Minimum 8 characters" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.password" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="password_confirmation" class="text-xs font-semibold text-foreground ml-1">Confirm Password *</Label>
-                                <Input id="password_confirmation" v-model="form.password_confirmation" type="password" placeholder="Re-enter password" required class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
-                                <InputError :message="form.errors.password_confirmation" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="status" class="text-xs font-semibold text-foreground ml-1">Initial Status *</Label>
-                                <select id="status" v-model="form.status" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="on_leave">On Leave</option>
-                                </select>
-                                <InputError :message="form.errors.status" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="role" class="text-xs font-semibold text-foreground ml-1">System Access Role *</Label>
-                                <select id="role" v-model="form.role" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
-                                    <option value="">Select Role</option>
-                                    <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
-                                </select>
-                                <InputError :message="form.errors.role" />
+                    <!-- Contact & Communication -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
+                            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                                <Key class="h-5 w-5 text-purple-600" />
+                                Account Setup
+                            </h2>
+                            <p class="text-xs text-muted-foreground mt-0.5">Login credentials and communication</p>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label for="email" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Email Address *</Label>
+                                    <Input id="email" v-model="form.email" type="email" placeholder="teacher@example.com" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.email" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="phone" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Phone Number *</Label>
+                                    <Input id="phone" v-model="form.phone" placeholder="+2547XXXXXXXX" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.phone" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="password" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Initial Password *</Label>
+                                    <Input id="password" v-model="form.password" type="password" placeholder="Minimum 8 characters" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.password" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="password_confirmation" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm Password *</Label>
+                                    <Input id="password_confirmation" v-model="form.password_confirmation" type="password" placeholder="Re-enter password" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Action Hub -->
-                <div class="flex flex-wrap items-center justify-between gap-6 pt-10 border-t border-border/60">
-                    <div class="hidden sm:flex items-center gap-3 px-4 py-2 rounded-2xl bg-purple-50 text-purple-700 border border-purple-100/50 shadow-sm">
-                        <div class="h-2 w-2 rounded-full bg-purple-500 animate-pulse"></div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider">Cloud Sync Active</span>
-                    </div>
-                    <div class="flex gap-4 ml-auto">
-                        <Button type="button" variant="ghost" class="text-muted-foreground hover:text-foreground font-bold px-8 h-12 rounded-xl transition-all" as-child>
-                            <Link href="/staffs">Cancel</Link>
+                    <!-- Action Hub -->
+                    <div class="flex flex-wrap items-center justify-end gap-4 pt-4">
+                        <Button type="button" variant="ghost" class="text-muted-foreground hover:text-foreground font-bold px-10 h-14 rounded-2xl transition-all" as-child>
+                            <Link href="/staffs">Cancel Registration</Link>
                         </Button>
-                        <Button type="submit" :disabled="form.processing" class="h-12 px-10 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-bold shadow-lg shadow-foreground/10 transition-all border-0">
-                            <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                            <Save v-else class="mr-2 h-4 w-4" />
-                            Register Staff
+                        <Button type="submit" :disabled="form.processing" class="h-14 px-12 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold shadow-xl shadow-purple-500/20 hover:shadow-purple-500/30 transition-all border-0">
+                            <Loader2 v-if="form.processing" class="mr-2 h-5 w-5 animate-spin" />
+                            <UserPlus v-else class="mr-2 h-5 w-5" />
+                            Register Staff Member
                         </Button>
                     </div>
                 </div>

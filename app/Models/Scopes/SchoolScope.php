@@ -14,18 +14,6 @@ class SchoolScope implements Scope
      */
     public function apply(Builder $builder, Model $model): void
     {
-        // 1. Tenancy-aware bypass
-        if (function_exists('tenancy') && tenancy()->initialized) {
-            // In a database-per-tenant architecture, the database is already isolated.
-            // We only apply the scope if we want an extra layer of safety within the same DB.
-            $schoolId = tenancy()->tenant->school_id ?? null;
-            if ($schoolId) {
-                $builder->where($model->getTable() . '.school_id', $schoolId);
-            }
-            return;
-        }
-
-        // 2. Auth/Session context (fallback for central DB or single-DB setup)
         if (Auth::hasUser()) {
             $user = Auth::user();
 
@@ -42,6 +30,8 @@ class SchoolScope implements Scope
             if ($user->school_id) {
                 $builder->where($model->getTable() . '.school_id', $user->school_id);
             } else {
+                // If they have no school_id and are not super_admin, they shouldn't see anything
+                // unless it's a model that doesn't strictly require a school (unlikely in this SaaS)
                 $builder->whereRaw('1 = 0');
             }
         }

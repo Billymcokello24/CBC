@@ -76,6 +76,7 @@ class ParentsController extends Controller
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'status' => 'active',
             ]);
 
             // Assign Parent Role if it exists

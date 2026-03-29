@@ -8,7 +8,8 @@ import {
     Database, CreditCard, ToggleLeft, Layers, Lock,
     Webhook, Mail, BarChart3, Server, LifeBuoy,
     Terminal, Fingerprint, Activity, UserMinus, HardDrive,
-    Key, Zap, FileText, Globe, Cloud, Wrench, Code2
+    Key, Zap, FileText, Globe, Cloud, Wrench, Code2,
+    Baby, NotebookPen, Upload, Eye, CalendarDays, FileCheck, Megaphone, Folder
 } from 'lucide-vue-next';
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -280,10 +281,12 @@ const navigation = [
                 icon: BookOpen,
                 permissions: ['curriculum.view'],
                 children: [
-                    { title: 'Learning Areas', href: '/curriculum/learning-areas' },
-                    { title: 'Subjects', href: '/curriculum/subjects' },
-                    { title: 'Strands', href: '/curriculum/strands' },
-                    { title: 'Competencies', href: '/curriculum/competencies' },
+                    { title: 'Overview', href: '/curriculum' },
+                    { title: 'Learning Area', href: '/curriculum/learning-areas' },
+                    { title: 'Subjects', href: '/curriculum/syllabus' },
+                    { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
+                    { title: 'Assignments', href: '/curriculum/assignments' },
+                    { title: 'Resources', href: '/curriculum/resources' },
                 ],
             },
             {
@@ -441,6 +444,65 @@ const navigation = [
 
 const bottomNavigation: any[] = [];
 
+const isParent = computed(() => {
+    const roles = (props.auth as any).roles || [];
+    return roles.includes('parent') || roles.includes('guardian');
+});
+
+const parentNavigation = [
+    {
+        title: 'Overview',
+        items: [
+            { title: 'Dashboard', href: '/guardian/portal', icon: LayoutDashboard },
+            { title: 'My Children', href: '/guardian/children', icon: Baby },
+        ],
+    },
+    {
+        title: 'Academics',
+        items: [
+            { title: 'Assignments', href: '/guardian/assignments', icon: NotebookPen },
+            {
+                title: 'Learning Materials',
+                href: '/curriculum/resources',
+                icon: BookOpen,
+                children: [
+                    { title: 'All Resources', href: '/curriculum/resources' },
+                ],
+            },
+            {
+                title: 'Competencies',
+                href: '/curriculum/competencies',
+                icon: ShieldCheck,
+            },
+        ],
+    },
+    {
+        title: 'Reports',
+        items: [
+            { title: 'Attendance', href: '/attendance', icon: CalendarDays },
+            { title: 'Results & Reports', href: '/assessments/results', icon: BarChart3 },
+        ],
+    },
+    {
+        title: 'School Life',
+        items: [
+            { title: 'Announcements', href: '/communication/announcements', icon: Megaphone },
+            { title: 'Communication', href: '/communication/messages', icon: MessageSquare },
+            { title: 'Fees', href: '/finance/invoices', icon: DollarSign },
+            { title: 'Documents', href: '/documents', icon: Folder },
+            { title: 'Notifications', href: '/communication/notifications', icon: Bell },
+            {
+                title: 'Settings',
+                href: '/settings/profile',
+                icon: Settings,
+                children: [
+                    { title: 'Profile', href: '/settings/profile' },
+                ],
+            },
+        ],
+    },
+];
+
 const filterNavItem = (item: any) => {
     if (!item.permissions) return true;
     const hasBasePermission = canAny(item.permissions);
@@ -462,6 +524,11 @@ const filteredNavigation = computed(() => {
     if (isSuperAdmin.value && !isImpersonating.value) {
         return [...saasNavigation];
     }
+
+    // If parent role, show parent-specific navigation
+    if (isParent.value) {
+        return [...parentNavigation];
+    }
     
     // Otherwise (regular user OR impersonating Super Admin), show regular navigation
     const contextNav = navigation.map(group => ({
@@ -472,8 +539,6 @@ const filteredNavigation = computed(() => {
         })).filter(filterNavItem)
     })).filter(group => group.items.length > 0);
     
-    // If impersonating, we might want to show a "Back to SaaS" or similar? 
-    // Usually impersonation has its own exit UI, but for now just showing contextNav.
     return [...contextNav];
 });
 

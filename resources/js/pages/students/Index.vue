@@ -500,8 +500,13 @@ const getStatusColor = (active: boolean) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/30">
-                            <tr v-for="learner in learners.data" :key="learner.id" class="hover:bg-muted/30 transition-colors group">
-                                <td class="px-6 py-4 text-center">
+                            <tr 
+                                v-for="learner in learners.data" 
+                                :key="learner.id" 
+                                class="hover:bg-muted/30 transition-colors group cursor-pointer"
+                                @click="router.visit(`/students/${learner.id}`)"
+                            >
+                                <td class="px-6 py-4 text-center" @click.stop>
                                      <button @click="toggleLearner(learner.id)" class="h-5 w-5 rounded-md border-2 border-border flex items-center justify-center transition-all bg-background" :class="selectedLearnerIds.includes(learner.id) ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : ''">
                                           <component :is="selectedLearnerIds.includes(learner.id) ? CheckSquare : Square" class="h-3 w-3" />
                                      </button>

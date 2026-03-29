@@ -7,6 +7,7 @@ use App\Models\Academic\SchoolClass;
 use App\Models\Academic\Stream;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\TeacherSubject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -139,7 +140,7 @@ class AcademicManagementController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        DB::table('teacher_subjects')->updateOrInsert(
+        TeacherSubject::updateOrCreate(
             [
                 'teacher_id' => $validated['teacher_id'],
                 'subject_id' => $validated['subject_id'],
@@ -147,10 +148,8 @@ class AcademicManagementController extends Controller
                 'academic_year_id' => $validated['academic_year_id'],
             ],
             [
-                'is_primary_teacher' => $validated['is_primary_teacher'],
-                'is_active' => $validated['is_active'],
-                'updated_at' => now(),
-                'created_at' => now(),
+                'is_primary_teacher' => (bool)$validated['is_primary_teacher'],
+                'is_active' => (bool)$validated['is_active'],
             ]
         );
 

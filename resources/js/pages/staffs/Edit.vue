@@ -5,11 +5,14 @@ import {
     Save, Edit, AlertTriangle, Briefcase,
     User, Key, Trash2
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import ProfilePhotoUpload from '@/components/forms/ProfilePhotoUpload.vue';
+import { Camera } from 'lucide-vue-next';
 import {
     Dialog,
     DialogContent,
@@ -93,6 +96,20 @@ const form = useForm({
     photo: null as File | null,
 });
 
+const photoPreview = ref<string | undefined>(undefined);
+
+watch(() => form.photo, (newPhoto) => {
+    if (newPhoto) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            photoPreview.value = e.target?.result as string;
+        };
+        reader.readAsDataURL(newPhoto);
+    } else {
+        photoPreview.value = undefined;
+    }
+});
+
 const confirmOpen = ref(false);
 const deleteOpen = ref(false);
 
@@ -141,109 +158,48 @@ const deleteTeacher = () => {
                 </Button>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-8">
-                <!-- Personal Information -->
-                <div class="overflow-hidden rounded-xl border bg-card shadow-sm">
-                    <div class="border-b bg-muted/30 px-6 py-4 flex items-center justify-between">
-                        <div>
-                            <h2 class="flex items-center gap-2 text-lg font-semibold">
-                                <User class="h-5 w-5 text-purple-600" />
-                                Personal Information
-                            </h2>
-                        </div>
-
-                        <!-- Photo Upload Trigger -->
-                        <ProfilePhotoUpload 
-                            v-model="form.photo" 
-                            :error="form.errors.photo"
-                            :current-image="teacher.photo_url"
-                        />
-                    </div>
-                    <div class="p-6">
-                        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            <div class="space-y-2">
-                                <Label for="first_name">First Name *</Label>
-                                <Input id="first_name" v-model="form.first_name" required />
-                                <InputError :message="form.errors.first_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="middle_name">Middle Name</Label>
-                                <Input id="middle_name" v-model="form.middle_name" />
-                                <InputError :message="form.errors.middle_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="last_name">Last Name *</Label>
-                                <Input id="last_name" v-model="form.last_name" required />
-                                <InputError :message="form.errors.last_name" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="gender">Gender *</Label>
-                                <select id="gender" v-model="form.gender" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                    <option value="other">Other</option>
-                                </select>
-                                <InputError :message="form.errors.gender" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="date_of_birth">Date of Birth</Label>
-                                <Input id="date_of_birth" v-model="form.date_of_birth" type="date" />
-                                <InputError :message="form.errors.date_of_birth" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="id_number">ID / Passport Number</Label>
-                                <Input id="id_number" v-model="form.id_number" />
-                                <InputError :message="form.errors.id_number" />
+            <form @submit.prevent="submit" class="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12">
+                <!-- Left Sidebar: Profile Photo & Key Info -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-xl shadow-purple-500/5 transition-all">
+                        <div class="bg-gradient-to-br from-purple-600 to-indigo-700 p-8 text-white relative overflow-hidden">
+                            <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"></div>
+                            <div class="relative z-10 flex flex-col items-center gap-6">
+                                <ProfilePhotoUpload
+                                    v-model="form.photo"
+                                    :error="form.errors.photo"
+                                >
+                                    <template #default="{ isUploading }">
+                                        <div class="h-40 w-40 rounded-[2.5rem] overflow-hidden border-4 border-white/20 shadow-2xl bg-white/10 backdrop-blur-md relative group cursor-pointer transition-transform duration-500 hover:scale-[1.02]">
+                                            <img v-if="photoPreview || teacher.photo_url" :src="photoPreview || (teacher.photo_url ?? undefined)" class="h-full w-full object-cover" />
+                                            <div v-else class="h-full w-full flex items-center justify-center text-white/40 font-bold text-4xl">
+                                                {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
+                                            </div>
+                                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                                <Camera class="h-8 w-8 text-white" />
+                                                <span class="text-[10px] font-bold uppercase tracking-widest text-white">Capture New</span>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </ProfilePhotoUpload>
+                                <div class="text-center">
+                                    <h3 class="text-xl font-bold tracking-tight">{{ teacher.first_name }} {{ teacher.last_name }}</h3>
+                                    <p class="text-xs text-white/60 mt-1 font-medium">Update institutional profile photo.</p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Professional Details -->
-                <div class="overflow-hidden rounded-xl border bg-card shadow-sm">
-                    <div class="border-b bg-muted/30 px-6 py-4">
-                        <h2 class="flex items-center gap-2 text-lg font-semibold">
-                            <Briefcase class="h-5 w-5 text-purple-600" />
-                            Professional Details
-                        </h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div class="p-8 space-y-6">
                             <div class="space-y-2">
-                                <Label for="staff_number">Staff Number *</Label>
-                                <Input id="staff_number" v-model="form.staff_number" required />
-                                <InputError :message="form.errors.staff_number" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="tsc_number">TSC Number</Label>
-                                <Input id="tsc_number" v-model="form.tsc_number" />
-                                <InputError :message="form.errors.tsc_number" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="department_id">Department *</Label>
-                                <select id="department_id" v-model="form.department_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm" required>
-                                    <option value="">Select Department</option>
-                                    <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                <Label for="role" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">System Access Role *</Label>
+                                <select id="role" v-model="form.role" class="h-12 w-full rounded-2xl border-border bg-muted/30 px-4 text-sm font-bold focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat uppercase tracking-tight" required>
+                                    <option value="">Select Role</option>
+                                    <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
                                 </select>
-                                <InputError :message="form.errors.department_id" />
+                                <InputError :message="form.errors.role" />
                             </div>
                             <div class="space-y-2">
-                                <Label for="contract_type">Contract Type</Label>
-                                <select id="contract_type" v-model="form.contract_type" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                                    <option value="Permanent">Permanent</option>
-                                    <option value="Contract">Contract</option>
-                                    <option value="Part-time">Part-time</option>
-                                    <option value="Internship">Internship</option>
-                                </select>
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="basic_salary">Basic Salary (KES)</Label>
-                                <Input id="basic_salary" v-model="form.basic_salary" type="number" />
-                                <InputError :message="form.errors.basic_salary" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="status">Status *</Label>
-                                <select id="status" v-model="form.status" class="h-10 w-full rounded-md border bg-background px-3 text-sm" required>
+                                <Label for="status" class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Current Status *</Label>
+                                <select id="status" v-model="form.status" class="h-12 w-full rounded-2xl border-border bg-muted/30 px-4 text-sm font-bold focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                     <option value="on_leave">On Leave</option>
@@ -253,58 +209,131 @@ const deleteTeacher = () => {
                             </div>
                         </div>
                     </div>
+
+                    <div class="rounded-[2rem] border border-border bg-card p-6 shadow-sm flex items-center justify-between group transition-all hover:bg-muted/30">
+                        <div class="flex items-center gap-3">
+                            <div class="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-600">
+                                <Briefcase class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Employee ID</p>
+                                <p class="text-sm font-bold text-foreground">{{ teacher.staff_number }}</p>
+                            </div>
+                        </div>
+                        <Badge variant="outline" class="rounded-lg bg-purple-50 text-purple-600 border-purple-100 font-bold uppercase text-[9px]">Verified</Badge>
+                    </div>
                 </div>
 
-                <!-- Account Setup -->
-                <div class="overflow-hidden rounded-xl border bg-card shadow-sm">
-                    <div class="border-b bg-muted/30 px-6 py-4">
-                        <h2 class="flex items-center gap-2 text-lg font-semibold">
-                            <Key class="h-5 w-5 text-purple-600" />
-                            Account Credentials
-                        </h2>
-                    </div>
-                    <div class="p-6">
-                        <div class="grid gap-6 md:grid-cols-2">
-                            <div class="space-y-2">
-                                <Label for="email">Email Address *</Label>
-                                <Input id="email" v-model="form.email" type="email" required />
-                                <InputError :message="form.errors.email" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="phone">Phone Number *</Label>
-                                <Input id="phone" v-model="form.phone" required />
-                                <InputError :message="form.errors.phone" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="password">New Password (Optional)</Label>
-                                <Input id="password" v-model="form.password" type="password" placeholder="Leave blank to keep current" />
-                                <InputError :message="form.errors.password" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="password_confirmation">Confirm New Password</Label>
-                                <Input id="password_confirmation" v-model="form.password_confirmation" type="password" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label for="role">System Access Role *</Label>
-                                <select id="role" v-model="form.role" class="h-10 w-full rounded-md border bg-background px-3 text-sm" required>
-                                    <option value="">Select Role</option>
-                                    <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
-                                </select>
-                                <InputError :message="form.errors.role" />
+                <!-- Right Column: Form Sections -->
+                <div class="lg:col-span-8 space-y-8">
+                    <!-- Personal Information -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
+                            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                                <User class="h-5 w-5 text-purple-600" />
+                                Personal Information
+                            </h2>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">First Name *</Label>
+                                    <Input v-model="form.first_name" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.first_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Middle Name</Label>
+                                    <Input v-model="form.middle_name" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.middle_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Last Name *</Label>
+                                    <Input v-model="form.last_name" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.last_name" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Gender *</Label>
+                                    <select v-model="form.gender" class="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                    <InputError :message="form.errors.gender" />
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="flex items-center justify-end gap-4">
-                    <Button type="button" variant="outline" as-child>
-                        <Link :href="`/staffs/${teacher.id}`">Cancel</Link>
-                    </Button>
-                    <Button type="submit" :disabled="form.processing">
-                        <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        <Save v-else class="mr-2 h-4 w-4" />
-                        Update Staff
-                    </Button>
+                    <!-- Professional Details -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
+                            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                                <Briefcase class="h-5 w-5 text-purple-600" />
+                                Professional Details
+                            </h2>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Staff Number *</Label>
+                                    <Input v-model="form.staff_number" required class="h-12 rounded-2xl border-border bg-muted/20 px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-bold uppercase tracking-tight" />
+                                    <InputError :message="form.errors.staff_number" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Department *</Label>
+                                    <select v-model="form.department_id" class="h-12 w-full rounded-2xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-purple-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" required>
+                                        <option value="">Select Department</option>
+                                        <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                    </select>
+                                    <InputError :message="form.errors.department_id" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Credentials -->
+                    <div class="overflow-hidden rounded-[2rem] border border-border bg-card shadow-sm">
+                        <div class="border-b border-border/50 bg-muted/20 px-8 py-5">
+                            <h2 class="text-base font-bold text-foreground flex items-center gap-2">
+                                <Key class="h-5 w-5 text-purple-600" />
+                                Account Credentials
+                            </h2>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-6 md:grid-cols-2">
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Email Address *</Label>
+                                    <Input v-model="form.email" type="email" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.email" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Phone Number *</Label>
+                                    <Input v-model="form.phone" required class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.phone" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">New Password (Optional)</Label>
+                                    <Input v-model="form.password" type="password" placeholder="Leave blank to keep current" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                    <InputError :message="form.errors.password" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label class="text-xs font-bold text-muted-foreground uppercase tracking-widest ml-1">Confirm New Password</Label>
+                                    <Input v-model="form.password_confirmation" type="password" class="h-12 rounded-2xl border-border bg-background px-4 focus:ring-2 focus:ring-purple-600/10 transition-all font-medium" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-4 pt-4">
+                        <Button type="button" variant="ghost" class="text-muted-foreground hover:text-foreground font-bold px-10 h-14 rounded-2xl transition-all" as-child>
+                            <Link :href="`/staffs/${teacher.id}`">Cancel Changes</Link>
+                        </Button>
+                        <Button type="submit" :disabled="form.processing" class="h-14 px-12 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-bold shadow-xl shadow-foreground/10 transition-all border-0">
+                            <Loader2 v-if="form.processing" class="mr-2 h-5 w-5 animate-spin" />
+                            <Save v-else class="mr-2 h-5 w-5" />
+                            Update Institutional Profile
+                        </Button>
+                    </div>
                 </div>
             </form>
         </div>

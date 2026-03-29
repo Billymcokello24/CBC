@@ -20,7 +20,6 @@ class School extends Model
     use HasFactory, LogsActivity;
 
     protected $fillable = [
-        'tenant_id',
         'name',
         'code',
         'registration_number',
@@ -171,10 +170,5 @@ class School extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
-    }
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
     }
 }

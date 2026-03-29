@@ -49,36 +49,5 @@ Route::prefix('v1')->middleware(['auth:sanctum'])->group(function () {
         Route::put('{school}/settings', [SchoolController::class, 'updateSetting'])->middleware('permission:schools.settings');
     });
 
-    // Students Management
-    Route::prefix('students')->group(function () {
-        Route::get('/', [StudentController::class, 'index']);
-        Route::post('/', [StudentController::class, 'store'])->middleware('permission:students.create');
-        Route::get('{student}', [StudentController::class, 'show']);
-        Route::put('{student}', [StudentController::class, 'update'])->middleware('permission:students.update');
-        Route::delete('{student}', [StudentController::class, 'destroy'])->middleware('permission:students.delete');
-        Route::patch('{student}/status', [StudentController::class, 'updateStatus'])->middleware('permission:students.update');
-        Route::get('{student}/attendance', [StudentController::class, 'attendanceSummary']);
-        Route::get('{student}/academic-performance', [StudentController::class, 'academicPerformance']);
-    });
-
-    // Staffs Management (formerly Teachers)
-    Route::prefix('staffs')->group(function () {
-        Route::get('/', [StaffController::class, 'index']);
-        Route::post('/', [StaffController::class, 'store'])->middleware('permission:staffs.create');
-        Route::get('{teacher}', [StaffController::class, 'show']);
-        Route::put('{teacher}', [StaffController::class, 'update'])->middleware('permission:staffs.update');
-        Route::delete('{teacher}', [StaffController::class, 'destroy'])->middleware('permission:staffs.delete');
-        Route::get('{teacher}/subjects', [StaffController::class, 'subjects']);
-        Route::get('{teacher}/timetable', [StaffController::class, 'timetable']);
-    });
-
-    // Guardians Management
-    Route::prefix('guardians')->group(function () {
-        Route::get('/', [GuardianController::class, 'index']);
-        Route::post('/', [GuardianController::class, 'store'])->middleware('permission:guardians.create');
-        Route::get('{guardian}', [GuardianController::class, 'show']);
-        Route::put('{guardian}', [GuardianController::class, 'update'])->middleware('permission:guardians.update');
-        Route::delete('{guardian}', [GuardianController::class, 'destroy'])->middleware('permission:guardians.delete');
-        Route::get('{guardian}/students', [GuardianController::class, 'students']);
-    });
+    // Tenant-scoped APIs (students, staffs, guardians) are served from routes/tenant_api.php
 });

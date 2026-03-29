@@ -15,26 +15,15 @@ trait BelongsToSchool
      */
     protected static function bootBelongsToSchool()
     {
-        // Only add global scope if not in a tenant-isolated context (where databases are already separate)
-        // OR kept for additional safety if multiple schools exist in one tenant (unlikely here)
         static::addGlobalScope(new SchoolScope());
 
         static::creating(function (Model $model) {
-            // First Priority: Tenancy context
-            if (function_exists('tenancy') && tenancy()->initialized) {
-                // Get school_id from tenant data if available
-                $schoolId = tenancy()->tenant->school_id ?? null;
-                if ($schoolId && !$model->school_id) {
-                    $model->school_id = $schoolId;
-                    return;
-                }
-            }
-
-            // Fallback to Auth/Session context
             if (auth()->check()) {
                 if (!auth()->user()->hasRole('super_admin')) {
+                    // Regular users must always use their own school_id
                     $model->school_id = auth()->user()->school_id;
                 } elseif (!$model->school_id && session('viewing_school_id')) {
+                    // Super admins use session school_id if not explicitly providing one
                     $model->school_id = session('viewing_school_id');
                 }
             }

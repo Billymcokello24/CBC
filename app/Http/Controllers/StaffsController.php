@@ -49,6 +49,32 @@ class StaffsController extends Controller
         return User::role($existingRoles)->count();
     }
 
+    protected function transformStaffRow(Teacher $teacher): array
+    {
+        return [
+            'id' => $teacher->id,
+            'first_name' => $teacher->first_name,
+            'middle_name' => $teacher->middle_name,
+            'last_name' => $teacher->last_name,
+            'full_name' => $teacher->full_name,
+            'staff_number' => $teacher->staff_number,
+            'status' => $teacher->status,
+            'photo_url' => $teacher->photo_url,
+            'department' => $teacher->department ? [
+                'id' => $teacher->department->id,
+                'name' => $teacher->department->name,
+            ] : null,
+            'user' => [
+                'id' => $teacher->user->id,
+                'email' => $teacher->user->email,
+                'roles' => $teacher->user->roles->map(fn($role) => [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                ]),
+            ],
+        ];
+    }
+
     public function directory(): Response
     {
         $roles = $this->roleService->getTemplates()->map(function ($role) {
@@ -136,7 +162,7 @@ class StaffsController extends Controller
 
         $teachers = $query->orderBy('first_name')
             ->paginate($request->integer('per_page', 20))
-            ->withQueryString();
+            ->through(fn ($teacher) => $this->transformStaffRow($teacher));
 
         // Calculate detailed stats
         $stats = [
@@ -475,6 +501,23 @@ class StaffsController extends Controller
 
             return back()->with('success', 'Staff member updated successfully.');
         });
+    }
+
+    public function updatePhoto(Request $request, Teacher $teacher): RedirectResponse
+    {
+        $request->validate([
+            'photo' => ['required', 'image', 'max:2048'],
+        ]);
+
+        if ($teacher->photo) {
+            Storage::disk('public')->delete($teacher->photo);
+        }
+
+        $teacher->update([
+            'photo' => $request->file('photo')->store('staffs/photos', 'public'),
+        ]);
+
+        return back()->with('success', 'Profile photo updated successfully.');
     }
 
     public function destroy(Teacher $teacher): RedirectResponse

@@ -24,45 +24,26 @@ class SchoolOnboardingService
     public function register(array $schoolData, array $adminData): array
     {
         return DB::transaction(function () use ($schoolData, $adminData) {
-            // 1. Create Tenant
-            $tenantId = $schoolData['code'];
-            $tenant = \App\Models\Tenant::create([
-                'id' => $tenantId,
-                'name' => $schoolData['name'],
-            ]);
-
-            // 2. Create Domain (e.g., code.localhost or code.domain.com)
-            $centralDomain = config('tenancy.central_domains')[0] ?? 'localhost';
-            $tenant->domains()->create([
-                'domain' => $tenantId . '.' . $centralDomain,
-            ]);
-
-            // 3. Create central School record
-            $schoolData['tenant_id'] = $tenant->id;
+            // 1. Create School
             $school = School::create($schoolData);
 
-            // 4. Run tenant-specific provisioning in the tenant database
-            $admin = $tenant->run(function () use ($school, $adminData) {
-                // a. Create School Admin User in tenant DB
-                $user = User::create([
-                    'school_id' => $school->id, // Optional, but kept for compatibility
-                    'name' => $adminData['name'],
-                    'email' => $adminData['email'],
-                    'password' => Hash::make($adminData['password'] ?? Str::random(12)),
-                    'phone' => $adminData['phone'] ?? null,
-                    'status' => 'active',
-                ]);
+            // 2. Create School Admin User
+            $admin = User::create([
+                'school_id' => $school->id,
+                'name' => $adminData['name'],
+                'email' => $adminData['email'],
+                'password' => Hash::make($adminData['password'] ?? Str::random(12)),
+                'phone' => $adminData['phone'] ?? null,
+                'status' => 'active',
+            ]);
 
-                // b. Assign School Admin Role (Tenant DB has its own roles/permissions)
-                if (!$user->hasRole('school_admin')) {
-                    $user->assignRole('school_admin');
-                }
+            // 3. Assign School Admin Role
+            if ($admin->hasRole('school_admin') === false) {
+                $admin->assignRole('school_admin');
+            }
 
-                // c. Initial Setup (Academic Year & Term)
-                $this->initializeSchool($school);
-
-                return $user;
-            });
+            // 4. Initial Setup (Academic Year & Term)
+            $this->initializeSchool($school);
 
             // 5. Send Welcome Email
             Mail::to($admin->email)->send(new SchoolWelcomeMail($school, $admin));
@@ -70,7 +51,6 @@ class SchoolOnboardingService
             return [
                 'school' => $school,
                 'admin' => $admin,
-                'tenant' => $tenant,
             ];
         });
     }
