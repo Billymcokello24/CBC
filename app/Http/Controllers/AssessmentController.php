@@ -634,6 +634,44 @@ class AssessmentController extends Controller
         }
     }
 
+    public function analytics(): Response
+    {
+        $schoolId = $this->getSchoolId();
+        $user = auth()->user();
+        $teacher = $user->teacher;
+
+        // 1. Distribution of Ratings (EE, ME, AE, BE)
+        $distribution = \App\Models\Assessment\StudentAssessmentRating::where('teacher_id', $user->id)
+            ->select('rating_level', DB::raw('count(*) as count'))
+            ->groupBy('rating_level')
+            ->get()
+            ->pluck('count', 'rating_level')
+            ->toArray();
+
+        // Ensure all levels are present
+        $levels = ['EE' => 0, 'ME' => 0, 'AE' => 0, 'BE' => 0];
+        $distribution = array_merge($levels, $distribution);
+
+        // 2. Performance Trend (Average Score per Assessment)
+        $trends = \App\Models\Assessment\Assessment::where('teacher_id', $user->id)
+            ->where('status', 'published')
+            ->with(['assessmentRatings'])
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(fn($a) => [
+                'title' => $a->title ?: $a->subject?->name,
+                'average' => $a->assessmentRatings->avg('score') ?? 0,
+                'date' => $a->assessment_date->format('M d')
+            ])->reverse()->values();
+
+        return Inertia::render('assessments/Analytics', [
+            'distribution' => $distribution,
+            'trends' => $trends,
+            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
+        ]);
+    }
+
     private function getSchoolId()
     {
         $user = auth()->user();

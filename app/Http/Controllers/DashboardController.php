@@ -165,6 +165,7 @@ class DashboardController extends Controller
                 'name' => $a->subject?->name,
                 'code' => $a->subject?->code,
                 'class_name' => $a->schoolClass?->name,
+                'grade_level_id' => $a->schoolClass?->grade_level_id,
                 'is_primary' => $a->is_primary_teacher
             ])->unique(fn($s) => $s['id'] . '-' . $s['class_name'])->values();
 
@@ -204,9 +205,45 @@ class DashboardController extends Controller
                 ->orderBy('attendance_date')
                 ->get()
                 ->map(fn($stat) => [
-                    'date' => $stat->attendance_date->format('M d'),
+                    'date' => Carbon::parse($stat->attendance_date)->format('M d'),
                     'rate' => $stat->total > 0 ? round(($stat->present_count / $stat->total) * 100) : 100
                 ]);
+
+            // 6. Syllabus Progress
+            $syllabusProgress = $mySubjects->map(function($subject) use ($teacher, $academicYear) {
+                $scheme = SchemeOfWork::where('subject_id', $subject['id'])
+                    ->where('grade_level_id', $subject['grade_level_id'])
+                    ->where('academic_year_id', $academicYear?->id)
+                    ->first();
+                
+                $totalLessons = $scheme ? ($scheme->total_weeks * $scheme->lessons_per_week) : 0;
+                $completedLessons = LessonPlan::where('teacher_id', $teacher->id)
+                    ->where('subject_id', $subject['id'])
+                    ->where('is_taught', true)
+                    ->count();
+                    
+                return [
+                    'subject' => $subject['name'],
+                    'class' => $subject['class_name'],
+                    'progress' => $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0,
+                    'completed' => $completedLessons,
+                    'total' => $totalLessons
+                ];
+            });
+
+            // 7. Pending Tasks
+            $pendingGradingCount = Assessment::where('teacher_id', $user->id)
+                ->where('status', 'published')
+                ->count();
+            
+            $pendingAssignmentsCount = AssignmentSubmission::whereHas('assignment', fn($q) => $q->where('teacher_id', $teacher->id))
+                ->where('status', '!=', 'graded')
+                ->count();
+            
+            $pendingTasks = [
+                ['title' => 'Assessments to Grade', 'count' => $pendingGradingCount, 'link' => '/assessments/grading'],
+                ['title' => 'Assignments to Review', 'count' => $pendingAssignmentsCount, 'link' => '/assignments'],
+            ];
         }
 
         return Inertia::render('dashboards/TeacherDashboard', [
@@ -218,6 +255,8 @@ class DashboardController extends Controller
             'todaysTimetable' => $todaysTimetable,
             'recentAssessments' => $recentAssessments,
             'attendanceStats' => $attendanceStats,
+            'syllabusProgress' => $syllabusProgress ?? [],
+            'pendingTasks' => $pendingTasks ?? [],
             'academicYear' => $academicYear?->name,
             'notificationsCount' => $this->getNotificationsCount(),
         ]);

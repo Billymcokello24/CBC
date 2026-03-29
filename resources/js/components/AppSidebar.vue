@@ -297,7 +297,7 @@ const navigation = [
                 children: [
                     { title: 'Assessment Tracker', href: '/assessments/setup', permissions: ['assessments.create'], icon: Zap },
                     { title: 'Grading Sheet', href: '/assessments/grading', permissions: ['assessments.grade'], icon: ClipboardList },
-                    { title: 'Analytics & Trends', href: '/assessments/results', icon: BarChart3 },
+                    { title: 'Analytics & Trends', href: '/assessments/analytics', icon: BarChart3 },
                     { title: 'Report Cards', href: '/assessments/report-cards', icon: FileText },
                     { title: 'Student Portfolio', href: '/assessments/portfolio', icon: Folder },
                     { title: 'Rubric Builder', href: '/assessments/rubrics', icon: Settings },

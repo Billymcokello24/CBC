@@ -414,7 +414,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
         Route::get('assessments/bulk-upload', [AssessmentController::class, 'bulkUploadView'])->name('assessments.bulk-upload');
         Route::post('assessments/bulk-upload', [AssessmentController::class, 'bulkUpload'])->name('assessments.bulk-upload.store');
-        Route::get('assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
+        Route::get('/assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
+        Route::get('/assessments/analytics', [AssessmentController::class, 'analytics'])->name('assessments.analytics');
         Route::get('assessments/report-cards', [AssessmentController::class, 'reportCards'])->name('assessments.report-cards');
         Route::get('assessments/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('assessments.report-cards.show');
         Route::get('assessments/rubrics', [AssessmentController::class, 'rubrics'])->name('assessments.rubrics');

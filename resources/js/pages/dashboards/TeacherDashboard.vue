@@ -9,8 +9,12 @@ import {
     ClipboardList,
     Clock,
     GraduationCap,
-    TrendingUp
+    TrendingUp,
+    CheckCircle,
+    AlertCircle,
+    ArrowRight
 } from 'lucide-vue-next';
+import { Link } from '@inertiajs/vue3';
 
 interface Props {
     teacher: any;
@@ -20,6 +24,8 @@ interface Props {
     todaysTimetable: any[];
     recentAssessments: any[];
     attendanceStats: any[];
+    syllabusProgress: any[];
+    pendingTasks: any[];
     academicYear: string;
     notificationsCount: number;
 }
@@ -43,6 +49,12 @@ const stats = [
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">Welcome Back, {{ teacher?.first_name }}</h2>
                     <p class="text-slate-500 text-sm">Academic Year: {{ academicYear }}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <Link href="/assessments/analytics" class="bg-blue-600 px-4 py-2 rounded-2xl text-sm font-bold text-white flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200">
+                        <TrendingUp class="w-4 h-4" />
+                        Detailed Analytics
+                    </Link>
                 </div>
             </div>
         </template>
@@ -96,7 +108,55 @@ const stats = [
                     </div>
                 </div>
 
-                <!-- Classes & Subjects -->
+                <!-- Syllabus Coverage -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <CheckCircle class="w-5 h-5 text-emerald-500" />
+                        Syllabus Coverage
+                    </h3>
+                    <div v-if="syllabusProgress.length > 0" class="space-y-6">
+                        <div v-for="item in syllabusProgress" :key="item.subject + item.class">
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800">{{ item.subject }}</h4>
+                                    <p class="text-xs text-slate-500">{{ item.class }}</p>
+                                </div>
+                                <span class="text-xs font-bold text-emerald-600">{{ item.progress }}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div class="bg-emerald-500 h-full transition-all duration-1000" 
+                                     :style="{ width: item.progress + '%' }"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">{{ item.completed }} of {{ item.total }} lessons completed</p>
+                        </div>
+                    </div>
+                    <div v-else class="text-center py-12">
+                        <p class="text-slate-500 text-sm">No planning data available.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Tasks & Dashboard Analytics -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Pending Tasks -->
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <AlertCircle class="w-5 h-5 text-amber-500" />
+                        Pending Action Items
+                    </h3>
+                    <div class="space-y-4">
+                        <div v-for="task in pendingTasks" :key="task.title" 
+                             class="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-bold text-amber-900">{{ task.title }}</h4>
+                                <p class="text-2xl font-black text-amber-600">{{ task.count }}</p>
+                            </div>
+                            <Link :href="task.link" class="p-2 bg-white rounded-xl shadow-sm text-amber-600 hover:bg-amber-100 transition-colors">
+                                <ArrowRight class="w-5 h-5" />
+                            </Link>
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-6">
                     <!-- My Classes -->
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">

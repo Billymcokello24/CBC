@@ -37,9 +37,9 @@ interface Indicator { id: number; indicator: string; [key: string]: any; }
 
 const currentStep = ref(1);
 const loading = ref(false);
-const strands = ref<any[]>([]);
-const subStrands = ref<any[]>([]);
-const indicators = ref<any[]>([]);
+const strands = ref<Strand[]>([]);
+const subStrands = ref<SubStrand[]>([]);
+const indicators = ref<Indicator[]>([]);
 
 const form = useForm({
     title: '',
@@ -52,7 +52,7 @@ const form = useForm({
     subject_id: '',
     strand_id: '',
     sub_strand_id: '',
-    indicators: [] as any[],
+    indicators: [] as Indicator[],
 });
 
 const steps = [

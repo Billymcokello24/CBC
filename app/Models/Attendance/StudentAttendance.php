@@ -85,12 +85,12 @@ class StudentAttendance extends Model
 
     public function scopeToday($query)
     {
-        return $query->where('date', today());
+        return $query->where('attendance_date', today());
     }
 
     public function scopeThisWeek($query)
     {
-        return $query->whereBetween('date', [
+        return $query->whereBetween('attendance_date', [
             now()->startOfWeek(),
             now()->endOfWeek()
         ]);
