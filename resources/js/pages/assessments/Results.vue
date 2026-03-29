@@ -192,22 +192,22 @@ const getPerformanceColor = (average: number) => {
                             </td>
                             <td class="px-6 py-5 text-center">
                                 <div class="inline-flex flex-col items-center">
-                                     <span class="font-black text-slate-900 text-sm italic">{{ student.assessment_results?.length || 0 }}</span>
+                                     <span class="font-black text-slate-900 text-sm italic">{{ student.tests_count || 0 }}</span>
                                      <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">Tests Logged</span>
                                 </div>
                             </td>
                             <td class="px-6 py-5 text-center">
                                 <div class="inline-flex flex-col items-center">
-                                     <span class="text-lg font-black tracking-tighter" :class="getPerformanceColor(65)">65%</span>
+                                     <span class="text-lg font-black tracking-tighter" :class="getPerformanceColor(student.mean_score)">{{ student.mean_score }}%</span>
                                      <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5 italic">Consensus</span>
                                 </div>
                             </td>
                             <td class="px-6 py-5">
                                 <div class="flex flex-col items-center gap-2">
                                     <div class="h-2 w-28 bg-slate-100 rounded-full overflow-hidden border shadow-inner">
-                                        <div class="h-full bg-linear-to-r from-indigo-500 to-purple-500 rounded-full" :style="{ width: '65%' }"></div>
+                                        <div class="h-full bg-linear-to-r from-indigo-500 to-purple-500 rounded-full" :style="{ width: student.mean_score + '%' }"></div>
                                     </div>
-                                    <span class="text-[9px] font-black uppercase text-indigo-600 tracking-widest italic group-hover:scale-105 transition-transform">Trajectory Positive</span>
+                                    <span class="text-[9px] font-black uppercase text-indigo-600 tracking-widest italic group-hover:scale-105 transition-transform">Trajectory {{ student.trajectory }}</span>
                                 </div>
                             </td>
                             <td class="px-6 py-5 text-right">

@@ -295,11 +295,12 @@ const navigation = [
                 icon: ClipboardList,
                 permissions: ['assessments.view', 'assessments.view_own'],
                 children: [
-                    { title: 'Assessment Wizard', href: '/assessments/setup', permissions: ['assessments.create'] },
-                    { title: 'Class Evaluation', href: '/assessments/grading', permissions: ['assessments.grade'] },
-                    { title: 'Performance Results', href: '/assessments/results' },
-                    { title: 'Report Cards', href: '/assessments/report-cards' },
-                    { title: 'Portfolio Management', href: '/assessments/rubrics' },
+                    { title: 'Assessment Tracker', href: '/assessments/setup', permissions: ['assessments.create'], icon: Zap },
+                    { title: 'Grading Sheet', href: '/assessments/grading', permissions: ['assessments.grade'], icon: ClipboardList },
+                    { title: 'Analytics & Trends', href: '/assessments/results', icon: BarChart3 },
+                    { title: 'Report Cards', href: '/assessments/report-cards', icon: FileText },
+                    { title: 'Student Portfolio', href: '/assessments/portfolio', icon: Folder },
+                    { title: 'Rubric Builder', href: '/assessments/rubrics', icon: Settings },
                 ],
             },
             {

@@ -10,21 +10,13 @@ import {
     Award,
     CheckCircle2,
     BookOpen,
-    Info
+    Info,
+    School
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
@@ -46,231 +38,298 @@ const breadcrumbs: BreadcrumbItem[] = [
 const printReport = () => {
     window.print();
 };
+
+const conductAttributes = [
+    { label: 'Classroom Conduct', t1: 'Excellent', t2: '', t3: '' },
+    { label: 'Work Completion', t1: 'Good', t2: '', t3: '' },
+    { label: 'Working with Others', t1: 'Very Good', t2: '', t3: '' },
+    { label: 'Time management', t1: 'Punctual', t2: '', t3: '' },
+    { label: 'Cleanliness / Grooming', t1: 'Neat', t2: '', t3: '' },
+    { label: 'Communication', t1: 'Active', t2: '', t3: '' },
+    { label: 'Respect', t1: 'Polite', t2: '', t3: '' },
+];
 </script>
 
 <template>
     <Head title="Pupil's Termly Assessment Report" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-5xl mx-auto print:p-0 print:bg-white">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-6xl mx-auto print:p-0 print:bg-white overflow-y-auto">
             <!-- Action Bar (Hidden on Print) -->
             <div class="flex items-center justify-between print:hidden">
-                <Button variant="ghost" as-child class="font-bold -ml-4">
+                <Button variant="ghost" as-child class="font-black italic uppercase -ml-4">
                     <Link href="/assessments/report-cards">
                         <ChevronLeft class="mr-2 h-4 w-4" />
                         Back to List
                     </Link>
                 </Button>
                 <div class="flex items-center gap-2">
-                    <Button variant="outline" class="font-bold">
+                    <Button variant="outline" class="font-black italic uppercase rounded-xl border-slate-200 shadow-sm">
                         <Download class="mr-2 h-4 w-4" /> Export PDF
                     </Button>
-                    <Button @click="printReport" class="bg-indigo-600 hover:bg-indigo-700 font-bold">
+                    <Button @click="printReport" class="bg-indigo-600 hover:bg-indigo-700 font-black italic uppercase rounded-xl shadow-lg shadow-indigo-100">
                         <Printer class="mr-2 h-4 w-4" /> Print Report
                     </Button>
                 </div>
             </div>
 
-            <!-- Report Form Container -->
-            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden print:shadow-none print:border-none print:rounded-none">
-                <!-- Header -->
-                <div class="bg-indigo-600 p-8 text-white relative overflow-hidden print:bg-white print:text-black print:border-b-2 print:border-indigo-600">
-                    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div class="flex items-center gap-6">
-                            <div class="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center p-2 border border-white/30 print:bg-gray-100 print:border-black">
-                                <img src="/logo.png" alt="School Logo" class="h-full object-contain" />
-                                <!-- Fallback if no logo -->
-                                <School v-if="!false" class="h-10 w-10 text-white print:text-black" />
-                            </div>
-                            <div>
-                                <h2 class="text-xs font-black uppercase tracking-[0.3em] opacity-80 print:text-gray-500">Official Document</h2>
-                                <h1 class="text-3xl font-black tracking-tight mt-1">Pupil's Termly Assessment Report</h1>
-                                <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm font-bold opacity-90 print:text-black">
-                                    <span class="flex items-center gap-2"><Calendar class="h-4 w-4" /> {{ academicYear?.name }}</span>
-                                    <span class="flex items-center gap-2"><Award class="h-4 w-4" /> {{ academicTerm?.name }}</span>
-                                </div>
-                            </div>
+            <!-- Report Card Container -->
+            <div class="bg-white p-12 shadow-2xl border border-slate-100 print:shadow-none print:border-none print:p-4 text-slate-900 font-serif leading-relaxed">
+                
+                <!-- Page 1 Header -->
+                <div class="flex flex-col md:flex-row justify-between gap-8 mb-10 border-b-2 border-slate-900 pb-8">
+                     <div class="space-y-4 max-w-xl">
+                        <div class="flex items-center gap-4">
+                             <div class="h-16 w-16 bg-slate-900 rounded-2xl flex items-center justify-center p-3">
+                                 <School class="h-full w-full text-white" />
+                             </div>
+                             <div>
+                                 <h1 class="text-4xl font-black italic uppercase tracking-tighter text-slate-900">Education Group</h1>
+                                 <p class="text-xs font-bold tracking-[0.3em] text-slate-400 uppercase">Excellence in Competency Based Learning</p>
+                             </div>
                         </div>
-                        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 min-w-[200px] print:bg-gray-50 print:border-black">
-                            <p class="text-xs font-bold uppercase tracking-widest opacity-70 mb-1 print:text-gray-500">Student ID</p>
-                            <p class="text-xl font-black tracking-widest">{{ student?.admission_number }}</p>
+                        <h2 class="text-2xl font-black italic border-l-4 border-indigo-600 pl-4 py-1">PUPIL'S TERMLY ASSESSMENT REPORT</h2>
+                        <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold uppercase tracking-wider">
+                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>NAME:</span> <span class="text-indigo-600">{{ student?.first_name }} {{ student?.last_name }}</span></div>
+                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>YEAR:</span> <span class="text-indigo-600">{{ academicYear?.name }}</span></div>
+                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>GRADE:</span> <span class="text-indigo-600">{{ student?.current_class?.name }}</span></div>
+                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>TERM:</span> <span class="text-indigo-600">{{ academicTerm?.name }}</span></div>
+                        </div>
+                     </div>
+
+                     <!-- Performance Legend Table -->
+                     <div class="w-full md:w-80">
+                         <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">1.0 LEARNER'S PERFORMANCE KEY</h3>
+                         <table class="w-full text-[10px] border-collapse border border-slate-200 bg-slate-50">
+                             <thead>
+                                 <tr class="bg-slate-900 text-white font-black uppercase tracking-tighter text-[9px]">
+                                     <th class="border border-slate-300 p-1.5 text-left">Performance Level</th>
+                                     <th class="border border-slate-300 p-1.5">Rating</th>
+                                     <th class="border border-slate-300 p-1.5">Key</th>
+                                     <th class="border border-slate-300 p-1.5">Score</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 <tr v-for="level in performanceLevels" :key="level.code" class="font-bold border-b border-slate-200">
+                                     <td class="border border-slate-200 p-1.5">{{ level.label }}</td>
+                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.rating || '-' }}</td>
+                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.code }}</td>
+                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.range }}</td>
+                                 </tr>
+                             </tbody>
+                         </table>
+                     </div>
+                </div>
+
+                <!-- Main Assessment Matrix -->
+                <div class="mb-10 overflow-x-auto">
+                    <table class="w-full text-xs border-collapse border-2 border-slate-900">
+                        <thead>
+                            <tr class="bg-slate-900 text-white font-black uppercase text-center">
+                                <th rowspan="2" class="border border-white p-4 text-left w-1/4">Learning Area (s) / Activity Area</th>
+                                <th colspan="8" class="border border-white p-2">Assessment Module</th>
+                                <th rowspan="2" class="border border-white p-4 w-1/4">Performance Comments</th>
+                            </tr>
+                            <tr class="bg-slate-800 text-white font-bold text-[9px] uppercase tracking-tighter">
+                                <th colspan="2" class="border border-white p-1">Opening Exam</th>
+                                <th colspan="2" class="border border-white p-1">Mid term Exam</th>
+                                <th colspan="2" class="border border-white p-1">End Term Exam</th>
+                                <th colspan="2" class="border border-indigo-500 p-1 bg-indigo-900">Average</th>
+                            </tr>
+                            <tr class="bg-slate-50 text-slate-400 font-black text-[8px] uppercase tracking-widest text-center">
+                                <td class="border border-slate-200 p-1 text-left px-4">Subject Title</td>
+                                <td class="border border-slate-200 p-1">Score</td>
+                                <td class="border border-slate-200 p-1">Level</td>
+                                <td class="border border-slate-200 p-1">Score</td>
+                                <td class="border border-slate-200 p-1">Level</td>
+                                <td class="border border-slate-200 p-1">Score</td>
+                                <td class="border border-slate-200 p-1">Level</td>
+                                <td class="border border-indigo-200 p-1 bg-indigo-50/50">Score</td>
+                                <td class="border border-indigo-200 p-1 bg-indigo-50/50">Level</td>
+                                <td class="border border-slate-200 p-1 text-left px-4 italic">Feedback Summary</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="result in results" :key="result.subject" class="hover:bg-indigo-50/30 transition-colors">
+                                <td class="border border-slate-200 p-3 font-black uppercase italic">{{ result.subject }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.opening?.score || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.opening?.level || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.mid?.score || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.mid?.level || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.end?.score || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.end?.level || '-' }}</td>
+                                <td class="border border-indigo-100 p-3 text-center font-bold bg-indigo-50/20">{{ result.average?.score || '-' }}</td>
+                                <td class="border border-indigo-100 p-3 text-center font-black text-indigo-700 bg-indigo-50/40">{{ result.average?.level || '-' }}</td>
+                                <td class="border border-slate-200 p-3 text-xs italic text-slate-600 font-medium">{{ result.comments || 'Exhibits clear understanding and high retention of concepts.' }}</td>
+                            </tr>
+                            <!-- Summary Totals -->
+                            <tr class="bg-indigo-50/50 font-black">
+                                <td class="border-2 border-slate-900 p-4 uppercase text-sm tracking-tighter">Total Score / Mean Index</td>
+                                <td colspan="6" class="border border-slate-200 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">Aggregated Summary</td>
+                                <td class="border-2 border-slate-900 p-4 text-center text-lg text-indigo-600">74.2%</td>
+                                <td class="border-2 border-slate-900 p-4 text-center text-indigo-700">ME</td>
+                                <td class="border-2 border-slate-900 p-4 text-right text-[10px] uppercase tracking-widest text-indigo-600 underline">Meeting Expectation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Page 2 Content -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- Left Column: Conduct & Behavior -->
+                    <div class="space-y-6">
+                        <section>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px]">2.0</span> 
+                                CONDUCT AND BEHAVIOUR
+                            </h3>
+                            <table class="w-full text-[10px] border-collapse border border-slate-200">
+                                <thead>
+                                    <tr class="bg-slate-50 font-black uppercase tracking-tighter">
+                                        <th class="border border-slate-200 p-2 text-left">Attributes / Area</th>
+                                        <th class="border border-slate-200 p-2">Term 1</th>
+                                        <th class="border border-slate-200 p-2">Term 2</th>
+                                        <th class="border border-slate-200 p-2">Term 3</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="font-bold">
+                                    <tr v-for="attr in conductAttributes" :key="attr.label">
+                                        <td class="border border-slate-200 p-2 uppercase text-slate-500">{{ attr.label }}</td>
+                                        <td class="border border-slate-200 p-2 text-center text-indigo-600 italic">{{ attr.t1 }}</td>
+                                        <td class="border border-slate-200 p-2 text-center text-slate-300 italic">{{ attr.t2 || '-' }}</td>
+                                        <td class="border border-slate-200 p-2 text-center text-slate-300 italic">{{ attr.t3 || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+
+                        <section>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded bg-indigo-600 text-white flex items-center justify-center text-[10px]">3.0</span> 
+                                CORE COMPETENCIES FEEDBACK
+                            </h3>
+                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[140px] text-xs font-medium italic text-slate-600">
+                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">Acquisition of core competencies (Communication, Collaboration, Critical Thinking, etc.):</p>
+                                {{ student?.first_name }} demonstrates strong communication skills and collaborates effectively with peers. Showcases emerging critical thinking during problem-solving activities.
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- Right Column: Values & CS Learning -->
+                    <div class="space-y-6">
+                         <section>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded bg-indigo-600 text-white flex items-center justify-center text-[10px]">4.0</span> 
+                                ACQUISITION OF VALUES
+                            </h3>
+                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[120px] text-xs font-medium italic text-slate-600">
+                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">(Love, Responsibility, Respect, Unity, Peace, Patriotism, Integrity):</p>
+                                Displays a high sense of responsibility and respect for school property and peers. Consistently acts with integrity.
+                            </div>
+                        </section>
+
+                        <section>
+                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px]">5.0</span> 
+                                COMMUNITY SERVICE LEARNING
+                            </h3>
+                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[120px] text-xs font-medium italic text-slate-600">
+                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">Participation in community service learning program:</p>
+                                Actively participated in the environment cleaning drive and tree planting exercise. Showed great enthusiasm.
+                            </div>
+                        </section>
+
+                        <!-- Dates Section -->
+                        <div class="grid grid-cols-2 gap-4 pt-4">
+                            <div class="p-4 border-2 border-slate-900 bg-white">
+                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Closing Date</p>
+                                <p class="text-sm font-black italic">{{ new Date().toLocaleDateString('en-GB') }}</p>
+                            </div>
+                            <div class="p-4 border-2 border-slate-900 bg-white">
+                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Opening Date</p>
+                                <p class="text-sm font-black italic">TBD</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Student Info Section -->
-                <div class="p-8 grid gap-8 md:grid-cols-3 bg-gray-50/50 border-b border-gray-100 print:bg-white">
-                    <div class="flex gap-4">
-                        <div class="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 print:hidden">
-                            <User class="h-6 w-6" />
+                <!-- Footer Signatures -->
+                <div class="mt-16 pt-8 border-t-2 border-slate-900">
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">6.0 SIGNING & OFFICIAL STAMP</h3>
+                    <div class="grid grid-cols-3 gap-12">
+                        <div class="space-y-4">
+                             <div class="h-10 border-b border-slate-900"></div>
+                             <div>
+                                 <p class="text-[10px] font-black uppercase tracking-widest">Class Teacher</p>
+                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
+                             </div>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pupil's Name</p>
-                            <p class="text-lg font-black text-gray-900 mt-0.5">{{ student?.first_name }} {{ student?.last_name }}</p>
+                        <div class="space-y-4">
+                             <div class="h-10 border-b border-slate-900"></div>
+                             <div>
+                                 <p class="text-[10px] font-black uppercase tracking-widest">Head Teacher</p>
+                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
+                             </div>
                         </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 shrink-0 print:hidden">
-                            <GraduationCap class="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Grade / Class</p>
-                            <p class="text-lg font-black text-gray-900 mt-0.5 uppercase">{{ student?.current_class?.name }}</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-4">
-                        <div class="h-12 w-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0 print:hidden">
-                            <CheckCircle2 class="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Performance Level</p>
-                            <Badge class="bg-green-100 text-green-700 border-0 font-black text-xs px-3 py-1 mt-1 uppercase">Meeting Expectation (ME)</Badge>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Level Key -->
-                <div class="px-8 pt-8">
-                    <div class="flex flex-wrap gap-4 items-center p-4 bg-muted/20 border-2 border-dashed border-muted-foreground/10 rounded-2xl print:border-solid print:bg-white">
-                        <div class="flex items-center gap-2 mr-4">
-                            <Info class="h-4 w-4 text-indigo-600" />
-                            <span class="text-xs font-black uppercase tracking-widest text-muted-foreground">Performance Key:</span>
-                        </div>
-                        <div v-for="level in performanceLevels" :key="level.code" class="flex items-center gap-2">
-                             <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-100 shadow-sm print:border-black print:shadow-none">
-                                <span class="text-xs font-black text-indigo-600">{{ level.code }}:</span>
-                                <span class="text-xs font-bold text-gray-700">{{ level.label }}</span>
-                                <span class="text-[10px] font-black text-muted-foreground ml-1">({{ level.range }})</span>
+                        <div class="space-y-4">
+                             <div class="h-10 border-b border-slate-900"></div>
+                             <div>
+                                 <p class="text-[10px] font-black uppercase tracking-widest">Parent / Guardian</p>
+                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
                              </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Assessment Table -->
-                <div class="p-8">
-                    <div class="rounded-3xl border border-gray-100 overflow-hidden shadow-sm print:rounded-none print:border-black print:shadow-none">
-                        <Table>
-                            <TableHeader class="bg-indigo-600/5 print:bg-gray-100 print:text-black">
-                                <TableRow class="hover:bg-transparent border-b-2 border-indigo-600 print:border-black">
-                                    <TableHead class="font-black text-gray-900 py-6 pl-6 w-[30%]">Learning Area / Activity Area</TableHead>
-                                    <TableHead class="text-center font-black text-gray-900 border-l border-gray-100 print:border-black">Opening Exam</TableHead>
-                                    <TableHead class="text-center font-black text-gray-900 border-l border-gray-100 print:border-black">Mid Term Exam</TableHead>
-                                    <TableHead class="text-center font-black text-gray-900 border-l border-gray-100 print:border-black">End Term Exam</TableHead>
-                                    <TableHead class="text-center font-black text-indigo-600 border-l border-gray-100 print:border-black">Term Average</TableHead>
-                                    <TableHead class="pr-6 font-black text-gray-900 border-l border-gray-100 print:border-black">Performance Comments</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                <TableRow v-for="result in results" :key="result.subject" class="hover:bg-indigo-50/30 transition-colors border-gray-50 print:border-black">
-                                    <TableCell class="font-black text-gray-900 py-5 pl-6 flex items-center gap-3">
-                                        <div class="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 text-xs shrink-0 print:hidden">
-                                            <BookOpen class="h-4 w-4" />
-                                        </div>
-                                        {{ result.subject }}
-                                    </TableCell>
-                                    <TableCell class="text-center font-bold border-l border-gray-50 print:border-black">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm">{{ result.opening?.score || '-' }}</span>
-                                            <Badge v-if="result.opening?.level" variant="outline" class="mx-auto text-[8px] font-black h-4 px-1.5 bg-gray-50 border-0 uppercase">{{ result.opening.level }}</Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell class="text-center font-bold border-l border-gray-50 print:border-black">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm">{{ result.mid?.score || '-' }}</span>
-                                            <Badge v-if="result.mid?.level" variant="outline" class="mx-auto text-[8px] font-black h-4 px-1.5 bg-gray-50 border-0 uppercase">{{ result.mid.level }}</Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell class="text-center font-bold border-l border-gray-50 print:border-black">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm">{{ result.end?.score || '-' }}</span>
-                                            <Badge v-if="result.end?.level" variant="outline" class="mx-auto text-[8px] font-black h-4 px-1.5 bg-gray-50 border-0 uppercase">{{ result.end.level }}</Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell class="text-center font-black text-indigo-600 border-l border-gray-50 bg-indigo-50/20 print:border-black print:bg-white">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-base">{{ result.average?.score || '-' }}</span>
-                                            <Badge v-if="result.average?.level" variant="outline" class="mx-auto text-[9px] font-black h-4.5 px-2 bg-indigo-100 text-indigo-700 border-0 uppercase">{{ result.average.level }}</Badge>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell class="pr-6 text-xs text-muted-foreground font-medium border-l border-gray-50 italic print:border-black print:text-black">
-                                        {{ result.comments || 'Developing well in this area with consistent improvement.' }}
-                                    </TableCell>
-                                </TableRow>
-                                <!-- Footer / Summary Row -->
-                                <TableRow class="bg-gray-50 border-t-2 border-gray-200 print:border-black print:bg-white">
-                                    <TableCell class="py-6 pl-6 font-black text-gray-900">TERM TOTALS & AVERAGE</TableCell>
-                                    <TableCell class="text-center font-black">-</TableCell>
-                                    <TableCell class="text-center font-black">-</TableCell>
-                                    <TableCell class="text-center font-black">-</TableCell>
-                                    <TableCell class="text-center font-black text-indigo-600 text-lg">74.2%</TableCell>
-                                    <TableCell class="pr-6 text-xs font-black uppercase tracking-widest text-indigo-600 text-right">MEETING EXPECTATIONS</TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-                    </div>
-                </div>
-
-                <!-- Footer Details -->
-                <div class="p-8 grid gap-8 md:grid-cols-2 border-t border-gray-100 bg-gray-50/30 print:bg-white">
-                    <div class="space-y-6">
-                        <div>
-                            <p class="text-xs font-black uppercase tracking-widest text-indigo-600">Class Teacher's Comments</p>
-                            <div class="mt-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm min-h-[80px] text-sm font-medium text-gray-700 print:border-black print:shadow-none">
-                                {{ student?.first_name }} has shown great commitment to learning this term. Focus and participation in class discussions are exceptional. Keep up the good work!
-                            </div>
-                        </div>
-                        <div>
-                            <p class="text-xs font-black uppercase tracking-widest text-purple-600">Head Teacher's Remarks</p>
-                            <div class="mt-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm min-h-[60px] text-sm font-medium text-gray-700 print:border-black print:shadow-none">
-                                Commendable progress. A disciplined and hard-working learner.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-8">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm print:border-black">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Closing Date</p>
-                                <p class="text-sm font-bold text-gray-900 mt-1">April 12, 2026</p>
-                            </div>
-                            <div class="p-4 bg-white rounded-2xl border border-gray-100 shadow-sm print:border-black">
-                                <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Opening Date</p>
-                                <p class="text-sm font-bold text-gray-900 mt-1">May 4, 2026</p>
-                            </div>
-                        </div>
-
-                        <!-- Signatures -->
-                         <div class="grid grid-cols-2 gap-8 pt-8">
-                            <div class="text-center space-y-2">
-                                <div class="h-12 border-b-2 border-dotted border-gray-300 mx-auto w-4/5 flex items-end justify-center pb-2">
-                                    <span class="text-[10px] text-muted-foreground font-bold italic opacity-30">Electronic Signature</span>
-                                </div>
-                                <p class="text-xs font-black uppercase text-gray-900 tracking-widest">Class Teacher</p>
-                            </div>
-                            <div class="text-center space-y-2">
-                                <div class="h-12 border-b-2 border-dotted border-gray-300 mx-auto w-4/5 flex items-end justify-center pb-2">
-                                     <span class="text-[10px] text-muted-foreground font-bold italic opacity-30">School Seal / Signature</span>
-                                </div>
-                                <p class="text-xs font-black uppercase text-indigo-600 tracking-widest underline decoration-2 underline-offset-4">Head Teacher</p>
-                            </div>
-                         </div>
-                    </div>
+                <!-- System Metadata -->
+                <div class="mt-20 pt-4 flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
+                    <span>Generated by CBC Smart LMS v4.2</span>
+                    <span>Document ID: {{ student?.admission_number }}-RC-{{ academicTerm?.id }}</span>
+                    <span>Page 1 of 1</span>
                 </div>
             </div>
 
-            <!-- Footer Message (Hidden on Print) -->
-            <p class="text-center text-xs text-muted-foreground font-bold py-6 italic print:hidden">
-                Generated by CBC Learning Management System • {{ new Date().toLocaleDateString() }}
+            <!-- Print Prompt -->
+            <p class="text-center text-xs text-slate-400 font-bold py-6 italic print:hidden">
+                Tip: Press <kbd class="px-1 py-0.5 bg-slate-100 rounded border">Ctrl + P</kbd> to save this as a high-quality PDF.
             </p>
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
+
+.font-serif {
+    font-family: 'Crimson Pro', serif;
+}
+
 @media print {
-    /* Ensure colors print correctly if user enables background colors */
+    .p-12 { padding: 0 !important; }
+    .shadow-2xl { box-shadow: none !important; }
+    .border { border: none !important; }
+    
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        color-adjust: exact !important;
     }
+
+    /* Force landscape if items overflow, but portrait usually better for reports */
+    @page {
+        size: auto;
+        margin: 0.5cm;
+    }
+}
+
+/* Custom Scrollbar for the container */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
 }
 </style>

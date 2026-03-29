@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -143,6 +144,26 @@ class Student extends Model
     public function assessmentResults(): HasMany
     {
         return $this->hasMany(\App\Models\Assessment\StudentAssessment::class, 'student_id');
+    }
+
+    public function assessmentRatings(): HasMany
+    {
+        return $this->hasMany(\App\Models\Assessment\StudentAssessmentRating::class, 'student_id');
+    }
+
+    public function competencyRatings(): HasMany
+    {
+        return $this->hasMany(\App\Models\Assessment\StudentCompetencyRating::class, 'student_id');
+    }
+
+    public function portfolio(): HasOne
+    {
+        return $this->hasOne(\App\Models\Curriculum\Portfolio::class);
+    }
+
+    public function portfolioItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(\App\Models\Curriculum\PortfolioItem::class, \App\Models\Curriculum\Portfolio::class);
     }
 
     public function getPhotoUrlAttribute(): ?string

@@ -21,6 +21,7 @@ use App\Http\Controllers\LearningResourceController;
 use App\Http\Controllers\StaffsController;
 use App\Http\Controllers\ParentsController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\Finance\FinanceController;
 use App\Http\Controllers\Library\LibraryController;
 use App\Http\Controllers\Transport\TransportController;
@@ -127,6 +128,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('students/{student}/suspend', [StudentsController::class, 'suspend'])->name('students.suspend');
         Route::patch('students/{student}/activate', [StudentsController::class, 'activate'])->name('students.activate');
         Route::patch('students/{student}/demote', [StudentsController::class, 'demote'])->name('students.demote');
+        Route::post('students/{student}/photo', [StudentsController::class, 'updatePhoto'])->name('students.photo.update');
     });
 
     Route::middleware(['check_permission:students.transfer'])->group(function () {
@@ -412,13 +414,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
         Route::get('assessments/bulk-upload', [AssessmentController::class, 'bulkUploadView'])->name('assessments.bulk-upload');
         Route::post('assessments/bulk-upload', [AssessmentController::class, 'bulkUpload'])->name('assessments.bulk-upload.store');
-        // Route::get('assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
-        // Route::get('assessments/{assessment}/grading', [AssessmentController::class, 'grading'])->name('assessments.grading.show');
+        Route::get('assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
         Route::get('assessments/report-cards', [AssessmentController::class, 'reportCards'])->name('assessments.report-cards');
         Route::get('assessments/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('assessments.report-cards.show');
         Route::get('assessments/rubrics', [AssessmentController::class, 'rubrics'])->name('assessments.rubrics');
         Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
         Route::get('assessments/results/export', [AssessmentController::class, 'exportResults'])->name('assessments.results.export');
+
+        // Portfolio Management
+        Route::get('assessments/portfolio', [PortfolioController::class, 'index'])->name('assessments.portfolio');
+        Route::get('assessments/portfolio/{studentId}', [PortfolioController::class, 'show'])->name('assessments.portfolio.show');
+        Route::post('assessments/portfolio/{portfolioId}/item', [PortfolioController::class, 'storeItem'])->name('assessments.portfolio.store-item');
+        Route::delete('assessments/portfolio/item/{itemId}', [PortfolioController::class, 'destroyItem'])->name('assessments.portfolio.destroy-item');
     });
 
     Route::middleware(['check_permission:assessments.create'])->group(function () {

@@ -33,13 +33,13 @@ const breadcrumbs = [
 
 interface Strand { id: number; name: string; }
 interface SubStrand { id: number; name: string; }
-interface Indicator { id: number; indicator: string; }
+interface Indicator { id: number; indicator: string; [key: string]: any; }
 
 const currentStep = ref(1);
 const loading = ref(false);
-const strands = ref<Strand[]>([]);
-const subStrands = ref<SubStrand[]>([]);
-const indicators = ref<Indicator[]>([]);
+const strands = ref<any[]>([]);
+const subStrands = ref<any[]>([]);
+const indicators = ref<any[]>([]);
 
 const form = useForm({
     title: '',
@@ -52,7 +52,7 @@ const form = useForm({
     subject_id: '',
     strand_id: '',
     sub_strand_id: '',
-    indicators: [] as { id: number; indicator: string; max_score?: number }[],
+    indicators: [] as any[],
 });
 
 const steps = [

@@ -1368,6 +1368,22 @@ class StudentsController extends Controller
         ]);
     }
 
+    public function updatePhoto(Request $request, Student $student): RedirectResponse
+    {
+        $request->validate([
+            'photo' => ['required', 'image', 'max:2048'],
+        ]);
+
+        if ($student->photo) {
+            Storage::disk('public')->delete($student->photo);
+        }
+
+        $path = $request->file('photo')->store('students/photos', 'public');
+        $student->update(['photo' => $path]);
+
+        return back()->with('success', 'Photo updated successfully.');
+    }
+
     protected function nullableValue(mixed $value): ?string
     {
         $trimmed = trim((string) $value);

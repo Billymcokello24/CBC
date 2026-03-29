@@ -228,54 +228,52 @@ class AssessmentController extends Controller
 
     public function showReport(int $studentId): Response
     {
-        $student = \App\Models\Student::with('currentClass')->findOrFail($studentId);
         $schoolId = $this->getSchoolId();
+        $student = \App\Models\Student::with(['currentClass'])->findOrFail($studentId);
+        
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
-        $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
+        $activeTerm = \App\Models\Academic\AcademicTerm::where('is_current', true)
+            ->where('academic_year_id', $activeYear?->id)
+            ->first();
 
-        // High-quality sample data matching CBC requirements
-        $results = [
-            [
-                'subject' => 'Language Activities', 
-                'opening' => ['score' => 78, 'level' => 'ME'], 
-                'mid' => ['score' => 82, 'level' => 'EE'], 
-                'end' => ['score' => 80, 'level' => 'ME'], 
-                'average' => ['score' => 80, 'level' => 'ME'],
-                'comments' => 'Excellent communication skills and vocabulary.'
-            ],
-            [
-                'subject' => 'Mathematical Activities', 
-                'opening' => ['score' => 65, 'level' => 'ME'], 
-                'mid' => ['score' => 70, 'level' => 'ME'], 
-                'end' => ['score' => 72, 'level' => 'ME'], 
-                'average' => ['score' => 69, 'level' => 'ME'],
-                'comments' => 'Strong logical reasoning. Keep practicing geometry.'
-            ],
-            [
-                'subject' => 'Environmental Activities', 
-                'opening' => ['score' => 85, 'level' => 'EE'], 
-                'mid' => ['score' => 88, 'level' => 'EE'], 
-                'end' => ['score' => 90, 'level' => 'EE'], 
-                'average' => ['score' => 88, 'level' => 'EE'],
-                'comments' => 'Highly curious and protective of the environment.'
-            ],
-            [
-                'subject' => 'Psychomotor Activities', 
-                'opening' => ['score' => 70, 'level' => 'ME'], 
-                'mid' => ['score' => 75, 'level' => 'ME'], 
-                'end' => ['score' => 80, 'level' => 'ME'], 
-                'average' => ['score' => 75, 'level' => 'ME'],
-                'comments' => 'Great coordination and physical agility.'
-            ],
-            [
-                'subject' => 'Creative Arts', 
-                'opening' => ['score' => 92, 'level' => 'EE'], 
-                'mid' => ['score' => 95, 'level' => 'EE'], 
-                'end' => ['score' => 94, 'level' => 'EE'], 
-                'average' => ['score' => 94, 'level' => 'EE'],
-                'comments' => 'Remarkable artistic talent and creativity.'
-            ],
-        ];
+        // Fetch all subjects offered at the school
+        $subjects = \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
+            $query->where('school_id', $schoolId)->where('is_offered', true);
+        })->get();
+
+        // Fetch all assessment ratings for this student in the current term
+        $ratings = \App\Models\Assessment\StudentAssessmentRating::where('student_id', $studentId)
+            ->with(['item.assessment.assessmentType'])
+            ->whereHas('item.assessment', function($query) use ($activeTerm) {
+                if ($activeTerm) {
+                    $query->where('academic_term_id', $activeTerm->id);
+                }
+            })
+            ->get();
+
+        $results = $subjects->map(function($subject) use ($ratings) {
+            $subjectRatings = $ratings->filter(fn($r) => $r->item->assessment->subject_id == $subject->id);
+            
+            $opening = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'Opening') !== false);
+            $mid = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'Mid') !== false);
+            $end = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'End') !== false);
+
+            $openingScore = $opening->count() > 0 ? $opening->avg('score') : null;
+            $midScore = $mid->count() > 0 ? $mid->avg('score') : null;
+            $endScore = $end->count() > 0 ? $end->avg('score') : null;
+            
+            $allScores = $subjectRatings->pluck('score')->filter();
+            $avgScore = $allScores->count() > 0 ? $allScores->avg() : null;
+
+            return [
+                'subject' => $subject->name,
+                'opening' => ['score' => $openingScore ? round($openingScore, 1) : null, 'level' => $this->mapScoreToLevel($openingScore)],
+                'mid' => ['score' => $midScore ? round($midScore, 1) : null, 'level' => $this->mapScoreToLevel($midScore)],
+                'end' => ['score' => $endScore ? round($endScore, 1) : null, 'level' => $this->mapScoreToLevel($endScore)],
+                'average' => ['score' => $avgScore ? round($avgScore, 1) : null, 'level' => $this->mapScoreToLevel($avgScore)],
+                'comments' => $avgScore ? $this->getAutoComment($avgScore) : 'No assessments logged yet.',
+            ];
+        })->filter(fn($r) => $r['opening']['score'] || $r['mid']['score'] || $r['end']['score'])->values();
 
         return Inertia::render('assessments/ReportForm', [
             'student' => $student,
@@ -283,13 +281,31 @@ class AssessmentController extends Controller
             'academicTerm' => $activeTerm,
             'results' => $results,
             'performanceLevels' => [
-                ['code' => 'EE', 'label' => 'Exceeding Expectation', 'range' => '80-100'],
-                ['code' => 'ME', 'label' => 'Meeting Expectation', 'range' => '60-79'],
-                ['code' => 'AE', 'label' => 'Approaching Expectation', 'range' => '40-59'],
-                ['code' => 'BE', 'label' => 'Below Expectation', 'range' => '0-39'],
+                ['code' => 'EE', 'label' => 'Exceeding Expectation', 'range' => '75-100', 'rating' => 4],
+                ['code' => 'ME', 'label' => 'Meeting Expectation', 'range' => '50-74', 'rating' => 3],
+                ['code' => 'AE', 'label' => 'Approaching Expectation', 'range' => '30-49', 'rating' => 2],
+                ['code' => 'BE', 'label' => 'Below Expectation', 'range' => '0-29', 'rating' => 1],
             ],
-            'attendance' => ['days_present' => 85, 'total_days' => 90],
+            'attendance' => ['days_present' => 0, 'total_days' => 0],
         ]);
+    }
+
+    private function mapScoreToLevel(?float $score): ?string
+    {
+        if ($score === null) return null;
+        if ($score >= 75) return 'EE';
+        if ($score >= 50) return 'ME';
+        if ($score >= 30) return 'AE';
+        return 'BE';
+    }
+
+    private function getAutoComment(?float $score): string
+    {
+        if ($score === null) return 'No data available.';
+        if ($score >= 80) return 'Excellent performance. Keep it up!';
+        if ($score >= 60) return 'Good progress. Aim higher next term.';
+        if ($score >= 40) return 'Fair performance. More effort needed.';
+        return 'Requires urgent attention and remedial support.';
     }
 
     public function rubrics(): Response
@@ -438,14 +454,31 @@ class AssessmentController extends Controller
             $query->whereIn('current_class_id', $classIds);
         }
 
-        $students = $query->with(['currentClass', 'assessmentResults.assessment.subject', 'assessmentResults.assessment.assessmentType'])
+        $students = $query->with(['currentClass', 'assessmentRatings', 'competencyRatings.competency'])
             ->paginate(20);
+
+        // Append calculated averages for the frontend
+        $students->getCollection()->transform(function ($student) {
+            $ratings = $student->assessmentRatings;
+            $count = $ratings->count();
+            $mean = $count > 0 ? $ratings->avg('score') : 0;
+            
+            $student->mean_score = round($mean, 1);
+            $student->tests_count = $count;
+            
+            // Basic trajectory logic: compare last 3 tests to overall mean
+            $last3 = $ratings->sortByDesc('created_at')->take(3);
+            $last3Mean = $last3->count() > 0 ? $last3->avg('score') : 0;
+            $student->trajectory = $last3Mean >= $mean ? 'Positive' : 'Declining';
+            
+            return $student;
+        });
 
         return Inertia::render('assessments/Results', [
             'students' => $students,
             'activeYear' => $activeYear,
             'activeTerm' => $activeTerm,
-            'classes' => \App\Models\Academic\SchoolClass::whereIn('id', $classIds ?? \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->pluck('id'))->get(),
+            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
         ]);
     }
 

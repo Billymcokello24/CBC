@@ -70,4 +70,9 @@ class PortfolioItem extends Model
     {
         return $this->belongsToMany(Competency::class, 'portfolio_item_competencies');
     }
+
+    public function indicators(): BelongsToMany
+    {
+        return $this->belongsToMany(CompetencyIndicator::class, 'portfolio_item_indicators', 'portfolio_item_id', 'indicator_id');
+    }
 }
