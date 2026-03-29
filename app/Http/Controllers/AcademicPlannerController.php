@@ -9,6 +9,10 @@ use App\Models\Curriculum\Subject;
 use App\Models\Academic\GradeLevel;
 use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AcademicTerm;
+use App\Models\Academic\SchoolClass;
+use App\Models\Curriculum\Strand;
+use App\Models\Curriculum\SubStrand;
+use App\Models\Teacher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +36,18 @@ class AcademicPlannerController extends Controller
             'subjects' => Subject::active()->get(['id', 'name']),
             'grades' => GradeLevel::all(['id', 'name']),
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
+        ]);
+    }
+
+    public function showScheme(SchemeOfWork $scheme): Response
+    {
+        $scheme->load(['subject', 'gradeLevel', 'academicTerm', 'preparedBy', 'entries.strand', 'entries.subStrand']);
+
+        return Inertia::render('curriculum/planner/SchemeDetails', [
+            'scheme' => $scheme,
+            'strands' => Strand::where('subject_id', $scheme->subject_id)
+                ->where('grade_level_id', $scheme->grade_level_id)
+                ->get(['id', 'name']),
         ]);
     }
 
@@ -65,33 +81,58 @@ class AcademicPlannerController extends Controller
         $query = LessonPlan::with(['subject', 'classroom', 'academicTerm', 'teacher']);
 
         if (!$user->hasRole(['admin', 'principal'])) {
-            $query->where('teacher_id', $user->id);
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            $query->where('teacher_id', $teacher?->id ?? 0);
         }
 
         return Inertia::render('curriculum/planner/LessonPlans', [
             'plans' => $query->latest()->get(),
             'subjects' => Subject::active()->get(['id', 'name']),
+            'grades' => GradeLevel::all(['id', 'name']),
+            'classes' => SchoolClass::active()->get(['id', 'name']),
+            'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
+            'strands' => Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
+            'sub_strands' => SubStrand::all(['id', 'name', 'strand_id']),
         ]);
     }
 
     public function storeLessonPlan(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'class_id' => 'required',
-            'subject_id' => 'required',
-            'academic_term_id' => 'required',
+            'class_id' => 'required|exists:classes,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'academic_term_id' => 'required|exists:academic_terms,id',
+            'strand_id' => 'nullable|exists:curriculum_strands,id',
+            'sub_strand_id' => 'nullable|exists:curriculum_sub_strands,id',
             'title' => 'required|string|max:255',
             'lesson_date' => 'required|date',
             'week_number' => 'nullable|string',
-            'strand_id' => 'nullable',
-            'sub_strand_id' => 'nullable',
+            'period_number' => 'nullable|string',
+            'duration_minutes' => 'nullable|integer',
             'specific_objectives' => 'nullable|string',
             'learning_outcomes' => 'nullable|string',
+            'key_vocabulary' => 'nullable|string',
+            'teaching_aids' => 'nullable|string',
+            'references' => 'nullable|string',
+            'introduction' => 'nullable|string',
+            'lesson_development' => 'nullable|string',
+            'teacher_activities' => 'nullable|string',
+            'learner_activities' => 'nullable|string',
+            'conclusion' => 'nullable|string',
+            'assessment_methods' => 'nullable|string',
+            'reflection' => 'nullable|string',
+            'homework' => 'nullable|string',
         ]);
+
+        $teacher = Teacher::where('user_id', Auth::id())->first();
+
+        if (!$teacher) {
+            return back()->with('error', 'Only teachers can create lesson plans.');
+        }
 
         LessonPlan::create(array_merge($validated, [
             'school_id' => Auth::user()->school_id,
-            'teacher_id' => Auth::id(),
+            'teacher_id' => $teacher->id,
             'status' => 'draft',
         ]));
 
@@ -172,8 +213,25 @@ class AcademicPlannerController extends Controller
             'title' => 'required|string|max:255',
             'lesson_date' => 'required|date',
             'week_number' => 'nullable|string',
+            'period_number' => 'nullable|string',
+            'duration_minutes' => 'nullable|integer',
             'specific_objectives' => 'nullable|string',
             'learning_outcomes' => 'nullable|string',
+            'key_vocabulary' => 'nullable|string',
+            'teaching_aids' => 'nullable|string',
+            'references' => 'nullable|string',
+            'introduction' => 'nullable|string',
+            'lesson_development' => 'nullable|string',
+            'teacher_activities' => 'nullable|string',
+            'learner_activities' => 'nullable|string',
+            'conclusion' => 'nullable|string',
+            'assessment_methods' => 'nullable|string',
+            'reflection' => 'nullable|string',
+            'homework' => 'nullable|string',
+            'strand_id' => 'nullable|exists:curriculum_strands,id',
+            'sub_strand_id' => 'nullable|exists:curriculum_sub_strands,id',
+            'class_id' => 'nullable|exists:classes,id',
+            'subject_id' => 'nullable|exists:subjects,id',
         ]);
 
         $plan->update($validated);
@@ -184,5 +242,33 @@ class AcademicPlannerController extends Controller
     {
         $plan->delete();
         return back()->with('success', 'Lesson plan removed.');
+    }
+
+    public function storeSchemeEntry(Request $request, SchemeOfWork $scheme): RedirectResponse
+    {
+        $validated = $request->validate([
+            'week_number' => 'required|integer|min:1',
+            'lesson_number' => 'required|integer|min:1',
+            'strand_id' => 'required|exists:strands,id',
+            'sub_strand_id' => 'nullable|exists:sub_strands,id',
+            'topic' => 'required|string|max:255',
+            'learning_outcomes' => 'nullable|string',
+            'learning_activities' => 'nullable|string',
+            'resources' => 'nullable|string',
+            'assessment' => 'nullable|string',
+            'remarks' => 'nullable|string',
+        ]);
+
+        $scheme->entries()->create(array_merge($validated, [
+            'school_id' => $scheme->school_id,
+        ]));
+
+        return back()->with('success', 'Entry added to scheme.');
+    }
+
+    public function destroySchemeEntry(SchemeOfWork $scheme, SchemeEntry $entry): RedirectResponse
+    {
+        $entry->delete();
+        return back()->with('success', 'Entry removed.');
     }
 }

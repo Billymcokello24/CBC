@@ -20,6 +20,7 @@ const props = defineProps<{
     gradeLevels: Array<any>;
     subjects: Array<any>;
     academicTerms: Array<any>;
+    assessmentTypes: Array<any>;
     competencies: Array<any>;
     ratingScales: Array<any>;
 }>();
@@ -42,7 +43,8 @@ const indicators = ref<Indicator[]>([]);
 
 const form = useForm({
     title: '',
-    type: 'summative',
+    description: '',
+    type_id: '',
     date: new Date().toISOString().split('T')[0],
     term_id: '',
     grade_level_id: '',
@@ -192,12 +194,10 @@ const submit = () => {
                                         <Input v-model="form.title" placeholder="e.g. End of Term Mathematics Evaluation" class="h-12 border-slate-200 focus:ring-indigo-500/20" />
                                     </div>
                                     <div class="space-y-2">
-                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assessment Type</label>
-                                        <select v-model="form.type" class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20">
-                                            <option value="summative">Summative Assessment</option>
-                                            <option value="formative">Formative (Ongoing)</option>
-                                            <option value="baseline">Baseline Entry</option>
-                                            <option value="portfolio">Portfolio Entry</option>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Assessment Nature</label>
+                                        <select v-model="form.type_id" class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20">
+                                            <option value="">Select Category...</option>
+                                            <option v-for="type in assessmentTypes" :key="type.id" :value="String(type.id)">{{ type.name }}</option>
                                         </select>
                                     </div>
                                     <div class="space-y-2">
@@ -399,7 +399,9 @@ const submit = () => {
                               <div class="grid grid-cols-2 gap-4">
                                    <div class="space-y-1">
                                        <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-tight">Focus Type</p>
-                                       <Badge variant="outline" class="border-indigo-500/50 text-indigo-200 bg-indigo-500/10 text-[10px] uppercase font-black tracking-widest py-0.5 rounded-lg whitespace-nowrap">{{ form.type }}</Badge>
+                                       <Badge variant="outline" class="border-indigo-500/50 text-indigo-200 bg-indigo-500/10 text-[10px] uppercase font-black tracking-widest py-0.5 rounded-lg whitespace-nowrap">
+                                            {{ assessmentTypes.find(t => String(t.id) === String(form.type_id))?.name || 'Not Selected' }}
+                                       </Badge>
                                    </div>
                                    <div class="space-y-1">
                                        <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest leading-tight">Scale</p>

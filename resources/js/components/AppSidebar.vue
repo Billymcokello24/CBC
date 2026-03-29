@@ -284,7 +284,7 @@ const navigation = [
                     { title: 'Overview', href: '/curriculum' },
                     { title: 'Competencies', href: '/curriculum/competencies' },
                     { title: 'Teaching Plans (Schemes)', href: '/curriculum/planner/schemes' },
-                    { title: 'Lesson Plans', href: '/curriculum/lesson-plans' },
+                    { title: 'Lesson Plans', href: '/curriculum/planner/lesson-plans' },
                     { title: 'Learning Resources', href: '/curriculum/resources' },
                     { title: 'Assignments', href: '/curriculum/assignments', icon: NotebookPen },
                 ],

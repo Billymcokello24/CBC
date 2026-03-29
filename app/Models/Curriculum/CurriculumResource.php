@@ -15,6 +15,7 @@ class CurriculumResource extends Model
         'school_id',
         'resourceable_type',
         'resourceable_id',
+        'grade_level_id',
         'title',
         'resource_type',
         'description',
@@ -36,6 +37,16 @@ class CurriculumResource extends Model
     public function resourceable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'resourceable_id');
+    }
+
+    public function gradeLevel()
+    {
+        return $this->belongsTo(\App\Models\Academic\GradeLevel::class, 'grade_level_id');
     }
 
     public function scopeActive($query)

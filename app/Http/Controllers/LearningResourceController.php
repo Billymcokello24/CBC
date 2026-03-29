@@ -15,7 +15,7 @@ class LearningResourceController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = CurriculumResource::query();
+        $query = CurriculumResource::with(['subject', 'gradeLevel']);
 
         return Inertia::render('curriculum/resources/Index', [
             'resources' => $query->latest()->get(),
@@ -28,9 +28,10 @@ class LearningResourceController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'resource_type' => 'required',
+            'resource_type' => 'nullable',
             'description' => 'nullable|string',
             'subject_id' => 'nullable|exists:subjects,id',
+            'grade_level_id' => 'nullable|exists:grade_levels,id',
             'file' => 'nullable|file|max:10240', // 10MB limit
             'url' => 'nullable|url',
         ]);
@@ -39,8 +40,28 @@ class LearningResourceController extends Controller
         unset($data['file']);
 
         if ($request->hasFile('file')) {
-            $path = $request->file('file')->store('curriculum/resources', 'public');
+            $file = $request->file('file');
+            $path = $file->store('curriculum/resources', 'public');
             $data['file_path'] = $path;
+            
+            // Auto-detect resource type if not provided
+            if (empty($data['resource_type'])) {
+                $extension = strtolower($file->getClientOriginalExtension());
+                $data['resource_type'] = match($extension) {
+                    'pdf' => 'pdf',
+                    'doc', 'docx' => 'doc',
+                    'mp4', 'mov', 'avi' => 'video',
+                    'mp3', 'wav' => 'audio',
+                    'jpg', 'jpeg', 'png', 'gif' => 'image',
+                    default => 'document'
+                };
+            }
+        } elseif (!empty($data['url'])) {
+            $data['resource_type'] = 'link';
+        }
+
+        if (empty($data['resource_type'])) {
+            $data['resource_type'] = 'document';
         }
 
         if ($validated['subject_id']) {

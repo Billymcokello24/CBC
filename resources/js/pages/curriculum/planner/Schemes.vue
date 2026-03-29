@@ -5,7 +5,7 @@ import {
     LayoutDashboard, Plus, Search, Filter, 
     MoreVertical, Eye, Edit2, Trash2, 
     Calendar, User, BookOpen, CheckCircle2, 
-    Clock, AlertCircle, FileText, Download, ChevronRight, X
+    Clock, AlertCircle, FileText, Download, ChevronRight, X, GraduationCap
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -168,7 +168,7 @@ const getStatusBadge = (status: string) => {
                             <h3 class="text-xl font-bold text-slate-900 tracking-tight leading-tight transition-colors group-hover:text-blue-600">{{ scheme.title }}</h3>
                             <div class="flex items-center gap-4 text-xs font-medium text-slate-500">
                                 <span class="flex items-center gap-1.5 font-bold uppercase tracking-tighter text-[10px]"><BookOpen class="h-3.5 w-3.5 text-blue-500" /> {{ scheme.subject?.name }}</span>
-                                <span class="flex items-center gap-1.5 font-bold uppercase tracking-tighter text-[10px] font-slate-400"><GraduationCap class="h-3.5 w-3.5 text-blue-500" /> {{ scheme.grade_level?.name }}</span>
+                                <span class="flex items-center gap-1.5 font-bold uppercase tracking-tighter text-[10px] text-slate-400"><GraduationCap class="h-3.5 w-3.5 text-blue-500" /> {{ scheme.grade_level?.name }}</span>
                             </div>
                         </div>
                         <DropdownMenu>
@@ -224,9 +224,11 @@ const getStatusBadge = (status: string) => {
                                 <User class="h-4 w-4 text-slate-400" />
                              </div>
                         </div>
-                        <Button variant="ghost" class="h-10 px-5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100">
-                            Open Planner <ChevronRight class="ml-1 h-3.5 w-3.5" />
-                        </Button>
+                        <Link :href="`/curriculum/planner/schemes/${scheme.id}`">
+                            <Button variant="ghost" class="h-10 px-5 rounded-xl text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100">
+                                Open Planner <ChevronRight class="ml-1 h-3.5 w-3.5" />
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 

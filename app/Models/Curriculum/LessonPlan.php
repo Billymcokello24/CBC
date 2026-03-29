@@ -4,6 +4,7 @@ namespace App\Models\Curriculum;
 
 use App\Models\Academic\AcademicTerm;
 use App\Models\Academic\SchoolClass;
+use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,7 +60,7 @@ class LessonPlan extends Model
 
     public function teacher(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'teacher_id');
+        return $this->belongsTo(Teacher::class, 'teacher_id');
     }
 
     public function classroom(): BelongsTo
@@ -97,8 +98,8 @@ class LessonPlan extends Model
         return $this->belongsToMany(Competency::class, 'lesson_plan_competencies');
     }
 
-    public function teachingPlan(): BelongsTo
+    public function schemeOfWork(): BelongsTo
     {
-        return $this->belongsTo(TeachingPlan::class);
+        return $this->belongsTo(SchemeOfWork::class, 'teaching_plan_id');
     }
 }

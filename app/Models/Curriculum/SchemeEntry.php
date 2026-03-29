@@ -13,7 +13,7 @@ class SchemeEntry extends Model
 
     protected $fillable = [
         'school_id',
-        'scheme_of_work_id',
+        'scheme_id',
         'week_number',
         'lesson_number',
         'strand_id',

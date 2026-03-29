@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
 import { 
     FileText, Plus, Search, Filter, 
     MoreVertical, Eye, Edit2, Trash2, 
     Calendar, User, BookOpen, CheckCircle2, 
-    Clock, AlertCircle, ArrowLeft, ChevronRight,
-    MapPin, Sparkles, MessageSquare, X
+    Clock, AlertCircle, ChevronRight,
+    MapPin, Sparkles, MessageSquare, X, GraduationCap,
+    ListChecks, BookCopy, Lightbulb, Users
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -28,11 +29,22 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs";
 import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
     plans: any[];
     subjects: any[];
+    grades: any[];
+    classes: any[];
+    terms: any[];
+    strands: any[];
+    sub_strands: any[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -44,31 +56,88 @@ const breadcrumbs: BreadcrumbItem[] = [
 // Modals State
 const showModal = ref(false);
 const editingPlan = ref<any>(null);
+const currentTab = ref('administrative');
+const tabs = ['administrative', 'curriculum', 'delivery', 'reflection'];
+
+const nextTab = () => {
+    const currentIndex = tabs.indexOf(currentTab.value);
+    if (currentIndex < tabs.length - 1) {
+        currentTab.value = tabs[currentIndex + 1];
+    }
+};
+
+const prevTab = () => {
+    const currentIndex = tabs.indexOf(currentTab.value);
+    if (currentIndex > 0) {
+        currentTab.value = tabs[currentIndex - 1];
+    }
+};
 
 const form = useForm({
     title: '',
     lesson_date: '',
     subject_id: '',
-    class_id: 1, // Placeholder
-    academic_term_id: 1, // Placeholder
+    class_id: '',
+    academic_term_id: '',
+    strand_id: '',
+    sub_strand_id: '',
     week_number: '',
+    period_number: '',
+    duration_minutes: 35,
     specific_objectives: '',
     learning_outcomes: '',
+    key_vocabulary: '',
+    teaching_aids: '',
+    references: '',
+    introduction: '',
+    lesson_development: '',
+    teacher_activities: '',
+    learner_activities: '',
+    conclusion: '',
+    assessment_methods: '',
+    reflection: '',
+    homework: '',
+});
+
+const filteredStrands = computed(() => {
+    if (!form.subject_id) return [];
+    return props.strands.filter(s => s.subject_id === form.subject_id);
+});
+
+const filteredSubStrands = computed(() => {
+    if (!form.strand_id) return [];
+    return props.sub_strands.filter(s => s.strand_id === form.strand_id);
 });
 
 const openModal = (plan: any = null) => {
     editingPlan.value = plan;
     if (plan) {
         form.title = plan.title;
-        form.lesson_date = plan.lesson_date;
+        form.lesson_date = plan.lesson_date ? plan.lesson_date.split('T')[0] : '';
         form.subject_id = plan.subject_id;
-        form.class_id = plan.class_id || 1;
-        form.academic_term_id = plan.academic_term_id || 1;
+        form.class_id = plan.class_id;
+        form.academic_term_id = plan.academic_term_id;
+        form.strand_id = plan.strand_id;
+        form.sub_strand_id = plan.sub_strand_id;
         form.week_number = plan.week_number;
+        form.period_number = plan.period_number;
+        form.duration_minutes = plan.duration_minutes;
         form.specific_objectives = plan.specific_objectives;
         form.learning_outcomes = plan.learning_outcomes;
+        form.key_vocabulary = plan.key_vocabulary;
+        form.teaching_aids = plan.teaching_aids;
+        form.references = plan.references;
+        form.introduction = plan.introduction;
+        form.lesson_development = plan.lesson_development;
+        form.teacher_activities = plan.teacher_activities;
+        form.learner_activities = plan.learner_activities;
+        form.conclusion = plan.conclusion;
+        form.assessment_methods = plan.assessment_methods;
+        form.reflection = plan.reflection;
+        form.homework = plan.homework;
     } else {
         form.reset();
+        if (props.terms.length > 0) form.academic_term_id = props.terms[0].id;
     }
     showModal.value = true;
 };
@@ -134,14 +203,14 @@ const getStatusBadge = (status: string) => {
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-1">
                     <h1 class="text-3xl font-bold tracking-tight text-slate-900">Daily Plans</h1>
-                    <p class="text-sm font-medium text-slate-500 font-medium italic">Create and manage your daily teaching plans.</p>
+                    <p class="text-sm font-medium text-slate-500 font-medium italic">Create and manage your CBC-compliant lesson plans.</p>
                 </div>
                 
                 <div class="flex items-center gap-3">
                     <Button variant="outline" class="h-12 rounded-xl font-bold text-[10px] uppercase tracking-wider border-slate-200 shadow-sm bg-white">
                         <Filter class="mr-2 h-4 w-4" /> Filter Plans
                     </Button>
-                    <Button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 h-12 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md">
+                    <Button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 h-12 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md transition-all hover:scale-[1.02]">
                         <Plus class="mr-2 h-4 w-4" /> Add Lesson
                     </Button>
                 </div>
@@ -149,7 +218,7 @@ const getStatusBadge = (status: string) => {
 
             <!-- Lesson Grid -->
             <div class="grid lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                <div v-for="plan in plans" :key="plan.id" class="group relative flex flex-col p-8 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 min-h-[380px]">
+                <div v-for="plan in plans" :key="plan.id" class="group relative flex flex-col p-8 rounded-[2rem] bg-white border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 min-h-[400px]">
                     <!-- Card Header -->
                     <div class="relative z-10 flex items-start justify-between mb-6">
                          <div class="space-y-2">
@@ -171,7 +240,7 @@ const getStatusBadge = (status: string) => {
                                     <Eye class="mr-2 h-3.5 w-3.5" /> Full Plan
                                 </DropdownMenuItem>
                                 <DropdownMenuItem @click="openModal(plan)" class="rounded-xl text-xs font-bold py-3">
-                                    <Edit2 class="mr-2 h-3.5 w-3.5" /> Edit Basic Info
+                                    <Edit2 class="mr-2 h-3.5 w-3.5" /> Edit Details
                                 </DropdownMenuItem>
 
                                 <template v-if="plan.status === 'draft'">
@@ -198,16 +267,26 @@ const getStatusBadge = (status: string) => {
 
                     <!-- Card Body -->
                     <div class="relative z-10 flex-1 space-y-4">
-                        <h3 class="text-xl font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{{ plan.title }}</h3>
-                        <div class="flex items-center gap-3">
+                        <div class="space-y-1">
+                             <div class="text-[9px] font-black text-blue-500 uppercase tracking-[0.2em]">{{ plan.subject?.name || 'Subject' }}</div>
+                             <h3 class="text-xl font-bold text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{{ plan.title }}</h3>
+                        </div>
+                        
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 border border-slate-100">
-                                <MapPin class="h-3 w-3 text-blue-500" /> {{ plan.classroom?.name || 'Assigned Class' }}
+                                <MapPin class="h-3 w-3 text-blue-500" /> {{ plan.classroom?.name || 'Class' }}
                             </span>
                             <span class="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5 border border-slate-100">
-                                <BookOpen class="h-3 w-3 text-blue-500" /> {{ plan.subject?.name || 'Assigned Subject' }}
+                                <Clock class="h-3 w-3 text-blue-500" /> {{ plan.duration_minutes }} Min
                             </span>
                         </div>
-                        <p class="text-[13px] text-slate-500 line-clamp-3 leading-relaxed pt-4 border-t border-slate-50 italic font-medium">
+                        
+                        <div v-if="plan.strand" class="p-3 rounded-2xl bg-blue-50/50 border border-blue-100/50">
+                            <div class="text-[8px] font-bold text-blue-400 uppercase tracking-widest mb-1">Strand</div>
+                            <div class="text-[11px] font-bold text-slate-700 leading-tight">{{ plan.strand?.name }}</div>
+                        </div>
+
+                        <p class="text-[13px] text-slate-500 line-clamp-3 leading-relaxed pt-2 italic font-medium">
                             {{ plan.specific_objectives || 'No goals specified for this lesson.' }}
                         </p>
                     </div>
@@ -224,25 +303,20 @@ const getStatusBadge = (status: string) => {
                             </div>
                         </div>
                         
-                        <div class="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
-                                <MessageSquare class="h-4 w-4" />
-                            </Button>
-                            <Button class="h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-[10px] uppercase tracking-widest text-white shadow-md transition-all hover:gap-3">
-                                Plan Details <ChevronRight class="ml-1 h-3.5 w-3.5 whitespace-nowrap" />
-                            </Button>
-                        </div>
+                        <Button variant="ghost" class="h-12 px-6 rounded-2xl text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:bg-blue-50 group-hover:gap-3 transition-all border border-transparent hover:border-blue-100/50 shadow-sm bg-white border-slate-100">
+                            View Plan <ChevronRight class="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                        </Button>
                     </div>
                 </div>
 
                 <!-- Create Placeholder -->
-                <div @click="openModal()" class="p-16 rounded-[2rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center gap-4 hover:bg-slate-50 hover:border-blue-200 transition-all duration-300 cursor-pointer group min-h-[380px]">
-                     <div class="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shadow-sm">
-                        <Plus class="h-8 w-8" />
+                <div @click="openModal()" class="p-16 rounded-[2rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center gap-4 hover:bg-white hover:border-blue-200 hover:shadow-xl transition-all duration-300 cursor-pointer group min-h-[400px] bg-slate-50/50">
+                     <div class="h-20 w-20 rounded-full bg-white flex items-center justify-center text-slate-300 group-hover:scale-110 group-hover:text-blue-600 transition-all shadow-sm border border-slate-100">
+                        <Plus class="h-10 w-10" />
                     </div>
                     <div class="text-center">
-                        <h3 class="text-lg font-bold text-slate-400 group-hover:text-blue-600 transition-all uppercase tracking-tight">New Plan</h3>
-                        <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic font-medium">Draft your next teaching strategy</p>
+                        <h3 class="text-lg font-bold text-slate-400 group-hover:text-blue-600 transition-all uppercase tracking-tight">New Lesson Plan</h3>
+                        <p class="text-[10px] font-bold text-slate-300 uppercase tracking-widest italic font-medium">Draft your next CBC teaching strategy</p>
                     </div>
                 </div>
             </div>
@@ -257,50 +331,176 @@ const getStatusBadge = (status: string) => {
                  </Button>
             </div>
 
-            <!-- Modal -->
+            <!-- Enhanced Modal -->
             <Dialog v-model:open="showModal">
-                <DialogContent class="sm:max-w-[550px] rounded-[2rem] border-slate-100 shadow-2xl">
-                    <DialogHeader>
-                        <DialogTitle class="text-xl font-bold tracking-tight">{{ editingPlan ? 'Edit Lesson Plan' : 'New Lesson Plan' }}</DialogTitle>
-                        <DialogDescription class="text-xs text-slate-500 italic font-medium">
-                            {{ editingPlan ? 'Update the details for this teaching session.' : 'Detail the objectives and content for your upcoming lesson.' }}
+                <DialogContent class="sm:max-w-[900px] h-[90vh] p-0 rounded-[2rem] overflow-hidden flex flex-col border-0 shadow-2xl bg-white">
+                    <div class="p-8 border-b border-slate-50 bg-slate-50/50">
+                        <DialogTitle class="text-2xl font-bold tracking-tight text-slate-900">{{ editingPlan ? 'Refine Lesson Plan' : 'Draft New Lesson Plan' }}</DialogTitle>
+                        <DialogDescription class="text-sm text-slate-500 font-medium italic">
+                            Fill in the details to create a standard CBC lesson plan.
                         </DialogDescription>
-                    </DialogHeader>
-                    <form @submit.prevent="submit" class="grid gap-6 py-4">
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans">Title</Label>
-                            <Input v-model="form.title" placeholder="e.g. Intro to Organic Chemistry" class="rounded-xl border-slate-100 italic text-sm" required />
+                    </div>
+
+                    <form @submit.prevent="submit" class="flex flex-col flex-1 overflow-hidden">
+                        <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                            <Tabs v-model="currentTab" class="w-full">
+                                <TabsList class="grid w-full grid-cols-4 h-14 bg-slate-100/50 rounded-2xl p-1 mb-8 border border-slate-200/50">
+                                    <TabsTrigger value="administrative" class="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-bold text-[10px] uppercase tracking-wider">
+                                        <Users class="w-3.5 h-3.5 mr-2" /> Admin
+                                    </TabsTrigger>
+                                    <TabsTrigger value="curriculum" class="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-bold text-[10px] uppercase tracking-wider">
+                                        <BookOpen class="w-3.5 h-3.5 mr-2" /> Curriculum
+                                    </TabsTrigger>
+                                    <TabsTrigger value="delivery" class="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-bold text-[10px] uppercase tracking-wider">
+                                        <Sparkles class="w-3.5 h-3.5 mr-2" /> Delivery
+                                    </TabsTrigger>
+                                    <TabsTrigger value="reflection" class="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm font-bold text-[10px] uppercase tracking-wider">
+                                        <Lightbulb class="w-3.5 h-3.5 mr-2" /> Outcome
+                                    </TabsTrigger>
+                                </TabsList>
+
+                                <TabsContent value="administrative" class="space-y-6 animate-in slide-in-from-left duration-300">
+                                    <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Lesson Title</Label>
+                                        <Input v-model="form.title" placeholder="e.g. Exploring Different Types of Soils" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white" required />
+                                    </div>
+
+                                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</Label>
+                                            <Input type="date" v-model="form.lesson_date" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white" required />
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Classroom</Label>
+                                            <select v-model="form.class_id" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white px-4 hover:border-blue-400 transition-colors border" required>
+                                                <option value="" disabled>Select Class</option>
+                                                <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Subject / Area</Label>
+                                            <select v-model="form.subject_id" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white px-4 hover:border-blue-400 transition-colors border" required>
+                                                <option value="" disabled>Select Subject</option>
+                                                <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid md:grid-cols-3 gap-6">
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Term</Label>
+                                            <select v-model="form.academic_term_id" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white px-4 border" required>
+                                                <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Week No.</Label>
+                                            <Input v-model="form.week_number" placeholder="Week 1" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white" />
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Duration (Min)</Label>
+                                            <Input type="number" v-model="form.duration_minutes" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white" />
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="curriculum" class="space-y-6 animate-in slide-in-from-left duration-300">
+                                    <div class="grid md:grid-cols-2 gap-6">
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Strand</Label>
+                                            <select v-model="form.strand_id" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white px-4 border" :disabled="!form.subject_id">
+                                                <option value="">Select Strand</option>
+                                                <option v-for="s in filteredStrands" :key="s.id" :value="s.id">{{ s.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Sub-Strand</Label>
+                                            <select v-model="form.sub_strand_id" class="h-12 rounded-xl border-slate-200 text-sm font-bold text-slate-700 bg-white px-4 border" :disabled="!form.strand_id">
+                                                <option value="">Select Sub-Strand</option>
+                                                <option v-for="s in filteredSubStrands" :key="s.id" :value="s.id">{{ s.name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Specific Learning Outcomes</Label>
+                                        <Textarea v-model="form.specific_objectives" placeholder="By the end of the lesson, the learner should be able to..." class="rounded-2xl border-slate-200 p-4 text-[13px] font-medium min-h-[120px] focus:ring-blue-500 bg-white shadow-inner" />
+                                    </div>
+
+                                    <div class="grid md:grid-cols-2 gap-6">
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Key Vocabulary</Label>
+                                            <Textarea v-model="form.key_vocabulary" placeholder="Key words for the lesson..." class="rounded-xl border-slate-200 min-h-[80px]" />
+                                        </div>
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Learning Resources</Label>
+                                            <Textarea v-model="form.teaching_aids" placeholder="Charts, Models, ICT tools..." class="rounded-xl border-slate-200 min-h-[80px]" />
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="delivery" class="space-y-6 animate-in slide-in-from-left duration-300">
+                                    <div class="p-6 rounded-3xl bg-blue-50/30 border border-blue-100 flex flex-col gap-6">
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-blue-500">Introduction (5-10 Min)</Label>
+                                            <Textarea v-model="form.introduction" placeholder="How will you start the lesson? hook the learners..." class="rounded-2xl border-blue-100/50 min-h-[100px] text-[13px] italic font-medium" />
+                                        </div>
+                                        
+                                        <div class="grid gap-2">
+                                            <Label class="text-[10px] font-black uppercase tracking-widest text-blue-500">Lesson Development / Core Activities</Label>
+                                            <Textarea v-model="form.lesson_development" placeholder="Detailed steps of the teaching..." class="rounded-2xl border-blue-100/50 min-h-[150px] text-[13px] italic font-medium" />
+                                        </div>
+
+                                        <div class="grid md:grid-cols-2 gap-4">
+                                            <div class="grid gap-2">
+                                                <Label class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Teacher Activities</Label>
+                                                <Textarea v-model="form.teacher_activities" placeholder="What you will do..." class="rounded-xl border-emerald-100 min-h-[100px] text-xs" />
+                                            </div>
+                                            <div class="grid gap-2">
+                                                <Label class="text-[10px] font-black uppercase tracking-widest text-emerald-500">Learner Activities</Label>
+                                                <Textarea v-model="form.learner_activities" placeholder="What students will do..." class="rounded-xl border-emerald-100 min-h-[100px] text-xs" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TabsContent>
+
+                                <TabsContent value="reflection" class="space-y-6 animate-in slide-in-from-left duration-300">
+                                     <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Conclusion & Summary</Label>
+                                        <Textarea v-model="form.conclusion" placeholder="Recap and closing..." class="rounded-xl border-slate-200 min-h-[100px]" />
+                                    </div>
+                                    
+                                    <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Assessment Methods</Label>
+                                        <Textarea v-model="form.assessment_methods" placeholder="Observation, Oral questions, Portfolio..." class="rounded-xl border-slate-200 min-h-[80px]" />
+                                    </div>
+
+                                    <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-blue-500">Self-Reflection / Evaluation</Label>
+                                        <Textarea v-model="form.reflection" placeholder="How did the lesson go? areas of improvement..." class="rounded-xl border-blue-100 min-h-[100px] shadow-sm bg-blue-50/20" />
+                                    </div>
+
+                                    <div class="grid gap-2">
+                                        <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400">Extended Activity / Homework</Label>
+                                        <Textarea v-model="form.homework" placeholder="Home link activity..." class="rounded-xl border-slate-200 min-h-[80px]" />
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="grid gap-2">
-                                <Label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Date</Label>
-                                <Input type="date" v-model="form.lesson_date" class="rounded-xl border-slate-100 text-sm font-bold" required />
+
+                        <div class="p-8 border-t border-slate-50 bg-slate-50/50 flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-2">
+                                <Button type="button" variant="ghost" @click="prevTab" :disabled="currentTab === 'administrative'" class="h-10 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest">Back</Button>
+                                <div class="flex gap-1.5">
+                                    <div v-for="t in tabs" :key="t" :class="['w-2 h-2 rounded-full transition-all', currentTab === t ? 'bg-blue-600 w-4' : 'bg-slate-300']"></div>
+                                </div>
+                                <Button type="button" variant="ghost" @click="nextTab" :disabled="currentTab === 'reflection'" class="h-10 px-4 rounded-xl text-[10px] font-bold uppercase tracking-widest">Next</Button>
                             </div>
-                            <div class="grid gap-2">
-                                <Label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Subject</Label>
-                                <select v-model="form.subject_id" class="w-full rounded-xl border-slate-100 bg-white px-3 h-10 text-xs font-bold uppercase tracking-wider focus:ring-2 focus:ring-blue-500 transition-all outline-none border" required>
-                                    <option value="" disabled>Select Subject</option>
-                                    <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Specific Objectives</Label>
-                            <Textarea v-model="form.specific_objectives" placeholder="What should students know by the end?" class="rounded-xl border-slate-100 italic text-[13px] min-h-[100px] focus:ring-blue-500" />
-                        </div>
-
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Learning Content / Steps</Label>
-                            <Textarea v-model="form.learning_outcomes" placeholder="Outline the lesson flow..." class="rounded-xl border-slate-100 italic text-[13px] min-h-[100px] focus:ring-blue-500" />
-                        </div>
-
-                        <DialogFooter>
-                            <Button type="submit" :disabled="form.processing" class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-sm text-white h-12 shadow-lg">
-                                {{ form.processing ? 'Syncing...' : (editingPlan ? 'Update Plan' : 'Add Plan') }}
+                            
+                            <Button type="submit" :disabled="form.processing" class="h-14 px-12 bg-blue-600 hover:bg-blue-700 rounded-2xl font-bold text-xs uppercase tracking-[0.1em] text-white shadow-xl transition-all hover:scale-[1.03] active:scale-[0.98]">
+                                {{ form.processing ? 'Syncing...' : (editingPlan ? 'Update Final Plan' : 'Save & Publish Plan') }}
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </DialogContent>
             </Dialog>
@@ -310,5 +510,17 @@ const getStatusBadge = (status: string) => {
 </template>
 
 <style scoped>
-/* Minimal styling */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
 </style>

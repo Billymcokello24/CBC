@@ -22,6 +22,7 @@ class AssessmentWizardController extends Controller
         return Inertia::render('assessments/Setup', [
             'gradeLevels' => GradeLevel::with('classes')->get(),
             'subjects' => Subject::all(),
+            'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(),
             'academicTerms' => AcademicTerm::active()->get(),
             'competencies' => Competency::all(),
             'ratingScales' => [
@@ -71,7 +72,8 @@ class AssessmentWizardController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'type' => 'required|string',
+            'description' => 'nullable|string',
+            'type_id' => 'required|exists:assessment_types,id',
             'term_id' => 'required|exists:academic_terms,id',
             'class_id' => 'required|exists:school_classes,id',
             'subject_id' => 'required|exists:subjects,id',
@@ -83,12 +85,15 @@ class AssessmentWizardController extends Controller
         \DB::transaction(function () use ($validated, $request) {
             $assessment = Assessment::create([
                 'title' => $validated['title'],
-                'assessment_type_id' => $validated['type'], // mapped from front-end
-                'academic_year_id' => $request->user()->school->currentAcademicYear()->id,
-                'term_id' => $validated['term_id'],
-                'school_class_id' => $validated['class_id'],
+                'description' => $validated['description'],
+                'class_id' => $validated['class_id'],
                 'subject_id' => $validated['subject_id'],
+                'assessment_type_id' => $validated['type_id'], // Map to ID
                 'teacher_id' => $request->user()->id,
+                'school_id' => $request->user()->teacher?->school_id ?? \App\Models\School::first()->id,
+                'academic_year_id' => \App\Models\Academic\AcademicYear::where('is_current', true)->first()?->id,
+                'academic_term_id' => \App\Models\Academic\AcademicTerm::where('is_current', true)->first()?->id,
+                'assessment_date' => now(),
                 'status' => 'draft',
             ]);
 

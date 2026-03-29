@@ -345,15 +345,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('curriculum/syllabus/subjects/{subject}', [SyllabusController::class, 'destroySubject'])->name('curriculum.syllabus.subjects.destroy');
         Route::delete('curriculum/syllabus/topics/{strand}', [SyllabusController::class, 'destroyStrand'])->name('curriculum.syllabus.topics.destroy');
         Route::delete('curriculum/syllabus/sub-topics/{subStrand}', [SyllabusController::class, 'destroySubStrand'])->name('curriculum.syllabus.sub-topics.destroy');
+    });
 
-        // Academic Planner (Schemes & Lesson Plans)
+    // Academic Planner (Schemes & Lesson Plans) - Accessible with curriculum.view
+    Route::middleware(['check_permission:curriculum.view'])->group(function () {
         Route::get('curriculum/planner/schemes', [AcademicPlannerController::class, 'schemes'])->name('curriculum.planner.schemes');
+        Route::get('curriculum/planner/schemes/{scheme}', [AcademicPlannerController::class, 'showScheme'])->name('curriculum.planner.schemes.show');
         Route::post('curriculum/planner/schemes', [AcademicPlannerController::class, 'storeScheme'])->name('curriculum.planner.schemes.store');
         Route::put('curriculum/planner/schemes/{scheme}', [AcademicPlannerController::class, 'updateScheme'])->name('curriculum.planner.schemes.update');
         Route::delete('curriculum/planner/schemes/{scheme}', [AcademicPlannerController::class, 'destroyScheme'])->name('curriculum.planner.schemes.destroy');
         Route::post('curriculum/planner/schemes/{scheme}/submit', [AcademicPlannerController::class, 'submitScheme'])->name('curriculum.planner.schemes.submit');
         Route::post('curriculum/planner/schemes/{scheme}/approve', [AcademicPlannerController::class, 'approveScheme'])->name('curriculum.planner.schemes.approve');
         Route::post('curriculum/planner/schemes/{scheme}/reject', [AcademicPlannerController::class, 'rejectScheme'])->name('curriculum.planner.schemes.reject');
+        Route::post('curriculum/planner/schemes/{scheme}/entries', [AcademicPlannerController::class, 'storeSchemeEntry'])->name('curriculum.planner.schemes.entries.store');
+        Route::delete('curriculum/planner/schemes/{scheme}/entries/{entry}', [AcademicPlannerController::class, 'destroySchemeEntry'])->name('curriculum.planner.schemes.entries.destroy');
 
         Route::get('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'lessonPlans'])->name('curriculum.planner.lesson-plans');
         Route::post('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'storeLessonPlan'])->name('curriculum.planner.lesson-plans.store');
@@ -362,6 +367,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/planner/lesson-plans/{plan}/submit', [AcademicPlannerController::class, 'submitLessonPlan'])->name('curriculum.planner.lesson-plans.submit');
         Route::post('curriculum/planner/lesson-plans/{plan}/approve', [AcademicPlannerController::class, 'approveLessonPlan'])->name('curriculum.planner.lesson-plans.approve');
         Route::post('curriculum/planner/lesson-plans/{plan}/reject', [AcademicPlannerController::class, 'rejectLessonPlan'])->name('curriculum.planner.lesson-plans.reject');
+    });
+
+    Route::middleware(['check_permission:curriculum.delete'])->group(function () {
 
         // Assignments
         Route::get('curriculum/assignments', [AssignmentController::class, 'index'])->name('curriculum.assignments.index');

@@ -6,7 +6,7 @@ use App\Models\Curriculum\Competency;
 use App\Models\Curriculum\LearningArea;
 use App\Models\Academic\Department;
 use App\Models\Curriculum\Subject;
-use App\Models\Curriculum\TeachingPlan;
+use App\Models\Curriculum\SchemeOfWork;
 use App\Models\Curriculum\LessonPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,7 +25,7 @@ class CurriculumManagementController extends Controller
                 'subjects' => Subject::count(),
                 'strands' => DB::table('strands')->count(),
                 'competencies' => Competency::count(),
-                'schemes' => TeachingPlan::count(),
+                'schemes' => SchemeOfWork::count(),
                 'lesson_plans' => LessonPlan::count(),
                 'assignments' => DB::table('assignments')->count(),
                 'resources' => DB::table('curriculum_resources')->count(),
@@ -34,7 +34,7 @@ class CurriculumManagementController extends Controller
                 'syllabus_coverage' => DB::table('learning_outcomes')->count() > 0 
                     ? round((DB::table('student_achievements')->distinct('learning_outcome_id')->count() / DB::table('learning_outcomes')->count()) * 100) 
                     : 0,
-                'pending_approvals' => TeachingPlan::where('status', 'pending')->count() + LessonPlan::where('status', 'pending')->count(),
+                'pending_approvals' => SchemeOfWork::where('status', 'pending')->count() + LessonPlan::where('status', 'pending')->count(),
                 'avg_submission_rate' => DB::table('assignments')->count() > 0 
                     ? round((DB::table('assignment_submissions')->count() / (DB::table('assignments')->count() * 40)) * 100) // Assuming avg 40 students per class
                     : 0,
