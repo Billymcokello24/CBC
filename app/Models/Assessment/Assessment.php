@@ -5,6 +5,8 @@ namespace App\Models\Assessment;
 use Illuminate\Database\Eloquent\Model;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use App\Traits\BelongsToSchool;
 
 class Assessment extends Model
@@ -61,8 +63,13 @@ class Assessment extends Model
         return $this->belongsTo(\App\Models\User::class, 'teacher_id');
     }
 
-    public function assessmentItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function items(): HasMany
     {
         return $this->hasMany(AssessmentItem::class);
+    }
+
+    public function studentRatings(): HasManyThrough
+    {
+        return $this->hasManyThrough(StudentAssessmentRating::class, AssessmentItem::class);
     }
 }

@@ -39,9 +39,4 @@ class SubStrand extends Model
     {
         return $this->hasMany(LearningOutcome::class);
     }
-
-    public function assessmentItems(): HasMany
-    {
-        return $this->hasMany(\App\Models\Assessment\AssessmentItem::class);
-    }
 }

@@ -23,6 +23,7 @@ class LessonPlan extends Model
         'academic_term_id',
         'strand_id',
         'sub_strand_id',
+        'teaching_plan_id',
         'title',
         'week_number',
         'lesson_date',
@@ -94,5 +95,10 @@ class LessonPlan extends Model
     public function competencies(): BelongsToMany
     {
         return $this->belongsToMany(Competency::class, 'lesson_plan_competencies');
+    }
+
+    public function teachingPlan(): BelongsTo
+    {
+        return $this->belongsTo(TeachingPlan::class);
     }
 }

@@ -11,20 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('student_evidence', function (Blueprint $table) {
+        Schema::create('student_assessment_ratings', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('school_id')->index();
             $table->foreignId('student_id')->constrained()->cascadeOnDelete();
             $table->foreignId('assessment_item_id')->constrained()->cascadeOnDelete();
-            $table->string('file_path');
-            $table->string('mime_type', 100)->nullable();
-            $table->string('file_name')->nullable();
-            $table->text('description')->nullable();
-            $table->foreignId('uploaded_by')->constrained('users');
+            $table->string('rating_level', 20); // EE, ME, AE, BE
+            $table->decimal('score', 8, 2)->nullable();
+            $table->text('feedback')->nullable();
+            $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->index(['student_id', 'assessment_item_id']);
-            $table->index('uploaded_by');
+            $table->unique(['student_id', 'assessment_item_id'], 'stud_assess_item_rating_unique');
         });
     }
 
@@ -33,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('student_evidence');
+        Schema::dropIfExists('student_assessment_ratings');
     }
 };

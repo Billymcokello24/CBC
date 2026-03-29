@@ -10,6 +10,8 @@ use App\Http\Controllers\StudentEnrollmentController;
 use App\Http\Controllers\Academic\TimetableController;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Http\Controllers\AcademicManagementController;
+use App\Http\Controllers\AssessmentWizardController;
+use App\Http\Controllers\Curriculum\CompetencyController;
 use App\Http\Controllers\CurriculumManagementController;
 use App\Http\Controllers\SyllabusController;
 use App\Http\Controllers\AcademicPlannerController;
@@ -294,11 +296,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/competencies/indicators', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'storeIndicator'])->name('curriculum.competencies.storeIndicator');
         Route::delete('curriculum/competencies/indicators/{indicator}', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'destroyIndicator'])->name('curriculum.competencies.destroyIndicator');
         Route::get('curriculum/progress/{student}/{subject}', [SyllabusController::class, 'getStudentProgress'])->name('curriculum.progress.show');
-
-        // Assessment Wizard APIs
-        Route::get('api/curriculum/strands', [AssessmentWizardController::class, 'getStrands']);
-        Route::get('api/curriculum/sub-strands', [AssessmentWizardController::class, 'getSubStrands']);
-        Route::get('api/curriculum/indicators', [AssessmentWizardController::class, 'getIndicators']);
     });
 
     Route::middleware(['check_permission:curriculum.create'])->group(function () {
@@ -315,9 +312,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/syllabus/subjects', [SyllabusController::class, 'storeSubject'])->name('curriculum.syllabus.subjects.store');
         Route::post('curriculum/syllabus/topics', [SyllabusController::class, 'storeStrand'])->name('curriculum.syllabus.topics.store');
         Route::post('curriculum/syllabus/sub-topics', [SyllabusController::class, 'storeSubStrand'])->name('curriculum.syllabus.sub-topics.store');
-        
-        // CBC Assessment Store
-        Route::post('assessments/cbc', [AssessmentWizardController::class, 'store'])->name('assessments.cbc.store');
     });
 
     Route::middleware(['check_permission:curriculum.update'])->group(function () {
@@ -393,6 +387,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ──────────────────────────────────────────────
     // ASSESSMENTS
     // ──────────────────────────────────────────────
+    Route::group(['prefix' => 'assessments', 'as' => 'assessments.'], function () {
+        Route::get('/setup', [AssessmentWizardController::class, 'index'])->name('setup');
+        Route::post('/setup', [AssessmentWizardController::class, 'store'])->name('setup.store');
+        Route::get('/strands', [AssessmentWizardController::class, 'getStrands'])->name('strands');
+        Route::get('/sub-strands', [AssessmentWizardController::class, 'getSubStrands'])->name('sub-strands');
+        Route::get('/indicators', [AssessmentWizardController::class, 'getIndicators'])->name('indicators');
+        
+        Route::get('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading');
+        Route::post('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
+        Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
+    });
+
     Route::middleware(['check_permission:assessments.view,assessments.view_own'])->group(function () {
         Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
         Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');

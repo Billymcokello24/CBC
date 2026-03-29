@@ -2,26 +2,25 @@
 
 namespace App\Models\Assessment;
 
-use App\Models\Curriculum\Competency;
-use App\Models\Curriculum\LearningIndicator;
-use App\Models\Curriculum\SubStrand;
-use App\Traits\BelongsToSchool;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentItem extends Model
 {
-    use BelongsToSchool;
-
     protected $fillable = [
-        'school_id',
         'assessment_id',
-        'sub_strand_id',
-        'performance_indicator_id',
-        'competency_id',
+        'competency_indicator_id',
+        'total_marks',
+        'weight',
         'max_score',
-        'display_order',
+        'display_order'
+    ];
+
+    protected $casts = [
+        'total_marks' => 'decimal:2',
+        'weight' => 'decimal:2',
+        'max_score' => 'decimal:2',
     ];
 
     public function assessment(): BelongsTo
@@ -29,23 +28,13 @@ class AssessmentItem extends Model
         return $this->belongsTo(Assessment::class);
     }
 
-    public function subStrand(): BelongsTo
+    public function indicator(): BelongsTo
     {
-        return $this->belongsTo(SubStrand::class);
+        return $this->belongsTo(\App\Models\Curriculum\CompetencyIndicator::class, 'competency_indicator_id');
     }
 
-    public function performanceIndicator(): BelongsTo
+    public function ratings(): HasMany
     {
-        return $this->belongsTo(LearningIndicator::class, 'performance_indicator_id');
-    }
-
-    public function competency(): BelongsTo
-    {
-        return $this->belongsTo(Competency::class);
-    }
-
-    public function evidence(): HasMany
-    {
-        return $this->hasMany(StudentEvidence::class);
+        return $this->hasMany(StudentAssessmentRating::class);
     }
 }

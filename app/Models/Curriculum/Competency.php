@@ -56,38 +56,4 @@ class Competency extends Model
     {
         return $query->where('category', 'core');
     }
-
-    public function assessmentItems(): HasMany
-    {
-        return $this->hasMany(\App\Models\Assessment\AssessmentItem::class);
-    }
-
-    /**
-     * Derives the competency level for a student based on continuous assessment items.
-     */
-    public function getDerivedLevelForStudent(int $studentId, int $academicYearId = null): ?string
-    {
-        $query = \App\Models\Assessment\StudentAssessment::query()
-            ->join('assessment_items', 'student_assessments.assessment_id', '=', 'assessment_items.assessment_id')
-            ->where('assessment_items.competency_id', $this->id)
-            ->where('student_assessments.student_id', $studentId);
-
-        if ($academicYearId) {
-            $query->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
-                  ->where('assessments.academic_year_id', $academicYearId);
-        }
-
-        // Get all ratings (EE, ME, AE, BE)
-        $ratings = $query->pluck('grade_level')
-            ->filter()
-            ->values();
-
-        if ($ratings->isEmpty()) return null;
-
-        // Calculate Mode (Most frequent rating)
-        $counts = array_count_values($ratings->toArray());
-        arsort($counts);
-        
-        return key($counts); // Returns the first (most frequent) key
-    }
 }
