@@ -285,14 +285,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'showSubject'])->name('curriculum.subjects.show');
         Route::get('curriculum/strands', [CurriculumManagementController::class, 'strands'])->name('curriculum.strands');
         Route::get('curriculum/strands/{id}', [CurriculumManagementController::class, 'showStrand'])->name('curriculum.strands.show');
-        Route::get('curriculum/competencies', [CurriculumManagementController::class, 'competencies'])->name('curriculum.competencies');
-        Route::get('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'showCompetency'])->name('curriculum.competencies.show');
         
         // Syllabus Viewing
         Route::get('curriculum/syllabus', [SyllabusController::class, 'index'])->name('curriculum.syllabus.index');
         Route::get('curriculum/syllabus/topics/{strand}', [SyllabusController::class, 'showTopic'])->name('curriculum.syllabus.topics.show');
         Route::get('curriculum/syllabus/{subject}/{grade}', [SyllabusController::class, 'show'])->name('curriculum.syllabus.show');
+        Route::resource('curriculum/competencies', \App\Http\Controllers\Curriculum\CompetencyController::class)->names('curriculum.competencies');
+        Route::post('curriculum/competencies/indicators', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'storeIndicator'])->name('curriculum.competencies.storeIndicator');
+        Route::delete('curriculum/competencies/indicators/{indicator}', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'destroyIndicator'])->name('curriculum.competencies.destroyIndicator');
         Route::get('curriculum/progress/{student}/{subject}', [SyllabusController::class, 'getStudentProgress'])->name('curriculum.progress.show');
+
+        // Assessment Wizard APIs
+        Route::get('api/curriculum/strands', [AssessmentWizardController::class, 'getStrands']);
+        Route::get('api/curriculum/sub-strands', [AssessmentWizardController::class, 'getSubStrands']);
+        Route::get('api/curriculum/indicators', [AssessmentWizardController::class, 'getIndicators']);
     });
 
     Route::middleware(['check_permission:curriculum.create'])->group(function () {
@@ -302,8 +308,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/subjects', [CurriculumManagementController::class, 'storeSubject'])->name('curriculum.subjects.store');
         Route::get('curriculum/strands/create', [CurriculumManagementController::class, 'createStrand'])->name('curriculum.strands.create');
         Route::post('curriculum/strands', [CurriculumManagementController::class, 'storeStrand'])->name('curriculum.strands.store');
-        Route::get('curriculum/competencies/create', [CurriculumManagementController::class, 'createCompetency'])->name('curriculum.competencies.create');
-        Route::post('curriculum/competencies', [CurriculumManagementController::class, 'storeCompetency'])->name('curriculum.competencies.store');
 
         // Syllabus Creation
         Route::post('curriculum/syllabus/outcomes', [SyllabusController::class, 'storeOutcome'])->name('curriculum.syllabus.outcomes.store');
@@ -311,6 +315,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/syllabus/subjects', [SyllabusController::class, 'storeSubject'])->name('curriculum.syllabus.subjects.store');
         Route::post('curriculum/syllabus/topics', [SyllabusController::class, 'storeStrand'])->name('curriculum.syllabus.topics.store');
         Route::post('curriculum/syllabus/sub-topics', [SyllabusController::class, 'storeSubStrand'])->name('curriculum.syllabus.sub-topics.store');
+        
+        // CBC Assessment Store
+        Route::post('assessments/cbc', [AssessmentWizardController::class, 'store'])->name('assessments.cbc.store');
     });
 
     Route::middleware(['check_permission:curriculum.update'])->group(function () {
@@ -325,9 +332,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/strands/{id}/edit', [CurriculumManagementController::class, 'editStrand'])->name('curriculum.strands.edit');
         Route::put('curriculum/strands/{id}', [CurriculumManagementController::class, 'updateStrand'])->name('curriculum.strands.update');
         Route::post('curriculum/strands/bulk-action', [CurriculumManagementController::class, 'bulkStrandAction'])->name('curriculum.strands.bulk-action');
-        Route::get('curriculum/competencies/{competency}/edit', [CurriculumManagementController::class, 'editCompetency'])->name('curriculum.competencies.edit');
-        Route::put('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'updateCompetency'])->name('curriculum.competencies.update');
-        Route::post('curriculum/competencies/bulk-action', [CurriculumManagementController::class, 'bulkCompetencyAction'])->name('curriculum.competencies.bulk-action');
 
         // Syllabus Updates
         Route::put('curriculum/syllabus/outcomes/{outcome}', [SyllabusController::class, 'updateOutcome'])->name('curriculum.syllabus.outcomes.update');
@@ -341,7 +345,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('curriculum/learning-areas/{learningArea}', [CurriculumManagementController::class, 'destroyLearningArea'])->name('curriculum.learning-areas.destroy');
         Route::delete('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'destroySubject'])->name('curriculum.subjects.destroy');
         Route::delete('curriculum/strands/{id}', [CurriculumManagementController::class, 'destroyStrand'])->name('curriculum.strands.destroy');
-        Route::delete('curriculum/competencies/{competency}', [CurriculumManagementController::class, 'destroyCompetency'])->name('curriculum.competencies.destroy');
 
         // Syllabus Deletion
         Route::delete('curriculum/syllabus/outcomes/{outcome}', [SyllabusController::class, 'destroyOutcome'])->name('curriculum.syllabus.outcomes.destroy');

@@ -60,4 +60,9 @@ class Assessment extends Model
     {
         return $this->belongsTo(\App\Models\User::class, 'teacher_id');
     }
+
+    public function assessmentItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AssessmentItem::class);
+    }
 }

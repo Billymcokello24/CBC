@@ -284,6 +284,7 @@ const navigation = [
                     { title: 'Overview', href: '/curriculum' },
                     { title: 'Learning Area', href: '/curriculum/learning-areas' },
                     { title: 'Subjects', href: '/curriculum/syllabus' },
+                    { title: 'Competencies', href: '/curriculum/competencies' },
                     { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
                     { title: 'Assignments', href: '/curriculum/assignments' },
                     { title: 'Resources', href: '/curriculum/resources' },

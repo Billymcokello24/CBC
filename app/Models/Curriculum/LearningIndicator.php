@@ -12,7 +12,6 @@ class LearningIndicator extends Model
     protected $fillable = [
         'school_id',
         'learning_outcome_id',
-        'learning_outcome_id',
         'indicator',
         'description',
         'display_order',
@@ -23,9 +22,14 @@ class LearningIndicator extends Model
         'is_active' => 'boolean',
     ];
 
-    public function learningOutcome(): BelongsTo
+    public function learningOutcome(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(LearningOutcome::class);
+    }
+
+    public function assessmentItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Assessment\AssessmentItem::class, 'performance_indicator_id');
     }
 
     public function scopeActive($query)
