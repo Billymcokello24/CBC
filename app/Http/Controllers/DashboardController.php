@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Curriculum\SchemeOfWork;
+use App\Models\Curriculum\LessonPlan;
+use App\Models\Curriculum\AssignmentSubmission;
 use Inertia\Inertia;
 use Carbon\Carbon;
 

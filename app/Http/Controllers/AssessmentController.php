@@ -7,6 +7,7 @@ use App\Models\Assessment\AssessmentType;
 use App\Models\Assessment\GradingScale;
 use App\Models\Assessment\ReportCard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 

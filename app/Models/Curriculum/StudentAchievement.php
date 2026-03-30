@@ -16,8 +16,10 @@ class StudentAchievement extends Model
     protected $fillable = [
         'school_id',
         'student_id',
+        'learning_outcome_id',
         'academic_year_id',
         'achievement_type',
+        'achievement_level',
         'title',
         'description',
         'level',
@@ -27,6 +29,7 @@ class StudentAchievement extends Model
         'photo',
         'remarks',
         'verified_by',
+        'assessed_by',
         'is_verified',
     ];
 
@@ -45,8 +48,13 @@ class StudentAchievement extends Model
         return $this->belongsTo(AcademicYear::class);
     }
 
-    public function verifiedBy(): BelongsTo
+    public function learningOutcome(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'verified_by');
+        return $this->belongsTo(LearningOutcome::class);
+    }
+
+    public function assessedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assessed_by');
     }
 }
