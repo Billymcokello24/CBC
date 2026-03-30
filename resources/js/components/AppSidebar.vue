@@ -283,7 +283,8 @@ const navigation = [
                 children: [
                     { title: 'Overview', href: '/curriculum' },
                     { title: 'Competencies', href: '/curriculum/competencies' },
-                    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
+                    { title: 'Scheme of Work', href: '/curriculum/planner/schemes' },
+                    { title: 'Lesson Plan', href: '/curriculum/planner/lesson-plans' },
                     { title: 'Learning Resources', href: '/curriculum/resources' },
                     { title: 'Assignments', href: '/curriculum/assignments', icon: NotebookPen },
                 ],

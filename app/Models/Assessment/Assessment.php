@@ -14,15 +14,24 @@ class Assessment extends Model
     use BelongsToSchool;
 
     protected $fillable = [
+        'school_id',
+        'class_id', 'subject_id', 'teacher_id',
+        'academic_year_id', 'academic_term_id', 'assessment_type_id',
         'grading_scale_id', 'rubric_id', 'title', 'description',
         'instructions', 'assessment_date', 'start_time', 'end_time',
         'duration_minutes', 'total_marks', 'passing_marks', 'weight',
         'is_published', 'is_locked', 'status', 'published_at', 'created_by',
-        'lesson_plan_id', 'sub_strand_id'
+        'lesson_plan_id', 'sub_strand_id',
+        'core_competencies',
+        'pci',
+        'indicators',
     ];
 
     protected $casts = [
         'assessment_date' => 'date',
+        'core_competencies' => 'array',
+        'pci' => 'array',
+        'indicators' => 'array',
         'total_marks' => 'float',
         'passing_marks' => 'float',
         'weight' => 'float',

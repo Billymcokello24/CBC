@@ -92,15 +92,17 @@ class AcademicPlannerController extends Controller
             'grades' => GradeLevel::all(['id', 'name']),
             'classes' => SchoolClass::active()->get(['id', 'name']),
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
-            'strands' => Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
-            'sub_strands' => SubStrand::all(['id', 'name', 'strand_id']),
+            'strands' => \App\Models\Curriculum\Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
+            'sub_strands' => \App\Models\Curriculum\SubStrand::all(['id', 'name', 'strand_id']),
+            'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(['id', 'name']),
+            'rubrics' => \App\Models\Assessment\Rubric::all(['id', 'name', 'subject_id', 'assessment_type_id']),
         ]);
     }
 
     public function storeLessonPlan(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'class_id' => 'required|exists:classes,id',
+            'class_id' => 'required|exists:school_classes,id',
             'subject_id' => 'required|exists:subjects,id',
             'academic_term_id' => 'required|exists:academic_terms,id',
             'strand_id' => 'nullable|exists:strands,id',
@@ -427,40 +429,82 @@ class AcademicPlannerController extends Controller
         }
     }
 
-    public function generateLessonsFromScheme(Request $request, SchemeOfWork $scheme, SchemeEntry $entry): RedirectResponse
+    public function bulkGenerateLessons(Request $request, SchemeOfWork $scheme): RedirectResponse
     {
         $validated = $request->validate([
-            'lessons_count' => 'required|integer|min:1|max:10',
+            'entry_ids' => 'required|array',
+            'entry_ids.*' => 'exists:scheme_entries,id',
             'start_date' => 'required|date',
             'duration_minutes' => 'required|integer|min:1',
+            'lessons_per_week' => 'required|integer|min:1|max:10',
         ]);
 
-        $lessonsCount = $validated['lessons_count'];
+        $entryIds = $validated['entry_ids'];
         $startDate = \Carbon\Carbon::parse($validated['start_date']);
+        $lessonsPerWeek = $validated['lessons_per_week'];
+        $duration = $validated['duration_minutes'];
 
-        DB::transaction(function () use ($scheme, $entry, $lessonsCount, $startDate, $validated) {
-            for ($i = 1; $i <= $lessonsCount; $i++) {
+        $entries = SchemeEntry::whereIn('id', $entryIds)
+            ->orderBy('week_number')
+            ->orderBy('lesson_number')
+            ->get();
+
+        $teacher = Teacher::where('user_id', Auth::id())->first();
+
+        if (!$teacher) {
+            return redirect()->back()->with('error', 'You must have a teacher profile to generate lesson plans.');
+        }
+
+        DB::transaction(function () use ($scheme, $entries, $startDate, $lessonsPerWeek, $duration, $teacher) {
+            $currentDate = $startDate->copy();
+            $lessonCountInWeek = 0;
+
+            foreach ($entries as $index => $entry) {
+                // Simple logic: 1 lesson per day, skip weekends
+                while ($currentDate->isWeekend()) {
+                    $currentDate->addDay();
+                }
+
                 LessonPlan::create([
                     'school_id' => $scheme->school_id,
-                    'class_id' => $scheme->grade_level_id, // Assuming 1-1 for now or mapping class
-                    'teacher_id' => auth()->id(),
+                    'class_id' => $scheme->grade_level_id,
+                    'teacher_id' => $teacher->id,
                     'subject_id' => $scheme->subject_id,
                     'academic_term_id' => $scheme->academic_term_id,
                     'strand_id' => $entry->strand_id,
                     'sub_strand_id' => $entry->sub_strand_id,
                     'scheme_entry_id' => $entry->id,
                     'week_number' => $entry->week_number,
-                    'lesson_date' => $startDate->copy()->addDays(($i - 1)), // Simple distribution for now
-                    'duration_minutes' => $validated['duration_minutes'],
-                    'title' => "{$entry->topic} - Session {$i}",
+                    'lesson_date' => $currentDate->toDateString(),
+                    'duration_minutes' => $duration,
+                    'title' => $entry->topic,
                     'learning_outcomes' => $entry->learning_outcomes,
                     'key_vocabulary' => $entry->key_vocabulary,
+                    'core_competencies' => $entry->core_competencies,
+                    'pci' => $entry->pci,
+                    'inquiry_questions' => $entry->inquiry_questions,
+                    'teaching_aids' => $entry->resources,
                     'references' => $entry->references,
+                    'introduction' => $entry->introduction,
+                    'lesson_development' => $entry->lesson_development,
+                    'teacher_activities' => $entry->teacher_activities,
+                    'learner_activities' => $entry->learning_activities,
+                    'conclusion' => $entry->conclusion,
                     'status' => 'draft',
                 ]);
+
+                $lessonCountInWeek++;
+                if ($lessonCountInWeek >= $lessonsPerWeek) {
+                    $lessonCountInWeek = 0;
+                    // Move to next week (assuming 7 days gap from start of this week's lessons)
+                    // But simpler is just to keep adding days.
+                    $currentDate->addDay();
+                } else {
+                    $currentDate->addDay();
+                }
             }
         });
 
-        return back()->with('success', "Generated {$lessonsCount} lesson plans linked to this entry.");
+        return back()->with('success', "Generated " . count($entryIds) . " lesson plans.");
     }
 }

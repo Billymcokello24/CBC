@@ -50,6 +50,9 @@ class LessonPlan extends Model
         'feedback',
         'is_taught',
         'taught_at',
+        'core_competencies',
+        'pci',
+        'inquiry_questions',
     ];
 
     protected $casts = [
@@ -57,6 +60,8 @@ class LessonPlan extends Model
         'approved_at' => 'datetime',
         'taught_at' => 'datetime',
         'is_taught' => 'boolean',
+        'core_competencies' => 'array',
+        'pci' => 'array',
     ];
 
     public function teacher(): BelongsTo
@@ -99,9 +104,16 @@ class LessonPlan extends Model
         return $this->belongsToMany(Competency::class, 'lesson_plan_competencies');
     }
 
-    public function schemeOfWork(): BelongsTo
+    public function schemeOfWork()
     {
-        return $this->belongsTo(SchemeOfWork::class, 'teaching_plan_id');
+        return $this->hasOneThrough(
+            SchemeOfWork::class,
+            SchemeEntry::class,
+            'id', // Local key on scheme_entries (matches scheme_entry_id)
+            'id', // Local key on schemes_of_work (matches scheme_id on entries)
+            'scheme_entry_id', // Foreign key on lesson_plans
+            'scheme_id' // Foreign key on scheme_entries
+        );
     }
 
     public function schemeEntry(): BelongsTo

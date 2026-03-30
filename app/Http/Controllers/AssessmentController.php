@@ -112,10 +112,16 @@ class AssessmentController extends Controller
             'passing_marks' => 'required|numeric|min:0',
             'weight' => 'required|numeric|min:0|max:100',
             'status' => 'required|in:draft,scheduled,published',
+            'lesson_plan_id' => 'nullable|exists:lesson_plans,id',
+            'sub_strand_id' => 'nullable|exists:sub_strands,id',
+            'indicators' => 'nullable|array',
+            'competencies' => 'nullable|array',
         ]);
 
         $assessment = new Assessment();
         $assessment->fill($validated);
+        $assessment->core_competencies = $validated['competencies'] ?? [];
+        $assessment->indicators = $validated['indicators'] ?? [];
         $assessment->school_id = $this->getSchoolId();
         $assessment->teacher_id = auth()->user()->id; // Assuming the logged in user is the teacher
         $assessment->created_by = auth()->user()->id;
@@ -547,9 +553,20 @@ class AssessmentController extends Controller
 
     private function calculateGradeDescriptor($score, $assessment)
     {
-        // Simple placeholder for grade calculation logic
-        // Should ideally look up from a Rubric or GradeScale
-        return null; 
+        if (!$assessment->rubric_id) return null;
+        
+        $rubric = \App\Models\Assessment\Rubric::with('criteria.levels')->find($assessment->rubric_id);
+        if (!$rubric) return null;
+
+        $firstCriterion = $rubric->criteria->first();
+        if (!$firstCriterion) return null;
+
+        $level = $firstCriterion->levels
+            ->where('min_score', '<=', $score)
+            ->where('max_score', '>=', $score)
+            ->first();
+
+        return $level?->id;
     }
 
     public function exportResults()
