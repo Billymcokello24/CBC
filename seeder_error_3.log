@@ -1,0 +1,172 @@
+Tenant: 7ACT73QX
+
+   INFO  Seeding database.  
+
+Seeding Curriculum Hierarchy...
+Seeding Competency Indicators...
+Allocating Teachers to Subjects and Classes...
+Seeding Assessments and Ratings...
+
+   Illuminate\Database\QueryException 
+
+  SQLSTATE[42S22]: Column not found: 1054 Unknown column 'school_id' in 'INSERT INTO' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: cbc_school_system, SQL: insert into `student_assessment_ratings` (`student_id`, `assessment_item_id`, `school_id`, `teacher_id`, `rating_level`, `score`, `comments`, `updated_at`, `created_at`) values (1, 26, 1, 1, ME, 4, Good progress shown., 2026-03-30 08:51:04, 2026-03-30 08:51:04))
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:838
+    834▕             $exceptionType = $this->isUniqueConstraintError($e)
+    835▕                 ? UniqueConstraintViolationException::class
+    836▕                 : QueryException::class;
+    837▕ 
+  ➜ 838▕             throw new $exceptionType(
+    839▕                 $this->getNameWithReadWriteType(),
+    840▕                 $query,
+    841▕                 $this->prepareBindings($bindings),
+    842▕                 $e,
+
+  1   vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php:47
+      PDOException::("SQLSTATE[42S22]: Column not found: 1054 Unknown column 'school_id' in 'INSERT INTO'")
+
+  2   vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php:47
+      PDO::prepare()
+
+  3   vendor/laravel/framework/src/Illuminate/Database/Connection.php:827
+      Illuminate\Database\MySqlConnection::{closure:Illuminate\Database\MySqlConnection::insert():42}()
+
+  4   vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+      Illuminate\Database\Connection::runQueryCallback()
+
+  5   vendor/laravel/framework/src/Illuminate/Database/MySqlConnection.php:42
+      Illuminate\Database\Connection::run()
+
+  6   vendor/laravel/framework/src/Illuminate/Database/Query/Processors/MySqlProcessor.php:35
+      Illuminate\Database\MySqlConnection::insert()
+
+  7   vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4140
+      Illuminate\Database\Query\Processors\MySqlProcessor::processInsertGetId()
+
+  8   vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:2235
+      Illuminate\Database\Query\Builder::insertGetId()
+
+  9   vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1436
+      Illuminate\Database\Eloquent\Builder::__call()
+
+  10  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1401
+      Illuminate\Database\Eloquent\Model::insertAndSetId()
+
+  11  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1240
+      Illuminate\Database\Eloquent\Model::performInsert()
+
+  12  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1219
+      Illuminate\Database\Eloquent\Model::save()
+
+  13  vendor/laravel/framework/src/Illuminate/Support/helpers.php:388
+      Illuminate\Database\Eloquent\Builder::{closure:Illuminate\Database\Eloquent\Builder::create():1218}()
+  14  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1218
+
+  15  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:725
+      Illuminate\Database\Eloquent\Builder::create()
+
+  16  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1959
+      Illuminate\Database\Eloquent\Builder::{closure:Illuminate\Database\Eloquent\Builder::createOrFirst():725}()
+
+  17  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:725
+      Illuminate\Database\Eloquent\Builder::withSavepointIfNeeded()
+
+  18  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:712
+      Illuminate\Database\Eloquent\Builder::createOrFirst()
+
+  19  vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:23
+      Illuminate\Database\Eloquent\Builder::firstOrCreate()
+
+  20  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+      Illuminate\Database\Eloquent\Model::forwardCallTo()
+
+  21  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+      Illuminate\Database\Eloquent\Model::__call()
+
+  22  database/seeders/TenantCBCSeeder.php:249
+      Illuminate\Database\Eloquent\Model::__callStatic()
+
+  23  database/seeders/TenantCBCSeeder.php:50
+      Database\Seeders\TenantCBCSeeder::seedAssessmentData()
+
+  24  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:36
+      Database\Seeders\TenantCBCSeeder::run()
+
+  25  vendor/laravel/framework/src/Illuminate/Container/Util.php:43
+      Illuminate\Container\BoundMethod::{closure:Illuminate\Container\BoundMethod::call():35}()
+
+  26  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:96
+      Illuminate\Container\Util::unwrapIfClosure()
+
+  27  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:35
+      Illuminate\Container\BoundMethod::callBoundMethod()
+
+  28  vendor/laravel/framework/src/Illuminate/Container/Container.php:799
+      Illuminate\Container\BoundMethod::call()
+
+  29  vendor/laravel/framework/src/Illuminate/Database/Seeder.php:184
+      Illuminate\Container\Container::call()
+
+  30  vendor/laravel/framework/src/Illuminate/Database/Seeder.php:193
+      Illuminate\Database\Seeder::{closure:Illuminate\Database\Seeder::__invoke():183}()
+
+  31  vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php:71
+      Illuminate\Database\Seeder::__invoke()
+
+  32  vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/GuardsAttributes.php:157
+      Illuminate\Database\Console\Seeds\SeedCommand::{closure:Illuminate\Database\Console\Seeds\SeedCommand::handle():70}()
+
+  33  vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php:70
+      Illuminate\Database\Eloquent\Model::unguarded()
+
+  34  vendor/stancl/tenancy/src/Commands/Seed.php:59
+      Illuminate\Database\Console\Seeds\SeedCommand::handle()
+
+  35  vendor/stancl/tenancy/src/Tenancy.php:160
+      Stancl\Tenancy\Commands\Seed::{closure:Stancl\Tenancy\Commands\Seed::handle():53}()
+
+  36  vendor/stancl/tenancy/src/Commands/Seed.php:53
+      Stancl\Tenancy\Tenancy::runForMultiple()
+
+  37  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:36
+      Stancl\Tenancy\Commands\Seed::handle()
+
+  38  vendor/laravel/framework/src/Illuminate/Container/Util.php:43
+      Illuminate\Container\BoundMethod::{closure:Illuminate\Container\BoundMethod::call():35}()
+
+  39  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:96
+      Illuminate\Container\Util::unwrapIfClosure()
+
+  40  vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php:35
+      Illuminate\Container\BoundMethod::callBoundMethod()
+
+  41  vendor/laravel/framework/src/Illuminate/Container/Container.php:799
+      Illuminate\Container\BoundMethod::call()
+
+  42  vendor/laravel/framework/src/Illuminate/Console/Command.php:211
+      Illuminate\Container\Container::call()
+
+  43  vendor/symfony/console/Command/Command.php:341
+      Illuminate\Console\Command::execute()
+
+  44  vendor/laravel/framework/src/Illuminate/Console/Command.php:180
+      Symfony\Component\Console\Command\Command::run()
+
+  45  vendor/symfony/console/Application.php:1117
+      Illuminate\Console\Command::run()
+
+  46  vendor/symfony/console/Application.php:356
+      Symfony\Component\Console\Application::doRunCommand()
+
+  47  vendor/symfony/console/Application.php:195
+      Symfony\Component\Console\Application::doRun()
+
+  48  vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php:198
+      Symfony\Component\Console\Application::run()
+
+  49  vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1235
+      Illuminate\Foundation\Console\Kernel::handle()
+
+  50  artisan:16
+      Illuminate\Foundation\Application::handleCommand()
+

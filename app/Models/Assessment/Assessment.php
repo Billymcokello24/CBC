@@ -14,13 +14,11 @@ class Assessment extends Model
     use BelongsToSchool;
 
     protected $fillable = [
-        'school_id',
-        'class_id', 'subject_id', 'teacher_id',
-        'academic_year_id', 'academic_term_id', 'assessment_type_id',
         'grading_scale_id', 'rubric_id', 'title', 'description',
         'instructions', 'assessment_date', 'start_time', 'end_time',
         'duration_minutes', 'total_marks', 'passing_marks', 'weight',
-        'is_published', 'is_locked', 'status', 'published_at', 'created_by'
+        'is_published', 'is_locked', 'status', 'published_at', 'created_by',
+        'lesson_plan_id', 'sub_strand_id'
     ];
 
     protected $casts = [
@@ -71,5 +69,15 @@ class Assessment extends Model
     public function studentRatings(): HasManyThrough
     {
         return $this->hasManyThrough(StudentAssessmentRating::class, AssessmentItem::class);
+    }
+
+    public function lessonPlan(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Curriculum\LessonPlan::class);
+    }
+
+    public function subStrand(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Curriculum\SubStrand::class);
     }
 }

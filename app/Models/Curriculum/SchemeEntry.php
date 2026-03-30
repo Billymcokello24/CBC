@@ -19,11 +19,30 @@ class SchemeEntry extends Model
         'strand_id',
         'sub_strand_id',
         'topic',
+        'duration_minutes',
+        'lesson_date',
+        'key_vocabulary',
         'learning_outcomes',
         'learning_activities',
+        'teacher_activities',
+        'introduction',
+        'lesson_development',
+        'conclusion',
         'resources',
+        'references',
         'assessment',
         'remarks',
+        'reflection',
+        'homework',
+        'core_competencies',
+        'pci',
+        'inquiry_questions',
+    ];
+
+    protected $casts = [
+        'core_competencies' => 'array',
+        'pci' => 'array',
+        'lesson_date' => 'date',
     ];
 
     public function scheme(): BelongsTo
@@ -39,5 +58,10 @@ class SchemeEntry extends Model
     public function subStrand(): BelongsTo
     {
         return $this->belongsTo(SubStrand::class);
+    }
+
+    public function lessonPlan(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(LessonPlan::class);
     }
 }

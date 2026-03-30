@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { 
     FileText, Plus, Search, Filter, 
@@ -49,8 +49,8 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
-    { title: 'Daily Plans', href: '#' },
+    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
+    { title: 'Daily Planner', href: '#' },
 ];
 
 // Modals State
@@ -97,6 +97,7 @@ const form = useForm({
     assessment_methods: '',
     reflection: '',
     homework: '',
+    scheme_entry_id: '',
 });
 
 const filteredStrands = computed(() => {
@@ -135,6 +136,7 @@ const openModal = (plan: any = null) => {
         form.assessment_methods = plan.assessment_methods;
         form.reflection = plan.reflection;
         form.homework = plan.homework;
+        form.scheme_entry_id = plan.scheme_entry_id;
     } else {
         form.reset();
         if (props.terms.length > 0) form.academic_term_id = props.terms[0].id;
@@ -193,16 +195,45 @@ const getStatusBadge = (status: string) => {
     }
 };
 
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    const entryId = urlParams.get('scheme_entry_id');
+
+    if (id) {
+        const plan = props.plans.find(p => p.id == id);
+        if (plan) openModal(plan);
+    } else if (entryId) {
+        // Find scheme entry in props if possible, or just pre-fill if we have basic info
+        // Since we don't have all entries in props, we might need more data.
+        // But for now, we'll try to find if any existing plan has this entry_id
+        const existingPlan = props.plans.find(p => p.scheme_entry_id == entryId);
+        if (existingPlan) {
+            openModal(existingPlan);
+        } else {
+            // Find the scheme entry from the schemes if we had them, 
+            // but here we just have partial data.
+            // Let's at least set the scheme_entry_id in the form
+            form.reset();
+            form.scheme_entry_id = entryId;
+            
+            // Try to find context from the entry if it's passed (maybe we should pass it via state/props)
+            // For now, just open the modal with the ID linked.
+            showModal.value = true;
+        }
+    }
+});
+
 </script>
 
 <template>
-    <Head title="Daily Plans" />
+    <Head title="Daily Planner" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-8 p-8 font-sans max-w-[1600px] mx-auto animate-in fade-in duration-500">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">Daily Plans</h1>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">Daily Planner</h1>
                     <p class="text-sm font-medium text-slate-500 font-medium italic">Create and manage your CBC-compliant lesson plans.</p>
                 </div>
                 

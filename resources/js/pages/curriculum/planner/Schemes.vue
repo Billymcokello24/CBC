@@ -38,7 +38,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
+    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
 ];
 
 // Modals State
@@ -126,13 +126,13 @@ const getStatusBadge = (status: string) => {
 </script>
 
 <template>
-    <Head title="Teaching Plans" />
+    <Head title="Academic Planner" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-8 p-8 font-sans max-w-[1600px] mx-auto animate-in fade-in duration-500">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">Teaching Plans</h1>
+                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">Academic Planner</h1>
                     <p class="text-sm font-medium text-slate-500">Manage your teaching schedule for the term.</p>
                 </div>
                 

@@ -25,6 +25,7 @@ class LessonPlan extends Model
         'strand_id',
         'sub_strand_id',
         'teaching_plan_id',
+        'scheme_entry_id',
         'title',
         'week_number',
         'lesson_date',
@@ -101,5 +102,10 @@ class LessonPlan extends Model
     public function schemeOfWork(): BelongsTo
     {
         return $this->belongsTo(SchemeOfWork::class, 'teaching_plan_id');
+    }
+
+    public function schemeEntry(): BelongsTo
+    {
+        return $this->belongsTo(SchemeEntry::class);
     }
 }
