@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { 
     FileText, Plus, Search, Filter, 
     MoreVertical, Eye, Edit2, Trash2, 
@@ -8,7 +8,7 @@ import {
     Clock, AlertCircle, ChevronRight,
     ListChecks, BookCopy, Lightbulb, Users,
     Wand2, ClipboardCheck, Sparkles, Check, Info, Trash,
-    MapPin, MoreHorizontal, CheckSquare, Square
+    MapPin, MoreHorizontal, CheckSquare, Square, ArrowLeft
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,8 @@ import {
 import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
+    currentClass: any;
+    currentSubject: any;
     plans: any[];
     subjects: any[];
     grades: any[];
@@ -51,17 +53,18 @@ const props = defineProps<{
     rubrics: any[];
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
-    { title: 'Daily Planner', href: '#' },
-];
+    { title: 'Lesson Plans', href: '/curriculum/planner/lesson-plans' },
+    { title: props.currentClass?.grade_level?.name || 'Grade', href: `/curriculum/planner/lesson-plans/grade/${props.currentClass?.grade_level_id}` },
+    { title: props.currentClass?.name || 'Class', href: `/curriculum/planner/lesson-plans/class/${props.currentClass?.id}/subjects` },
+    { title: props.currentSubject?.name || 'Subject', href: '#' },
+]);
 
 // Filtering State
 const searchQuery = ref('');
 const showFilters = ref(true);
 const selectedSubjectId = ref('all');
-const selectedClassId = ref('all');
 const selectedStatus = ref('all');
 
 const filteredPlans = computed(() => {
@@ -69,10 +72,9 @@ const filteredPlans = computed(() => {
         const matchesSearch = plan.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                             plan.subject?.name?.toLowerCase().includes(searchQuery.value.toLowerCase());
         const matchesSubject = selectedSubjectId.value === 'all' || plan.subject_id == selectedSubjectId.value;
-        const matchesClass = selectedClassId.value === 'all' || plan.class_id == selectedClassId.value;
         const matchesStatus = selectedStatus.value === 'all' || plan.status === selectedStatus.value;
         
-        return matchesSearch && matchesSubject && matchesClass && matchesStatus;
+        return matchesSearch && matchesSubject && matchesStatus;
     });
 });
 
@@ -169,6 +171,8 @@ const openModal = (plan: any = null) => {
         form.scheme_entry_id = plan.scheme_entry_id;
     } else {
         form.reset();
+        form.class_id = props.currentClass?.id;
+        form.subject_id = props.currentSubject?.id;
         if (props.terms.length > 0) form.academic_term_id = props.terms[0].id;
     }
     showModal.value = true;
@@ -341,29 +345,38 @@ onMounted(() => {
     }
 });
 
+import Download from 'lucide-vue-next'; // fallback wrapper if needed
 </script>
 
 <template>
-    <Head title="Daily Lesson Planner" />
+    <Head :title="`${currentClass?.name} - Lesson Plans`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
-            <!-- Page Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-foreground">Daily Planner</h1>
-                    <p class="text-[15px] text-muted-foreground">
-                        Draft lesson executions and derive assessments from your schemes.
-                    </p>
+            <!-- Page Navigation & Header -->
+            <div class="flex flex-col md:flex-row md:items-center gap-6 pb-6 border-b border-border/40 justify-between">
+                <div class="flex items-center gap-6">
+                    <Link :href="`/curriculum/planner/lesson-plans/class/${currentClass?.id}/subjects`">
+                        <Button variant="outline" size="icon" class="h-10 w-10 rounded-full border-border bg-background hover:bg-muted shadow-sm transition-all">
+                            <ArrowLeft class="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div class="space-y-1">
+                        <h1 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                            {{ currentSubject?.name }}
+                            <span class="text-muted-foreground/30 font-thin text-xl">in</span>
+                            <span class="text-primary/80">{{ currentClass?.name }}</span>
+                        </h1>
+                        <p class="text-[14px] font-medium text-muted-foreground">
+                            {{ currentClass?.grade_level?.name }} Daily Planning Matrix
+                        </p>
+                    </div>
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-11 px-6 rounded-xl border-border font-bold text-[10px] uppercase tracking-widest hover:bg-muted transition-all bg-background shadow-sm">
-                        <Download class="mr-2.5 h-4 w-4 opacity-60" /> Export
-                    </Button>
                     <Button
                         @click="openModal()"
-                        class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-8 h-11 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95"
+                        class="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-11 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
                     >
                         <Plus class="mr-2.5 h-4 w-4" /> New Lesson
                     </Button>
@@ -431,10 +444,10 @@ onMounted(() => {
                     </div>
 
                     <!-- Filters Engine -->
-                    <div v-if="showFilters" class="grid gap-4 pt-2 md:grid-cols-3 animate-in slide-in-from-top-4 duration-300">
+                    <div v-if="showFilters" class="grid gap-4 pt-2 md:grid-cols-2 animate-in slide-in-from-top-4 duration-300">
                         <div class="space-y-2">
                              <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Sequence Status</Label>
-                             <select v-model="selectedStatus" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                             <select v-model="selectedStatus" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-primary/5 outline-none appearance-none cursor-pointer transition-all shadow-sm">
                                 <option value="all">Global Status</option>
                                 <option value="draft">Draft Protocol</option>
                                 <option value="pending">Awaiting Review</option>
@@ -443,16 +456,9 @@ onMounted(() => {
                         </div>
                         <div class="space-y-2">
                              <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Subject Discipline</Label>
-                             <select v-model="selectedSubjectId" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                             <select v-model="selectedSubjectId" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-primary/5 outline-none appearance-none cursor-pointer transition-all shadow-sm">
                                 <option value="all">All Disciplines</option>
                                 <option v-for="subject in subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option>
-                             </select>
-                        </div>
-                        <div class="space-y-2">
-                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Class Context</Label>
-                             <select v-model="selectedClassId" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
-                                <option value="all">Global Reach</option>
-                                <option v-for="c in classes" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
                              </select>
                         </div>
                     </div>
@@ -605,17 +611,11 @@ onMounted(() => {
                                 <div class="grid md:grid-cols-2 gap-8">
                                     <div class="grid gap-3">
                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Subject Discipline</Label>
-                                        <select v-model="form.subject_id" class="w-full h-12 rounded-2xl border-border/60 bg-muted/20 px-5 text-xs font-bold uppercase tracking-wider hover:bg-background transition-all outline-none border focus:ring-4 focus:ring-blue-600/5 shadow-sm appearance-none cursor-pointer" required>
-                                            <option value="" disabled>Select Discipline</option>
-                                            <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
-                                        </select>
+                                        <Input :value="currentSubject?.name" disabled class="w-full h-12 rounded-2xl border-border/60 bg-muted/50 px-5 text-xs font-bold uppercase tracking-wider text-muted-foreground shadow-sm" />
                                     </div>
                                     <div class="grid gap-3">
                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Class Context</Label>
-                                        <select v-model="form.class_id" class="w-full h-12 rounded-2xl border-border/60 bg-muted/20 px-5 text-xs font-bold uppercase tracking-wider hover:bg-background transition-all outline-none border focus:ring-4 focus:ring-blue-600/5 shadow-sm appearance-none cursor-pointer" required>
-                                            <option value="" disabled>Select Context</option>
-                                            <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
-                                        </select>
+                                        <Input :value="currentClass?.name" disabled class="w-full h-12 rounded-2xl border-border/60 bg-muted/50 px-5 text-xs font-bold uppercase tracking-wider text-muted-foreground shadow-sm" />
                                     </div>
                                 </div>
 

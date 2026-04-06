@@ -76,26 +76,144 @@ class AcademicPlannerController extends Controller
         return back()->with('success', 'Scheme of work created successfully.');
     }
 
-    public function lessonPlans(Request $request): Response
+    public function lessonPlansIndex()
     {
         $user = Auth::user();
-        $query = LessonPlan::with(['subject', 'classroom', 'academicTerm', 'teacher']);
+        
+        // Base grades query
+        $grades = GradeLevel::active()
+            ->ordered()
+            ->withCount(['classes as total_classes' => function ($query) {
+                $query->active();
+            }]);
+
+        // If not admin, teacher only sees their assigned classes' grades
+        if (!$user->hasRole(['admin', 'principal']) && $user->teacher) {
+            $assignedClassIds = $user->teacher->assignedClasses()->pluck('classes.id');
+            // Or if teacher is a class teacher of some classes
+            $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id');
+            $allMyClassIds = $assignedClassIds->merge($classTeacherClassIds)->unique();
+
+            $grades->whereHas('classes', function ($q) use ($allMyClassIds) {
+                $q->whereIn('classes.id', $allMyClassIds);
+            });
+        }
+
+        $gradesList = $grades->get()->map(function ($grade) use ($user) {
+            $query = LessonPlan::whereHas('classroom', function ($q) use ($grade) {
+                $q->where('grade_level_id', $grade->id);
+            });
+
+            if (!$user->hasRole(['admin', 'principal'])) {
+                $query->where('teacher_id', $user->teacher?->id);
+            }
+
+            $grade->lesson_plans_count = $query->count();
+            return $grade;
+        });
+
+        $stats = [
+            'total_plans' => LessonPlan::count(),
+            'approved_plans' => LessonPlan::where('status', 'approved')->count(),
+            'pending_plans' => LessonPlan::where('status', 'pending')->count(),
+            'draft_plans' => LessonPlan::where('status', 'draft')->count(),
+        ];
 
         if (!$user->hasRole(['admin', 'principal'])) {
-            $teacher = Teacher::where('user_id', $user->id)->first();
+            $teacher_id = $user->teacher?->id;
+            $stats = [
+                'total_plans' => LessonPlan::where('teacher_id', $teacher_id)->count(),
+                'approved_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'approved')->count(),
+                'pending_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'pending')->count(),
+                'draft_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'draft')->count(),
+            ];
+        }
+
+        return Inertia::render('curriculum/planner/LessonPlansIndex', [
+            'grades' => $gradesList,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function lessonPlansGrade(GradeLevel $gradeLevel)
+    {
+        $user = Auth::user();
+
+        $classesQuery = $gradeLevel->classes()->active()->with(['classTeacher']);
+
+        if (!$user->hasRole(['admin', 'principal']) && $user->teacher) {
+            $assignedClassIds = $user->teacher->assignedClasses()->pluck('classes.id');
+            $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id');
+            $allMyClassIds = $assignedClassIds->merge($classTeacherClassIds)->unique();
+
+            $classesQuery->whereIn('id', $allMyClassIds);
+        }
+
+        $classes = $classesQuery->get()->map(function ($class) use ($user) {
+            $query = LessonPlan::where('class_id', $class->id);
+            if (!$user->hasRole(['admin', 'principal'])) {
+                $query->where('teacher_id', $user->teacher?->id);
+            }
+            $class->lesson_plans_count = $query->count();
+            return $class;
+        });
+
+        return Inertia::render('curriculum/planner/LessonPlansGrade', [
+            'grade' => $gradeLevel,
+            'classes' => $classes,
+        ]);
+    }
+
+    public function lessonPlansClassSubjects(SchoolClass $schoolClass)
+    {
+        $user = Auth::user();
+
+        // Get all active subjects for this school
+        $subjects = Subject::active()->get()->map(function ($subject) use ($schoolClass, $user) {
+            $query = LessonPlan::where('class_id', $schoolClass->id)
+                ->where('subject_id', $subject->id);
+
+            if (!$user->hasRole(['admin', 'principal'])) {
+                $query->where('teacher_id', $user->teacher?->id);
+            }
+
+            $subject->lesson_plans_count = $query->count();
+            return $subject;
+        });
+
+        // Optionally, filter to show only subjects that have schemes or plans if desired,
+        // but here we show all so they can start planning new ones.
+        
+        return Inertia::render('curriculum/planner/LessonPlansSubjects', [
+            'currentClass' => $schoolClass->load('gradeLevel'),
+            'subjects' => $subjects,
+        ]);
+    }
+
+    public function lessonPlansClassSubject(SchoolClass $schoolClass, Subject $subject)
+    {
+        $user = Auth::user();
+        $query = LessonPlan::with(['subject', 'classroom', 'academicTerm', 'teacher'])
+            ->where('class_id', $schoolClass->id)
+            ->where('subject_id', $subject->id);
+
+        if (!$user->hasRole(['admin', 'principal'])) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
             $query->where('teacher_id', $teacher?->id ?? 0);
         }
 
         return Inertia::render('curriculum/planner/LessonPlans', [
+            'currentClass' => $schoolClass->load('gradeLevel', 'classTeacher'),
+            'currentSubject' => $subject,
             'plans' => $query->latest()->get(),
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'grades' => GradeLevel::all(['id', 'name']),
-            'classes' => SchoolClass::active()->get(['id', 'name']),
+            'subjects' => Subject::active()->where('id', $subject->id)->get(['id', 'name']), // Locked to current
+            'grades' => GradeLevel::all(['id', 'name']), 
+            'classes' => SchoolClass::active()->where('id', $schoolClass->id)->get(['id', 'name']), 
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
-            'strands' => \App\Models\Curriculum\Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
+            'strands' => \App\Models\Curriculum\Strand::where('subject_id', $subject->id)->get(['id', 'name', 'subject_id', 'grade_level_id']),
             'sub_strands' => \App\Models\Curriculum\SubStrand::all(['id', 'name', 'strand_id']),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(['id', 'name']),
-            'rubrics' => \App\Models\Assessment\Rubric::all(['id', 'name', 'subject_id', 'assessment_type_id']),
+            'rubrics' => \App\Models\Assessment\Rubric::where('subject_id', $subject->id)->orWhereNull('subject_id')->get(['id', 'name', 'subject_id', 'assessment_type_id']),
         ]);
     }
 

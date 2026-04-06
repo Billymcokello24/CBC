@@ -374,7 +374,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/planner/schemes/{scheme}/download', [AcademicPlannerController::class, 'downloadSchemePdf'])->name('curriculum.planner.schemes.download');
         Route::get('curriculum/planner/schemes/{scheme}/entries/{entry}/download', [AcademicPlannerController::class, 'downloadSchemeEntryPdf'])->name('curriculum.planner.schemes.entries.download');
 
-        Route::get('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'lessonPlans'])->name('curriculum.planner.lesson-plans');
+        Route::get('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'lessonPlansIndex'])->name('curriculum.planner.lesson-plans');
+        Route::get('curriculum/planner/lesson-plans/grade/{gradeLevel}', [AcademicPlannerController::class, 'lessonPlansGrade'])->name('curriculum.planner.lesson-plans.grade');
+        Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subjects', [AcademicPlannerController::class, 'lessonPlansClassSubjects'])->name('curriculum.planner.lesson-plans.class.subjects');
+        Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subject/{subject}', [AcademicPlannerController::class, 'lessonPlansClassSubject'])->name('curriculum.planner.lesson-plans.class.subject');
         Route::post('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'storeLessonPlan'])->name('curriculum.planner.lesson-plans.store');
         Route::put('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'updateLessonPlan'])->name('curriculum.planner.lesson-plans.update');
         Route::delete('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'destroyLessonPlan'])->name('curriculum.planner.lesson-plans.destroy');
