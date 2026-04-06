@@ -147,7 +147,7 @@ class AcademicPlannerController extends Controller
 
     public function submitScheme(SchemeOfWork $scheme): RedirectResponse
     {
-        $scheme->update(['status' => 'pending']);
+        $scheme->update(['status' => 'submitted']);
         return back()->with('success', 'Scheme of work submitted for review.');
     }
 
@@ -195,6 +195,9 @@ class AcademicPlannerController extends Controller
     public function updateScheme(Request $request, SchemeOfWork $scheme): RedirectResponse
     {
         $validated = $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'grade_level_id' => 'required|exists:grade_levels,id',
+            'academic_term_id' => 'required|exists:academic_terms,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'total_weeks' => 'required|integer|min:1',
@@ -282,6 +285,39 @@ class AcademicPlannerController extends Controller
         ]));
 
         return back()->with('success', 'Entry added to scheme.');
+    }
+
+    public function updateSchemeEntry(Request $request, SchemeOfWork $scheme, SchemeEntry $entry): RedirectResponse
+    {
+        $validated = $request->validate([
+            'week_number' => 'required|integer|min:1',
+            'lesson_number' => 'required|integer|min:1',
+            'duration_minutes' => 'nullable|integer',
+            'lesson_date' => 'nullable|date',
+            'strand_id' => 'required|exists:strands,id',
+            'sub_strand_id' => 'nullable|exists:sub_strands,id',
+            'topic' => 'required|string|max:255',
+            'key_vocabulary' => 'nullable|string',
+            'learning_outcomes' => 'nullable|string',
+            'learning_activities' => 'nullable|string',
+            'teacher_activities' => 'nullable|string',
+            'introduction' => 'nullable|string',
+            'lesson_development' => 'nullable|string',
+            'conclusion' => 'nullable|string',
+            'resources' => 'nullable|string',
+            'references' => 'nullable|string',
+            'assessment' => 'nullable|string',
+            'remarks' => 'nullable|string',
+            'reflection' => 'nullable|string',
+            'homework' => 'nullable|string',
+            'core_competencies' => 'nullable|array',
+            'pci' => 'nullable|array',
+            'inquiry_questions' => 'nullable|string',
+        ]);
+
+        $entry->update($validated);
+
+        return back()->with('success', 'Entry updated successfully.');
     }
 
     public function destroySchemeEntry(SchemeOfWork $scheme, SchemeEntry $entry): RedirectResponse

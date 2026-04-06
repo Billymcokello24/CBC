@@ -1,17 +1,17 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { 
     ChevronLeft, Plus, Save, Trash2, 
     BookOpen, GraduationCap, Calendar, 
     Layers, Target, ListChecks, MessageSquare,
     Search, Download, FileText, Filter, ChevronRight, Sparkles,
-    CheckCircle2, AlertCircle
+    CheckCircle2, AlertCircle, Eye, Edit2, MoreHorizontal
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ref, computed, useTemplateRef } from 'vue';
+import { ref, computed, watch, useTemplateRef } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -23,27 +23,45 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const props = defineProps({
     scheme: Object,
     strands: Array
 });
 
-const isAddingEntry = ref(false);
-const isViewingEntry = ref(false);
-const selectedEntry = ref(null);
-const editingEntryId = ref(null);
+const page = usePage();
 
-// Feedback State
-const showFeedback = ref(false);
-const feedbackType = ref('success'); // 'success' | 'error'
-const feedbackMessage = ref('');
+const breadcrumbs = [
+    { title: 'Curriculum', href: '#' },
+    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
+    { title: props.scheme.subject?.name || 'Subject', href: '#' },
+    { title: props.scheme.title, href: `/curriculum/planner/schemes/${props.scheme.id}` },
+];
 
-const openFeedback = (type, message) => {
-    feedbackType.value = type;
-    feedbackMessage.value = message;
-    showFeedback.value = true;
-};
+const showToast = ref(false);
+const flashSuccess = computed(() => page.props.flash?.success);
+const flashError = computed(() => page.props.flash?.error);
+
+watch(flashSuccess, (val) => {
+    if (val) {
+        showToast.value = true;
+        setTimeout(() => showToast.value = false, 3000);
+    }
+});
+
+watch(flashError, (val) => {
+    if (val) {
+        showToast.value = true;
+        setTimeout(() => showToast.value = false, 3000);
+    }
+});
 
 const entryForm = useForm({
     week_number: '',
@@ -84,6 +102,11 @@ const selectedEntries = computed(() => {
     return props.scheme.entries.filter(e => generationForm.entry_ids.includes(e.id));
 });
 
+const isAddingEntry = ref(false);
+const isViewingEntry = ref(false);
+const selectedEntry = ref(null);
+const editingEntryId = ref(null);
+
 const submitEntry = () => {
     if (editingEntryId.value) {
         entryForm.put(`/curriculum/planner/schemes/${props.scheme.id}/entries/${editingEntryId.value}`, {
@@ -91,18 +114,14 @@ const submitEntry = () => {
                 isAddingEntry.value = false;
                 editingEntryId.value = null;
                 entryForm.reset();
-                openFeedback('success', 'Lesson entry updated successfully.');
-            },
-            onError: () => openFeedback('error', 'Failed to update entry. Please check your input.')
+            }
         });
     } else {
         entryForm.post(`/curriculum/planner/schemes/${props.scheme.id}/entries`, {
             onSuccess: () => {
                 isAddingEntry.value = false;
                 entryForm.reset();
-                openFeedback('success', 'New lesson entry added to the matrix.');
-            },
-            onError: () => openFeedback('error', 'Failed to add entry. Please check your data.')
+            }
         });
     }
 };
@@ -163,21 +182,13 @@ const handleFileUpload = (event) => {
     importForm.post(`/curriculum/planner/schemes/${props.scheme.id}/import`, {
         onSuccess: () => {
             importForm.reset();
-            openFeedback('success', 'Teaching matrix imported successfully from CSV.');
-        },
-        onError: (errors) => {
-            openFeedback('error', Object.values(errors).join('\n') || 'Failed to import CSV. Please check the template format.');
         }
     });
 };
 
 const deleteEntry = (entryId) => {
-    // We'll use a standard confirm for now, but style the feedback afterwards
     if (confirm('Are you sure you want to remove this entry?')) {
-        useForm({}).delete(`/curriculum/planner/schemes/${props.scheme.id}/entries/${entryId}`, {
-            onSuccess: () => openFeedback('success', 'Lesson entry removed successfully.'),
-            onError: () => openFeedback('error', 'Failed to delete entry. Please try again.')
-        });
+        router.delete(`/curriculum/planner/schemes/${props.scheme.id}/entries/${entryId}`);
     }
 };
 
@@ -217,9 +228,7 @@ const submitGeneration = () => {
         onSuccess: () => {
             isGeneratingLessons.value = false;
             generationForm.reset();
-            openFeedback('success', 'Daily lesson plans generated successfully and added to your planner.');
-        },
-        onError: () => openFeedback('error', 'Critical error during generation. Check your internet connection or server logs.')
+        }
     });
 };
 
@@ -243,11 +252,12 @@ const cbcPCIs = [
     'Financial Literacy'
 ];
 
-const getStatusColor = (status) => {
+const getStatusVariant = (status) => {
     switch (status) {
-        case 'approved': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        case 'pending': return 'bg-amber-100 text-amber-700 border-amber-200';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200';
+        case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+        case 'submitted': return 'bg-amber-50 text-amber-600 border-amber-100';
+        case 'rejected': return 'bg-rose-50 text-rose-600 border-rose-100';
+        default: return 'bg-slate-100 text-slate-600 border-slate-200';
     }
 };
 </script>
@@ -256,193 +266,182 @@ const getStatusColor = (status) => {
     <Head :title="'Scheme Details - ' + scheme.title" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <!-- Notifications -->
+        <div v-if="showToast && (flashSuccess || flashError)" class="fixed top-8 right-8 z-[100] animate-in slide-in-from-right-4 duration-300">
+            <div :class="['flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-xl', flashSuccess ? 'bg-emerald-50/90 border-emerald-200 text-emerald-800' : 'bg-rose-50/90 border-rose-200 text-rose-800']">
+                <div :class="['h-8 w-8 rounded-xl flex items-center justify-center', flashSuccess ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white']">
+                    <CheckCircle2 v-if="flashSuccess" class="h-5 w-5" />
+                    <Sparkles v-else class="h-5 w-5" />
+                </div>
+                <div class="flex flex-col">
+                    <p class="text-[13px] font-bold tracking-tight">{{ flashSuccess || flashError }}</p>
+                    <p class="text-[10px] opacity-70 font-medium whitespace-nowrap">Instructional matrix synced successfully</p>
+                </div>
+            </div>
+        </div>
+
         <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 max-w-[1600px] mx-auto pb-32 p-6 md:p-8">
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-0.5">
-                            <Link href="/curriculum/planner/schemes" class="hover:text-blue-600 transition-colors flex items-center gap-1 group">
-                                <ChevronLeft class="h-3 w-3 group-hover:-translate-x-0.5 transition-transform" /> Schemes
-                            </Link>
-                            <span class="opacity-30">/</span>
-                            <span class="text-foreground/80 tracking-widest truncate">{{ scheme.subject?.name }}</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-foreground">{{ scheme.title }}</h1>
-                            <Badge :class="getStatusColor(scheme.status)" variant="outline" class="px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 shadow-sm shrink-0">
-                                {{ scheme.status }}
-                            </Badge>
-                        </div>
+                <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                        <Link href="/curriculum/planner/schemes" class="text-xs font-bold text-blue-600 hover:underline">Schemes of Work</Link>
+                        <ChevronRight class="h-3 w-3 text-muted-foreground/50" />
+                        <span class="text-xs font-bold text-muted-foreground">{{ scheme.subject?.name }}</span>
                     </div>
+                    <div class="flex items-center gap-3 mt-1">
+                        <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ scheme.title }}</h1>
+                        <Badge :class="[getStatusVariant(scheme.status), 'px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border shadow-sm']">
+                            {{ scheme.status }}
+                        </Badge>
+                    </div>
+                </div>
 
-                    <div class="flex items-center gap-3">
-                        <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
-                        
-                        <div class="flex items-center bg-muted/20 p-1 rounded-2xl border border-border/40 backdrop-blur-sm">
-                            <a href="/curriculum/planner/schemes/template/download">
-                                <Button variant="ghost" size="sm" class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-background transition-all">
-                                    <Download class="mr-2.5 h-3.5 w-3.5 opacity-60" /> Template
-                                </Button>
-                            </a>
-                            <div class="w-px h-3 bg-border/40 mx-1"></div>
-                            <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-background transition-all">
-                                <FileText class="mr-2.5 h-3.5 w-3.5 opacity-60" /> Import
+                <div class="flex items-center gap-3">
+                    <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
+                    
+                    <div class="flex items-center bg-muted/20 p-1 rounded-xl border border-border/40">
+                        <a href="/curriculum/planner/schemes/template/download">
+                            <Button variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-background">
+                                <Download class="mr-2 h-3.5 w-3.5 opacity-60" /> Template
                             </Button>
-                        </div>
-                        
-                        <Button @click="openAddModal()" class="h-11 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2">
-                            <Plus class="h-4 w-4" /> New Entry
+                        </a>
+                        <div class="w-px h-3 bg-border/40 mx-1"></div>
+                        <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-background">
+                            <FileText class="mr-2 h-3.5 w-3.5 opacity-60" /> Import
                         </Button>
                     </div>
+                    
+                    <Button @click="openAddModal()" class="h-10 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2">
+                        <Plus class="h-4 w-4" /> New Entry
+                    </Button>
                 </div>
             </div>
 
-            <!-- Dashboard Stats Summary -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Stats Summary -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div v-for="(stat, idx) in [
-                    { label: 'Lessons', value: scheme.entries?.length || 0, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: 'Duration', value: (scheme.total_weeks || 0) + ' Wks', icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                    { label: 'Intensity', value: (scheme.lessons_per_week || 0) + ' L/Wk', icon: Sparkles, color: 'text-amber-600', bg: 'bg-amber-50' },
-                    { label: 'Grade', value: scheme.grade_level?.short_name || scheme.grade_level?.name || 'N/A', icon: GraduationCap, color: 'text-rose-600', bg: 'bg-rose-50' }
-                ]" :key="idx" class="bg-card/40 border border-border/40 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-border transition-all duration-300 group relative overflow-hidden">
-                    <div class="absolute -right-2 -top-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500">
-                        <component :is="stat.icon" class="h-16 w-16 rotate-12" />
+                    { label: 'Scheme Entries', value: scheme.entries?.length || 0, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Academic Period', value: (scheme.total_weeks || 0) + ' Weeks', icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Weekly Periods', value: (scheme.lessons_per_week || 0) + ' L/Wk', icon: Sparkles, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Grade Level', value: scheme.grade_level?.short_name || scheme.grade_level?.name || 'N/A', icon: GraduationCap, color: 'text-rose-600', bg: 'bg-rose-50' }
+                ]" :key="idx" class="rounded-2xl border border-border bg-card p-6 shadow-sm flex items-center justify-between group hover:shadow-md transition-all duration-300">
+                    <div>
+                        <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 opacity-70">{{ stat.label }}</p>
+                        <h3 class="text-2xl font-bold text-foreground tracking-tight">{{ stat.value }}</h3>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <div :class="['p-2.5 rounded-xl transition-all group-hover:scale-105 duration-500', stat.bg]">
-                            <component :is="stat.icon" :class="['h-5 w-5', stat.color]" />
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 leading-none mb-1">{{ stat.label }}</p>
-                            <p class="text-xl font-black text-foreground tracking-tight leading-none">{{ stat.value }}</p>
-                        </div>
+                    <div :class="['h-12 w-12 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110', stat.bg, stat.color]">
+                        <component :is="stat.icon" class="h-6 w-6" />
                     </div>
                 </div>
             </div>
 
-            <!-- Main Matrix Table -->
-            <div class="bg-card border border-border shadow-2xl rounded-2xl overflow-hidden group/matrix transition-all duration-500">
-                <div class="px-8 py-6 border-b border-border/40 bg-muted/5 flex items-center justify-between group-hover/matrix:bg-muted/10 transition-colors">
+            <!-- Instructional Matrix Table -->
+            <div class="rounded-[2rem] border border-border bg-card shadow-sm overflow-hidden transition-all duration-500">
+                <div class="p-6 border-b border-border/50 bg-muted/5 flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
                             <Layers class="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 class="text-[11px] font-black text-foreground uppercase tracking-[0.2em]">Instructional Matrix</h2>
-                            <p class="text-[10px] text-muted-foreground font-bold tracking-tight opacity-60 italic">Operational Term Roadmap</p>
+                            <h2 class="text-sm font-bold text-foreground">Instructional Matrix</h2>
+                            <p class="text-[11px] text-muted-foreground font-medium opacity-60">Sequence and Term Roadmap</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <Button @click="openGenerationWizard()" class="h-10 px-5 rounded-xl bg-slate-900 hover:bg-black text-white font-black text-[10px] uppercase tracking-[0.15em] shadow-xl transition-all active:scale-95 flex items-center gap-2 border border-slate-800">
-                            <Sparkles class="h-4 w-4" /> Execute Automation
-                        </Button>
-                    </div>
+                    <Button @click="openGenerationWizard()" variant="outline" class="h-10 px-5 rounded-xl border-border font-bold text-[10px] uppercase tracking-widest bg-background hover:bg-muted/50 shadow-sm flex items-center gap-2">
+                        <Sparkles class="h-4 w-4 text-blue-600" /> Execute Automation
+                    </Button>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse table-fixed min-w-[1200px]">
                         <thead>
                             <tr class="bg-muted/30 text-muted-foreground border-b border-border/50">
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider w-24">Timing</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider w-56">Strand / Theme</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider w-64">Sub-Strand / Topic</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider w-72">Outcomes & Activities</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider w-48">Resources</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-right w-40">Actions</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-24 text-center">Timing</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-64">Strand & Sub-Strand</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-64">Instructional Topic</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-80">Outcomes & Methodology</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-48 text-center">Resources</th>
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right w-40">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/30">
-                            <tr v-for="entry in scheme.entries" :key="entry.id" class="hover:bg-muted/30 transition-colors group cursor-pointer" @click="viewDetails(entry)">
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col">
-                                        <span class="text-[11px] font-black text-foreground tracking-tight">Week {{ entry.week_number }}</span>
-                                        <div class="flex items-center gap-2 mt-0.5">
-                                            <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ls {{ entry.lesson_number }}</span>
-                                            <div class="h-1 w-1 rounded-full bg-border"></div>
-                                            <span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">{{ entry.duration_minutes }}m</span>
+                            <tr v-for="entry in scheme.entries" :key="entry.id" class="hover:bg-muted/20 transition-all group cursor-pointer" @click="viewDetails(entry)">
+                                <td class="px-6 py-5 text-center">
+                                    <div class="inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100/50">
+                                        <span class="text-[11px] font-bold text-blue-600 tracking-tight leading-none uppercase">Wk {{ entry.week_number }}</span>
+                                        <span class="text-[9px] font-bold text-blue-400 uppercase tracking-widest mt-1">Ls {{ entry.lesson_number }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5">
+                                    <div class="flex flex-col gap-1.5">
+                                        <div class="flex items-center gap-2">
+                                            <Badge variant="outline" class="text-[8px] font-bold bg-muted/50 rounded-md py-0 px-2 uppercase tracking-widest border-border/50">{{ entry.strand?.name }}</Badge>
                                         </div>
+                                        <span class="text-[11px] font-bold text-foreground/80 leading-none truncate ml-0.5">{{ entry.sub_strand?.name || 'General Sub-strand' }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col gap-1">
-                                        <Badge variant="outline" class="w-fit text-[8px] bg-blue-50/50 text-blue-700 border-blue-100 rounded-md py-0 px-2 font-black uppercase tracking-widest">{{ entry.strand?.name }}</Badge>
-                                        <span class="text-[10px] font-bold text-muted-foreground/80 line-clamp-1 truncate uppercase tracking-tighter">{{ entry.strand?.name }}</span>
-                                    </div>
+                                <td class="px-6 py-5">
+                                    <span class="text-sm font-bold text-foreground tracking-tight group-hover:text-blue-600 transition-colors uppercase leading-tight line-clamp-2">{{ entry.topic }}</span>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col gap-0.5">
-                                        <span class="text-[12px] font-black text-foreground tracking-tight leading-tight line-clamp-2 italic underline underline-offset-4 decoration-blue-500/20">{{ entry.sub_strand?.name || entry.topic }}</span>
-                                        <span v-if="entry.sub_strand?.name" class="text-[10px] font-bold text-muted-foreground/60 leading-none mt-1">{{ entry.topic }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="space-y-3">
-                                        <div class="flex gap-2.5 items-start bg-emerald-50/20 p-2 rounded-xl border border-emerald-500/10">
+                                <td class="px-6 py-5">
+                                    <div class="space-y-2">
+                                        <div class="flex gap-2 items-start bg-emerald-50/30 p-2.5 rounded-xl border border-emerald-500/10">
                                             <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
-                                            <p class="text-[11px] text-foreground/80 line-clamp-2 leading-relaxed font-bold italic">
+                                            <p class="text-[11px] text-emerald-800 line-clamp-2 leading-relaxed font-bold tracking-tight italic">
                                                 {{ entry.learning_outcomes }}
                                             </p>
                                         </div>
-                                        <div class="flex gap-2.5 items-start px-2 opacity-60">
-                                            <div class="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
-                                            <p class="text-[10px] text-muted-foreground line-clamp-1 leading-relaxed font-bold tracking-tight">
+                                        <div class="flex gap-2 items-start px-2.5 opacity-60">
+                                            <div class="h-1 w-1 rounded-full bg-muted-foreground mt-1.5 shrink-0"></div>
+                                            <p class="text-[10px] text-muted-foreground line-clamp-1 leading-relaxed font-medium truncate">
                                                 {{ entry.learning_activities }}
                                             </p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2 bg-muted/20 w-fit px-2 py-1 rounded-lg border border-border/40">
-                                        <Layers class="h-3 w-3 text-slate-400" />
-                                        <span class="text-[10px] text-muted-foreground/80 font-bold truncate max-w-[120px]">{{ entry.resources }}</span>
+                                <td class="px-6 py-5">
+                                    <div class="flex flex-col items-center justify-center p-2 rounded-xl bg-muted/30 border border-border/40 max-w-[140px] mx-auto group-hover:bg-background transition-all">
+                                        <Layers class="h-3.5 w-3.5 text-slate-400 mb-1" />
+                                        <span class="text-[9px] text-muted-foreground font-bold tracking-tight uppercase truncate w-full text-center">{{ entry.resources || 'Resources' }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-right w-px">
-                                    <div class="flex items-center justify-end gap-2 pr-2">
-                                        <div class="flex items-center bg-muted/10 px-1 py-0.5 rounded-lg border border-border/40 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
-                                            <Button @click.stop="openGenerationWizard(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-blue-600 hover:text-white transition-all scale-95 hover:scale-100">
-                                                <Sparkles class="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button @click.stop="viewDetails(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-slate-900 hover:text-white transition-all scale-95 hover:scale-100">
-                                                <Eye class="h-3.5 w-3.5" />
-                                            </Button>
-                                            <Button @click.stop="openAddModal(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-amber-600 hover:text-white transition-all scale-95 hover:scale-100">
-                                                <Edit2 class="h-3.5 w-3.5" />
-                                            </Button>
-                                            
-                                            <div class="w-px h-3 bg-border/40 mx-1"></div>
-
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger as-child>
-                                                    <Button variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-rose-600 hover:text-white transition-all scale-95 hover:scale-100" @click.stop><MoreHorizontal class="h-3.5 w-3.5" /></Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" class="w-64 p-2 rounded-xl border border-border/40 shadow-2xl backdrop-blur-xl bg-card/95">
-                                                    <div class="px-3 py-2 mb-1 border-b border-border/20">
-                                                        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Operations</p>
-                                                    </div>
-                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider" @click="viewDetails(entry)"><Eye class="mr-3 h-3.5 w-3.5 opacity-60" /> Review Overview</DropdownMenuItem>
-                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider" @click="openAddModal(entry)"><Edit2 class="mr-3 h-3.5 w-3.5 opacity-60" /> Adjust Content</DropdownMenuItem>
-                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider text-blue-600 bg-blue-50/30 hover:bg-blue-600 hover:text-white" @click="openGenerationWizard(entry)"><Sparkles class="mr-3 h-3.5 w-3.5" /> Auto-Generate Lessons</DropdownMenuItem>
-                                                    <DropdownMenuSeparator class="my-1.5 bg-border/10" />
-                                                    <DropdownMenuItem class="text-rose-600 rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider hover:bg-rose-600 hover:text-white" @click="deleteEntry(entry.id)"><Trash2 class="mr-3 h-3.5 w-3.5" /> Remove Forever</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
+                                <td class="px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                        <Button variant="ghost" size="icon" @click.stop="viewDetails(entry)" class="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                            <Eye class="h-4.5 w-4.5" />
+                                        </Button>
+                                        <DropdownMenu @click.stop>
+                                            <DropdownMenuTrigger as-child>
+                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted transition-all font-black"><MoreHorizontal class="h-4.5 w-4.5" /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border shadow-2xl">
+                                                <DropdownMenuItem class="rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-wider group" @click="openAddModal(entry)">
+                                                    <Edit2 class="mr-3 h-4 w-4 opacity-60 group-hover:text-amber-600" /> Edit Content
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50/50 hover:bg-blue-600 hover:text-white transition-colors" @click="openGenerationWizard(entry)">
+                                                    <Sparkles class="mr-3 h-4 w-4" /> Automate Plans
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator class="my-1 bg-border/5" />
+                                                <DropdownMenuItem class="text-rose-600 rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 transition-colors" @click="deleteEntry(entry.id)">
+                                                    <Trash2 class="mr-3 h-4 w-4" /> Remove Entry
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="!scheme.entries?.length">
                                 <td colspan="6" class="px-6 py-32 text-center text-muted-foreground bg-muted/5">
                                     <div class="flex flex-col items-center gap-4 max-w-sm mx-auto">
-                                        <div class="h-20 w-20 rounded-[2.5rem] bg-muted flex items-center justify-center text-muted-foreground/50 border border-border shadow-sm">
+                                        <div class="h-20 w-20 rounded-3xl bg-muted/50 flex items-center justify-center text-muted-foreground/30 border border-border shadow-inner">
                                             <FileText class="h-10 w-10" />
                                         </div>
                                         <div class="space-y-1">
-                                            <h3 class="text-lg font-bold text-foreground">Empty Teaching Matrix</h3>
-                                            <p class="text-sm font-medium leading-relaxed italic">Your scheme of work is currently empty. You can add entries manually or import them from a CSV.</p>
+                                            <h3 class="text-lg font-bold text-foreground tracking-tight">Empty Teaching Matrix</h3>
+                                            <p class="text-xs font-medium italic opacity-70">Your scheme of work is currently empty. Initialize the matrix to start planning.</p>
                                         </div>
-                                        <Button @click="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-8 shadow-md mt-4 font-bold transition-all">
+                                        <Button @click="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 px-8 shadow-lg shadow-blue-600/20 mt-4 font-bold transition-all active:scale-95 uppercase text-[10px] tracking-widest">
                                             <Plus class="mr-2 h-4 w-4" /> Start Planning
                                         </Button>
                                     </div>
@@ -457,19 +456,18 @@ const getStatusColor = (status) => {
 
     <!-- Add/Edit Entry Modal -->
     <Dialog v-model:open="isAddingEntry">
-        <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-2xl border-border bg-card shadow-2xl p-0">
-            <DialogHeader class="p-10 pb-8 bg-muted/5 border-b border-border/30 relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
-                <div class="flex items-center gap-8 relative z-10">
-                    <div class="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-2xl shadow-blue-600/30 animate-in zoom-in duration-500">
-                        <BookOpen class="h-8 w-8" />
+        <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-[2rem] border-border bg-card shadow-2xl p-0">
+            <DialogHeader class="p-8 pb-6 bg-muted/5 border-b border-border/10 relative overflow-hidden">
+                <div class="flex items-center gap-6 relative z-10">
+                    <div class="h-14 w-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20 animate-in zoom-in duration-500">
+                        <BookOpen class="h-7 w-7" />
                     </div>
                     <div>
-                        <DialogTitle class="text-3xl font-black tracking-tight text-foreground">
+                        <DialogTitle class="text-2xl font-bold tracking-tight text-foreground">
                             {{ editingEntryId ? 'Refine Lesson Entry' : 'Create Lesson Entry' }}
                         </DialogTitle>
-                        <p class="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
-                            Instructional Matrix Configuration
+                        <p class="text-[11px] text-muted-foreground font-medium mt-0.5 opacity-70">
+                            Configure instructional methodology and sequence parameters.
                         </p>
                     </div>
                 </div>
@@ -479,10 +477,10 @@ const getStatusColor = (status) => {
                 <Tabs defaultValue="admin" class="w-full">
                     <div class="px-8 pt-6">
                         <TabsList class="grid w-full grid-cols-4 rounded-xl bg-muted/50 p-1 border border-border/50">
-                            <TabsTrigger value="admin" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:shadow-sm">Administrative</TabsTrigger>
-                            <TabsTrigger value="curriculum" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:shadow-sm">Curriculum</TabsTrigger>
-                            <TabsTrigger value="delivery" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:shadow-sm">Delivery</TabsTrigger>
-                            <TabsTrigger value="outcome" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-card data-[state=active]:shadow-sm">Outcomes</TabsTrigger>
+                            <TabsTrigger value="admin" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">Administrative</TabsTrigger>
+                            <TabsTrigger value="curriculum" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">Curriculum</TabsTrigger>
+                            <TabsTrigger value="delivery" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">Delivery</TabsTrigger>
+                            <TabsTrigger value="outcome" class="rounded-lg text-[10px] font-bold uppercase tracking-widest data-[state=active]:bg-background data-[state=active]:shadow-sm">Outcomes</TabsTrigger>
                         </TabsList>
                     </div>
 
@@ -592,11 +590,11 @@ const getStatusColor = (status) => {
                     </div>
                 </Tabs>
 
-                <DialogFooter class="p-10 bg-muted/5 border-t border-border/30 flex justify-between sm:justify-between items-center bg-muted/10">
-                    <Button type="button" variant="ghost" @click="isAddingEntry = false" class="h-12 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 hover:text-foreground transition-all">Discard Change</Button>
-                    <Button type="submit" :disabled="entryForm.processing" class="h-12 px-10 rounded-xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/10 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center gap-2">
+                <DialogFooter class="p-8 bg-muted/5 border-t border-border/10 flex justify-between sm:justify-between items-center bg-muted/5">
+                    <Button type="button" variant="ghost" @click="isAddingEntry = false" class="h-11 px-8 rounded-xl font-bold text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all">Discard Changes</Button>
+                    <Button type="submit" :disabled="entryForm.processing" class="h-11 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2">
                         <Save v-if="!entryForm.processing" class="h-4 w-4" /> 
-                        {{ entryForm.processing ? 'Syncing...' : (editingEntryId ? 'Commit Update' : 'Append Entry') }}
+                        {{ entryForm.processing ? 'Syncing...' : (editingEntryId ? 'Update Entry' : 'Append Entry') }}
                     </Button>
                 </DialogFooter>
             </form>
@@ -611,14 +609,14 @@ const getStatusColor = (status) => {
                             <div class="flex items-start justify-between gap-6">
                                 <div class="space-y-3">
                                     <div class="flex items-center gap-2">
-                                        <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-100 text-[10px] font-black uppercase tracking-widest px-3 py-0.5 rounded-lg shadow-sm">
+                                        <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-100 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
                                             Week {{ selectedEntry?.week_number }} • Lesson {{ selectedEntry?.lesson_number }}
                                         </Badge>
-                                        <Badge variant="outline" class="bg-muted text-muted-foreground border-border text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-lg">
+                                        <Badge variant="outline" class="bg-muted text-muted-foreground border-border text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
                                             {{ selectedEntry?.duration_minutes }} Minutes
                                         </Badge>
                                     </div>
-                                    <DialogTitle class="text-4xl font-extrabold tracking-tight text-foreground leading-[1.1]">{{ selectedEntry?.topic }}</DialogTitle>
+                                    <DialogTitle class="text-3xl font-bold tracking-tight text-foreground leading-[1.1]">{{ selectedEntry?.topic }}</DialogTitle>
                                     <div class="flex items-center gap-4 text-sm text-muted-foreground font-medium italic">
                                         <div class="flex items-center gap-1.5">
                                             <Calendar class="h-4 w-4 text-blue-500" />
@@ -767,11 +765,11 @@ const getStatusColor = (status) => {
                                 <div class="h-14 w-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-6 border border-white/20 shadow-xl">
                                     <Sparkles class="h-8 w-8 text-blue-200 animate-pulse" />
                                 </div>
-                                <DialogTitle class="text-3xl font-black text-white tracking-tight">Smart Plan Generator</DialogTitle>
-                                <DialogDescription class="text-blue-100/80 mt-2 font-medium">
-                                    Phase {{ currentGenerationStep }} of 3: {{ 
-                                        currentGenerationStep === 1 ? 'Target Matrix Scope' : 
-                                        currentGenerationStep === 2 ? 'Temporal Config' : 'Validation & Commit'
+                                <DialogTitle class="text-2xl font-bold text-white tracking-tight">Smart Plan Generator</DialogTitle>
+                                <DialogDescription class="text-blue-100/80 mt-1 font-medium italic">
+                                    Step {{ currentGenerationStep }} of 3: {{ 
+                                        currentGenerationStep === 1 ? 'Target Scope' : 
+                                        currentGenerationStep === 2 ? 'Temporal Config' : 'Validation'
                                     }}
                                 </DialogDescription>
                             </div>
@@ -784,8 +782,8 @@ const getStatusColor = (status) => {
                     <div v-if="currentGenerationStep === 1" class="p-10 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                         <div class="space-y-6">
                             <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-black text-foreground uppercase tracking-widest ml-1">Target Matrix Weeks</h3>
-                                <Badge variant="secondary" class="bg-blue-50 text-blue-600 rounded-lg">{{ generationForm.entry_ids.length }} Selected</Badge>
+                                <h3 class="text-[11px] font-bold text-foreground uppercase tracking-widest ml-1">Target Matrix Weeks</h3>
+                                <Badge variant="secondary" class="bg-blue-600 text-white rounded-lg border-none">{{ generationForm.entry_ids.length }} Selected</Badge>
                             </div>
                             <div class="grid grid-cols-4 gap-4 max-h-[300px] overflow-y-auto pr-3 custom-scrollbar">
                                 <template v-for="week in [...new Set(scheme.entries.map(e => e.week_number))]" :key="week">
@@ -914,40 +912,5 @@ const getStatusColor = (status) => {
                     </div>
                 </DialogContent>
             </Dialog>
-    <!-- Feedback Modal -->
-    <Dialog v-model:open="showFeedback">
-        <DialogContent class="sm:max-w-[400px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
-            <div class="p-10 text-center space-y-8">
-                <div :class="[
-                    'h-24 w-24 rounded-2xl mx-auto flex items-center justify-center shadow-2xl transition-transform duration-500 hover:scale-110',
-                    feedbackType === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-rose-500 text-white shadow-rose-500/30'
-                ]">
-                    <CheckCircle2 v-if="feedbackType === 'success'" class="h-12 w-12 animate-in zoom-in duration-500" />
-                    <AlertCircle v-else class="h-12 w-12 animate-in zoom-in duration-500" />
-                </div>
-                
-                <div class="space-y-3">
-                    <h3 :class="[
-                        'text-3xl font-black tracking-tight uppercase',
-                        feedbackType === 'success' ? 'text-emerald-600' : 'text-rose-600'
-                    ]">
-                        {{ feedbackType === 'success' ? 'Sync Success' : 'Engine Error' }}
-                    </h3>
-                    <p class="text-xs font-bold text-muted-foreground leading-relaxed px-4 uppercase tracking-wider opacity-70">
-                        {{ feedbackMessage }}
-                    </p>
-                </div>
 
-                <Button 
-                    @click="showFeedback = false" 
-                    :class="[
-                        'w-full h-12 rounded-xl font-black text-[10px] uppercase tracking-widest text-white shadow-xl transition-all active:scale-95',
-                        feedbackType === 'success' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
-                    ]"
-                >
-                    Dismiss Notification
-                </Button>
-            </div>
-        </DialogContent>
-    </Dialog>
 </template>

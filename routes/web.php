@@ -363,6 +363,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/planner/schemes/{scheme}/approve', [AcademicPlannerController::class, 'approveScheme'])->name('curriculum.planner.schemes.approve');
         Route::post('curriculum/planner/schemes/{scheme}/reject', [AcademicPlannerController::class, 'rejectScheme'])->name('curriculum.planner.schemes.reject');
         Route::post('curriculum/planner/schemes/{scheme}/entries', [AcademicPlannerController::class, 'storeSchemeEntry'])->name('curriculum.planner.schemes.entries.store');
+        Route::put('curriculum/planner/schemes/{scheme}/entries/{entry}', [AcademicPlannerController::class, 'updateSchemeEntry'])->name('curriculum.planner.schemes.entries.update');
         Route::delete('curriculum/planner/schemes/{scheme}/entries/{entry}', [AcademicPlannerController::class, 'destroySchemeEntry'])->name('curriculum.planner.schemes.entries.destroy');
         Route::get('curriculum/planner/schemes/template/download', [AcademicPlannerController::class, 'downloadSchemeTemplate'])->name('curriculum.planner.schemes.template.download');
         Route::post('curriculum/planner/schemes/{scheme}/entries/{entry}/generate-lessons', [AcademicPlannerController::class, 'generateLessonsFromScheme']);
