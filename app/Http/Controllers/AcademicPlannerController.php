@@ -325,6 +325,19 @@ class AcademicPlannerController extends Controller
         $entry->delete();
         return back()->with('success', 'Entry removed.');
     }
+
+    public function showSchemeEntry(SchemeOfWork $scheme, SchemeEntry $entry): Response
+    {
+        $entry->load(['strand', 'subStrand', 'scheme.subject', 'scheme.gradeLevel']);
+        
+        return Inertia::render('curriculum/planner/SchemeEntryDetails', [
+            'scheme' => $scheme->load(['subject', 'gradeLevel']),
+            'entry' => $entry,
+            'strands' => Strand::where('subject_id', $scheme->subject_id)
+                ->where('grade_level_id', $scheme->grade_level_id)
+                ->get(['id', 'name']),
+        ]);
+    }
     
     public function downloadSchemeTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
@@ -361,10 +374,10 @@ class AcademicPlannerController extends Controller
 
         $sample = [
             '1', '1', '35', date('Y-m-d'), 'Numbers', 'Addition', 'Intro to 3-digit addition',
-            'Sum, Regroup, Digit', 'Add 3-digit numbers', 'Group work', 'Model addition',
-            'Recap 2-digit sum', 'Step by step guide', 'Summary quiz', 'Abacus, Board',
-            'Course Book Pg 45', 'Class Exercise', 'Good progress', 'Needs more practice on regrouping',
-            'Do Exercise 4.2'
+            'Sum, Regroup, Digit', 'Add 3-digit numbers', 'Learners to add 3-digit numbers using placeholders', 'Demonstrate addition on the abacus',
+            'Start with a 2-digit review', 'Move from physical to abstract representation', 'Oral quiz on sum values', 'Abacus, Base-ten blocks',
+            'Oxford Primary Math Pg 12', 'Group work on addition', 'Excellent grasp by most learners', 'Good lesson engagement',
+            'Exercise 1.4 for practice', 'Communication, Self-efficacy', 'Financial Literacy', 'How do we regroup when sum exceeds 9?'
         ];
 
         $callback = function () use ($columns, $sample) {

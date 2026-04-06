@@ -2,11 +2,11 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/vue3';
 import { 
-    ChevronLeft, Plus, Save, Trash2, 
-    BookOpen, GraduationCap, Calendar, 
-    Layers, Target, ListChecks, MessageSquare,
-    Search, Download, FileText, Filter, ChevronRight, Sparkles,
-    CheckCircle2, AlertCircle, Eye, Edit2, MoreHorizontal
+    Plus, Search, Filter, Download, FileText, 
+    MoreHorizontal, Edit2, Trash2, Calendar, 
+    BookOpen, Sparkles, LayoutGrid, ListFilter,
+    ArrowLeft, Eye, Clock, CheckCircle2,
+    GraduationCap, Layers, Save, ChevronRight
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,8 +103,6 @@ const selectedEntries = computed(() => {
 });
 
 const isAddingEntry = ref(false);
-const isViewingEntry = ref(false);
-const selectedEntry = ref(null);
 const editingEntryId = ref(null);
 
 const submitEntry = () => {
@@ -158,11 +156,6 @@ const openAddModal = (entry = null) => {
         entryForm.duration_minutes = 35;
     }
     isAddingEntry.value = true;
-};
-
-const viewDetails = (entry) => {
-    selectedEntry.value = entry;
-    isViewingEntry.value = true;
 };
 
 const fileInput = useTemplateRef('fileInput');
@@ -300,20 +293,20 @@ const getStatusVariant = (status) => {
                 <div class="flex items-center gap-3">
                     <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
                     
-                    <div class="flex items-center bg-muted/20 p-1 rounded-xl border border-border/40">
+                    <div class="flex items-center bg-muted/20 p-1 rounded-xl border border-border/40 shadow-sm">
                         <a href="/curriculum/planner/schemes/template/download">
-                            <Button variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-background">
-                                <Download class="mr-2 h-3.5 w-3.5 opacity-60" /> Template
+                            <Button variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-[0.15em] hover:bg-background text-indigo-600">
+                                <Download class="mr-2 h-3.5 w-3.5" /> Get Template
                             </Button>
                         </a>
                         <div class="w-px h-3 bg-border/40 mx-1"></div>
-                        <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:bg-background">
-                            <FileText class="mr-2 h-3.5 w-3.5 opacity-60" /> Import
+                        <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-[0.15em] hover:bg-background text-emerald-600">
+                            <FileText class="mr-2 h-3.5 w-3.5" /> Bulk Upload
                         </Button>
                     </div>
                     
                     <Button @click="openAddModal()" class="h-10 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2">
-                        <Plus class="h-4 w-4" /> New Entry
+                        <Plus class="h-4 w-4" /> New Plan
                     </Button>
                 </div>
             </div>
@@ -408,8 +401,8 @@ const getStatusVariant = (status) => {
                                 </td>
                                 <td class="px-6 py-5 text-right">
                                     <div class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                        <Button variant="ghost" size="icon" @click.stop="viewDetails(entry)" class="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
-                                            <Eye class="h-4.5 w-4.5" />
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all">
+                                            <Link :href="`/curriculum/planner/schemes/${scheme.id}/entries/${entry.id}`"><Eye class="h-4.5 w-4.5" /></Link>
                                         </Button>
                                         <DropdownMenu @click.stop>
                                             <DropdownMenuTrigger as-child>
@@ -600,160 +593,6 @@ const getStatusVariant = (status) => {
             </form>
         </DialogContent>
     </Dialog>
-
-            <!-- View Details Modal -->
-            <Dialog v-model:open="isViewingEntry">
-                <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-2xl border-border bg-card shadow-2xl p-0">
-                    <div class="p-8 space-y-8">
-                        <DialogHeader>
-                            <div class="flex items-start justify-between gap-6">
-                                <div class="space-y-3">
-                                    <div class="flex items-center gap-2">
-                                        <Badge variant="outline" class="bg-blue-50 text-blue-700 border-blue-100 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
-                                            Week {{ selectedEntry?.week_number }} • Lesson {{ selectedEntry?.lesson_number }}
-                                        </Badge>
-                                        <Badge variant="outline" class="bg-muted text-muted-foreground border-border text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-lg">
-                                            {{ selectedEntry?.duration_minutes }} Minutes
-                                        </Badge>
-                                    </div>
-                                    <DialogTitle class="text-3xl font-bold tracking-tight text-foreground leading-[1.1]">{{ selectedEntry?.topic }}</DialogTitle>
-                                    <div class="flex items-center gap-4 text-sm text-muted-foreground font-medium italic">
-                                        <div class="flex items-center gap-1.5">
-                                            <Calendar class="h-4 w-4 text-blue-500" />
-                                            {{ selectedEntry?.lesson_date || 'Schedule Pending' }}
-                                        </div>
-                                        <div class="h-1 w-1 rounded-full bg-border"></div>
-                                        <div class="flex items-center gap-1.5">
-                                            <GraduationCap class="h-4 w-4 text-indigo-500" />
-                                            {{ selectedEntry?.strand?.name || 'General Strand' }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2">
-                                    <Button @click="openAddModal(selectedEntry); isViewingEntry = false" variant="outline" class="rounded-xl font-bold text-xs uppercase tracking-wider h-12 px-6 border-border hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm">
-                                        <Edit2 class="mr-2 h-4 w-4" /> Edit Plan
-                                    </Button>
-                                    <Button variant="ghost" size="icon" @click="isViewingEntry = false" class="h-12 w-12 rounded-xl text-muted-foreground hover:bg-muted font-bold transition-all">
-                                        <Plus class="h-6 w-6 rotate-45" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </DialogHeader>
-
-                        <div class="grid grid-cols-5 gap-10">
-                             <!-- Column 1: Core Curriculum (3 cols) -->
-                             <div class="col-span-3 space-y-10">
-                                 <section class="space-y-4">
-                                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2.5">
-                                         <div class="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-                                             <Target class="h-3.5 w-3.5" />
-                                         </div>
-                                         Learning Outcomes
-                                     </h3>
-                                     <div class="p-6 rounded-2xl bg-muted/30 border border-border/50 text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium shadow-inner">
-                                         {{ selectedEntry?.learning_outcomes || 'No specific outcomes defined for this period.' }}
-                                     </div>
-                                 </section>
-
-                                 <section class="space-y-4">
-                                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2.5">
-                                         <div class="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600">
-                                             <Layers class="h-3.5 w-3.5" />
-                                         </div>
-                                         Instructional Delivery
-                                     </h3>
-                                     <div class="space-y-4 pl-1">
-                                         <div v-if="selectedEntry?.introduction" class="relative pl-6 border-l-2 border-blue-500/20 py-1">
-                                             <div class="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-                                             <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1.5 px-2 bg-blue-50 w-fit rounded shadow-sm">Phase 1: Introduction</p>
-                                             <p class="text-sm text-muted-foreground leading-relaxed font-semibold italic">{{ selectedEntry?.introduction }}</p>
-                                         </div>
-                                         <div v-if="selectedEntry?.lesson_development" class="relative pl-6 border-l-2 border-indigo-500/20 py-1">
-                                             <div class="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></div>
-                                             <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1.5 px-2 bg-indigo-50 w-fit rounded shadow-sm">Phase 2: Development</p>
-                                             <p class="text-sm text-muted-foreground leading-relaxed font-semibold italic">{{ selectedEntry?.lesson_development }}</p>
-                                         </div>
-                                         <div v-if="selectedEntry?.conclusion" class="relative pl-6 border-l-2 border-emerald-500/20 py-1">
-                                             <div class="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                             <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1.5 px-2 bg-emerald-50 w-fit rounded shadow-sm">Phase 3: Conclusion</p>
-                                             <p class="text-sm text-muted-foreground leading-relaxed font-semibold italic">{{ selectedEntry?.conclusion }}</p>
-                                         </div>
-                                     </div>
-                                 </section>
-                             </div>
-
-                             <!-- Column 2: Context & Resources (2 cols) -->
-                             <div class="col-span-2 space-y-10">
-                                 <section class="space-y-4">
-                                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2.5">
-                                         <div class="h-6 w-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600">
-                                             <MessageSquare class="h-3.5 w-3.5" />
-                                         </div>
-                                         CBC Integration
-                                     </h3>
-                                     <div class="space-y-5 p-5 rounded-2xl border border-border bg-muted/10">
-                                         <div v-if="selectedEntry?.core_competencies?.length">
-                                             <p class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5 ml-1">Competencies</p>
-                                             <div class="flex flex-wrap gap-2">
-                                                 <Badge v-for="c in selectedEntry.core_competencies" :key="c" variant="secondary" class="rounded-lg text-[10px] font-bold bg-blue-600/10 text-blue-700 border-none px-3 py-1">{{ c }}</Badge>
-                                             </div>
-                                         </div>
-                                         <div v-if="selectedEntry?.pci?.length">
-                                             <p class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-2.5 ml-1">Pertinent Issues</p>
-                                             <div class="flex flex-wrap gap-2">
-                                                 <Badge v-for="p in selectedEntry.pci" :key="p" variant="secondary" class="rounded-lg text-[10px] font-bold bg-amber-600/10 text-amber-700 border-none px-3 py-1">{{ p }}</Badge>
-                                             </div>
-                                         </div>
-                                         <div v-if="selectedEntry?.inquiry_questions">
-                                             <p class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 ml-1">Inquiry Question</p>
-                                             <p class="text-xs text-foreground font-black italic bg-card px-3 py-2 rounded-xl border border-border/50 shadow-sm leading-relaxed">"{{ selectedEntry?.inquiry_questions }}"</p>
-                                         </div>
-                                     </div>
-                                 </section>
-
-                                 <section class="space-y-4">
-                                     <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2.5">
-                                         <div class="h-6 w-6 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600">
-                                             <BookOpen class="h-3.5 w-3.5" />
-                                         </div>
-                                         Resources
-                                     </h3>
-                                     <div class="grid gap-3">
-                                         <div class="p-4 rounded-xl bg-card border border-border/50 shadow-sm group hover:border-blue-200 transition-all">
-                                             <p class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Instructional Materials</p>
-                                             <p class="text-sm font-bold text-foreground">{{ selectedEntry?.resources || 'Standard classroom tools' }}</p>
-                                         </div>
-                                         <div v-if="selectedEntry?.assessment" class="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 shadow-sm group hover:border-emerald-300 transition-all">
-                                             <div class="flex items-center gap-2 mb-1">
-                                                 <ListChecks class="h-3 w-3 text-emerald-600" />
-                                                 <p class="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Assessment</p>
-                                             </div>
-                                             <p class="text-sm font-bold text-emerald-800 italic leading-relaxed">{{ selectedEntry?.assessment }}</p>
-                                         </div>
-                                     </div>
-                                 </section>
-                             </div>
-                        </div>
-                    </div>
-
-                    <div v-if="selectedEntry?.homework || selectedEntry?.reflection" class="m-8 mt-0 p-6 rounded-3xl bg-muted/20 border border-border/50 flex gap-10">
-                         <div v-if="selectedEntry?.homework" class="flex-1 space-y-2">
-                             <div class="flex items-center gap-2">
-                                 <Save class="h-4 w-4 text-blue-500" />
-                                 <p class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em]">Extension Task (Homework)</p>
-                             </div>
-                             <p class="text-sm text-foreground font-black leading-relaxed">{{ selectedEntry?.homework }}</p>
-                         </div>
-                         <div v-if="selectedEntry?.remarks" class="flex-1 space-y-2 border-l border-border/50 pl-10">
-                             <div class="flex items-center gap-2">
-                                 <MessageSquare class="h-4 w-4 text-indigo-500" />
-                                 <p class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em]">Instructional Remarks</p>
-                             </div>
-                             <p class="text-sm text-muted-foreground italic leading-relaxed font-semibold">{{ selectedEntry?.remarks }}</p>
-                         </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
 
             <!-- Generate Lessons Wizard -->
             <Dialog v-model:open="isGeneratingLessons">

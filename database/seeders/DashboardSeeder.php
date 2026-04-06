@@ -42,7 +42,28 @@ class DashboardSeeder extends Seeder
             [
                 'start_date' => '2026-01-06',
                 'end_date' => '2026-04-03',
+                'term_number' => 1,
                 'is_current' => true,
+            ]
+        );
+
+        $term2 = AcademicTerm::firstOrCreate(
+            ['name' => 'Term 2', 'academic_year_id' => $academicYear->id],
+            [
+                'start_date' => '2026-05-04',
+                'end_date' => '2026-08-07',
+                'term_number' => 2,
+                'is_current' => false,
+            ]
+        );
+
+        $term3 = AcademicTerm::firstOrCreate(
+            ['name' => 'Term 3', 'academic_year_id' => $academicYear->id],
+            [
+                'start_date' => '2026-08-31',
+                'end_date' => '2026-11-20',
+                'term_number' => 3,
+                'is_current' => false,
             ]
         );
 
