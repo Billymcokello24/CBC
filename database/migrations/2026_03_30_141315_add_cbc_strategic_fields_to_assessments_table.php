@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('assessments', function (Blueprint $table) {
-            $table->json('core_competencies')->nullable()->after('sub_strand_id');
+            $table->json('core_competencies')->nullable()->after('subject_id');
             $table->json('pci')->nullable()->after('core_competencies');
             $table->json('indicators')->nullable()->after('pci');
         });

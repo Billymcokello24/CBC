@@ -164,7 +164,7 @@ echo "════════════════════════�
 
 $moduleTables = [
     'Schools' => ['schools', 'school_types', 'school_levels', 'school_branches', 'school_settings'],
-    'Academic' => ['academic_years', 'academic_terms', 'grade_levels', 'streams', 'school_classes'],
+    'Academic' => ['academic_years', 'academic_terms', 'grade_levels', 'streams', 'classes'],
     'Students' => ['students', 'guardians', 'student_guardians', 'student_enrollments'],
     'Teachers' => ['teachers', 'staff_categories', 'staff_designations', 'teacher_qualifications'],
     'Curriculum' => ['learning_areas', 'subjects', 'competencies', 'strands', 'sub_strands'],

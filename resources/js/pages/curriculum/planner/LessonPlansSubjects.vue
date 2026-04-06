@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { 
     BookOpen, ChevronRight, School,
-    ArrowLeft, LayoutGrid
+    ArrowLeft, LayoutGrid, Plus, BookCopy
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,24 @@ const getSubjectStyles = (type: string) => {
                     <p class="text-[15px] text-muted-foreground">
                         Select a subject discipline to access its daily planning matrix.
                     </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        @click="router.get(`/curriculum/planner/lesson-plans/class/${currentClass.id}/subject/${subjects[0]?.id}?showBulk=true`)"
+                        class="inline-flex items-center justify-center rounded-2xl px-6 h-11 text-[10px] font-black uppercase tracking-widest border-border shadow-sm hover:bg-muted transition-all"
+                        v-if="subjects.length > 0"
+                    >
+                        <BookCopy class="mr-2.5 h-4 w-4" /> Bulk Upload
+                    </Button>
+                    <Button
+                        @click="router.get(`/curriculum/planner/lesson-plans/class/${currentClass.id}/subject/${subjects[0]?.id}?addNew=true`)"
+                        class="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-11 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
+                        v-if="subjects.length > 0"
+                    >
+                        <Plus class="mr-2.5 h-4 w-4" /> New Lesson
+                    </Button>
                 </div>
             </div>
 

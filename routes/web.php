@@ -295,6 +295,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Syllabus Viewing
         Route::get('curriculum/syllabus', [SyllabusController::class, 'index'])->name('curriculum.syllabus.index');
+        Route::get('curriculum/syllabus/subjects/template', [SyllabusController::class, 'downloadSubjectTemplate'])->name('curriculum.syllabus.subjects.template');
         Route::get('curriculum/syllabus/topics/{strand}', [SyllabusController::class, 'showTopic'])->name('curriculum.syllabus.topics.show');
         Route::get('curriculum/syllabus/{subject}/{grade}', [SyllabusController::class, 'show'])->name('curriculum.syllabus.show');
         Route::resource('curriculum/competencies', \App\Http\Controllers\Curriculum\CompetencyController::class)->names('curriculum.competencies');
@@ -315,6 +316,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/syllabus/outcomes', [SyllabusController::class, 'storeOutcome'])->name('curriculum.syllabus.outcomes.store');
         Route::post('curriculum/syllabus/indicators', [SyllabusController::class, 'storeIndicator'])->name('curriculum.syllabus.indicators.store');
         Route::post('curriculum/syllabus/subjects', [SyllabusController::class, 'storeSubject'])->name('curriculum.syllabus.subjects.store');
+        Route::post('curriculum/syllabus/subjects/bulk', [SyllabusController::class, 'bulkStoreSubjects'])->name('curriculum.syllabus.subjects.bulk');
         Route::post('curriculum/syllabus/topics', [SyllabusController::class, 'storeStrand'])->name('curriculum.syllabus.topics.store');
         Route::post('curriculum/syllabus/sub-topics', [SyllabusController::class, 'storeSubStrand'])->name('curriculum.syllabus.sub-topics.store');
     });

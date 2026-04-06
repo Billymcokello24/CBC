@@ -2,9 +2,8 @@
 import { ref, computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { 
-    BookOpenCheck, GraduationCap, ChevronRight, 
-    Filter, Plus, Info, Search, X, LayoutGrid, List as ListIcon,
-    Download, MoreHorizontal, Users, CheckCircle2, AlertTriangle, TrendingUp, BookOpen
+    Download, MoreHorizontal, Users, CheckCircle2, AlertTriangle, TrendingUp, BookOpen,
+    BookCopy, Upload, FileText, X, AlertCircle, Plus, Filter, ChevronRight, Loader2, Sparkles, Search, Info
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -130,6 +129,42 @@ const submitAssignment = () => {
     });
 };
 
+const showBulkModal = ref(false);
+const bulkForm = useForm({
+    file: null as File | null,
+});
+
+const handleFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+        bulkForm.file = input.files[0];
+    }
+};
+
+const submitBulk = () => {
+    bulkForm.post(route('curriculum.syllabus.subjects.bulk'), {
+        onSuccess: () => {
+            showBulkModal.value = false;
+            bulkForm.reset();
+        },
+    });
+};
+
+const dragOver = ref(false);
+const route = (window as any).route;
+
+const handleDrop = (event: DragEvent) => {
+    dragOver.value = false;
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+        bulkForm.file = event.dataTransfer.files[0];
+    }
+};
+
+const removeFile = () => {
+    bulkForm.file = null;
+};
+
+
 </script>
 
 <template>
@@ -137,63 +172,107 @@ const submitAssignment = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-6 font-sans max-w-[1600px] mx-auto bg-[#f9fafb]/30">
             <!-- Header Section -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">Syllabus Management</h1>
-                    <p class="text-sm text-slate-500">Manage your subjects and learning areas here.</p>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-3xl font-black tracking-tight text-slate-900">Syllabus Management</h1>
+                        <Badge variant="outline" class="rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border-blue-100">
+                            Curriculum
+                        </Badge>
+                    </div>
+                    <p class="text-sm font-medium text-slate-500">Manage your subjects and learning areas here.</p>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-10 px-4 rounded-xl border-slate-200 bg-white font-semibold text-xs text-slate-600 shadow-sm transition-all hover:bg-slate-50">
-                        <Download class="mr-2 h-3.5 w-3.5" /> Export
-                    </Button>
+                <div class="flex items-center gap-3 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50">
                     <Dialog v-model:open="showAddModal">
                         <DialogTrigger as-child>
-                            <Button class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs text-white shadow-sm transition-all">
+                            <Button class="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs text-white shadow-lg shadow-blue-200 transition-all border-0">
                                 <Plus class="mr-2 h-4 w-4" /> Add Subject
                             </Button>
                         </DialogTrigger>
-                        <DialogContent class="sm:max-w-[425px] rounded-2xl border-slate-100 shadow-xl p-0 overflow-hidden">
-                            <DialogHeader class="p-6 bg-slate-900 text-white">
-                                <DialogTitle class="text-xl font-bold tracking-tight">New Subject</DialogTitle>
-                                <DialogDescription class="text-slate-400 text-xs">
-                                    Add a new subject to the curriculum.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <form @submit.prevent="submit" class="grid gap-4 py-6 px-6">
-                                <div class="grid gap-1.5">
-                                    <Label for="name" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Subject Name</Label>
-                                    <Input id="name" v-model="form.name" placeholder="e.g. Mathematics" class="rounded-xl border-slate-100 h-10 text-sm font-semibold" required />
+                        <DialogContent class="sm:max-w-[425px] rounded-3xl border-0 shadow-2xl p-0 overflow-hidden bg-white">
+                            <DialogHeader class="p-8 bg-slate-900 text-white relative">
+                                <div class="absolute top-0 right-0 p-8 opacity-10">
+                                    <BookOpen class="h-20 w-20 rotate-12" />
                                 </div>
-                                <div class="grid gap-1.5">
-                                    <Label for="learning_area" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Learning Area</Label>
+                                <div class="relative z-10">
+                                    <DialogTitle class="text-2xl font-black tracking-tight mb-1">New Subject</DialogTitle>
+                                    <DialogDescription class="text-slate-400 text-xs font-medium">
+                                        Add a new subject to the curriculum.
+                                    </DialogDescription>
+                                </div>
+                            </DialogHeader>
+                            <form @submit.prevent="submit" class="p-8 space-y-6">
+                                <div class="space-y-2">
+                                    <Label for="name" class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Subject Name</Label>
+                                    <Input id="name" v-model="form.name" placeholder="e.g. Mathematics" class="h-12 rounded-2xl border-slate-100 bg-slate-50/50 text-sm font-bold focus:ring-2 focus:ring-blue-600/10 transition-all" required />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label for="learning_area" class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Learning Area</Label>
                                     <Select v-model="form.learning_area_id">
-                                        <SelectTrigger id="learning_area" class="rounded-xl border-slate-100 h-10 text-sm font-semibold">
-                                            <SelectValue placeholder="Select area" />
+                                        <SelectTrigger id="learning_area" class="h-12 rounded-2xl border-slate-100 bg-slate-50/50 text-sm font-bold focus:ring-2 focus:ring-blue-600/10 transition-all">
+                                            <SelectValue placeholder="Select Area" />
                                         </SelectTrigger>
-                                        <SelectContent class="rounded-xl border-slate-100">
-                                            <SelectItem v-for="area in learningAreas" :key="area.id" :value="area.id.toString()">
+                                        <SelectContent class="rounded-2xl border-slate-100 shadow-2xl bg-white/95 backdrop-blur-xl">
+                                            <SelectItem v-for="area in learningAreas" :key="area.id" :value="area.id.toString()" class="rounded-xl py-3 focus:bg-blue-50 focus:text-blue-700 font-semibold cursor-pointer">
                                                 {{ area.name }}
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div class="grid gap-1.5">
-                                    <Label for="code" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Code</Label>
-                                    <Input id="code" v-model="form.code" placeholder="e.g. MAT" class="rounded-xl border-slate-100 h-10 text-sm uppercase font-semibold" />
+                                <div class="grid grid-cols-1 gap-6">
+                                    <div class="space-y-2">
+                                        <Label for="code" class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Subject Code</Label>
+                                        <Input id="code" v-model="form.code" placeholder="e.g. MAT" class="h-12 rounded-2xl border-slate-100 bg-slate-50/50 text-sm uppercase font-black tracking-widest focus:ring-2 focus:ring-blue-600/10 transition-all" />
+                                    </div>
                                 </div>
-                                <div class="grid gap-1.5">
-                                    <Label for="description" class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Description</Label>
-                                    <Textarea id="description" v-model="form.description" placeholder="Brief info..." class="rounded-xl border-slate-100 text-sm min-h-[60px]" />
+                                <div class="space-y-2">
+                                    <Label for="description" class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Brief Description</Label>
+                                    <Textarea id="description" v-model="form.description" placeholder="Provide extra context..." class="rounded-2xl border-slate-100 bg-slate-50/50 text-sm min-h-[100px] focus:ring-2 focus:ring-blue-600/10 transition-all" />
                                 </div>
-                                <DialogFooter class="px-0 pt-2">
-                                    <Button type="submit" :disabled="form.processing" class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-xs text-white h-11 shadow-sm uppercase tracking-widest">
+                                <DialogFooter class="pt-4">
+                                    <Button type="submit" :disabled="form.processing" class="w-full h-14 bg-blue-600 hover:bg-blue-700 rounded-2xl font-black text-xs text-white shadow-xl shadow-blue-500/20 transition-all uppercase tracking-[0.2em]">
                                         {{ form.processing ? 'Saving...' : 'Save Subject' }}
                                     </Button>
                                 </DialogFooter>
                             </form>
                         </DialogContent>
                     </Dialog>
+                </div>
+            </div>
+
+            <!-- Bulk Hub -->
+            <div class="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-sm overflow-hidden relative group transition-all hover:shadow-xl hover:-translate-y-1 duration-500">
+                <div class="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000 text-blue-600">
+                    <BookCopy class="h-64 w-64" />
+                </div>
+                <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
+                    <div class="flex items-center gap-6">
+                        <div class="h-20 w-20 rounded-[2rem] bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-sm border border-blue-100/50 group-hover:rotate-6 transition-transform">
+                            <Upload class="h-10 w-10" />
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Bulk Syllabus Management</h2>
+                                <Badge variant="secondary" class="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border-emerald-100/50 px-2 py-0.5">Efficient</Badge>
+                            </div>
+                            <p class="text-sm font-medium text-slate-500 mt-1 max-w-md">Import multiple subjects at once using our standardized curriculum template.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <Button variant="outline" class="h-12 border-slate-200 font-bold px-8 rounded-2xl bg-white hover:bg-slate-50 transition-all text-[11px] uppercase tracking-widest" as-child>
+                            <a :href="route('curriculum.syllabus.subjects.template')" download>
+                                <Download class="mr-2 h-4 w-4 text-emerald-600" />
+                                Download Template
+                            </a>
+                        </Button>
+                        <Button @click="showBulkModal = true" class="h-13 bg-slate-900 hover:bg-slate-800 text-white font-black px-10 rounded-2xl shadow-2xl shadow-slate-200 transition-all border-0 text-[11px] uppercase tracking-[0.2em]">
+                            <BookCopy class="mr-2 h-4 w-4" />
+                            Upload CSV Dataset
+                        </Button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Teacher Assignment Modal -->
             <Dialog v-model:open="showAssignmentModal">
@@ -295,8 +374,6 @@ const submitAssignment = () => {
                     </form>
                 </DialogContent>
             </Dialog>
-                </div>
-            </div>
 
             <!-- Stats Cards Section -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -460,6 +537,103 @@ const submitAssignment = () => {
                     </div>
                 </div>
             </div>
+
+            <!-- Bulk Upload Modal -->
+            <Dialog v-model:open="showBulkModal">
+                <DialogContent class="sm:max-w-[500px] rounded-[2.5rem] border-0 shadow-2xl p-0 overflow-hidden bg-card">
+                    <DialogHeader class="p-10 bg-slate-900 text-white relative">
+                        <div class="absolute top-0 right-0 p-10 opacity-10">
+                            <BookCopy class="h-24 w-24" />
+                        </div>
+                        <div class="relative z-10">
+                            <DialogTitle class="text-3xl font-black tracking-tight mb-1 italic">Bulk Ingestion</DialogTitle>
+                            <DialogDescription class="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                Syllabus Dataset Integration
+                            </DialogDescription>
+                        </div>
+                    </DialogHeader>
+
+                    <div class="p-10 space-y-8">
+                        <div class="flex items-center justify-between rounded-[1.5rem] border border-slate-100 bg-slate-50/50 p-6 group hover:bg-blue-50/30 transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                                    <FileText class="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <p class="text-xs font-black uppercase tracking-widest text-slate-900">Standard Template</p>
+                                    <p class="text-[10px] font-bold text-slate-400">Required CSV Schema</p>
+                                </div>
+                            </div>
+                            <Button variant="outline" size="sm" class="rounded-xl border-slate-200 font-black text-[9px] uppercase tracking-widest h-9 px-4 shadow-sm hover:bg-white" as-child>
+                                <a :href="route('curriculum.syllabus.subjects.template')" download>
+                                    <Download class="mr-2 h-3.5 w-3.5 text-emerald-600" />
+                                    Download
+                                </a>
+                            </Button>
+                        </div>
+
+                        <div
+                            class="relative flex flex-col items-center justify-center rounded-[2rem] border-3 border-dashed p-12 transition-all duration-500 group"
+                            :class="[dragOver ? 'border-blue-600 bg-blue-50/50 scale-[0.98]' : 'border-slate-100 bg-slate-50/30', bulkForm.file ? 'border-emerald-500/50 bg-emerald-50/20' : '']"
+                            @dragover.prevent="dragOver = true"
+                            @dragleave.prevent="dragOver = false"
+                            @drop.prevent="handleDrop"
+                        >
+                            <input
+                                type="file"
+                                accept=".csv"
+                                class="absolute inset-0 cursor-pointer opacity-0 z-20"
+                                @change="handleFileChange"
+                            />
+
+                            <template v-if="!bulkForm.file">
+                                <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-white shadow-xl shadow-slate-200/50 group-hover:translate-y-[-4px] transition-transform duration-500">
+                                    <Upload class="h-8 w-8 text-blue-600" />
+                                </div>
+                                <p class="mt-6 text-sm font-black text-slate-900 tracking-tight">Drop CSV file here</p>
+                                <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">or click to browse local storage</p>
+                            </template>
+
+                            <template v-else>
+                                <div class="flex w-full items-center gap-6 min-w-0 animate-in zoom-in-95 duration-300">
+                                    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] bg-emerald-500 text-white shadow-xl shadow-emerald-200">
+                                        <CheckCircle2 class="h-8 w-8" />
+                                    </div>
+                                    <div class="flex-1 min-w-0 overflow-hidden">
+                                        <p class="text-sm font-black break-all leading-tight text-slate-900" :title="bulkForm.file.name">
+                                            {{ bulkForm.file.name }}
+                                        </p>
+                                        <p class="mt-1 text-[10px] font-bold text-slate-400 uppercase">{{ (bulkForm.file.size / 1024).toFixed(2) }} KB</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" class="h-10 w-10 shrink-0 text-slate-400 hover:text-rose-500 transition-colors z-30" @click.stop="removeFile">
+                                        <X class="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div v-if="bulkForm.errors.file" class="flex items-start gap-2 bg-rose-50 p-4 rounded-xl border border-rose-100 animate-in slide-in-from-top-2">
+                            <AlertCircle class="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                            <span class="text-[11px] font-bold text-rose-600 leading-relaxed">{{ bulkForm.errors.file }}</span>
+                        </div>
+
+                        <Button 
+                            @click="submitBulk" 
+                            :disabled="!bulkForm.file || bulkForm.processing"
+                            class="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl h-16 font-black text-xs shadow-2xl shadow-slate-200 transition-all uppercase tracking-[0.3em] overflow-hidden group"
+                        >
+                            <span v-if="bulkForm.processing" class="flex items-center gap-2">
+                                <Loader2 class="h-4 w-4 animate-spin" />
+                                Processing Dataset...
+                            </span>
+                            <span v-else class="flex items-center gap-2">
+                                <Sparkles class="h-4 w-4 text-amber-400 group-hover:animate-pulse" />
+                                Execute Import Task
+                            </span>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     </AppLayout>
 </template>

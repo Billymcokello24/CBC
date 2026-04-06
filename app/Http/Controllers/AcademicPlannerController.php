@@ -133,6 +133,14 @@ class AcademicPlannerController extends Controller
         return Inertia::render('curriculum/planner/LessonPlansIndex', [
             'grades' => $gradesList,
             'stats' => $stats,
+            'allGrades' => GradeLevel::all(['id', 'name']),
+            'subjects' => Subject::active()->get(['id', 'name']),
+            'classes' => SchoolClass::active()->get(['id', 'name', 'grade_level_id']),
+            'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
+            'strands' => \App\Models\Curriculum\Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
+            'sub_strands' => \App\Models\Curriculum\SubStrand::all(['id', 'name', 'strand_id']),
+            'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(['id', 'name']),
+            'rubrics' => \App\Models\Assessment\Rubric::all(['id', 'name', 'subject_id', 'assessment_type_id']),
         ]);
     }
 
@@ -221,7 +229,7 @@ class AcademicPlannerController extends Controller
     public function storeLessonPlan(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'class_id' => 'required|exists:school_classes,id',
+            'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
             'academic_term_id' => 'required|exists:academic_terms,id',
             'strand_id' => 'nullable|exists:strands,id',
@@ -266,7 +274,7 @@ class AcademicPlannerController extends Controller
     public function updateLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
     {
         $validated = $request->validate([
-            'class_id' => 'required|exists:school_classes,id',
+            'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
             'academic_term_id' => 'required|exists:academic_terms,id',
             'strand_id' => 'nullable|exists:strands,id',
@@ -312,7 +320,7 @@ class AcademicPlannerController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:csv,txt',
-            'class_id' => 'required|exists:school_classes,id',
+            'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
         ]);
 
@@ -344,6 +352,8 @@ class AcademicPlannerController extends Controller
                 'learning_activities' => isset($data['activities']) ? explode(';', $data['activities']) : [],
                 'conclusion' => $data['conclusion'] ?? null,
                 'assessment_methods' => $data['assessment'] ?? null,
+                'pci' => isset($data['pci']) ? explode(',', $data['pci']) : [],
+                'inquiry_questions' => $data['questions'] ?? null,
                 'status' => 'draft',
             ]);
         }
@@ -360,7 +370,7 @@ class AcademicPlannerController extends Controller
             'Content-Disposition' => 'attachment; filename="lesson_plans_template.csv"',
         ];
 
-        $columns = ['title', 'date', 'learners', 'outcomes', 'competencies', 'values', 'life_skills', 'introduction', 'activities', 'conclusion', 'assessment'];
+        $columns = ['title', 'date', 'learners', 'outcomes', 'competencies', 'values', 'life_skills', 'introduction', 'activities', 'conclusion', 'assessment', 'pci', 'questions'];
 
         $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
@@ -376,7 +386,9 @@ class AcademicPlannerController extends Controller
                 'Show real plant', 
                 'Define parts;Group observation;Presentation', 
                 'Summarize lesson', 
-                'Oral quiz'
+                'Oral quiz',
+                'Environmental awareness, Health education',
+                'What are the parts of a plant?'
             ]);
             fclose($file);
         };

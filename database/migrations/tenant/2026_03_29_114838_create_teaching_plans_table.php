@@ -27,7 +27,7 @@ return new class extends Migration
             $table->foreign('school_id')->references('id')->on('schools')->onDelete('cascade');
             $table->foreign('academic_year_id')->references('id')->on('academic_years')->onDelete('cascade');
             $table->foreign('term_id')->references('id')->on('academic_terms')->onDelete('cascade');
-            $table->foreign('class_id')->references('id')->on('school_classes')->onDelete('cascade');
+            $table->foreign('class_id')->references('id')->on('classes')->onDelete('cascade');
             $table->foreign('subject_id')->references('id')->on('subjects')->onDelete('cascade');
             $table->foreign('teacher_id')->references('id')->on('users')->onDelete('cascade');
 

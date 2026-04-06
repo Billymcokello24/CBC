@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { 
     Users, BookOpen, ChevronRight, School,
-    User, ArrowLeft
+    User, ArrowLeft, Plus, BookCopy
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,24 @@ const breadcrumbs: BreadcrumbItem[] = [
                     <p class="text-[15px] text-muted-foreground">
                         Select a specific class context to manage its daily lesson plans.
                     </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        @click="router.get(`/curriculum/planner/lesson-plans/class/${classes[0]?.id}/subjects?showBulk=true`)"
+                        class="inline-flex items-center justify-center rounded-2xl px-6 h-11 text-[10px] font-black uppercase tracking-widest border-border shadow-sm hover:bg-muted transition-all"
+                        v-if="classes.length > 0"
+                    >
+                        <BookCopy class="mr-2.5 h-4 w-4" /> Bulk Upload
+                    </Button>
+                    <Button
+                        @click="router.get(`/curriculum/planner/lesson-plans/class/${classes[0]?.id}/subjects?addNew=true`)"
+                        class="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-11 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
+                        v-if="classes.length > 0"
+                    >
+                        <Plus class="mr-2.5 h-4 w-4" /> New Lesson
+                    </Button>
                 </div>
             </div>
 

@@ -553,7 +553,7 @@ class DashboardController extends Controller
 
             $performanceData = DB::table('student_assessments')
                 ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
-                ->join('school_classes', 'assessments.class_id', '=', 'school_classes.id')
+                ->join('classes', 'assessments.class_id', '=', 'classes.id')
                 ->where('assessments.academic_term_id', $currentTerm->id)
                 ->whereNotNull('student_assessments.percentage');
 
@@ -563,8 +563,8 @@ class DashboardController extends Controller
                 $performanceData->where('assessments.school_id', $schoolId);
             }
 
-            $results = $performanceData->select('school_classes.name', DB::raw('AVG(student_assessments.percentage) as average'))
-                ->groupBy('school_classes.id', 'school_classes.name')
+            $results = $performanceData->select('classes.name', DB::raw('AVG(student_assessments.percentage) as average'))
+                ->groupBy('classes.id', 'classes.name')
                 ->orderBy('average', 'desc')
                 ->limit(6)
                 ->get();

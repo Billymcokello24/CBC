@@ -348,9 +348,167 @@ class SyllabusController extends Controller
         return back()->with('success', 'Sub-topic updated.');
     }
 
-    public function destroySubStrand(SubStrand $subStrand): RedirectResponse
+    public function bulkStoreSubjects(Request $request): RedirectResponse
     {
-        $subStrand->delete();
-        return back()->with('success', 'Sub-topic removed.');
+        $request->validate([
+            'file' => 'required|mimes:csv,txt',
+        ]);
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle);
+        
+        // Clean headers
+        $header = array_map('trim', $header);
+
+        $school_id = auth()->user()->school_id;
+        $count = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== FALSE) {
+                $data = array_combine($header, $row);
+                $data = array_map('trim', $data);
+
+                $learningAreaName = $data['learning_area'] ?? null;
+                $learningArea = null;
+
+                if ($learningAreaName) {
+                    $allAreas = LearningArea::where(function ($q) use ($school_id) {
+                            $q->where('school_id', $school_id)->orWhereNull('school_id');
+                        })->get();
+
+                    // 1. Exact case-insensitive match
+                    $learningArea = $allAreas->first(
+                        fn($a) => strtolower(trim($a->name)) === strtolower(trim($learningAreaName))
+                    );
+
+                    // 2. Keyword overlap scoring
+                    if (!$learningArea) {
+                        $stopwords = ['and', 'or', 'the', 'of', 'in', 'for'];
+                        $csvWords = array_filter(
+                            explode(' ', strtolower($learningAreaName)),
+                            fn($w) => strlen($w) > 2 && !in_array($w, $stopwords)
+                        );
+
+                        $bestScore = 0;
+                        $bestArea = null;
+
+                        foreach ($allAreas as $area) {
+                            $dbName = strtolower($area->name);
+                            $score = 0;
+                            foreach ($csvWords as $word) {
+                                $stem = rtrim($word, 's');
+                                if (str_contains($dbName, $word) || str_contains($dbName, $stem)) {
+                                    $score++;
+                                }
+                            }
+                            if ($score > $bestScore) {
+                                $bestScore = $score;
+                                $bestArea = $area;
+                            }
+                        }
+
+                        if ($bestScore > 0) {
+                            $learningArea = $bestArea;
+                        }
+                    }
+
+                    // 3. similar_text fallback
+                    if (!$learningArea) {
+                        $bestScore = 0;
+                        $bestArea = null;
+                        foreach ($allAreas as $area) {
+                            similar_text(strtolower($learningAreaName), strtolower($area->name), $percent);
+                            if ($percent > $bestScore && $percent >= 40) {
+                                $bestScore = $percent;
+                                $bestArea = $area;
+                            }
+                        }
+                        $learningArea = $bestArea;
+                    }
+
+                    // 4. Auto-create with safe unique code
+                    if (!$learningArea) {
+                        $words = explode(' ', $learningAreaName);
+                        $baseCode = count($words) > 1
+                            ? strtoupper(implode('', array_map(fn($w) => substr($w, 0, 1), $words)))
+                            : strtoupper(substr($learningAreaName, 0, 3));
+
+                        $code = $baseCode;
+                        $i = 1;
+                        while (LearningArea::where('code', $code)->exists()) {
+                            $code = $baseCode . $i++;
+                        }
+
+                        $learningArea = LearningArea::create([
+                            'name'      => $learningAreaName,
+                            'code'      => $code,
+                            'school_id' => $school_id,
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+
+                if (!$learningArea) {
+                    $errors[] = "Row " . ($count + 2) . ": Learning area not specified.";
+                    continue;
+                }
+
+                Subject::create([
+                    'school_id' => $school_id,
+                    'learning_area_id' => $learningArea->id,
+                    'name' => $data['name'],
+                    'code' => $data['code'] ?? null,
+                    'description' => $data['description'] ?? null,
+                    'is_active' => true,
+                ]);
+                $count++;
+            }
+
+            if (!empty($errors)) {
+                DB::rollBack();
+                return back()->with('error', 'Import failed: ' . implode(' ', $errors));
+            }
+
+            DB::commit();
+            fclose($handle);
+            return back()->with('success', "Imported {$count} subjects successfully.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            fclose($handle);
+            return back()->with('error', 'Error importing CSV: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadSubjectTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="subjects_template.csv"',
+        ];
+
+        $columns = ['name', 'learning_area', 'code', 'description'];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fputcsv($file, [
+                'Mathematics', 
+                'Mathematics',
+                'MAT', 
+                'Introduction to logic and numbers'
+            ]);
+            fputcsv($file, [
+                'Integrated Science',
+                'Integrated Science',
+                'INT-SCI',
+                'Scientific concepts and inquiry',
+            ]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

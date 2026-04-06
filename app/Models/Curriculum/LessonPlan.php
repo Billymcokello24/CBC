@@ -91,6 +91,11 @@ class LessonPlan extends Model
         return $this->belongsTo(AcademicTerm::class);
     }
 
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Academic\AcademicYear::class);
+    }
+
     public function strand(): BelongsTo
     {
         return $this->belongsTo(Strand::class);

@@ -75,7 +75,7 @@ class AssessmentWizardController extends Controller
             'description' => 'nullable|string',
             'type_id' => 'required|exists:assessment_types,id',
             'term_id' => 'required|exists:academic_terms,id',
-            'class_id' => 'required|exists:school_classes,id',
+            'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
             'indicators' => 'required|array|min:1',
             'indicators.*.id' => 'required|exists:competency_indicators,id',
