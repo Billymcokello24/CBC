@@ -29,6 +29,7 @@ class LessonPlan extends Model
         'title',
         'week_number',
         'lesson_date',
+        'number_of_learners',
         'period_number',
         'duration_minutes',
         'specific_objectives',
@@ -38,6 +39,7 @@ class LessonPlan extends Model
         'references',
         'introduction',
         'lesson_development',
+        'learning_activities',
         'teacher_activities',
         'learner_activities',
         'conclusion',
@@ -51,6 +53,8 @@ class LessonPlan extends Model
         'is_taught',
         'taught_at',
         'core_competencies',
+        'values',
+        'life_skills',
         'pci',
         'inquiry_questions',
     ];
@@ -61,6 +65,9 @@ class LessonPlan extends Model
         'taught_at' => 'datetime',
         'is_taught' => 'boolean',
         'core_competencies' => 'array',
+        'values' => 'array',
+        'life_skills' => 'array',
+        'learning_activities' => 'array',
         'pci' => 'array',
     ];
 

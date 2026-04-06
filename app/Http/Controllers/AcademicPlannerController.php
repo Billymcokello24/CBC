@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class AcademicPlannerController extends Controller
 {
@@ -228,18 +229,19 @@ class AcademicPlannerController extends Controller
             'scheme_entry_id' => 'nullable|exists:scheme_entries,id',
             'title' => 'required|string|max:255',
             'lesson_date' => 'required|date',
+            'number_of_learners' => 'nullable|integer',
             'week_number' => 'nullable|string',
             'period_number' => 'nullable|string',
             'duration_minutes' => 'nullable|integer',
-            'specific_objectives' => 'nullable|string',
             'learning_outcomes' => 'nullable|string',
-            'key_vocabulary' => 'nullable|string',
+            'core_competencies' => 'nullable|array',
+            'values' => 'nullable|array',
+            'life_skills' => 'nullable|array',
             'teaching_aids' => 'nullable|string',
             'references' => 'nullable|string',
+            'key_vocabulary' => 'nullable|string',
             'introduction' => 'nullable|string',
-            'lesson_development' => 'nullable|string',
-            'teacher_activities' => 'nullable|string',
-            'learner_activities' => 'nullable|string',
+            'learning_activities' => 'nullable|array', // Multi-activity structure
             'conclusion' => 'nullable|string',
             'assessment_methods' => 'nullable|string',
             'reflection' => 'nullable|string',
@@ -248,17 +250,138 @@ class AcademicPlannerController extends Controller
 
         $teacher = Teacher::where('user_id', Auth::id())->first();
 
-        if (!$teacher) {
+        if (!$teacher && !Auth::user()->hasRole(['admin', 'principal'])) {
             return back()->with('error', 'Only teachers can create lesson plans.');
         }
 
         LessonPlan::create(array_merge($validated, [
             'school_id' => Auth::user()->school_id,
-            'teacher_id' => $teacher->id,
+            'teacher_id' => $teacher?->id,
             'status' => 'draft',
         ]));
 
         return back()->with('success', 'Lesson plan created successfully.');
+    }
+
+    public function updateLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
+    {
+        $validated = $request->validate([
+            'class_id' => 'required|exists:school_classes,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'academic_term_id' => 'required|exists:academic_terms,id',
+            'strand_id' => 'nullable|exists:strands,id',
+            'sub_strand_id' => 'nullable|exists:sub_strands,id',
+            'scheme_entry_id' => 'nullable|exists:scheme_entries,id',
+            'title' => 'required|string|max:255',
+            'lesson_date' => 'required|date',
+            'number_of_learners' => 'nullable|integer',
+            'week_number' => 'nullable|string',
+            'period_number' => 'nullable|string',
+            'duration_minutes' => 'nullable|integer',
+            'learning_outcomes' => 'nullable|string',
+            'core_competencies' => 'nullable|array',
+            'values' => 'nullable|array',
+            'life_skills' => 'nullable|array',
+            'teaching_aids' => 'nullable|string',
+            'references' => 'nullable|string',
+            'key_vocabulary' => 'nullable|string',
+            'introduction' => 'nullable|string',
+            'learning_activities' => 'nullable|array',
+            'conclusion' => 'nullable|string',
+            'assessment_methods' => 'nullable|string',
+            'reflection' => 'nullable|string',
+            'homework' => 'nullable|string',
+        ]);
+
+        $plan->update($validated);
+
+        return back()->with('success', 'Lesson plan updated successfully.');
+    }
+
+    public function downloadLessonPlanPdf(LessonPlan $plan)
+    {
+        $plan->load(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm']);
+        $school = Auth::user()->school;
+
+        $pdf = Pdf::loadView('pdf.lesson_plan', compact('plan', 'school'));
+        
+        return $pdf->download("Lesson_Plan_{$plan->id}.pdf");
+    }
+
+    public function importLessonPlans(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => 'required|mimes:csv,txt',
+            'class_id' => 'required|exists:school_classes,id',
+            'subject_id' => 'required|exists:subjects,id',
+        ]);
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle);
+
+        $teacher = Teacher::where('user_id', Auth::id())->first();
+        $school_id = Auth::user()->school_id;
+        $academic_term_id = AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->first()?->id;
+
+        while (($row = fgetcsv($handle)) !== FALSE) {
+            $data = array_combine($header, $row);
+            
+            LessonPlan::create([
+                'school_id' => $school_id,
+                'class_id' => $request->class_id,
+                'subject_id' => $request->subject_id,
+                'teacher_id' => $teacher?->id,
+                'academic_term_id' => $academic_term_id,
+                'title' => $data['title'] ?? 'Untitled Lesson',
+                'lesson_date' => $data['date'] ?? now()->toDateString(),
+                'number_of_learners' => $data['learners'] ?? null,
+                'learning_outcomes' => $data['outcomes'] ?? null,
+                'core_competencies' => isset($data['competencies']) ? explode(',', $data['competencies']) : [],
+                'values' => isset($data['values']) ? explode(',', $data['values']) : [],
+                'life_skills' => isset($data['life_skills']) ? explode(',', $data['life_skills']) : [],
+                'introduction' => $data['introduction'] ?? null,
+                'learning_activities' => isset($data['activities']) ? explode(';', $data['activities']) : [],
+                'conclusion' => $data['conclusion'] ?? null,
+                'assessment_methods' => $data['assessment'] ?? null,
+                'status' => 'draft',
+            ]);
+        }
+
+        fclose($handle);
+
+        return back()->with('success', 'Lesson plans imported successfully.');
+    }
+
+    public function downloadLessonPlanTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="lesson_plans_template.csv"',
+        ];
+
+        $columns = ['title', 'date', 'learners', 'outcomes', 'competencies', 'values', 'life_skills', 'introduction', 'activities', 'conclusion', 'assessment'];
+
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fputcsv($file, [
+                'Introduction to Plants', 
+                '2026-04-06', 
+                '35', 
+                'Identify plant parts', 
+                'Critical thinking, Collaboration', 
+                'Responsibility', 
+                'Teamwork', 
+                'Show real plant', 
+                'Define parts;Group observation;Presentation', 
+                'Summarize lesson', 
+                'Oral quiz'
+            ]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     // --- Approval Workflows ---
@@ -332,37 +455,7 @@ class AcademicPlannerController extends Controller
         return back()->with('success', 'Scheme removed.');
     }
 
-    public function updateLessonPlan(Request $request, LessonPlan $plan): RedirectResponse
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'lesson_date' => 'required|date',
-            'week_number' => 'nullable|string',
-            'period_number' => 'nullable|string',
-            'duration_minutes' => 'nullable|integer',
-            'specific_objectives' => 'nullable|string',
-            'learning_outcomes' => 'nullable|string',
-            'key_vocabulary' => 'nullable|string',
-            'teaching_aids' => 'nullable|string',
-            'references' => 'nullable|string',
-            'introduction' => 'nullable|string',
-            'lesson_development' => 'nullable|string',
-            'teacher_activities' => 'nullable|string',
-            'learner_activities' => 'nullable|string',
-            'conclusion' => 'nullable|string',
-            'assessment_methods' => 'nullable|string',
-            'reflection' => 'nullable|string',
-            'homework' => 'nullable|string',
-            'strand_id' => 'nullable|exists:strands,id',
-            'sub_strand_id' => 'nullable|exists:sub_strands,id',
-            'scheme_entry_id' => 'nullable|exists:scheme_entries,id',
-            'class_id' => 'nullable|exists:classes,id',
-            'subject_id' => 'nullable|exists:subjects,id',
-        ]);
 
-        $plan->update($validated);
-        return back()->with('success', 'Lesson plan updated.');
-    }
 
     public function destroyLessonPlan(LessonPlan $plan): RedirectResponse
     {

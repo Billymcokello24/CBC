@@ -379,8 +379,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subjects', [AcademicPlannerController::class, 'lessonPlansClassSubjects'])->name('curriculum.planner.lesson-plans.class.subjects');
         Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subject/{subject}', [AcademicPlannerController::class, 'lessonPlansClassSubject'])->name('curriculum.planner.lesson-plans.class.subject');
         Route::post('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'storeLessonPlan'])->name('curriculum.planner.lesson-plans.store');
+        Route::post('curriculum/planner/lesson-plans/bulk-upload', [AcademicPlannerController::class, 'importLessonPlans'])->name('curriculum.planner.lesson-plans.bulk-upload');
+        Route::get('curriculum/planner/lesson-plans/template', [AcademicPlannerController::class, 'downloadLessonPlanTemplate'])->name('curriculum.planner.lesson-plans.template');
         Route::put('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'updateLessonPlan'])->name('curriculum.planner.lesson-plans.update');
         Route::delete('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'destroyLessonPlan'])->name('curriculum.planner.lesson-plans.destroy');
+        Route::get('curriculum/planner/lesson-plans/{plan}/download', [AcademicPlannerController::class, 'downloadLessonPlanPdf'])->name('curriculum.planner.lesson-plans.download');
         Route::post('curriculum/planner/lesson-plans/{plan}/submit', [AcademicPlannerController::class, 'submitLessonPlan'])->name('curriculum.planner.lesson-plans.submit');
         Route::post('curriculum/planner/lesson-plans/{plan}/approve', [AcademicPlannerController::class, 'approveLessonPlan'])->name('curriculum.planner.lesson-plans.approve');
         Route::post('curriculum/planner/lesson-plans/{plan}/reject', [AcademicPlannerController::class, 'rejectLessonPlan'])->name('curriculum.planner.lesson-plans.reject');

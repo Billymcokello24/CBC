@@ -116,15 +116,16 @@ const form = useForm({
     week_number: '',
     period_number: '',
     duration_minutes: 35,
-    specific_objectives: '',
+    number_of_learners: 40,
     learning_outcomes: '',
     key_vocabulary: '',
+    core_competencies: [] as string[],
+    values: [] as string[],
+    life_skills: [] as string[],
     teaching_aids: '',
     references: '',
     introduction: '',
-    lesson_development: '',
-    teacher_activities: '',
-    learner_activities: '',
+    learning_activities: [''] as string[], // Multi-activity list
     conclusion: '',
     assessment_methods: '',
     reflection: '',
@@ -155,15 +156,16 @@ const openModal = (plan: any = null) => {
         form.week_number = plan.week_number;
         form.period_number = plan.period_number;
         form.duration_minutes = plan.duration_minutes;
-        form.specific_objectives = plan.specific_objectives;
+        form.number_of_learners = plan.number_of_learners;
         form.learning_outcomes = plan.learning_outcomes;
         form.key_vocabulary = plan.key_vocabulary;
+        form.core_competencies = plan.core_competencies || [];
+        form.values = plan.values || [];
+        form.life_skills = plan.life_skills || [];
         form.teaching_aids = plan.teaching_aids;
         form.references = plan.references;
         form.introduction = plan.introduction;
-        form.lesson_development = plan.lesson_development;
-        form.teacher_activities = plan.teacher_activities;
-        form.learner_activities = plan.learner_activities;
+        form.learning_activities = (plan.learning_activities && plan.learning_activities.length) ? plan.learning_activities : [''];
         form.conclusion = plan.conclusion;
         form.assessment_methods = plan.assessment_methods;
         form.reflection = plan.reflection;
@@ -303,8 +305,28 @@ const rejectPlan = (plan: any) => {
 
 const deletePlan = (plan: any) => {
     if (confirm('Are you sure you want to delete this plan?')) {
-        useForm({}).delete(route('curriculum.planner.lesson-plans.destroy', plan.id));
+        useForm({}).delete(`/curriculum/planner/lesson-plans/${plan.id}`);
     }
+};
+
+const downloadPdf = (plan: any) => {
+    window.open(`/curriculum/planner/lesson-plans/${plan.id}/download`, '_blank');
+};
+
+const showBulkModal = ref(false);
+const bulkForm = useForm({
+    file: null as File | null,
+    class_id: props.currentClass?.id,
+    subject_id: props.currentSubject?.id,
+});
+
+const handleBulkUpload = () => {
+    bulkForm.post('/curriculum/planner/lesson-plans/bulk-upload', {
+        onSuccess: () => {
+            showBulkModal.value = false;
+            bulkForm.reset();
+        }
+    });
 };
 
 const getStatusColor = (status: string) => {
@@ -374,6 +396,13 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        @click="showBulkModal = true"
+                        class="inline-flex items-center justify-center rounded-2xl px-6 h-11 text-[10px] font-black uppercase tracking-widest border-border shadow-sm hover:bg-muted transition-all"
+                    >
+                        <BookCopy class="mr-2.5 h-4 w-4" /> Bulk Upload
+                    </Button>
                     <Button
                         @click="openModal()"
                         class="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-11 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
@@ -536,7 +565,11 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                                 <DropdownMenuItem class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group" @click="openModal(plan)"><Edit2 class="mr-3 h-4 w-4 opacity-60 transition-colors group-hover:text-amber-600" /> Adjust Strategy</DropdownMenuItem>
                                                 
                                                 <DropdownMenuItem @click="openAssessmentWizard(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group text-blue-600 bg-blue-50/50 hover:bg-blue-600 hover:text-white transition-all">
-                                                    <Wand2 class="mr-3 h-4 w-4" /> Derive Assessment
+                                                    <Wand2 class="mr-3 h-4 u-4" /> Derive Assessment
+                                                </DropdownMenuItem>
+
+                                                <DropdownMenuItem @click="downloadPdf(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group">
+                                                    <FileText class="mr-3 h-4 w-4 opacity-60" /> Download PDF
                                                 </DropdownMenuItem>
 
                                                 <template v-if="plan.status === 'draft'">
@@ -629,8 +662,8 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                         <Input type="number" v-model="form.period_number" class="h-12 rounded-2xl border-border/60 bg-muted/20 text-xs font-bold text-center" />
                                     </div>
                                     <div class="grid gap-3">
-                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Intensity (Mins)</Label>
-                                        <Input type="number" v-model="form.duration_minutes" class="h-12 rounded-2xl border-border/60 bg-muted/20 text-xs font-bold text-center" />
+                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Total Learners</Label>
+                                        <Input type="number" v-model="form.number_of_learners" class="h-12 rounded-2xl border-border/60 bg-muted/20 text-xs font-bold text-center" />
                                     </div>
                                 </div>
                             </TabsContent>
@@ -655,7 +688,49 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
 
                                 <div class="grid gap-3">
                                     <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Learning Outcomes</Label>
-                                    <Textarea v-model="form.learning_outcomes" placeholder="By the end of the lesson, the learner should be able to..." class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[120px] text-sm italic py-4" required />
+                                    <Textarea v-model="form.learning_outcomes" placeholder="By the end of the lesson, the learner should be able to identify parts of a plant..." class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[100px] text-sm italic py-4" required />
+                                </div>
+
+                                <div class="grid md:grid-cols-3 gap-4">
+                                    <div class="grid gap-3">
+                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Core Competencies</Label>
+                                        <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-slate-100 bg-slate-50/30">
+                                            <Badge v-for="comp in ['Critical Thinking', 'Collaboration', 'Digital Literacy', 'Communication', 'Creativity']" 
+                                                   :key="comp"
+                                                   @click="form.core_competencies.includes(comp) ? form.core_competencies = form.core_competencies.filter(c => c !== comp) : form.core_competencies.push(comp)"
+                                                   :variant="form.core_competencies.includes(comp) ? 'default' : 'outline'"
+                                                   class="cursor-pointer text-[9px] uppercase tracking-tight py-1"
+                                            >
+                                                {{ comp }}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div class="grid gap-3">
+                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Values</Label>
+                                         <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-slate-100 bg-slate-50/30">
+                                            <Badge v-for="val in ['Respect', 'Integrity', 'Responsibility', 'Teamwork', 'Love']" 
+                                                   :key="val"
+                                                   @click="form.values.includes(val) ? form.values = form.values.filter(v => v !== val) : form.values.push(val)"
+                                                   :variant="form.values.includes(val) ? 'default' : 'outline'"
+                                                   class="cursor-pointer text-[9px] uppercase tracking-tight py-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                                            >
+                                                {{ val }}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div class="grid gap-3">
+                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Life Skills</Label>
+                                         <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-slate-100 bg-slate-50/30">
+                                            <Badge v-for="skill in ['Self-awareness', 'Empathy', 'Decision Making', 'Effective Communication']" 
+                                                   :key="skill"
+                                                   @click="form.life_skills.includes(skill) ? form.life_skills = form.life_skills.filter(s => s !== skill) : form.life_skills.push(skill)"
+                                                   :variant="form.life_skills.includes(skill) ? 'default' : 'outline'"
+                                                   class="cursor-pointer text-[9px] uppercase tracking-tight py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
+                                            >
+                                                {{ skill }}
+                                            </Badge>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="grid gap-3">
@@ -673,18 +748,19 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                         <Textarea v-model="form.introduction" placeholder="Hook the learners. Revise previous knowledge..." class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm" />
                                     </div>
 
-                                    <div class="grid md:grid-cols-2 gap-4">
-                                        <div class="p-6 rounded-3xl bg-emerald-50/50 border border-emerald-100/50">
-                                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 mb-4 flex items-center gap-2">
-                                                <User class="h-4 w-4" /> Teacher Activities
+                                    <div class="p-6 rounded-3xl bg-emerald-50/50 border border-emerald-100/50">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 flex items-center gap-2">
+                                                <Users class="h-4 w-4" /> Lesson Development Activities
                                             </h4>
-                                            <Textarea v-model="form.teacher_activities" placeholder="Demonstrating, asking questions..." class="rounded-2xl border-0 bg-white/80 min-h-[100px] text-sm italic shadow-sm" />
+                                            <Button variant="ghost" size="sm" @click="form.learning_activities.push('')" class="h-8 rounded-full bg-emerald-100 text-emerald-700 font-bold px-4 text-[9px] uppercase"><Plus class="h-3 w-3 mr-1" /> Add Activity</Button>
                                         </div>
-                                        <div class="p-6 rounded-3xl bg-amber-50/50 border border-amber-100/50">
-                                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-4 flex items-center gap-2">
-                                                <Users class="h-4 w-4" /> Learner Activities
-                                            </h4>
-                                            <Textarea v-model="form.learner_activities" placeholder="Pair work, discussion, practicals..." class="rounded-2xl border-0 bg-white/80 min-h-[100px] text-sm italic shadow-sm" />
+                                        <div class="space-y-4">
+                                            <div v-for="(activity, idx) in form.learning_activities" :key="idx" class="flex gap-3 relative group">
+                                                <div class="h-10 w-10 flex-shrink-0 rounded-full bg-emerald-100/50 flex items-center justify-center text-[10px] font-black text-emerald-600 italic border border-emerald-200/50">{{ idx + 1 }}</div>
+                                                <Textarea v-model="form.learning_activities[idx]" :placeholder="`Activity ${idx + 1}: Learners in groups observe real plant...`" class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm flex-1" />
+                                                <Button v-if="form.learning_activities.length > 1" variant="ghost" size="icon" @click="form.learning_activities.splice(idx, 1)" class="h-8 w-8 text-rose-300 hover:text-rose-600 absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-all"><Trash class="h-3.5 w-3.5" /></Button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -735,6 +811,55 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                          </Button>
                     </div>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog v-model:open="showBulkModal">
+            <DialogContent class="sm:max-w-[500px] p-0 rounded-3xl border-border shadow-2xl overflow-hidden">
+                <div class="bg-card p-10 space-y-8">
+                    <div class="flex flex-col items-center text-center space-y-4">
+                        <div class="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center text-primary">
+                            <BookCopy class="h-8 w-8" />
+                        </div>
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-black tracking-tight text-foreground uppercase">Bulk Import Lessons</h2>
+                            <p class="text-xs text-muted-foreground font-medium italic">Upload a CSV file to initialize multiple lesson protocols.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="p-6 rounded-2xl border border-border bg-muted/5 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Master Template</Label>
+                                <a href="/curriculum/planner/lesson-plans/template" class="text-[9px] font-black uppercase tracking-[0.2em] text-primary hover:underline underline-offset-4 flex items-center gap-1.5">
+                                    <ListChecks class="h-3 w-3" /> Download Sample
+                                </a>
+                            </div>
+                            <p class="text-[11px] leading-relaxed text-muted-foreground italic">Ensure your CSV follows the official matrix structure for perfect synchronization.</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <Label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-3">Select CSV Data File</Label>
+                            <Input 
+                                type="file" 
+                                @change="bulkForm.file = $event.target.files[0]"
+                                accept=".csv"
+                                class="h-14 rounded-2xl border-dashed border-2 border-border/60 bg-muted/20 px-6 py-3.5 text-xs font-bold transition-all hover:bg-muted/30" 
+                            />
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <Button 
+                            @click="handleBulkUpload" 
+                            :disabled="bulkForm.processing || !bulkForm.file" 
+                            class="w-full h-12 rounded-2xl bg-primary text-primary-foreground font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-primary/20 transition-all hover:opacity-90 disabled:opacity-50"
+                        >
+                            {{ bulkForm.processing ? 'SYNCHRONIZING...' : 'INITIALIZE DATA UPLOAD' }}
+                        </Button>
+                        <Button variant="ghost" @click="showBulkModal = false" class="w-full h-12 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60 hover:text-foreground">Abort Protocol</Button>
+                    </div>
+                </div>
             </DialogContent>
         </Dialog>
 

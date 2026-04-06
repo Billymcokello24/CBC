@@ -12,10 +12,27 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('lesson_plans', function (Blueprint $table) {
-            $table->integer('number_of_learners')->nullable()->after('lesson_date');
-            $table->json('values')->nullable()->after('core_competencies');
-            $table->json('life_skills')->nullable()->after('values');
-            $table->text('learning_activities')->nullable()->after('lesson_development'); // For Activity 1, 2, 3 structure
+            if (!Schema::hasColumn('lesson_plans', 'number_of_learners')) {
+                $table->integer('number_of_learners')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'values')) {
+                $table->json('values')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'life_skills')) {
+                $table->json('life_skills')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'learning_activities')) {
+                $table->json('learning_activities')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'core_competencies')) {
+                $table->json('core_competencies')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'pci')) {
+                $table->json('pci')->nullable();
+            }
+            if (!Schema::hasColumn('lesson_plans', 'inquiry_questions')) {
+                $table->text('inquiry_questions')->nullable();
+            }
         });
     }
 
