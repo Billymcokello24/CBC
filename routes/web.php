@@ -217,6 +217,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('departments', [AcademicManagementController::class, 'storeDepartment'])->name('departments.store');
         Route::post('departments/{id}/subjects', [AcademicManagementController::class, 'storeDepartmentSubject'])->name('departments.subjects.store');
+        Route::post('departments/{id}/teachers', [AcademicManagementController::class, 'addStaffToDepartment'])->name('departments.teachers.store');
     });
 
     Route::middleware(['check_permission:classes.view'])->group(function () {
@@ -261,6 +262,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('departments/{id}', [AcademicManagementController::class, 'updateDepartment'])->name('departments.update');
         Route::patch('departments/{id}/activate', [AcademicManagementController::class, 'activateDepartment'])->name('departments.activate');
         Route::patch('departments/{id}/deactivate', [AcademicManagementController::class, 'deactivateDepartment'])->name('departments.deactivate');
+        Route::patch('departments/{id}/assign-head', [AcademicManagementController::class, 'assignDepartmentHead'])->name('departments.assign-head');
     });
 
     Route::middleware(['check_permission:classes.delete'])->group(function () {
@@ -270,6 +272,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('streams/{id}', [AcademicManagementController::class, 'destroyStream'])->name('streams.destroy');
         Route::delete('departments/{id}', [AcademicManagementController::class, 'destroyDepartment'])->name('departments.destroy');
         Route::delete('departments/{id}/subjects/{subjectId}', [AcademicManagementController::class, 'destroyDepartmentSubject'])->name('departments.subjects.destroy');
+        Route::delete('departments/{id}/teachers/{teacherId}', [AcademicManagementController::class, 'removeStaffFromDepartment'])->name('departments.teachers.destroy');
         Route::post('departments/bulk-action', [AcademicManagementController::class, 'bulkDepartmentAction'])->name('departments.bulk-action');
     });
 
@@ -375,26 +378,36 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/planner/lesson-plans/{plan}/reject', [AcademicPlannerController::class, 'rejectLessonPlan'])->name('curriculum.planner.lesson-plans.reject');
     });
 
-    Route::middleware(['check_permission:curriculum.delete'])->group(function () {
-
-        // Assignments
+    // Assignments & Learning Resources
+    Route::middleware(['check_permission:curriculum.view'])->group(function () {
         Route::get('curriculum/assignments', [AssignmentController::class, 'index'])->name('curriculum.assignments.index');
+        Route::get('curriculum/assignments/{assignment}', [AssignmentController::class, 'show'])->name('curriculum.assignments.show');
+        Route::get('curriculum/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('curriculum.assignments.submissions');
+        Route::get('curriculum/assignments/attachments/{attachment}/download', [AssignmentController::class, 'download'])->name('curriculum.assignments.attachments.download');
+        
+        Route::get('curriculum/resources', [LearningResourceController::class, 'index'])->name('curriculum.resources.index');
+    });
+
+    Route::middleware(['check_permission:curriculum.create'])->group(function () {
         Route::get('curriculum/assignments/create', [AssignmentController::class, 'create'])->name('curriculum.assignments.create');
         Route::post('curriculum/assignments', [AssignmentController::class, 'store'])->name('curriculum.assignments.store');
-        Route::put('curriculum/assignments/{assignment}', [AssignmentController::class, 'update'])->name('curriculum.assignments.update');
-        Route::get('curriculum/assignments/{assignment}', [AssignmentController::class, 'show'])->name('curriculum.assignments.show');
-        Route::get('curriculum/assignments/{assignment}/edit', [AssignmentController::class, 'edit'])->name('curriculum.assignments.edit');
-        Route::delete('curriculum/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('curriculum.assignments.destroy');
-        Route::get('curriculum/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('curriculum.assignments.submissions');
         Route::post('curriculum/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])->name('curriculum.assignments.submit');
-        Route::get('curriculum/assignments/attachments/{attachment}/download', [AssignmentController::class, 'download'])->name('curriculum.assignments.attachments.download');
-        Route::delete('curriculum/assignments/attachments/{attachment}', [AssignmentController::class, 'destroyAttachment'])->name('curriculum.assignments.attachments.destroy');
-        Route::post('curriculum/assignments/submissions/{submission}/grade', [AssignmentController::class, 'grade'])->name('curriculum.assignments.submissions.grade');
-
-        // Learning Resources
-        Route::get('curriculum/resources', [LearningResourceController::class, 'index'])->name('curriculum.resources.index');
+        
         Route::post('curriculum/resources', [LearningResourceController::class, 'store'])->name('curriculum.resources.store');
+    });
+
+    Route::middleware(['check_permission:curriculum.update'])->group(function () {
+        Route::get('curriculum/assignments/{assignment}/edit', [AssignmentController::class, 'edit'])->name('curriculum.assignments.edit');
+        Route::put('curriculum/assignments/{assignment}', [AssignmentController::class, 'update'])->name('curriculum.assignments.update');
+        Route::post('curriculum/assignments/submissions/{submission}/grade', [AssignmentController::class, 'grade'])->name('curriculum.assignments.submissions.grade');
+        
         Route::put('curriculum/resources/{resource}', [LearningResourceController::class, 'update'])->name('curriculum.resources.update');
+    });
+
+    Route::middleware(['check_permission:curriculum.delete'])->group(function () {
+        Route::delete('curriculum/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('curriculum.assignments.destroy');
+        Route::delete('curriculum/assignments/attachments/{attachment}', [AssignmentController::class, 'destroyAttachment'])->name('curriculum.assignments.attachments.destroy');
+        
         Route::delete('curriculum/resources/{resource}', [LearningResourceController::class, 'destroy'])->name('curriculum.resources.destroy');
     });
 

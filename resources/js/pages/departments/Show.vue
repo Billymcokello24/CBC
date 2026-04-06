@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, Edit, Trash2, Plus, Filter, X, TrendingUp, 
-  Users, BookOpen, Award, GraduationCap, Calendar, 
+  Users, User, UserPlus, UserCheck, BookOpen, Award, GraduationCap, Calendar, 
   Search, MoreHorizontal, Check
 } from 'lucide-vue-next';
 import {
@@ -29,13 +29,25 @@ const selectedTermFilter = ref('all');
 const selectedYearFilter = ref('all');
 const selectedExamFilter = ref('all');
 const showAddSubjectModal = ref(false);
+const showAssignHeadModal = ref(false);
+const showAddTeacherModal = ref(false);
 const subjectSearch = ref('');
+const teacherSearch = ref('');
+const allTeachers = page.props?.all_teachers ?? [];
 
 const filteredCurriculumSubjects = computed(() => {
   const search = subjectSearch.value.toLowerCase();
   return curriculumSubjects.filter(s => 
     (s.name.toLowerCase().includes(search) || s.code.toLowerCase().includes(search)) &&
     !subjects.some(existing => existing.id === s.id)
+  );
+});
+
+const filteredTeachers = computed(() => {
+  const search = teacherSearch.value.toLowerCase();
+  return allTeachers.filter(t => 
+    (t.name.toLowerCase().includes(search)) &&
+    !teachers.some(existing => existing.id === t.id)
   );
 });
 
@@ -68,8 +80,34 @@ const removeSubject = (subjectId) => {
   });
 };
 
+const assignHead = (teacherId) => {
+  router.patch(`/departments/${dept.id}/assign-head`, { head_of_department_id: teacherId }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showAssignHeadModal.value = false;
+    }
+  });
+};
+
+const addTeacher = (teacherId) => {
+  router.post(`/departments/${dept.id}/teachers`, { teacher_id: teacherId }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      showAddTeacherModal.value = false;
+      teacherSearch.value = '';
+    }
+  });
+};
+
+const removeTeacher = (teacherId) => {
+  if (!confirm('Are you sure you want to remove this staff member from the department?')) return;
+  router.delete(`/departments/${dept.id}/teachers/${teacherId}`, {
+    preserveScroll: true,
+  });
+};
+
 const toggleStatus = () => {
-  router.patch(`/departments/${dept.id}/toggle-status`, {}, {
+  router.patch(`/departments/${dept.id}/activate`, {}, {
     preserveScroll: true,
   });
 };
@@ -442,7 +480,7 @@ const breadcrumbs = [
       </div>
 
       <!-- Add Subject Modal -->
-      <div v-if="showAddSubjectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300">
+      <div v-if="showAddSubjectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300" @click.self="showAddSubjectModal = false">
         <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
           <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3">
@@ -478,7 +516,7 @@ const breadcrumbs = [
                   </div>
                   <div>
                     <span class="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase block leading-none">{{ sub.name }}</span>
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 block leading-none">{{ sub.is_offered ? 'Core Subject' : 'Elective' }}</span>
+                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 block leading-none">Core Subject</span>
                   </div>
                 </div>
                 <div class="h-8 w-8 rounded-lg bg-blue-100/50 text-blue-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
@@ -486,10 +524,90 @@ const breadcrumbs = [
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assign HOD Modal -->
+      <div v-if="showAssignHeadModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300" @click.self="showAssignHeadModal = false">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
+                <UserCheck class="h-5 w-5" />
+              </div>
+              <h3 class="text-xl font-black text-slate-900 tracking-tight">Assign Dept. Head</h3>
+            </div>
+            <Button variant="ghost" size="icon" @click="showAssignHeadModal = false" class="h-10 w-10 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-rose-600 transition-all">
+              <X class="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <div class="space-y-6">
+            <div class="max-h-[350px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              <div 
+                v-for="t in allTeachers" 
+                :key="t.id" 
+                @click="assignHead(t.id)"
+                class="flex items-center justify-between p-4 rounded-2xl hover:bg-blue-50 border border-transparent hover:border-blue-100 cursor-pointer transition-all group shadow-sm bg-white"
+                :class="{ 'bg-blue-50/50 border-blue-200': dept.head_of_department?.id === t.id }"
+              >
+                <div class="flex items-center gap-4">
+                  <div class="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600">
+                    {{ t.name.charAt(0) }}
+                  </div>
+                  <span class="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase block leading-none">{{ t.name }}</span>
+                </div>
+                <div v-if="dept.head_of_department?.id === t.id" class="h-8 w-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                   <Check class="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Teacher Modal -->
+      <div v-if="showAddTeacherModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-300" @click.self="showAddTeacherModal = false">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
+          <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+              <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
+                <UserPlus class="h-5 w-5" />
+              </div>
+              <h3 class="text-xl font-black text-slate-900 tracking-tight">Add Staff Member</h3>
+            </div>
+            <Button variant="ghost" size="icon" @click="showAddTeacherModal = false" class="h-10 w-10 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-rose-600 transition-all">
+              <X class="h-5 w-5" />
+            </Button>
+          </div>
+          
+          <div class="space-y-6">
+            <div class="relative">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input v-model="teacherSearch" placeholder="Search staff members..." class="pl-10 h-12 rounded-xl border-slate-200 focus:ring-blue-600 text-sm transition-all" />
+            </div>
             
-            <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
-              <p class="text-[8px] text-slate-400 font-bold uppercase tracking-[0.15em]">Only active subjects available</p>
-              <Button variant="outline" size="sm" @click="showAddSubjectModal = false" class="h-10 rounded-xl border-slate-200 text-[10px] font-bold uppercase tracking-wider px-8 hover:bg-slate-50 transition-all shadow-sm">Done</Button>
+            <div class="max-h-[350px] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+              <div v-if="filteredTeachers.length === 0" class="py-16 text-center text-slate-400 font-medium italic bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                 No unassigned staff found.
+              </div>
+              <div 
+                v-for="t in filteredTeachers" 
+                :key="t.id" 
+                @click="addTeacher(t.id)"
+                class="flex items-center justify-between p-4 rounded-2xl hover:bg-blue-50 border border-transparent hover:border-blue-100 cursor-pointer transition-all group shadow-sm bg-white"
+              >
+                <div class="flex items-center gap-4">
+                  <div class="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-xs font-bold text-slate-400 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600">
+                    {{ t.name.charAt(0) }}
+                  </div>
+                  <span class="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors uppercase block leading-none">{{ t.name }}</span>
+                </div>
+                <div class="h-8 w-8 rounded-lg bg-blue-100/50 text-blue-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                   <Plus class="h-4 w-4" />
+                </div>
+              </div>
             </div>
           </div>
         </div>

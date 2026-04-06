@@ -43,15 +43,7 @@ class DashboardController extends Controller
             return $this->adminDashboard();
         }
 
-        if ($user->hasRole('hod')) {
-            return $this->hodDashboard();
-        }
-
-        if ($user->hasRole('class_teacher')) {
-            return $this->classTeacherDashboard();
-        }
-
-        if ($user->hasAnyRole(['teacher'])) {
+        if ($user->hasAnyRole(['teacher', 'hod', 'class_teacher']) || ($user->teacher)) {
             return $this->teacherDashboard();
         }
 
@@ -122,60 +114,62 @@ class DashboardController extends Controller
         $teacher = Teacher::where('user_id', $user->id)->first();
         $academicYear = AcademicYear::where('is_current', true)->first();
 
+        // 1. Role Identification
+        $isClassTeacher = SchoolClass::where('class_teacher_id', $user->id)->exists();
+        $isHod = $teacher && \App\Models\Academic\Department::where('head_of_department_id', $teacher->id)->exists();
+
+        // 2. Base Data (Shared)
         $myClasses = collect();
         $mySubjects = collect();
-        $recentAssessments = [];
-        $totalStudents = 0;
         $todaysTimetable = [];
+        $recentAssessments = [];
         $attendanceStats = [];
+        $syllabusProgress = collect();
+        $pendingTasks = [];
+        $totalStudents = 0;
+
+        // Class Teacher Specific Data
+        $classManagement = null;
+        
+        // HOD Specific Data
+        $departmentData = null;
 
         if ($teacher) {
-            // 1. Get class-teacher assignments
+            // A. Get class-teacher assignments
             $classTeacherClasses = SchoolClass::where('class_teacher_id', $user->id)
                 ->with(['gradeLevel', 'stream', 'activeStudents'])
                 ->get();
 
-            // 2. Get subject assignments (classes + subjects)
+            // B. Get subject assignments
             $subjectAssignments = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
                 ->where('is_active', true)
                 ->with(['subject', 'schoolClass.gradeLevel', 'schoolClass.stream'])
                 ->get();
 
-            // Normalize classes
-            $myClasses = $classTeacherClasses->map(fn($c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'code' => $c->code,
-                'grade' => $c->gradeLevel?->name,
-                'stream' => $c->stream?->name,
-                'is_class_teacher' => true,
-                'learner_count' => $c->active_students_count ?? $c->students()->where('status', 'active')->count()
+            // Normalize classes for the overview
+            $myClasses = $classTeacherClasses->toBase()->map(fn($c) => [
+                'id' => $c->id, 'name' => $c->name, 'code' => $c->code,
+                'grade' => $c->gradeLevel?->name, 'stream' => $c->stream?->name,
+                'is_class_teacher' => true, 'learner_count' => $c->active_students_count ?? $c->students()->where('status', 'active')->count()
             ])->merge(
-                $subjectAssignments->map(fn($a) => [
-                    'id' => $a->schoolClass?->id,
-                    'name' => $a->schoolClass?->name,
-                    'code' => $a->schoolClass?->code,
-                    'grade' => $a->schoolClass?->gradeLevel?->name,
-                    'stream' => $a->schoolClass?->stream?->name,
-                    'is_class_teacher' => false,
-                    'learner_count' => $a->schoolClass?->students()->where('status', 'active')->count() ?? 0
+                $subjectAssignments->toBase()->map(fn($a) => [
+                    'id' => $a->schoolClass?->id, 'name' => $a->schoolClass?->name, 'code' => $a->schoolClass?->code,
+                    'grade' => $a->schoolClass?->gradeLevel?->name, 'stream' => $a->schoolClass?->stream?->name,
+                    'is_class_teacher' => false, 'learner_count' => $a->schoolClass?->students()->where('status', 'active')->count() ?? 0
                 ])
             )->unique('id')->filter()->values();
 
             // Normalize subjects
-            $mySubjects = $subjectAssignments->map(fn($a) => [
-                'id' => $a->subject?->id,
-                'name' => $a->subject?->name,
-                'code' => $a->subject?->code,
-                'class_name' => $a->schoolClass?->name,
-                'grade_level_id' => $a->schoolClass?->grade_level_id,
+            $mySubjects = $subjectAssignments->toBase()->map(fn($a) => [
+                'id' => $a->subject?->id, 'name' => $a->subject?->name, 'code' => $a->subject?->code,
+                'class_name' => $a->schoolClass?->name, 'grade_level_id' => $a->schoolClass?->grade_level_id,
                 'is_primary' => $a->is_primary_teacher
-            ])->unique(fn($s) => $s['id'] . '-' . $s['class_name'])->values();
+            ])->unique(fn($s) => ($s['id'] ?? 0) . '-' . ($s['class_name'] ?? ''))->values();
 
-            $classIds = $myClasses->pluck('id')->toArray();
-            $totalLearnersCount = Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+            $classIds = $myClasses->pluck('id')->filter()->toArray();
+            $totalStudents = Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
 
-            // 3. Today's timetable
+            // C. Today's timetable
             $dayOfWeek = strtolower(date('l'));
             $todaysTimetable = TimetableSlot::where('teacher_id', $teacher->id)
                 ->where('day_of_week', $dayOfWeek)
@@ -183,24 +177,21 @@ class DashboardController extends Controller
                 ->orderBy('start_time')
                 ->get()
                 ->map(fn($slot) => [
-                    'id' => $slot->id,
-                    'subject' => $slot->subject?->name,
-                    'class' => $slot->timetable?->schoolClass?->name,
-                    'room' => $slot->room_number,
-                    'start_time' => $slot->start_time->format('H:i'),
+                    'id' => $slot->id, 'subject' => $slot->subject?->name, 'class' => $slot->timetable?->schoolClass?->name,
+                    'room' => $slot->room_number, 'start_time' => $slot->start_time->format('H:i'),
                     'end_time' => $slot->end_time->format('H:i'),
                     'duration' => $slot->periodDefinition?->duration_minutes ?? $slot->start_time->diffInMinutes($slot->end_time),
                     'status' => 'scheduled'
                 ]);
 
-            // 4. Recent Assessments (by this teacher)
+            // D. Recent Assessments
             $recentAssessments = Assessment::where('teacher_id', $user->id)
                 ->with(['subject', 'class', 'assessmentType'])
                 ->latest()
                 ->limit(5)
                 ->get();
 
-            // 5. Attendance Summary for their classes (Last 7 days)
+            // E. Attendance Summary (Last 7 days)
             $attendanceStats = StudentAttendance::whereIn('class_id', $classIds)
                 ->where('attendance_date', '>=', now()->subDays(7))
                 ->select('attendance_date', DB::raw('count(*) as total'), DB::raw('SUM(CASE WHEN status = "present" THEN 1 ELSE 0 END) as present_count'))
@@ -212,45 +203,91 @@ class DashboardController extends Controller
                     'rate' => $stat->total > 0 ? round(($stat->present_count / $stat->total) * 100) : 100
                 ]);
 
-            // 6. Syllabus Progress
+            // F. Syllabus Progress
             $syllabusProgress = $mySubjects->map(function($subject) use ($teacher, $academicYear) {
                 $scheme = SchemeOfWork::where('subject_id', $subject['id'])
                     ->where('grade_level_id', $subject['grade_level_id'])
                     ->where('academic_year_id', $academicYear?->id)
                     ->first();
-                
                 $totalLessons = $scheme ? ($scheme->total_weeks * $scheme->lessons_per_week) : 0;
                 $completedLessons = LessonPlan::where('teacher_id', $teacher->id)
                     ->where('subject_id', $subject['id'])
                     ->where('is_taught', true)
                     ->count();
-                    
                 return [
-                    'subject' => $subject['name'],
-                    'class' => $subject['class_name'],
+                    'subject' => $subject['name'], 'class' => $subject['class_name'],
                     'progress' => $totalLessons > 0 ? round(($completedLessons / $totalLessons) * 100) : 0,
-                    'completed' => $completedLessons,
-                    'total' => $totalLessons
+                    'completed' => $completedLessons, 'total' => $totalLessons
                 ];
             });
 
-            // 7. Pending Tasks
-            $pendingGradingCount = Assessment::where('teacher_id', $user->id)
-                ->where('status', 'published')
-                ->count();
-            
+            // G. Pending Tasks
+            $pendingGradingCount = Assessment::where('teacher_id', $user->id)->where('status', 'published')->count();
             $pendingAssignmentsCount = AssignmentSubmission::whereHas('assignment', fn($q) => $q->where('teacher_id', $teacher->id))
-                ->where('status', '!=', 'graded')
-                ->count();
-            
+                ->where('status', '!=', 'graded')->count();
             $pendingTasks = [
                 ['title' => 'Assessments to Grade', 'count' => $pendingGradingCount, 'link' => '/assessments/grading'],
                 ['title' => 'Assignments to Review', 'count' => $pendingAssignmentsCount, 'link' => '/assignments'],
             ];
+
+            // 3. Class Teacher Specific Data
+            if ($isClassTeacher) {
+                $myClass = SchoolClass::where('class_teacher_id', $user->id)->with(['stream', 'gradeLevel'])->first();
+                if ($myClass) {
+                    $classStudents = Student::where('current_class_id', $myClass->id)
+                        ->orderBy('first_name')
+                        ->get(['id', 'first_name', 'last_name', 'admission_number', 'photo', 'gender', 'status']);
+                    
+                    $classAssessments = Assessment::where('class_id', $myClass->id)
+                        ->with(['subject', 'assessmentType'])
+                        ->latest()
+                        ->limit(5)
+                        ->get();
+
+                    $startOfWeek = Carbon::now()->startOfWeek();
+                    $studentIds = $classStudents->pluck('id')->toArray();
+                    $totalRecords = StudentAttendance::whereIn('student_id', $studentIds)->where('attendance_date', '>=', $startOfWeek)->count();
+                    $presentRecords = StudentAttendance::whereIn('student_id', $studentIds)->where('attendance_date', '>=', $startOfWeek)->where('status', 'present')->count();
+                    $classAttendanceRate = $totalRecords > 0 ? round(($presentRecords / $totalRecords) * 100, 1) : 95;
+
+                    $classManagement = [
+                        'class' => $myClass,
+                        'students' => $classStudents,
+                        'total_students' => $classStudents->count(),
+                        'boys_count' => $classStudents->where('gender', 'male')->count(),
+                        'girls_count' => $classStudents->where('gender', 'female')->count(),
+                        'attendance_rate' => $classAttendanceRate,
+                        'recent_assessments' => $classAssessments,
+                    ];
+                }
+            }
+
+            // 4. HOD Specific Data
+            if ($isHod) {
+                $department = \App\Models\Academic\Department::where('head_of_department_id', $teacher->id)->first();
+                if ($department) {
+                    $deptTeachers = Teacher::where('department_id', $department->id)->where('status', 'active')->get(['id', 'first_name', 'last_name', 'photo', 'email', 'user_id']);
+                    $deptSubjects = \App\Models\Curriculum\Subject::where('department_id', $department->id)->where('is_active', true)->get();
+                    $subjectIds = $deptSubjects->pluck('id')->toArray();
+                    $deptAssessments = Assessment::whereIn('subject_id', $subjectIds)->with(['subject', 'class', 'assessmentType'])->latest()->limit(10)->get();
+                    $deptClassIds = Assessment::whereIn('subject_id', $subjectIds)->distinct()->pluck('class_id')->toArray();
+                    $deptStudentsCount = Student::whereIn('current_class_id', $deptClassIds)->count();
+
+                    $departmentData = [
+                        'department' => $department,
+                        'teachers' => $deptTeachers,
+                        'subjects' => $deptSubjects,
+                        'total_students' => $deptStudentsCount,
+                        'recent_assessments' => $deptAssessments,
+                    ];
+                }
+            }
         }
 
         return Inertia::render('dashboards/TeacherDashboard', [
             'dashboardType' => 'teacher',
+            'isClassTeacher' => $isClassTeacher,
+            'isHod' => $isHod,
             'teacher' => $teacher,
             'myClasses' => $myClasses,
             'mySubjects' => $mySubjects,
@@ -258,117 +295,11 @@ class DashboardController extends Controller
             'todaysTimetable' => $todaysTimetable,
             'recentAssessments' => $recentAssessments,
             'attendanceStats' => $attendanceStats,
-            'syllabusProgress' => $syllabusProgress ?? [],
-            'pendingTasks' => $pendingTasks ?? [],
+            'syllabusProgress' => $syllabusProgress,
+            'pendingTasks' => $pendingTasks,
+            'classManagement' => $classManagement,
+            'departmentData' => $departmentData,
             'academicYear' => $academicYear?->name,
-            'notificationsCount' => $this->getNotificationsCount(),
-        ]);
-    }
-
-    // ─────────────────────────────────────────
-    // CLASS TEACHER DASHBOARD
-    // ─────────────────────────────────────────
-    private function classTeacherDashboard()
-    {
-        $user = Auth::user();
-        $teacher = Teacher::where('user_id', $user->id)->first();
-
-        // Find the class(es) this user is class teacher of
-        $myClass = SchoolClass::where('class_teacher_id', $user->id)->first();
-
-        $students = collect();
-        $recentAssessments = collect();
-        $attendanceRate = 0;
-
-        if ($myClass) {
-            $students = Student::where('current_class_id', $myClass->id)
-                ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'admission_number', 'photo', 'gender', 'status']);
-
-            $recentAssessments = \App\Models\Assessment\Assessment::where('class_id', $myClass->id)
-                ->with(['subject', 'assessmentType'])
-                ->latest()
-                ->limit(5)
-                ->get();
-
-            // Calculate attendance rate for this class this week
-            if (Schema::hasTable('student_attendances')) {
-                $startOfWeek = Carbon::now()->startOfWeek();
-                $studentIds = $students->pluck('id')->toArray();
-                $totalRecords = StudentAttendance::whereIn('student_id', $studentIds)
-                    ->where('date', '>=', $startOfWeek)
-                    ->count();
-                $presentRecords = StudentAttendance::whereIn('student_id', $studentIds)
-                    ->where('date', '>=', $startOfWeek)
-                    ->where('status', 'present')
-                    ->count();
-                $attendanceRate = $totalRecords > 0 ? round(($presentRecords / $totalRecords) * 100, 1) : 95;
-            }
-        }
-
-        return Inertia::render('dashboards/ClassTeacherDashboard', [
-            'dashboardType' => 'class_teacher',
-            'teacher' => $teacher,
-            'myClass' => $myClass,
-            'students' => $students,
-            'totalStudents' => $students->count(),
-            'boysCount' => $students->where('gender', 'male')->count(),
-            'girlsCount' => $students->where('gender', 'female')->count(),
-            'attendanceRate' => $attendanceRate,
-            'recentAssessments' => $recentAssessments,
-            'notificationsCount' => $this->getNotificationsCount(),
-        ]);
-    }
-
-    // ─────────────────────────────────────────
-    // HOD DASHBOARD
-    // ─────────────────────────────────────────
-    private function hodDashboard()
-    {
-        $user = Auth::user();
-        $teacher = Teacher::where('user_id', $user->id)->first();
-        $department = $teacher?->department;
-
-        $departmentTeachers = collect();
-        $departmentSubjects = collect();
-        $recentAssessments = collect();
-        $totalStudents = 0;
-
-        if ($department) {
-            $departmentTeachers = Teacher::where('department_id', $department->id)
-                ->where('status', 'active')
-                ->get(['id', 'first_name', 'last_name', 'photo', 'email', 'user_id']);
-
-            // Get subjects in this department
-            $departmentSubjects = \App\Models\Curriculum\Subject::where('department_id', $department->id)
-                ->where('is_active', true)
-                ->get();
-
-            $subjectIds = $departmentSubjects->pluck('id')->toArray();
-
-            // Recent assessments for department subjects
-            $recentAssessments = \App\Models\Assessment\Assessment::whereIn('subject_id', $subjectIds)
-                ->with(['subject', 'class', 'assessmentType'])
-                ->latest()
-                ->limit(10)
-                ->get();
-
-            // Students in classes that have these subjects
-            $classIds = \App\Models\Assessment\Assessment::whereIn('subject_id', $subjectIds)
-                ->distinct()
-                ->pluck('class_id')
-                ->toArray();
-            $totalStudents = Student::whereIn('current_class_id', $classIds)->count();
-        }
-
-        return Inertia::render('dashboards/HodDashboard', [
-            'dashboardType' => 'hod',
-            'teacher' => $teacher,
-            'department' => $department,
-            'departmentTeachers' => $departmentTeachers,
-            'departmentSubjects' => $departmentSubjects,
-            'totalStudents' => $totalStudents,
-            'recentAssessments' => $recentAssessments,
             'notificationsCount' => $this->getNotificationsCount(),
         ]);
     }

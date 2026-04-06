@@ -47,6 +47,14 @@ class HandleInertiaRequests extends Middleware
                 'roles' => $user ? $user->getRoleNames() : [],
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],
                 'is_super_admin' => $user ? $user->hasRole('super_admin') : false,
+                'teacher' => $user ? $user->teacher : null,
+                'teacher_roles' => $user ? [
+                    'is_teacher' => $user->hasRole('teacher'),
+                    'is_class_teacher' => $user->hasRole('class_teacher') || \App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->exists(),
+                    'is_hod' => $user->hasRole('hod') || ($user->teacher && \App\Models\Academic\Department::where('head_of_department_id', $user->teacher->id)->exists()),
+                    'assigned_classes_count' => ($user->teacher) ? \App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->count() : 0,
+                    'assigned_subjects_count' => ($user->teacher) ? $user->teacher->subjectAssignments()->where('is_active', true)->count() : 0,
+                ] : null,
                 'impersonating' => [
                     'active' => $user && $user->hasRole('super_admin') && session()->has('viewing_school_id'),
                     'school_name' => session()->has('viewing_school_id') ? \App\Models\School::find(session('viewing_school_id'))?->name : null,

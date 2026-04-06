@@ -33,9 +33,9 @@ class StaffsController extends Controller
     }
 
     /**
-     * Safely count users with the given roles, ignoring roles that don't exist.
+     * Safely count users with the given roles, optionally filtered by department.
      */
-    protected function safeRoleCount(array $roleNames): int
+    protected function safeRoleCount(array $roleNames, ?int $departmentId = null): int
     {
         $existingRoles = Role::whereIn('name', $roleNames)
             ->where('guard_name', 'web')
@@ -46,7 +46,15 @@ class StaffsController extends Controller
             return 0;
         }
 
-        return User::role($existingRoles)->count();
+        $query = User::role($existingRoles);
+
+        if ($departmentId) {
+            $query->whereHas('teacher', function ($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            });
+        }
+
+        return $query->count();
     }
 
     protected function transformStaffRow(Teacher $teacher): array
@@ -77,12 +85,20 @@ class StaffsController extends Controller
 
     public function directory(): Response
     {
-        $roles = $this->roleService->getTemplates()->map(function ($role) {
+        $user = auth()->user();
+        $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);
+        $hodDeptId = null;
+
+        if ($isRestrictedHOD) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+        }
+
+        $roles = $this->roleService->getTemplates()->map(function ($role) use ($isRestrictedHOD, $hodDeptId) {
             return [
                 'id' => $role->id,
                 'name' => $role->name,
                 'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
-                'count' => User::role($role->name)->count(),
+                'count' => $this->safeRoleCount([$role->name], $isRestrictedHOD ? $hodDeptId : null),
             ];
         });
 
@@ -108,10 +124,18 @@ class StaffsController extends Controller
             return redirect()->route('parents.index');
         }
 
+        $user = auth()->user();
+        $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);
+        $hodDeptId = null;
+
+        if ($isRestrictedHOD) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+        }
+
         $role = Role::where('name', $roleName)->firstOrFail();
         
         $search = trim((string) $request->string('search'));
-        $departmentId = (string) $request->string('department_id');
+        $departmentId = $isRestrictedHOD ? (string) $hodDeptId : (string) $request->string('department_id');
 
         $query = Teacher::query()
             ->whereHas('user', function ($q) use ($roleName) {
@@ -132,7 +156,9 @@ class StaffsController extends Controller
                 'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
             ],
             'staffs' => $staffs,
-            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'departments' => Department::when($isRestrictedHOD, fn ($q) => $q->where('id', $hodDeptId))
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'filters' => [
                 'search' => $search,
                 'department_id' => $departmentId === '' ? 'all' : $departmentId,
@@ -147,6 +173,16 @@ class StaffsController extends Controller
         $status = (string) $request->string('status');
         $departmentId = (string) $request->string('department_id');
         $roleName = (string) $request->string('role');
+
+        $user = auth()->user();
+        $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);
+        $hodDeptId = null;
+
+        if ($isRestrictedHOD) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+            // Force department filter for HODs
+            $departmentId = (string) $hodDeptId;
+        }
 
         $query = Teacher::query()
             ->with(['department:id,name', 'user.roles'])
@@ -164,20 +200,27 @@ class StaffsController extends Controller
             ->paginate($request->integer('per_page', 20))
             ->through(fn ($teacher) => $this->transformStaffRow($teacher));
 
-        // Calculate detailed stats
+        // Calculate detailed stats - Scoped to department if HOD
+        $statsBase = Teacher::query();
+        if ($isRestrictedHOD && $hodDeptId) {
+            $statsBase->where('department_id', $hodDeptId);
+        }
+
         $stats = [
-            'total' => Teacher::count(),
-            'active' => Teacher::where('status', 'active')->count(),
-            'teaching' => $this->safeRoleCount(['teacher', 'hod', 'class_teacher']),
-            'admins' => $this->safeRoleCount(['school_admin', 'principal', 'deputy_principal']),
-            'non_teaching' => $this->safeRoleCount(['librarian', 'nurse', 'finance_officer', 'clerk', 'security', 'driver']),
-            'on_leave' => Teacher::where('status', 'on_leave')->count(),
-            'departments' => Department::count(),
+            'total' => (clone $statsBase)->count(),
+            'active' => (clone $statsBase)->where('status', 'active')->count(),
+            'teaching' => $this->safeRoleCount(['teacher', 'hod', 'class_teacher'], $isRestrictedHOD ? $hodDeptId : null),
+            'admins' => $this->safeRoleCount(['school_admin', 'principal', 'deputy_principal'], $isRestrictedHOD ? $hodDeptId : null),
+            'non_teaching' => $this->safeRoleCount(['librarian', 'nurse', 'finance_officer', 'clerk', 'security', 'driver'], $isRestrictedHOD ? $hodDeptId : null),
+            'on_leave' => (clone $statsBase)->where('status', 'on_leave')->count(),
+            'departments' => $isRestrictedHOD ? 1 : Department::count(),
         ];
 
         return Inertia::render('staffs/Index', [
             'teachers' => $teachers,
-            'departments' => Department::orderBy('name')->get(['id', 'name']),
+            'departments' => Department::when($isRestrictedHOD, fn ($q) => $q->where('id', $hodDeptId))
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'roles' => $this->roleService->getTemplates(),
             'availableClasses' => SchoolClass::active()
                 ->forCurrentYear()
@@ -289,6 +332,14 @@ class StaffsController extends Controller
 
     public function show(Teacher $teacher): Response
     {
+        $user = auth()->user();
+
+        // Scope for HODs
+        if ($user && $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+            abort_unless($teacher->department_id == $hodDeptId, 403, 'You do not have permission to view staff in another department.');
+        }
+
         $teacher->load([
             'user', 
             'department', 
@@ -398,6 +449,14 @@ class StaffsController extends Controller
 
     public function edit(Teacher $teacher): Response
     {
+        $user = auth()->user();
+
+        // Scope for HODs
+        if ($user && $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+            abort_unless($teacher->department_id == $hodDeptId, 403, 'You do not have permission to edit staff in another department.');
+        }
+
         $teacher->load('user.roles');
         return Inertia::render('staffs/Edit', [
             'teacher' => $teacher,
@@ -411,6 +470,13 @@ class StaffsController extends Controller
 
     public function update(Request $request, Teacher $teacher): RedirectResponse
     {
+        $user = auth()->user();
+
+        // Scope for HODs
+        if ($user && $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+            abort_unless($teacher->department_id == $hodDeptId, 403, 'You do not have permission to update staff in another department.');
+        }
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],

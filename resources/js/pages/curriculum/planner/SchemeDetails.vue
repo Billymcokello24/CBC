@@ -31,10 +31,8 @@ const props = defineProps({
 
 const isAddingEntry = ref(false);
 const isViewingEntry = ref(false);
-const isGeneratingLessons = ref(false);
 const selectedEntry = ref(null);
 const editingEntryId = ref(null);
-const currentGenerationStep = ref(1);
 
 // Feedback State
 const showFeedback = ref(false);
@@ -257,112 +255,87 @@ const getStatusColor = (status) => {
 <template>
     <Head :title="'Scheme Details - ' + scheme.title" />
 
-    <AppLayout>
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
-            <!-- Breadcrumbs & Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Link href="/curriculum/planner/schemes" class="hover:text-blue-600 transition-colors flex items-center gap-1">
-                            <ChevronLeft class="h-4 w-4" /> Academic Planner
-                        </Link>
-                        <span class="text-border">/</span>
-                        <span class="font-medium text-foreground tracking-tight">{{ scheme.title }}</span>
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 max-w-[1600px] mx-auto pb-32 p-6 md:p-8">
+            <!-- Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-0.5">
+                            <Link href="/curriculum/planner/schemes" class="hover:text-blue-600 transition-colors flex items-center gap-1 group">
+                                <ChevronLeft class="h-3 w-3 group-hover:-translate-x-0.5 transition-transform" /> Schemes
+                            </Link>
+                            <span class="opacity-30">/</span>
+                            <span class="text-foreground/80 tracking-widest truncate">{{ scheme.subject?.name }}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-foreground">{{ scheme.title }}</h1>
+                            <Badge :class="getStatusColor(scheme.status)" variant="outline" class="px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 shadow-sm shrink-0">
+                                {{ scheme.status }}
+                            </Badge>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ scheme.title }}</h1>
-                        <Badge :class="getStatusColor(scheme.status)" variant="outline" class="px-2.5 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                            {{ scheme.status }}
-                        </Badge>
-                    </div>
-                </div>
 
-                <div class="flex items-center gap-3">
-                    <input 
-                        type="file" 
-                        ref="fileInput" 
-                        class="hidden" 
-                        accept=".csv" 
-                        @change="handleFileUpload"
-                    />
-                    <a href="/curriculum/planner/schemes/template/download" class="flex items-center">
-                        <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted bg-background transition-all">
-                            <Download class="mr-2 h-4 w-4 opacity-70" /> 
-                            Template
+                    <div class="flex items-center gap-3">
+                        <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
+                        
+                        <div class="flex items-center bg-muted/20 p-1 rounded-2xl border border-border/40 backdrop-blur-sm">
+                            <a href="/curriculum/planner/schemes/template/download">
+                                <Button variant="ghost" size="sm" class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-background transition-all">
+                                    <Download class="mr-2.5 h-3.5 w-3.5 opacity-60" /> Template
+                                </Button>
+                            </a>
+                            <div class="w-px h-3 bg-border/40 mx-1"></div>
+                            <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-background transition-all">
+                                <FileText class="mr-2.5 h-3.5 w-3.5 opacity-60" /> Import
+                            </Button>
+                        </div>
+                        
+                        <Button @click="openAddModal()" class="h-11 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-600/20 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2">
+                            <Plus class="h-4 w-4" /> New Entry
                         </Button>
-                    </a>
-                    <Button @click="triggerImport" variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted bg-background transition-all" :disabled="importForm.processing">
-                        <FileText class="mr-2 h-4 w-4 opacity-70" /> 
-                        Import CSV
-                    </Button>
-                    <Button @click="openAddModal()" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all">
-                        <Plus class="mr-2 h-4 w-4" /> Add Lesson Entry
-                    </Button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Administrative Details Grid -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Learning Area</p>
-                        <h3 class="text-lg font-bold text-foreground leading-tight">{{ scheme.subject?.name }}</h3>
+            <!-- Dashboard Stats Summary -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div v-for="(stat, idx) in [
+                    { label: 'Lessons', value: scheme.entries?.length || 0, icon: BookOpen, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Duration', value: (scheme.total_weeks || 0) + ' Wks', icon: Calendar, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Intensity', value: (scheme.lessons_per_week || 0) + ' L/Wk', icon: Sparkles, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Grade', value: scheme.grade_level?.short_name || scheme.grade_level?.name || 'N/A', icon: GraduationCap, color: 'text-rose-600', bg: 'bg-rose-50' }
+                ]" :key="idx" class="bg-card/40 border border-border/40 p-4 rounded-2xl shadow-sm hover:shadow-md hover:border-border transition-all duration-300 group relative overflow-hidden">
+                    <div class="absolute -right-2 -top-2 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-500">
+                        <component :is="stat.icon" class="h-16 w-16 rotate-12" />
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                        <BookOpen class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Grade Level</p>
-                        <h3 class="text-lg font-bold text-foreground leading-tight">{{ scheme.grade_level?.name }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-                        <GraduationCap class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Term / Schedule</p>
-                        <h3 class="text-lg font-bold text-foreground leading-tight">{{ scheme.academic_term?.name }} ({{ scheme.total_weeks }} Weeks)</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                        <Calendar class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Lessons / Week</p>
-                        <h3 class="text-lg font-bold text-foreground leading-tight">{{ scheme.lessons_per_week }} Periods</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600">
-                        <Layers class="h-6 w-6" />
+                    <div class="flex items-center gap-3">
+                        <div :class="['p-2.5 rounded-xl transition-all group-hover:scale-105 duration-500', stat.bg]">
+                            <component :is="stat.icon" :class="['h-5 w-5', stat.color]" />
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 leading-none mb-1">{{ stat.label }}</p>
+                            <p class="text-xl font-black text-foreground tracking-tight leading-none">{{ stat.value }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Matrix Table -->
-            <div class="rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden">
-                <div class="p-6 border-b border-border/50 flex items-center justify-between bg-muted/10">
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
-                            <FileText class="h-5 w-5" />
+            <div class="bg-card border border-border shadow-2xl rounded-2xl overflow-hidden group/matrix transition-all duration-500">
+                <div class="px-8 py-6 border-b border-border/40 bg-muted/5 flex items-center justify-between group-hover/matrix:bg-muted/10 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                            <Layers class="h-5 w-5" />
                         </div>
                         <div>
-                            <h2 class="text-lg font-bold text-foreground">Teaching Matrix</h2>
-                            <p class="text-xs text-muted-foreground font-medium uppercase tracking-wider">Instructional Timeline & Strands</p>
+                            <h2 class="text-[11px] font-black text-foreground uppercase tracking-[0.2em]">Instructional Matrix</h2>
+                            <p class="text-[10px] text-muted-foreground font-bold tracking-tight opacity-60 italic">Operational Term Roadmap</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <div class="relative group">
-                            <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-blue-600 transition-colors" />
-                            <Input placeholder="Search matrix..." class="pl-10 h-10 w-64 bg-background border-border rounded-xl focus:bg-background transition-all" />
-                        </div>
-                        <Button variant="outline" class="h-10 border-border font-semibold px-4 rounded-xl whitespace-nowrap bg-background">
-                            <Filter class="mr-2 h-4 w-4 opacity-70" /> Filters
+                        <Button @click="openGenerationWizard()" class="h-10 px-5 rounded-xl bg-slate-900 hover:bg-black text-white font-black text-[10px] uppercase tracking-[0.15em] shadow-xl transition-all active:scale-95 flex items-center gap-2 border border-slate-800">
+                            <Sparkles class="h-4 w-4" /> Execute Automation
                         </Button>
                     </div>
                 </div>
@@ -381,77 +354,81 @@ const getStatusColor = (status) => {
                         </thead>
                         <tbody class="divide-y divide-border/30">
                             <tr v-for="entry in scheme.entries" :key="entry.id" class="hover:bg-muted/30 transition-colors group cursor-pointer" @click="viewDetails(entry)">
-                                <td class="px-6 py-5">
+                                <td class="px-6 py-4">
                                     <div class="flex flex-col">
-                                        <span class="text-sm font-bold text-foreground">Wk {{ entry.week_number }}</span>
-                                        <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Ls {{ entry.lesson_number }} • {{ entry.duration_minutes }}m</span>
-                                        <span v-if="entry.lesson_date" class="text-[10px] font-semibold text-blue-600 mt-1">{{ entry.lesson_date }}</span>
+                                        <span class="text-[11px] font-black text-foreground tracking-tight">Week {{ entry.week_number }}</span>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">Ls {{ entry.lesson_number }}</span>
+                                            <div class="h-1 w-1 rounded-full bg-border"></div>
+                                            <span class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">{{ entry.duration_minutes }}m</span>
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
-                                    <div class="flex flex-col gap-1.5">
-                                        <Badge variant="outline" class="w-fit text-[10px] bg-blue-50/50 text-blue-700 border-blue-100 rounded-lg py-0 px-2 font-bold uppercase tracking-wider">{{ entry.strand?.name }}</Badge>
-                                        <span class="text-xs font-medium text-muted-foreground line-clamp-1 uppercase tracking-tighter">{{ entry.strand?.name }}</span>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-1">
+                                        <Badge variant="outline" class="w-fit text-[8px] bg-blue-50/50 text-blue-700 border-blue-100 rounded-md py-0 px-2 font-black uppercase tracking-widest">{{ entry.strand?.name }}</Badge>
+                                        <span class="text-[10px] font-bold text-muted-foreground/80 line-clamp-1 truncate uppercase tracking-tighter">{{ entry.strand?.name }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
+                                <td class="px-6 py-4">
                                     <div class="flex flex-col gap-0.5">
-                                        <span class="text-sm font-bold text-foreground line-clamp-1">{{ entry.sub_strand?.name || entry.topic }}</span>
-                                        <span v-if="entry.sub_strand?.name" class="text-xs text-muted-foreground line-clamp-1">{{ entry.topic }}</span>
+                                        <span class="text-[12px] font-black text-foreground tracking-tight leading-tight line-clamp-2 italic underline underline-offset-4 decoration-blue-500/20">{{ entry.sub_strand?.name || entry.topic }}</span>
+                                        <span v-if="entry.sub_strand?.name" class="text-[10px] font-bold text-muted-foreground/60 leading-none mt-1">{{ entry.topic }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
-                                    <div class="space-y-2">
-                                        <div class="flex gap-2 items-start">
-                                            <div class="h-4 w-4 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-100">
-                                                <div class="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                                            </div>
-                                            <p class="text-xs text-foreground line-clamp-2 leading-relaxed font-medium">
+                                <td class="px-6 py-4">
+                                    <div class="space-y-3">
+                                        <div class="flex gap-2.5 items-start bg-emerald-50/20 p-2 rounded-xl border border-emerald-500/10">
+                                            <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+                                            <p class="text-[11px] text-foreground/80 line-clamp-2 leading-relaxed font-bold italic">
                                                 {{ entry.learning_outcomes }}
                                             </p>
                                         </div>
-                                        <div class="flex gap-2 items-start">
-                                            <div class="h-4 w-4 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5 border border-blue-100">
-                                                <div class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                                            </div>
-                                            <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed italic">
+                                        <div class="flex gap-2.5 items-start px-2 opacity-60">
+                                            <div class="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></div>
+                                            <p class="text-[10px] text-muted-foreground line-clamp-1 leading-relaxed font-bold tracking-tight">
                                                 {{ entry.learning_activities }}
                                             </p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
-                                    <div class="flex items-center gap-2">
-                                        <div class="p-1.5 bg-slate-50 border border-slate-100 rounded-lg text-slate-400">
-                                            <Layers class="h-3.5 w-3.5" />
-                                        </div>
-                                        <span class="text-xs text-muted-foreground line-clamp-1 font-medium italic">{{ entry.resources }}</span>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-2 bg-muted/20 w-fit px-2 py-1 rounded-lg border border-border/40">
+                                        <Layers class="h-3 w-3 text-slate-400" />
+                                        <span class="text-[10px] text-muted-foreground/80 font-bold truncate max-w-[120px]">{{ entry.resources }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5 text-right">
-                                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button @click.stop="openGenerationWizard(entry)" variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-100 transition-all">
-                                            <Sparkles class="h-4.5 w-4.5" />
-                                        </Button>
-                                        <Button @click.stop="viewDetails(entry)" variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 border border-transparent hover:border-indigo-100 transition-all">
-                                            <Eye class="h-4.5 w-4.5" />
-                                        </Button>
-                                        <Button @click.stop="openAddModal(entry)" variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-amber-50 hover:text-amber-600 border border-transparent hover:border-amber-100 transition-all">
-                                            <Edit2 class="h-4.5 w-4.5" />
-                                        </Button>
-                                        
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted transition-all" @click.stop><MoreHorizontal class="h-4.5 w-4.5" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border">
-                                                <DropdownMenuItem class="rounded-lg" @click="viewDetails(entry)"><Eye class="mr-2 h-4 w-4" /> View Full Details</DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" @click="openAddModal(entry)"><Edit2 class="mr-2 h-4 w-4" /> Edit Entry</DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" @click="openGenerationWizard(entry)"><Sparkles class="mr-2 h-4 w-4" /> Generate Daily Plans</DropdownMenuItem>
-                                                <DropdownMenuSeparator class="my-1 bg-border/50" />
-                                                <DropdownMenuItem class="text-rose-600 rounded-lg group" @click="deleteEntry(entry.id)"><Trash2 class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" /> Delete Entry</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                <td class="px-6 py-4 text-right w-px">
+                                    <div class="flex items-center justify-end gap-2 pr-2">
+                                        <div class="flex items-center bg-muted/10 px-1 py-0.5 rounded-lg border border-border/40 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                                            <Button @click.stop="openGenerationWizard(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-blue-600 hover:text-white transition-all scale-95 hover:scale-100">
+                                                <Sparkles class="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button @click.stop="viewDetails(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-slate-900 hover:text-white transition-all scale-95 hover:scale-100">
+                                                <Eye class="h-3.5 w-3.5" />
+                                            </Button>
+                                            <Button @click.stop="openAddModal(entry)" variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-amber-600 hover:text-white transition-all scale-95 hover:scale-100">
+                                                <Edit2 class="h-3.5 w-3.5" />
+                                            </Button>
+                                            
+                                            <div class="w-px h-3 bg-border/40 mx-1"></div>
+
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="ghost" size="icon" class="h-8 w-8 rounded-md hover:bg-rose-600 hover:text-white transition-all scale-95 hover:scale-100" @click.stop><MoreHorizontal class="h-3.5 w-3.5" /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" class="w-64 p-2 rounded-xl border border-border/40 shadow-2xl backdrop-blur-xl bg-card/95">
+                                                    <div class="px-3 py-2 mb-1 border-b border-border/20">
+                                                        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Operations</p>
+                                                    </div>
+                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider" @click="viewDetails(entry)"><Eye class="mr-3 h-3.5 w-3.5 opacity-60" /> Review Overview</DropdownMenuItem>
+                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider" @click="openAddModal(entry)"><Edit2 class="mr-3 h-3.5 w-3.5 opacity-60" /> Adjust Content</DropdownMenuItem>
+                                                    <DropdownMenuItem class="rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider text-blue-600 bg-blue-50/30 hover:bg-blue-600 hover:text-white" @click="openGenerationWizard(entry)"><Sparkles class="mr-3 h-3.5 w-3.5" /> Auto-Generate Lessons</DropdownMenuItem>
+                                                    <DropdownMenuSeparator class="my-1.5 bg-border/10" />
+                                                    <DropdownMenuItem class="text-rose-600 rounded-lg px-3 py-2 font-bold text-[11px] uppercase tracking-wider hover:bg-rose-600 hover:text-white" @click="deleteEntry(entry.id)"><Trash2 class="mr-3 h-3.5 w-3.5" /> Remove Forever</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -480,19 +457,20 @@ const getStatusColor = (status) => {
 
     <!-- Add/Edit Entry Modal -->
     <Dialog v-model:open="isAddingEntry">
-        <DialogContent class="sm:max-w-[850px] max-h-[95vh] overflow-y-auto rounded-[2rem] border-border bg-card shadow-2xl p-0">
-            <DialogHeader class="p-8 pb-4 bg-muted/10 border-b border-border/50">
-                <div class="flex items-center gap-4">
-                    <div class="h-14 w-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
-                        <BookOpen class="h-7 w-7" />
+        <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-2xl border-border bg-card shadow-2xl p-0">
+            <DialogHeader class="p-10 pb-8 bg-muted/5 border-b border-border/30 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
+                <div class="flex items-center gap-8 relative z-10">
+                    <div class="h-16 w-16 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-2xl shadow-blue-600/30 animate-in zoom-in duration-500">
+                        <BookOpen class="h-8 w-8" />
                     </div>
                     <div>
-                        <DialogTitle class="text-2xl font-bold tracking-tight text-foreground">
-                            {{ editingEntryId ? 'Edit Lesson Entry' : 'New Lesson Entry' }}
+                        <DialogTitle class="text-3xl font-black tracking-tight text-foreground">
+                            {{ editingEntryId ? 'Refine Lesson Entry' : 'Create Lesson Entry' }}
                         </DialogTitle>
-                        <DialogDescription class="text-sm text-muted-foreground font-medium italic mt-0.5">
-                            Provide comprehensive details for this instructional period.
-                        </DialogDescription>
+                        <p class="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+                            Instructional Matrix Configuration
+                        </p>
                     </div>
                 </div>
             </DialogHeader>
@@ -614,11 +592,11 @@ const getStatusColor = (status) => {
                     </div>
                 </Tabs>
 
-                <DialogFooter class="p-8 bg-muted/20 rounded-b-[2rem] border-t border-border/50 gap-3">
-                    <Button type="button" variant="ghost" @click="isAddingEntry = false" class="rounded-xl h-11 px-6 font-bold text-muted-foreground hover:bg-muted transition-all">Cancel</Button>
-                    <Button type="submit" :disabled="entryForm.processing" class="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-10 shadow-lg shadow-blue-600/20 font-bold h-11 transition-all">
-                        <Save v-if="!entryForm.processing" class="mr-2 h-4 w-4" />
-                        {{ entryForm.processing ? 'Saving Changes...' : (editingEntryId ? 'Update Matrix Entry' : 'Add to Matrix') }}
+                <DialogFooter class="p-10 bg-muted/5 border-t border-border/30 flex justify-between sm:justify-between items-center bg-muted/10">
+                    <Button type="button" variant="ghost" @click="isAddingEntry = false" class="h-12 px-8 rounded-xl font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 hover:text-foreground transition-all">Discard Change</Button>
+                    <Button type="submit" :disabled="entryForm.processing" class="h-12 px-10 rounded-xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/10 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center gap-2">
+                        <Save v-if="!entryForm.processing" class="h-4 w-4" /> 
+                        {{ entryForm.processing ? 'Syncing...' : (editingEntryId ? 'Commit Update' : 'Append Entry') }}
                     </Button>
                 </DialogFooter>
             </form>
@@ -627,7 +605,7 @@ const getStatusColor = (status) => {
 
             <!-- View Details Modal -->
             <Dialog v-model:open="isViewingEntry">
-                <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-[2.5rem] border-border bg-card shadow-2xl p-0">
+                <DialogContent class="sm:max-w-[850px] max-h-[92vh] overflow-y-auto rounded-2xl border-border bg-card shadow-2xl p-0">
                     <div class="p-8 space-y-8">
                         <DialogHeader>
                             <div class="flex items-start justify-between gap-6">
@@ -781,7 +759,7 @@ const getStatusColor = (status) => {
 
             <!-- Generate Lessons Wizard -->
             <Dialog v-model:open="isGeneratingLessons">
-                <DialogContent class="sm:max-w-[750px] rounded-[2.5rem] border-border bg-card shadow-2xl p-0 overflow-hidden">
+                <DialogContent class="sm:max-w-[750px] rounded-2xl border-border bg-card shadow-2xl p-0 overflow-hidden">
                     <div class="bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-700 p-10 text-white relative">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none"></div>
                         <div class="relative z-10 flex justify-between items-start">
@@ -938,24 +916,24 @@ const getStatusColor = (status) => {
             </Dialog>
     <!-- Feedback Modal -->
     <Dialog v-model:open="showFeedback">
-        <DialogContent class="sm:max-w-[400px] rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden">
-            <div class="p-8 text-center space-y-6">
+        <DialogContent class="sm:max-w-[400px] rounded-2xl border-none shadow-2xl p-0 overflow-hidden">
+            <div class="p-10 text-center space-y-8">
                 <div :class="[
-                    'h-20 w-20 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-lg transition-transform duration-500 hover:scale-110',
-                    feedbackType === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-rose-500/20'
+                    'h-24 w-24 rounded-2xl mx-auto flex items-center justify-center shadow-2xl transition-transform duration-500 hover:scale-110',
+                    feedbackType === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/30' : 'bg-rose-500 text-white shadow-rose-500/30'
                 ]">
-                    <CheckCircle2 v-if="feedbackType === 'success'" class="h-10 w-10 animate-in zoom-in duration-300" />
-                    <AlertCircle v-else class="h-10 w-10 animate-in zoom-in duration-300" />
+                    <CheckCircle2 v-if="feedbackType === 'success'" class="h-12 w-12 animate-in zoom-in duration-500" />
+                    <AlertCircle v-else class="h-12 w-12 animate-in zoom-in duration-500" />
                 </div>
                 
-                <div class="space-y-2">
+                <div class="space-y-3">
                     <h3 :class="[
-                        'text-2xl font-bold tracking-tight',
+                        'text-3xl font-black tracking-tight uppercase',
                         feedbackType === 'success' ? 'text-emerald-600' : 'text-rose-600'
                     ]">
-                        {{ feedbackType === 'success' ? 'Action Successful' : 'Action Failed' }}
+                        {{ feedbackType === 'success' ? 'Sync Success' : 'Engine Error' }}
                     </h3>
-                    <p class="text-sm font-medium text-muted-foreground leading-relaxed px-4">
+                    <p class="text-xs font-bold text-muted-foreground leading-relaxed px-4 uppercase tracking-wider opacity-70">
                         {{ feedbackMessage }}
                     </p>
                 </div>
@@ -963,7 +941,7 @@ const getStatusColor = (status) => {
                 <Button 
                     @click="showFeedback = false" 
                     :class="[
-                        'w-full h-12 rounded-xl font-bold text-white shadow-md transition-all active:scale-95',
+                        'w-full h-12 rounded-xl font-black text-[10px] uppercase tracking-widest text-white shadow-xl transition-all active:scale-95',
                         feedbackType === 'success' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'
                     ]"
                 >

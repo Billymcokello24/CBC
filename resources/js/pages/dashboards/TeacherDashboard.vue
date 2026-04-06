@@ -12,12 +12,19 @@ import {
     TrendingUp,
     CheckCircle,
     AlertCircle,
-    ArrowRight
+    ArrowRight,
+    LayoutDashboard,
+    UserCircle,
+    BarChart3,
+    BookMarked,
+    ShieldCheck
 } from 'lucide-vue-next';
 import { Link } from '@inertiajs/vue3';
 
 interface Props {
     teacher: any;
+    isClassTeacher: boolean;
+    isHod: boolean;
     myClasses: any[];
     mySubjects: any[];
     totalStudents: number;
@@ -26,6 +33,22 @@ interface Props {
     attendanceStats: any[];
     syllabusProgress: any[];
     pendingTasks: any[];
+    classManagement?: {
+        class: any;
+        students: any[];
+        total_students: number;
+        boys_count: number;
+        girls_count: number;
+        attendance_rate: number;
+        recent_assessments: any[];
+    };
+    departmentData?: {
+        department: any;
+        teachers: any[];
+        subjects: any[];
+        total_students: number;
+        recent_assessments: any[];
+    };
     academicYear: string;
     notificationsCount: number;
 }
@@ -68,8 +91,76 @@ const stats = [
                     :title="stat.title"
                     :value="stat.value"
                     :icon="stat.icon"
-                    :color="stat.color"
                 />
+            </div>
+
+            <!-- Role-Specific Sections -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="isClassTeacher || isHod">
+                <!-- Class Teacher Quick View -->
+                <div v-if="isClassTeacher && classManagement" class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-3xl p-6 text-white shadow-xl shadow-emerald-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                                <UserCircle class="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Class Management</h3>
+                                <p class="text-emerald-100 text-xs">{{ classManagement.class?.name }} ({{ classManagement.total_students }} Students)</p>
+                            </div>
+                        </div>
+                        <Link href="/classes" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center gap-2">
+                            Manage Class <ArrowRight class="w-3 h-3" />
+                        </Link>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Attendance</p>
+                            <p class="text-xl font-black">{{ classManagement.attendance_rate }}%</p>
+                        </div>
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Boys</p>
+                            <p class="text-xl font-black">{{ classManagement.boys_count }}</p>
+                        </div>
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Girls</p>
+                            <p class="text-xl font-black">{{ classManagement.girls_count }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HOD Quick View -->
+                <div v-if="isHod && departmentData" class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white shadow-xl shadow-blue-200">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                                <LayoutDashboard class="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Department Overview</h3>
+                                <p class="text-blue-100 text-xs">{{ departmentData.department?.name }}</p>
+                            </div>
+                        </div>
+                        <Link href="/curriculum" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center gap-2">
+                            Full Analytics <ArrowRight class="w-3 h-3" />
+                        </Link>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Teachers</p>
+                            <p class="text-xl font-black">{{ departmentData.teachers?.length || 0 }}</p>
+                        </div>
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Subjects</p>
+                            <p class="text-xl font-black">{{ departmentData.subjects?.length || 0 }}</p>
+                        </div>
+                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Total Students</p>
+                            <p class="text-xl font-black">{{ departmentData.total_students }}</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

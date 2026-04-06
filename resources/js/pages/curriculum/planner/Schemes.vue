@@ -1,26 +1,36 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { 
-    LayoutDashboard, Plus, Search, Filter, 
-    MoreHorizontal, Eye, Edit2, Trash2, 
-    Calendar, User, BookOpen, CheckCircle2, 
-    Clock, AlertCircle, FileText, Download, ChevronRight, X, GraduationCap,
-    TrendingUp, Users, ShieldAlert, CheckSquare, Square
+import {
+    BookOpen,
+    Calendar,
+    ChevronDown,
+    ChevronRight,
+    Edit,
+    FileText,
+    Filter,
+    GraduationCap,
+    MoreHorizontal,
+    Plus,
+    Search,
+    Trash2,
+    CheckCircle2,
+    Clock,
+    Sparkles,
+    LayoutGrid,
+    ListFilter
 } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuTrigger,
     DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     Dialog,
     DialogContent,
@@ -29,339 +39,308 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import type { BreadcrumbItem } from '@/types';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
-const props = defineProps<{
-    schemes: any[];
-    subjects: any[];
-    grades: any[];
-    terms: any[];
-}>();
+interface Scheme {
+    id: number;
+    title: string;
+    status: 'draft' | 'pending' | 'approved';
+    total_weeks: number;
+    lessons_per_week: number;
+    subject?: { name: string; id: number };
+    grade_level?: { name: string; short_name: string; id: number };
+    academic_term?: { name: string; id: number };
+    prepared_by_user?: { name: string };
+    created_at: string;
+}
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
+interface Props {
+    schemes: Scheme[];
+    subjects: Array<{ id: number; name: string }>;
+    grades: Array<{ id: number; name: string }>;
+    terms: Array<{ id: number; name: string }>;
+}
+
+const props = defineProps<Props>();
+
+const breadcrumbs = [
+    { title: 'Curriculum', href: '#' },
+    { title: 'Planner', href: '#' },
+    { title: 'Schemes of Work', href: '/curriculum/planner/schemes' },
 ];
 
-// Filtering State
+// Filtering
 const searchQuery = ref('');
-const showFilters = ref(true);
-const selectedSubjectId = ref('all');
-const selectedGradeId = ref('all');
-const selectedStatus = ref('all');
+const selectedSubject = ref('all');
+const selectedGrade = ref('all');
+const selectedTerm = ref('all');
+const showFilters = ref(false);
 
 const filteredSchemes = computed(() => {
     return props.schemes.filter(scheme => {
         const matchesSearch = scheme.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                            scheme.subject?.name?.toLowerCase().includes(searchQuery.value.toLowerCase());
-        const matchesSubject = selectedSubjectId.value === 'all' || scheme.subject_id == selectedSubjectId.value;
-        const matchesGrade = selectedGradeId.value === 'all' || scheme.grade_level_id == selectedGradeId.value;
-        const matchesStatus = selectedStatus.value === 'all' || scheme.status === selectedStatus.value;
+                             scheme.subject?.name.toLowerCase().includes(searchQuery.value.toLowerCase());
+        const matchesSubject = selectedSubject.value === 'all' || scheme.subject?.id === Number(selectedSubject.value);
+        const matchesGrade = selectedGrade.value === 'all' || scheme.grade_level?.id === Number(selectedGrade.value);
+        const matchesTerm = selectedTerm.value === 'all' || scheme.academic_term?.id === Number(selectedTerm.value);
         
-        return matchesSearch && matchesSubject && matchesGrade && matchesStatus;
+        return matchesSearch && matchesSubject && matchesGrade && matchesTerm;
     });
 });
 
-const stats = computed(() => ({
-    total: props.schemes.length,
-    approved: props.schemes.filter(s => s.status === 'approved').length,
-    pending: props.schemes.filter(s => s.status === 'pending').length,
-    drafts: props.schemes.filter(s => s.status === 'draft').length,
-}));
-
-// Modals State
-const showModal = ref(false);
-const editingScheme = ref<any>(null);
-
-const form = useForm({
-    title: '',
-    description: '',
+// Modal Logic
+const isAddingScheme = ref(false);
+const schemeForm = useForm({
     subject_id: '',
     grade_level_id: '',
     academic_term_id: '',
+    title: '',
+    description: '',
     total_weeks: 13,
     lessons_per_week: 5,
 });
 
-// Feedback Modal State
-const showFeedback = ref(false);
-const feedbackType = ref<'success' | 'error' | 'info'>('success');
-const feedbackMessage = ref('');
-
-const openFeedback = (type: 'success' | 'error' | 'info', message: string) => {
-    feedbackType.value = type;
-    feedbackMessage.value = message;
-    showFeedback.value = true;
-};
-
-const openModal = (scheme: any = null) => {
-    editingScheme.value = scheme;
-    if (scheme) {
-        form.title = scheme.title;
-        form.description = scheme.description;
-        form.subject_id = scheme.subject_id;
-        form.grade_level_id = scheme.grade_level_id;
-        form.academic_term_id = scheme.academic_term_id;
-        form.total_weeks = scheme.total_weeks;
-        form.lessons_per_week = scheme.lessons_per_week;
-    } else {
-        form.reset();
-        if (props.terms.length > 0) form.academic_term_id = props.terms[0].id;
-    }
-    showModal.value = true;
-};
-
-const submit = () => {
-    if (editingScheme.value) {
-        form.put(route('curriculum.planner.schemes.update', editingScheme.value.id), {
-            onSuccess: () => {
-                showModal.value = false;
-                editingScheme.value = null;
-            },
-        });
-    } else {
-        form.post(route('curriculum.planner.schemes.store'), {
-            onSuccess: () => {
-                showModal.value = false;
-            },
-        });
-    }
-};
-
-const submitForReview = (scheme: any) => {
-    useForm({}).post(route('curriculum.planner.schemes.submit', scheme.id), {
-        onSuccess: () => openFeedback('success', 'Scheme of work submitted for review.')
+const submitScheme = () => {
+    schemeForm.post('/curriculum/planner/schemes', {
+        onSuccess: () => {
+            isAddingScheme.value = false;
+            schemeForm.reset();
+        }
     });
 };
 
-const approveScheme = (scheme: any) => {
-    useForm({}).post(route('curriculum.planner.schemes.approve', scheme.id), {
-        onSuccess: () => openFeedback('success', 'Scheme of work approved successfully.')
-    });
-};
-
-const rejectScheme = (scheme: any) => {
-    const feedback = prompt('Provide feedback for revision (optional):');
-    if (feedback !== null) {
-        useForm({ feedback }).post(route('curriculum.planner.schemes.reject', scheme.id), {
-            onSuccess: () => openFeedback('info', 'Scheme returned for revision.')
-        });
+const deleteScheme = (id: number) => {
+    if (confirm('Are you sure you want to delete this scheme?')) {
+        router.delete(`/curriculum/planner/schemes/${id}`);
     }
 };
 
-const deleteScheme = (scheme: any) => {
-    if (confirm('Are you sure you want to delete this plan?')) {
-        useForm({}).delete(route('curriculum.planner.schemes.destroy', scheme.id), {
-            onSuccess: () => openFeedback('success', 'Scheme removed successfully.')
-        });
-    }
-};
-
-const getStatusColor = (status: string) => {
+const getStatusVariant = (status: string) => {
     switch (status) {
         case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
         case 'pending': return 'bg-amber-50 text-amber-600 border-amber-100';
-        case 'draft': return 'bg-slate-50 text-slate-600 border-slate-100';
-        default: return 'bg-slate-50 text-slate-600 border-slate-100';
+        default: return 'bg-slate-100 text-slate-600 border-slate-200';
+    }
+};
+
+const getStatusIcon = (status: string) => {
+    switch (status) {
+        case 'approved': return CheckCircle2;
+        case 'pending': return Clock;
+        default: return FileText;
     }
 };
 </script>
 
 <template>
-    <Head title="Scheme of Work Management" />
+    <Head title="Schemes of Work" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
+        <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
             <!-- Page Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-foreground">Scheme of Work</h1>
-                    <p class="text-[15px] text-muted-foreground">
-                        Plan your termly teaching schedule and track approval status.
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="space-y-1.5">
+                    <h1 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                        <div class="h-10 w-10 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                            <LayoutGrid class="h-6 w-6" />
+                        </div>
+                        Curriculum Planner
+                    </h1>
+                    <p class="text-[15px] text-muted-foreground font-medium italic">
+                        Master instructional scheduling and matrix development for the current academic cycle.
                     </p>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted">
-                        <Download class="mr-2 h-4 w-4 opacity-70" />
-                        Export
+                <div class="flex items-center gap-3 bg-muted/20 p-1.5 rounded-[2rem] border border-border/40 backdrop-blur-sm">
+                    <Button variant="ghost" class="h-10 px-5 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-background transition-all" @click="showFilters = !showFilters">
+                        <Filter class="mr-2 h-4 w-4 opacity-70" />
+                        {{ showFilters ? 'Hide Engine' : 'Filter Logic' }}
                     </Button>
                     <Button
-                        @click="openModal()"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
+                        @click="isAddingScheme = true"
+                        class="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-6 h-10 text-xs font-black uppercase tracking-[0.15em] text-white shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Create Plan
+                        New Scheme
                     </Button>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Total Plans</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.total.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                        <BookOpen class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Approved</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.approved.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                         <CheckCircle2 class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Waiting Review</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.pending.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                        <Clock class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Drafts</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.drafts.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600">
-                        <FileText class="h-6 w-6" />
+            <!-- Dashboard Stats Preview -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div v-for="(stat, idx) in [
+                    { label: 'Total active', count: filteredSchemes.length, icon: LayoutGrid, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Pending review', count: filteredSchemes.filter(s => s.status === 'pending').length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Operational', count: filteredSchemes.filter(s => s.status === 'approved').length, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Avg Intensity', count: '5 L/Wk', icon: Sparkles, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                ]" :key="idx" class="bg-card/40 border border-border/40 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 group">
+                    <div class="flex items-center gap-4">
+                        <div :class="['h-12 w-12 rounded-2xl flex items-center justify-center transition-all group-hover:scale-110 duration-500', stat.bg]">
+                            <component :is="stat.icon" :class="['h-6 w-6', stat.color]" />
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 leading-none mb-1.5">{{ stat.label }}</p>
+                            <h3 class="text-2xl font-black text-foreground tracking-tight leading-none">{{ stat.count }}</h3>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Table Card -->
-            <div class="rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden">
+            <div class="rounded-[2.5rem] border border-border bg-card shadow-2xl dark:border-white/5 overflow-hidden transition-all duration-500">
                 <!-- Toolbar -->
-                <div class="p-6 border-b border-border/50 space-y-4">
-                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                        <div class="relative w-full md:max-w-md">
-                            <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input v-model="searchQuery" placeholder="Search by plan title or subject..." class="pl-10 h-11 bg-muted/50 border-border rounded-xl focus:bg-background transition-all" />
+                <div class="p-8 border-b border-border/50 space-y-6 bg-muted/5">
+                    <div class="flex flex-col md:flex-row gap-6 items-center justify-between">
+                        <div class="relative w-full md:max-w-xl group">
+                            <Search class="absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600" />
+                            <Input v-model="searchQuery" placeholder="Search operational matrices by title or subject..." class="pl-11 h-12 bg-background border-border/60 rounded-2xl focus:ring-4 focus:ring-blue-600/5 transition-all text-sm font-medium shadow-sm" />
                         </div>
                         
-                        <div class="flex items-center gap-2 w-full md:w-auto">
-                            <Button variant="outline" class="h-11 border-border font-semibold px-4 rounded-xl whitespace-nowrap bg-background" @click="showFilters = !showFilters">
-                                <Filter class="mr-2 h-4 w-4 opacity-70" /> {{ showFilters ? 'Hide Filters' : 'More Filters' }}
-                            </Button>
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="outline" class="h-12 px-6 rounded-2xl border-border font-bold text-[10px] uppercase tracking-widest bg-background hover:bg-muted/50 shadow-sm">
+                                        <ListFilter class="mr-2.5 h-4 w-4 opacity-70" /> Batch Actions <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-56 p-2 rounded-2xl border border-border shadow-2xl">
+                                    <DropdownMenuItem class="rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider"><FileText class="mr-3 h-4 w-4 text-blue-500" /> Export Selected</DropdownMenuItem>
+                                    <DropdownMenuSeparator class="my-1.5 bg-border/20" />
+                                    <DropdownMenuItem class="text-rose-500 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider"><Trash2 class="mr-3 h-4 w-4" /> Bulk Archive</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
 
-                    <!-- Filters Drawer -->
-                    <div v-if="showFilters" class="grid gap-4 pt-4 md:grid-cols-2 lg:grid-cols-4 animate-in slide-in-from-top-2 duration-200">
-                        <select v-model="selectedStatus" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all border">
-                            <option value="all">All Statuses</option>
-                            <option value="draft">Draft</option>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                        </select>
-                        <select v-model="selectedSubjectId" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all border">
-                            <option value="all">All Subjects</option>
-                            <option v-for="subject in subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option>
-                        </select>
-                        <select v-model="selectedGradeId" class="h-11 w-full rounded-xl border-border bg-muted/30 px-4 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 outline-none appearance-none cursor-pointer hover:bg-muted/50 transition-all border">
-                            <option value="all">All Grades</option>
-                            <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">{{ grade.name }}</option>
-                        </select>
+                    <!-- Filters Engine -->
+                    <div v-if="showFilters" class="grid gap-4 pt-2 md:grid-cols-3 animate-in slide-in-from-top-4 duration-300">
+                        <div class="space-y-2">
+                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Subject Discipline</Label>
+                             <select v-model="selectedSubject" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                                <option value="all">Global Disciplines</option>
+                                <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
+                             </select>
+                        </div>
+                        <div class="space-y-2">
+                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Grade Context</Label>
+                             <select v-model="selectedGrade" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                                <option value="all">All Placement Levels</option>
+                                <option v-for="grade in grades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+                             </select>
+                        </div>
+                        <div class="space-y-2">
+                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Academic Term</Label>
+                             <select v-model="selectedTerm" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                                <option value="all">Full Academic Cycle</option>
+                                <option v-for="term in terms" :key="term.id" :value="term.id">{{ term.name }}</option>
+                             </select>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Main Table -->
+                <!-- Main Matrix Table -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-muted/30 text-muted-foreground border-b border-border/50">
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Plan Profile</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Term / Schedule</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Facilitator</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-right">Actions</th>
+                            <tr class="bg-muted/10 text-muted-foreground border-b border-border/40">
+                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Matrix Title</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Context / Term</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Intensity</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Status</th>
+                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-right">Operations</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-border/30">
+                        <tbody class="divide-y divide-border/20">
                             <tr 
                                 v-for="scheme in filteredSchemes" 
                                 :key="scheme.id" 
-                                class="hover:bg-muted/30 transition-colors group cursor-pointer"
+                                class="hover:bg-muted/20 transition-all group cursor-pointer relative"
                                 @click="router.visit(`/curriculum/planner/schemes/${scheme.id}`)"
                             >
-                                <td class="px-6 py-4 text-sm">
+                                <td class="px-8 py-6">
+                                    <div class="flex items-center gap-5">
+                                        <div class="h-12 w-12 flex-shrink-0 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30">
+                                            <BookOpen class="h-6 w-6" />
+                                        </div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <span class="text-[15px] font-black text-foreground tracking-tight group-hover:text-blue-600 transition-colors">{{ scheme.title }}</span>
+                                            <div class="flex items-center gap-2">
+                                                <Badge variant="outline" class="text-[8px] font-black bg-muted/50 rounded-md py-0 px-2 uppercase tracking-widest border-border/50">{{ scheme.subject?.name }}</Badge>
+                                                <span class="text-[10px] text-muted-foreground font-bold italic opacity-60">Prepared by {{ scheme.prepared_by_user?.name || 'Academic Dept' }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-6">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center gap-2 text-[13px] font-bold text-foreground">
+                                            <GraduationCap class="h-3.5 w-3.5 text-blue-500/70" />
+                                            {{ scheme.grade_level?.name }}
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 ml-0.5">
+                                            <Calendar class="h-3 w-3" />
+                                            {{ scheme.academic_term?.name || 'TBD' }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-6">
                                     <div class="flex items-center gap-4">
-                                        <div class="h-10 w-10 flex-shrink-0 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center font-bold text-blue-600 text-xs shadow-sm group-hover:border-blue-400 transition-all">
-                                             {{ scheme.subject?.name?.[0] }}
-                                        </div>
                                         <div class="flex flex-col">
-                                            <span class="font-bold text-foreground">{{ scheme.title }}</span>
-                                            <span class="text-xs text-muted-foreground font-medium uppercase tracking-wider">{{ scheme.subject?.name }} • {{ scheme.grade_level?.name }}</span>
+                                            <span class="text-[14px] font-black text-foreground tabular-nums">{{ scheme.total_weeks }} Weeks</span>
+                                            <span class="text-[10px] text-muted-foreground font-bold tracking-tight uppercase opacity-60">{{ scheme.lessons_per_week }} Lessons/Wk</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-sm font-medium">
-                                    <div class="flex flex-col">
-                                        <span class="text-foreground">{{ scheme.academic_term?.name || 'Current Term' }}</span>
-                                        <span class="text-[10px] text-muted-foreground uppercase font-semibold">{{ scheme.total_weeks }} Weeks • {{ scheme.lessons_per_week }} L/Wk</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-muted-foreground font-medium">
-                                    <div class="flex items-center gap-2">
-                                        <div class="h-8 w-8 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                                            <User class="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <span>{{ scheme.prepared_by?.name || 'Assigned Teacher' }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                     <Badge variant="outline" class="rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider" :class="getStatusColor(scheme.status)">
+                                <td class="px-8 py-6">
+                                     <Badge variant="outline" :class="[getStatusVariant(scheme.status), 'rounded-xl px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border-2 shadow-sm flex items-center gap-2 w-fit transform transition-all group-hover:scale-105']">
+                                         <component :is="getStatusIcon(scheme.status)" class="h-3.5 w-3.5" />
                                          {{ scheme.status }}
                                      </Badge>
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Link :href="`/curriculum/planner/schemes/${scheme.id}`" class="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all text-muted-foreground border border-transparent hover:border-blue-100 shadow-none" @click.stop><Eye class="h-4.5 w-4.5" /></Link>
-                                        <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-amber-50 hover:text-amber-600 border border-transparent hover:border-amber-100 transition-all" @click.stop="openModal(scheme)"><Edit2 class="h-4.5 w-4.5" /></Button>
+                                <td class="px-8 py-6 text-right">
+                                    <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
+                                        <Link :href="`/curriculum/planner/schemes/${scheme.id}`" class="h-10 w-10 flex items-center justify-center rounded-2xl bg-slate-900 text-white hover:bg-black transition-all shadow-lg active:scale-95"><ChevronRight class="h-5 w-5" /></Link>
                                         
-                                        <DropdownMenu>
+                                        <DropdownMenu @click.stop>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted transition-all" @click.stop><MoreHorizontal class="h-4.5 w-4.5" /></Button>
+                                                <Button variant="ghost" size="icon" class="h-10 w-10 rounded-2xl hover:bg-muted font-black border border-border/20 transition-all"><MoreHorizontal class="h-5 w-5" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border">
-                                                <DropdownMenuItem as-child class="rounded-lg"><Link :href="`/curriculum/planner/schemes/${scheme.id}`"><Eye class="mr-2 h-4 w-4" /> View Details</Link></DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-lg" @click="openModal(scheme)"><Edit2 class="mr-2 h-4 w-4" /> Edit Plan</DropdownMenuItem>
-                                                
-                                                <template v-if="scheme.status === 'draft'">
-                                                    <DropdownMenuItem @click="submitForReview(scheme)" class="rounded-lg text-blue-600">
-                                                        <CheckCircle2 class="mr-2 h-4 w-4" /> Submit to HOD
-                                                    </DropdownMenuItem>
-                                                </template>
-
-                                                <template v-if="scheme.status === 'pending'">
-                                                    <DropdownMenuItem @click="approveScheme(scheme)" class="rounded-lg text-emerald-600 font-bold">
-                                                        <CheckCircle2 class="mr-2 h-4 w-4" /> Approve Plan
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem @click="rejectScheme(scheme)" class="rounded-lg text-red-600 font-bold">
-                                                        <AlertCircle class="mr-2 h-4 w-4" /> Reject Plan
-                                                    </DropdownMenuItem>
-                                                </template>
-                                                
-                                                <DropdownMenuSeparator class="my-1 bg-border/50" />
-                                                <DropdownMenuItem class="text-rose-600 rounded-lg group" @click="deleteScheme(scheme)"><Trash2 class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" /> Delete Plan</DropdownMenuItem>
+                                            <DropdownMenuContent align="end" class="w-64 p-2 rounded-2xl border border-border shadow-2xl backdrop-blur-xl bg-card/95">
+                                                <div class="px-3 py-2.5 mb-1 border-b border-border/10">
+                                                    <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Operations Suite</p>
+                                                </div>
+                                                <DropdownMenuItem as-child class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group">
+                                                    <Link :href="`/curriculum/planner/schemes/${scheme.id}`">
+                                                        <FileText class="mr-3 h-4 w-4 opacity-60 transition-colors group-hover:text-blue-600" /> Instructional Matrix
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group">
+                                                    <Edit class="mr-3 h-4 w-4 opacity-60 transition-colors group-hover:text-amber-600" /> Adjust Parameters
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator class="my-1.5 bg-border/5" />
+                                                <DropdownMenuItem class="text-rose-600 rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider hover:bg-rose-600 hover:text-white transition-colors" @click="deleteScheme(scheme.id)">
+                                                    <Trash2 class="mr-3 h-4 w-4" /> Purge Matrix
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="filteredSchemes.length === 0">
-                                <td colspan="5" class="px-6 py-24 text-center text-muted-foreground italic font-medium">
-                                    No teaching plans found matching your criteria.
+                                <td colspan="5" class="px-8 py-32 text-center text-muted-foreground bg-muted/5">
+                                    <div class="flex flex-col items-center gap-6 max-w-sm mx-auto">
+                                        <div class="h-24 w-24 rounded-[2.5rem] bg-muted flex items-center justify-center text-muted-foreground/30 border border-border/50 shadow-inner">
+                                            <LayoutGrid class="h-12 w-12" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <h3 class="text-xl font-black text-foreground tracking-tight">Zero Matrices Found</h3>
+                                            <p class="text-sm font-medium leading-relaxed italic">No schemes of work match your current selection engine. Adjust filters or initialize a new sequence.</p>
+                                        </div>
+                                        <Button @click="isAddingScheme = true" class="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-12 px-8 font-black uppercase tracking-[0.15em] shadow-xl shadow-blue-600/20 active:scale-95 transition-all mt-4">
+                                            <Plus class="mr-2 h-4 w-4" /> Create Matrix
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -370,119 +349,106 @@ const getStatusColor = (status: string) => {
             </div>
         </div>
 
-        <!-- Modal -->
-        <Dialog v-model:open="showModal">
-            <DialogContent class="sm:max-w-[500px] rounded-[2rem] border-border bg-background shadow-2xl p-0 overflow-hidden">
-                <DialogHeader class="p-8 pb-4">
-                    <DialogTitle class="text-2xl font-bold tracking-tight">{{ editingScheme ? 'Edit Scheme' : 'New Scheme of Work' }}</DialogTitle>
-                    <DialogDescription class="text-sm text-muted-foreground italic">
-                        {{ editingScheme ? 'Update teaching plan details.' : 'Define the framework for your termly teaching.' }}
-                    </DialogDescription>
-                </DialogHeader>
-                <form @submit.prevent="submit" class="grid gap-6 p-8 pt-4">
-                    <div class="grid gap-2">
-                        <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Plan Title</Label>
-                        <Input v-model="form.title" placeholder="e.g. Mathematics - Term 1 Plan" class="rounded-xl border-border bg-muted/30 italic text-sm h-11 focus:bg-background transition-all" required />
+        <!-- Initialize New Matrix Modal -->
+        <Dialog v-model:open="isAddingScheme">
+            <DialogContent class="sm:max-w-[650px] rounded-[2.5rem] border-border bg-card shadow-2xl p-0 overflow-hidden">
+                <DialogHeader class="p-10 pb-6 bg-muted/5 border-b border-border/30 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-600"></div>
+                    <div class="flex items-center gap-6 relative z-10">
+                        <div class="h-16 w-16 rounded-[2rem] bg-blue-600 flex items-center justify-center text-white shadow-2xl shadow-blue-600/30">
+                            <Plus class="h-8 w-8" />
+                        </div>
+                        <div>
+                            <DialogTitle class="text-3xl font-black tracking-tight text-foreground">Initialize Matrix</DialogTitle>
+                            <p class="text-[10px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-1 opacity-70">
+                                Strategic Instructional Provisioning
+                            </p>
+                        </div>
                     </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Subject</Label>
-                            <select v-model="form.subject_id" class="w-full rounded-xl border-border bg-muted/30 px-3 h-11 text-xs font-bold uppercase tracking-wider focus:ring-2 focus:ring-blue-600/20 transition-all outline-none border cursor-pointer hover:bg-muted/50" required>
+                </DialogHeader>
+
+                <form @submit.prevent="submitScheme" class="p-10 space-y-8">
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Subject Discipline</Label>
+                            <select v-model="schemeForm.subject_id" class="w-full h-12 px-5 rounded-2xl border border-border/60 bg-muted/20 text-xs font-bold uppercase tracking-wider outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-background transition-all" required>
                                 <option value="" disabled>Select Subject</option>
                                 <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
                             </select>
                         </div>
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Grade</Label>
-                            <select v-model="form.grade_level_id" class="w-full rounded-xl border-border bg-muted/30 px-3 h-11 text-xs font-bold uppercase tracking-wider focus:ring-2 focus:ring-blue-600/20 transition-all outline-none border cursor-pointer hover:bg-muted/50" required>
-                                <option value="" disabled>Select Grade</option>
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Grade Level</Label>
+                            <select v-model="schemeForm.grade_level_id" class="w-full h-12 px-5 rounded-2xl border border-border/60 bg-muted/20 text-xs font-bold uppercase tracking-wider outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-background transition-all" required>
+                                <option value="" disabled>Select Level</option>
                                 <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.name }}</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="grid gap-2">
-                        <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Academic Term</Label>
-                        <select v-model="form.academic_term_id" class="w-full rounded-xl border-border bg-muted/30 px-3 h-11 text-xs font-bold uppercase tracking-wider focus:ring-2 focus:ring-blue-600/20 transition-all outline-none border cursor-pointer hover:bg-muted/50" required>
-                            <option value="" disabled>Select Term</option>
-                            <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }} ({{ t.academic_year?.name }})</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Weeks</Label>
-                            <Input type="number" v-model="form.total_weeks" class="rounded-xl border-border bg-muted/30 h-11 font-bold focus:bg-background transition-all" required />
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Academic Term</Label>
+                            <select v-model="schemeForm.academic_term_id" class="w-full h-12 px-5 rounded-2xl border border-border/60 bg-muted/20 text-xs font-bold uppercase tracking-wider outline-none focus:ring-4 focus:ring-blue-600/5 focus:bg-background transition-all" required>
+                                <option value="" disabled>Select Term</option>
+                                <option v-for="t in terms" :key="t.id" :value="t.id">{{ t.name }}</option>
+                            </select>
                         </div>
-                        <div class="grid gap-2">
-                            <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lessons / Week</Label>
-                            <Input type="number" v-model="form.lessons_per_week" class="rounded-xl border-border bg-muted/30 h-11 font-bold focus:bg-background transition-all" required />
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Matrix Title</Label>
+                            <Input v-model="schemeForm.title" placeholder="e.g. Mathematics Term 1 2024" class="rounded-2xl border-border/60 h-12 bg-muted/20 focus:bg-background transition-all font-bold text-sm px-5 shadow-inner" required />
                         </div>
                     </div>
-                    
-                    <div class="grid gap-2">
-                        <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Notes (Optional)</Label>
-                        <Textarea v-model="form.description" placeholder="Any additional context..." class="rounded-xl border-border bg-muted/30 italic text-sm min-h-[80px] focus:bg-background transition-all" />
+
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Total Sequence (Weeks)</Label>
+                            <Input v-model="schemeForm.total_weeks" type="number" class="rounded-2xl border-border/60 h-12 bg-muted/20 focus:bg-background transition-all font-bold text-sm px-5" required />
+                        </div>
+                        <div class="space-y-3">
+                            <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Intensity (Lessons/Week)</Label>
+                            <Input v-model="schemeForm.lessons_per_week" type="number" class="rounded-2xl border-border/60 h-12 bg-muted/20 focus:bg-background transition-all font-bold text-sm px-5" required />
+                        </div>
                     </div>
 
-                    <DialogFooter class="p-0">
-                        <Button type="submit" :disabled="form.processing" class="w-full bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-sm text-white h-12 shadow-md transition-all">
-                            {{ form.processing ? 'Syncing...' : (editingScheme ? 'Update Plan' : 'Create Plan') }}
+                    <div class="space-y-3">
+                        <Label class="text-[10px] font-black uppercase tracking-wider text-muted-foreground ml-3">Strategic Description (Optional)</Label>
+                        <Textarea v-model="schemeForm.description" placeholder="Outcome objectives and strategic overview..." class="rounded-2xl border-border/60 bg-muted/20 focus:bg-background transition-all font-medium text-sm p-5 min-h-[100px] leading-relaxed" />
+                    </div>
+
+                    <DialogFooter class="pt-6 border-t border-border/30 flex justify-between sm:justify-between items-center bg-muted/5 -m-10 p-10 mt-6">
+                        <Button type="button" variant="ghost" @click="isAddingScheme = false" class="h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest text-muted-foreground/60 hover:text-foreground transition-all">Cancel Request</Button>
+                        <Button type="submit" :disabled="schemeForm.processing" class="h-12 px-10 rounded-2xl bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/10 font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center gap-2">
+                            <Sparkles class="h-3.5 w-3.5" /> 
+                            {{ schemeForm.processing ? 'Initializing...' : 'Commit Matrix' }}
                         </Button>
                     </DialogFooter>
                 </form>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Dynamic Feedback Modal -->
-        <Dialog v-model:open="showFeedback">
-            <DialogContent class="sm:max-w-[400px] p-0 overflow-hidden rounded-[2.5rem] border-0 shadow-2xl">
-                <div :class="[
-                    'p-8 text-center space-y-6',
-                    feedbackType === 'success' ? 'bg-emerald-50' : feedbackType === 'error' ? 'bg-rose-50' : 'bg-blue-50'
-                ]">
-                    <div :class="[
-                        'mx-auto h-20 w-20 rounded-full flex items-center justify-center animate-in zoom-in duration-500',
-                        feedbackType === 'success' ? 'bg-emerald-100 text-emerald-600' : feedbackType === 'error' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'
-                    ]">
-                        <CheckCircle2 v-if="feedbackType === 'success'" class="h-10 w-10" />
-                        <AlertCircle v-else-if="feedbackType === 'error'" class="h-10 w-10" />
-                        <Info v-else class="h-10 w-10" />
-                    </div>
-                    
-                    <div class="space-y-2">
-                        <h3 class="text-xl font-black tracking-tight text-slate-900">
-                            {{ feedbackType === 'success' ? 'Success!' : feedbackType === 'error' ? 'Oops!' : 'Note' }}
-                        </h3>
-                        <p class="text-sm font-medium text-slate-500 leading-relaxed">
-                            {{ feedbackMessage }}
-                        </p>
-                    </div>
-
-                    <Button 
-                        @click="showFeedback = false" 
-                        :class="[
-                            'w-full h-12 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg transition-all active:scale-[0.98]',
-                            feedbackType === 'success' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20' : 
-                            feedbackType === 'error' ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-500/20' : 
-                            'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
-                        ]"
-                    >
-                        Continue
-                    </Button>
-                </div>
             </DialogContent>
         </Dialog>
     </AppLayout>
 </template>
 
 <style scoped>
+/* Ensure clean styles */
 select {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 1rem center;
+    background-position: right 1.25rem center;
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
-    padding-right: 2.5rem;
+    padding-right: 3rem;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
 }
 </style>

@@ -41,14 +41,48 @@ class StudentsController extends Controller
             ->select('students.*')
             ->with(['currentClass:id,name,code']);
 
-        // Scope to teacher's classes if not a super admin
-        if ($user && $user->hasRole('teacher') && !$user->hasRole('super_admin')) {
+        $teacher = null;
+        $myClassIds = [];
+        $isRestricted = false;
+
+        // Scope to teacher's classes if not an admin/manager
+        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $isRestricted = true;
             $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
-            $myClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->pluck('class_id')
-                ->merge(DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id'))
-                ->unique()
+            
+            // 1. Classes where they teach subjects
+            $subjectClassIds = DB::table('teacher_subjects')
+                ->where('teacher_id', $teacher?->id)
+                ->where('is_active', true)
+                ->pluck('class_id')
                 ->toArray();
-            $query->whereIn('current_class_id', $myClassIds);
+                
+            // 2. Classes where they are class teacher
+            $classTeacherClassIds = DB::table('classes')
+                ->where('class_teacher_id', $user->id)
+                ->pluck('id')
+                ->toArray();
+                
+            // 3. Departmental scoping for HODs
+            $hodClassIds = [];
+            if ($user->hasRole('hod') && $teacher?->department_id) {
+                $subjectIds = DB::table('subjects')
+                    ->where('department_id', $teacher->department_id)
+                    ->pluck('id');
+                
+                $hodClassIds = DB::table('teacher_subjects')
+                    ->whereIn('subject_id', $subjectIds)
+                    ->pluck('class_id')
+                    ->toArray();
+            }
+
+            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds, $hodClassIds));
+            
+            if (empty($myClassIds)) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('current_class_id', $myClassIds);
+            }
         }
 
         $query->when($search !== '', fn ($q) => $q->search($search))
@@ -65,7 +99,16 @@ class StudentsController extends Controller
             ->withQueryString()
             ->through(fn (Student $student) => $this->transformLearnerRow($student));
 
+        // Use a scoped base for stats if restricted
         $statsBase = Student::query();
+        if ($isRestricted) {
+            if (empty($myClassIds)) {
+                $statsBase->whereRaw('1 = 0');
+            } else {
+                $statsBase->whereIn('current_class_id', $myClassIds);
+            }
+        }
+
         $totalLearners = (clone $statsBase)->count();
         $activeLearners = (clone $statsBase)->where('status', 'active')->count();
         $boys = (clone $statsBase)->where('gender', 'male')->count();
@@ -93,7 +136,11 @@ class StudentsController extends Controller
                 'per_page' => $perPage,
                 'show_filters' => filter_var($request->input('show_filters', true), FILTER_VALIDATE_BOOLEAN),
             ],
-            'classes' => SchoolClass::query()->select('id', 'name')->orderBy('name')->get(),
+            'classes' => SchoolClass::query()
+                ->when($isRestricted, fn($q) => $q->whereIn('id', $myClassIds))
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get(),
             'counties' => Student::query()->whereNotNull('county')->distinct()->orderBy('county')->pluck('county'),
             'statusOptions' => [
                 ['value' => 'all', 'label' => 'All Statuses'],
@@ -218,9 +265,28 @@ class StudentsController extends Controller
 
     public function show(Student $student): Response
     {
-        if (auth()->user()?->hasRole('parent')) {
-            $guardian = auth()->user()->guardian;
+        $user = auth()->user();
+        
+        if ($user?->hasRole('parent')) {
+            $guardian = $user->guardian;
             abort_unless($guardian && $guardian->students()->whereKey($student->id)->exists(), 403);
+        }
+
+        // Scope for teachers/HODs
+        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin', 'parent'])) {
+            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
+            
+            $subjectClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->where('is_active', true)->pluck('class_id')->toArray();
+            $classTeacherClassIds = DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id')->toArray();
+            $hodClassIds = [];
+            if ($user->hasRole('hod') && $teacher?->department_id) {
+                $subjectIds = DB::table('subjects')->where('department_id', $teacher->department_id)->pluck('id');
+                $hodClassIds = DB::table('teacher_subjects')->whereIn('subject_id', $subjectIds)->pluck('class_id')->toArray();
+            }
+
+            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds, $hodClassIds));
+            
+            abort_unless(in_array($student->current_class_id, $myClassIds), 403, 'You do not have permission to view this student.');
         }
 
         $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,user_id,first_name,last_name,phone,email']);
@@ -302,6 +368,25 @@ class StudentsController extends Controller
 
     public function edit(Student $student): Response
     {
+        $user = auth()->user();
+
+        // Scope for teachers/HODs
+        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
+            
+            $subjectClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->where('is_active', true)->pluck('class_id')->toArray();
+            $classTeacherClassIds = DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id')->toArray();
+            $hodClassIds = [];
+            if ($user->hasRole('hod') && $teacher?->department_id) {
+                $subjectIds = DB::table('subjects')->where('department_id', $teacher->department_id)->pluck('id');
+                $hodClassIds = DB::table('teacher_subjects')->whereIn('subject_id', $subjectIds)->pluck('class_id')->toArray();
+            }
+
+            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds, $hodClassIds));
+            
+            abort_unless(in_array($student->current_class_id, $myClassIds), 403, 'You do not have permission to edit this student.');
+        }
+
         $student->load(['guardians.user']);
         $linkedGuardian = $student->guardians->firstWhere('user_id', '!=', null);
 
@@ -481,8 +566,32 @@ class StudentsController extends Controller
         $boardingStatus = (string) $request->string('boarding_status');
         $county = trim((string) $request->string('county'));
 
-        $students = Student::query()
-            ->with(['currentClass:id,name,code'])
+        $user = auth()->user();
+        $query = Student::query()
+            ->with(['currentClass:id,name,code']);
+
+        // Scope to teacher's classes if not an admin/manager
+        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
+            
+            $subjectClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->where('is_active', true)->pluck('class_id')->toArray();
+            $classTeacherClassIds = DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id')->toArray();
+            $hodClassIds = [];
+            if ($user->hasRole('hod') && $teacher?->department_id) {
+                $subjectIds = DB::table('subjects')->where('department_id', $teacher->department_id)->pluck('id');
+                $hodClassIds = DB::table('teacher_subjects')->whereIn('subject_id', $subjectIds)->pluck('class_id')->toArray();
+            }
+
+            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds, $hodClassIds));
+            
+            if (empty($myClassIds)) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('current_class_id', $myClassIds);
+            }
+        }
+
+        $students = $query
             ->when($search !== '', fn ($q) => $q->search($search))
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))

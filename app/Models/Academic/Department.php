@@ -15,7 +15,7 @@ class Department extends Model
 {
     use BelongsToSchool;
 
-    protected $fillable = ['school_id', 'name', 'code', 'description', 'status'];
+    protected $fillable = ['school_id', 'name', 'code', 'description', 'head_of_department_id', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

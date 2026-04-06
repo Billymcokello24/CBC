@@ -148,12 +148,12 @@ const closeModal = () => {
                     <span>{{ form.errors.file }}</span>
                 </div>
 
-                <div v-if="flashError" class="flex flex-col gap-2 rounded-lg bg-destructive/10 p-4 text-xs text-destructive border border-destructive/20 overflow-hidden">
+                <div v-if="flashError" class="flex flex-col gap-2 rounded-lg bg-destructive/10 p-4 text-xs text-destructive border border-destructive/20 max-h-[200px] overflow-y-auto">
                     <div class="flex items-center gap-2 font-semibold">
                         <AlertCircle class="h-4 w-4 shrink-0" />
                         <span>Upload Failed</span>
                     </div>
-                    <p class="break-words leading-relaxed">{{ flashError }}</p>
+                    <p class="break-all leading-relaxed whitespace-pre-wrap">{{ flashError }}</p>
                     <p class="mt-1 text-[10px] opacity-80">Please check your file format and try again. Use the template provided above.</p>
                 </div>
 
@@ -188,7 +188,7 @@ const closeModal = () => {
 
             <div class="mt-4 rounded-lg bg-muted p-4 border max-h-[300px] overflow-y-auto">
                 <p class="text-sm font-medium text-foreground mb-2">Error Details:</p>
-                <p class="text-sm text-destructive break-words leading-relaxed whitespace-pre-line">
+                <p class="text-sm text-destructive break-all leading-relaxed whitespace-pre-wrap">
                     {{ flashError }}
                 </p>
             </div>

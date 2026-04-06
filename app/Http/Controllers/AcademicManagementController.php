@@ -1566,6 +1566,7 @@ class AcademicManagementController extends Controller
                 'performance_trend' => 0, // Placeholder
             ],
             'curriculum_subjects' => \App\Models\Curriculum\Subject::active()->orderBy('name')->get(['id', 'name', 'code']),
+            'all_teachers' => Teacher::orderBy('first_name')->get()->map(fn($t) => ['id' => $t->id, 'name' => $t->full_name]),
         ]);
     }
 
@@ -1708,5 +1709,42 @@ class AcademicManagementController extends Controller
         };
 
         return back()->with('success', 'Bulk department action completed successfully.');
+    }
+
+    public function assignDepartmentHead(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'head_of_department_id' => ['nullable', 'exists:teachers,id'],
+        ]);
+
+        $dept = \App\Models\Academic\Department::findOrFail($id);
+        $dept->update([
+            'head_of_department_id' => $validated['head_of_department_id'] ?: null
+        ]);
+
+        return back()->with('success', 'Department head assigned successfully.');
+    }
+
+    public function addStaffToDepartment(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'teacher_id' => ['required', 'exists:teachers,id'],
+        ]);
+
+        $teacher = \App\Models\Teacher::findOrFail($validated['teacher_id']);
+        $teacher->update(['department_id' => $id]);
+
+        return back()->with('success', 'Staff member added to department successfully.');
+    }
+
+    public function removeStaffFromDepartment(int $id, int $teacherId): RedirectResponse
+    {
+        $teacher = \App\Models\Teacher::where('id', $teacherId)
+            ->where('department_id', $id)
+            ->firstOrFail();
+
+        $teacher->update(['department_id' => null]);
+
+        return back()->with('success', 'Staff member removed from department successfully.');
     }
 }

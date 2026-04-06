@@ -312,6 +312,7 @@ const navigation = [
                     { title: 'Grades', href: '/grades' },
                     { title: 'Classes', href: '/classes' },
                     { title: 'Streams', href: '/streams' },
+                    { title: 'Departments', href: '/departments' },
                 ],
             },
             {
@@ -503,6 +504,96 @@ const parentNavigation = [
     },
 ];
 
+const teacherRoles = computed(() => (props.auth as any).teacher_roles || {});
+const isTeacherRole = computed(() => {
+    const roles = (props.auth as any).roles || [];
+    return roles.includes('teacher') || roles.includes('class_teacher') || roles.includes('hod');
+});
+
+const teacherNavigation = computed(() => {
+    const nav: any[] = [
+        {
+            title: 'Overview',
+            items: [
+                { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+                { 
+                    title: 'My Classes', 
+                    href: '/classes', 
+                    icon: Users,
+                    hidden: !teacherRoles.value.assigned_classes_count && !teacherRoles.value.is_class_teacher
+                },
+                { 
+                    title: 'My Subjects', 
+                    href: '/curriculum', 
+                    icon: BookOpen,
+                    hidden: !teacherRoles.value.assigned_subjects_count
+                },
+            ],
+        },
+        {
+            title: 'Academic',
+            items: [
+                {
+                    title: 'Learners',
+                    href: '/students',
+                    icon: GraduationCap,
+                    children: [
+                        { title: 'My Students', href: '/students' },
+                        { title: 'Student Profiles', href: '/students', hidden: !teacherRoles.value.is_class_teacher },
+                    ],
+                },
+                {
+                    title: 'Attendance',
+                    href: '/attendance',
+                    icon: Clock,
+                    children: [
+                        { title: 'Mark Attendance', href: '/attendance/mark' },
+                        { title: 'Class Attendance', href: '/attendance/reports', hidden: !teacherRoles.value.is_class_teacher },
+                    ],
+                },
+                {
+                    title: 'CBC Evaluation',
+                    href: '/assessments',
+                    icon: ClipboardList,
+                    children: [
+                        { title: 'My Assessments', href: '/assessments' },
+                        { title: 'Grading Sheet', href: '/assessments/grading' },
+                        { title: 'Class Reports', href: '/assessments/analytics', hidden: !teacherRoles.value.is_class_teacher },
+                    ],
+                },
+                { title: 'Timetable', href: '/timetable/my', icon: Calendar },
+                { title: 'Remarks', href: '/curriculum/assignments', icon: NotebookPen },
+            ],
+        },
+    ];
+
+    if (teacherRoles.value.is_class_teacher) {
+        nav.push({
+            title: 'Class Management',
+            items: [
+                { title: 'Class List', href: '/classes', icon: Users },
+                { title: 'Class Attendance', href: '/attendance/reports', icon: CalendarDays },
+                { title: 'Class Reports', href: '/assessments/analytics', icon: BarChart3 },
+                { title: 'Discipline', href: '/students', icon: ShieldCheck },
+            ]
+        });
+    }
+
+    if (teacherRoles.value.is_hod) {
+        nav.push({
+            title: 'Department',
+            items: [
+                { title: 'Dept Dashboard', href: '/dashboard', icon: LayoutDashboard },
+                { title: 'Teachers', href: '/staffs', icon: Users },
+                { title: 'Dept Subjects', href: '/curriculum', icon: BookMarked },
+                { title: 'Dept Reports', href: '/assessments/analytics', icon: BarChart3 },
+            ]
+        });
+    }
+
+    return nav;
+});
+
 const filterNavItem = (item: any) => {
     if (!item.permissions) return true;
     const hasBasePermission = canAny(item.permissions);
@@ -528,6 +619,21 @@ const filteredNavigation = computed(() => {
     // If parent role, show parent-specific navigation
     if (isParent.value) {
         return [...parentNavigation];
+    }
+    
+    // If teacher role, show teacher-specific navigation
+    if (isTeacherRole.value) {
+        return teacherNavigation.value.map(group => ({
+            ...group,
+            items: group.items.filter((item: any) => {
+                if (item.hidden) return false;
+                if (item.children) {
+                    item.children = item.children.filter((child: any) => !child.hidden);
+                    return item.children.length > 0 || item.href;
+                }
+                return true;
+            })
+        })).filter(group => group.items.length > 0);
     }
     
     // Otherwise (regular user OR impersonating Super Admin), show regular navigation
