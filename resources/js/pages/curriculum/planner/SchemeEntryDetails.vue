@@ -4,13 +4,14 @@ import {
     ArrowLeft, Calendar, BookOpen, Layers, Target,
     Activity, ClipboardCheck, MessageSquare, Info,
     Save, Loader2, Sparkles, AlertCircle, CheckCircle2,
-    BookMarked, HelpCircle, GraduationCap
+    BookMarked, HelpCircle, GraduationCap, FileDown
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
@@ -55,7 +56,7 @@ const form = useForm({
     homework: props.entry.homework,
     core_competencies: props.entry.core_competencies || [],
     pci: props.entry.pci || [],
-    inquiry_questions: props.entry.inquiry_questions,
+    inquiry_questions: props.entry.inquiry_questions ?? '',
 });
 
 const submit = () => {
@@ -64,7 +65,14 @@ const submit = () => {
         onSuccess: () => {
             isEditing.value = false;
         },
+        onError: (errors) => {
+            console.error('Validation Errors:', errors);
+        }
     });
+};
+
+const downloadPdf = () => {
+    window.open(`/curriculum/planner/schemes/${props.scheme.id}/entries/${props.entry.id}/download`, '_blank');
 };
 
 const tabs = [
@@ -139,14 +147,18 @@ const getStatusColor = (status: string) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <Button v-if="!isEditing" variant="outline" class="h-11 px-6 rounded-xl border-blue-100 bg-white hover:bg-blue-50 text-blue-700 font-bold text-[10px] uppercase tracking-widest shadow-sm transition-all" @click="isEditing = true">
-                        <Sparkles class="mr-2 h-4 w-4 text-emerald-500" />
+                    <Button variant="outline" class="h-11 px-5 rounded-xl border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-all" @click="downloadPdf">
+                        <FileDown class="mr-2 h-4 w-4" />
+                        Download PDF
+                    </Button>
+                    <Button v-if="!isEditing" variant="outline" class="h-11 px-5 rounded-xl border-blue-100 bg-blue-50/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-700 font-semibold shadow-sm transition-all" @click="isEditing = true">
+                        <Edit2 class="mr-2 h-4 w-4 text-amber-500" />
                         Edit Instruction
                     </Button>
-                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="bg-blue-600 hover:bg-blue-700 h-11 px-8 shadow-md rounded-xl font-bold text-[10px] uppercase tracking-widest text-white transition-all transform active:scale-95">
+                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="bg-blue-600 hover:bg-blue-700 h-11 px-6 shadow-md rounded-xl font-semibold text-white transition-all transform active:scale-95">
                         <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
                         <Save v-else class="mr-2 h-4 w-4" />
-                        Save Instruction
+                        Save Changes
                     </Button>
                 </div>
             </div>
@@ -160,10 +172,10 @@ const getStatusColor = (status: string) => {
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
-                            class="flex items-center gap-3 px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 group relative"
+                            class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group relative"
                             :class="activeTab === tab.id
-                                ? 'bg-blue-600 text-white shadow-lg translate-x-1'
-                                : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
                         >
                             <component :is="tab.icon" class="h-4.5 w-4.5" :class="activeTab === tab.id ? 'text-white' : 'text-muted-foreground/50 group-hover:text-foreground'" />
                             {{ tab.name }}
@@ -209,65 +221,91 @@ const getStatusColor = (status: string) => {
                                 <Badge variant="outline" class="text-[10px] font-bold uppercase tracking-wider px-3 border-blue-100 bg-blue-50/30 text-blue-600">Core Meta</Badge>
                             </div>
 
-                            <div class="grid gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
+                            <div class="grid gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-3">
                                 <!-- Week Number -->
-                                <div class="space-y-2">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Academic Week</Label>
+                                <div class="space-y-1.5">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Academic Week</Label>
                                     <div v-if="isEditing">
-                                        <Input type="number" v-model="form.week_number" class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:bg-background transition-all" />
+                                        <Input type="number" v-model="form.week_number" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.week_number" />
                                     </div>
-                                    <p v-else class="text-lg font-bold text-foreground bg-slate-50 p-4 rounded-xl border border-border/40 inline-block min-w-[80px] text-center">Wk {{ entry.week_number }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">Week {{ entry.week_number }}</p>
                                 </div>
 
                                 <!-- Lesson Number -->
-                                <div class="space-y-2">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Lesson No.</Label>
+                                <div class="space-y-1.5">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Lesson Number</Label>
                                     <div v-if="isEditing">
-                                        <Input type="number" v-model="form.lesson_number" class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:bg-background transition-all" />
+                                        <Input type="number" v-model="form.lesson_number" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.lesson_number" />
                                     </div>
-                                    <p v-else class="text-lg font-bold text-foreground bg-slate-50 p-4 rounded-xl border border-border/40 inline-block min-w-[80px] text-center">Lsn {{ entry.lesson_number }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">Lesson {{ entry.lesson_number }}</p>
                                 </div>
 
                                 <!-- Duration -->
-                                <div class="space-y-2">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Duration (Mins)</Label>
+                                <div class="space-y-1.5">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Duration (Mins)</Label>
                                     <div v-if="isEditing">
-                                        <Input type="number" v-model="form.duration_minutes" class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:bg-background transition-all" />
+                                        <Input type="number" v-model="form.duration_minutes" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.duration_minutes" />
                                     </div>
-                                    <div v-else class="flex items-center gap-3 bg-slate-50 p-3.5 rounded-xl border border-border/40">
-                                        <Calendar class="h-5 w-5 text-muted-foreground" />
-                                        <p class="text-sm font-bold text-foreground">{{ entry.duration_minutes }} Minutes</p>
-                                    </div>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ entry.duration_minutes }} Minutes</p>
                                 </div>
 
                                 <!-- Strand -->
-                                <div class="space-y-2 md:col-span-2">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Strand (Topic Area)</Label>
+                                <div class="space-y-1.5 md:col-span-2">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Strand (Topic Area)</Label>
                                     <div v-if="isEditing">
-                                        <select v-model="form.strand_id" class="h-11 w-full rounded-xl border-border bg-muted/20 px-4 text-xs font-bold uppercase tracking-wider outline-none focus:ring-4 focus:ring-blue-600/5 transition-all">
+                                        <select v-model="form.strand_id" class="flex h-11 w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-medium">
                                             <option value="">Select Strand</option>
                                             <option v-for="s in strands" :key="s.id" :value="s.id">{{ s.name }}</option>
                                         </select>
+                                        <InputError :message="form.errors.strand_id" />
                                     </div>
-                                    <p v-else class="text-sm font-bold text-blue-700 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">{{ entry.strand?.name || '--' }}</p>
+                                    <p v-else class="text-[15px] font-bold text-blue-600">{{ entry.strand?.name || '--' }}</p>
+                                </div>
+
+                                <!-- Sub-Strand -->
+                                <div class="space-y-1.5 md:col-span-1">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Sub-Strand</Label>
+                                    <div v-if="isEditing">
+                                        <select v-model="form.sub_strand_id" class="flex h-11 w-full rounded-xl border border-input bg-muted/30 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-medium">
+                                            <option value="">Select Sub-Strand (Optional)</option>
+                                            <option v-for="ss in strands.find(s => s.id == form.strand_id)?.sub_strands || []" :key="ss.id" :value="ss.id">{{ ss.name }}</option>
+                                        </select>
+                                        <InputError :message="form.errors.sub_strand_id" />
+                                    </div>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ entry.sub_strand?.name || '--' }}</p>
                                 </div>
 
                                 <!-- Lesson Date -->
-                                <div class="space-y-2">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Intended Date</Label>
+                                <div class="space-y-1.5">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Intended Date</Label>
                                     <div v-if="isEditing">
-                                        <Input type="date" v-model="form.lesson_date" class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:bg-background transition-all" />
+                                        <Input type="date" v-model="form.lesson_date" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.lesson_date" />
                                     </div>
-                                    <p v-else class="text-sm font-bold text-foreground p-4 bg-muted/20 rounded-xl border border-border/40">{{ entry.lesson_date ? new Date(entry.lesson_date).toLocaleDateString() : 'Unscheduled' }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ entry.lesson_date ? new Date(entry.lesson_date).toLocaleDateString() : 'Unscheduled' }}</p>
+                                </div>
+
+                                <!-- Key Vocabulary -->
+                                <div class="space-y-1.5 md:col-span-2">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Key Vocabulary</Label>
+                                    <div v-if="isEditing">
+                                        <Input v-model="form.key_vocabulary" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.key_vocabulary" />
+                                    </div>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ entry.key_vocabulary || '--' }}</p>
                                 </div>
 
                                 <!-- Topic -->
-                                <div class="space-y-2 md:col-span-3">
-                                    <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Sub-Strand / Lesson Topic</Label>
+                                <div class="space-y-1.5 md:col-span-3">
+                                    <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Sub-Strand / Lesson Topic</Label>
                                     <div v-if="isEditing">
-                                        <Input v-model="form.topic" class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:bg-background transition-all" />
+                                        <Input v-model="form.topic" class="h-11 rounded-xl border-border bg-muted/30 font-medium focus:bg-background transition-all" />
+                                        <InputError :message="form.errors.topic" />
                                     </div>
-                                    <p v-else class="text-lg font-black text-foreground border-l-4 border-indigo-500 pl-4 py-1 leading-relaxed">{{ entry.topic }}</p>
+                                    <p v-else class="text-[15px] font-bold text-foreground">{{ entry.topic }}</p>
                                 </div>
                             </div>
                         </div>
@@ -315,7 +353,8 @@ const getStatusColor = (status: string) => {
                                         <div class="h-1.5 w-1.5 bg-amber-500 rounded-full"></div> Lesson Introduction
                                     </Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.introduction" class="w-full min-h-[120px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <textarea v-model="form.introduction" class="w-full min-h-[120px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <InputError :message="form.errors.introduction" />
                                     </div>
                                     <div v-else class="p-6 bg-slate-50/50 border border-border/40 rounded-2xl prose prose-sm max-w-none">
                                         <p class="text-[15px] font-medium text-foreground leading-relaxed">{{ entry.introduction || 'Establish psychological set and prior knowledge review.' }}</p>
@@ -328,7 +367,8 @@ const getStatusColor = (status: string) => {
                                         <div class="h-1.5 w-1.5 bg-blue-500 rounded-full"></div> Detailed Lesson Development
                                     </Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.lesson_development" class="w-full min-h-[250px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <textarea v-model="form.lesson_development" class="w-full min-h-[250px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <InputError :message="form.errors.lesson_development" />
                                     </div>
                                     <div v-else class="p-8 bg-blue-50/20 border border-blue-100/50 rounded-2xl prose prose-sm max-w-none shadow-inner">
                                         <p class="text-[15px] whitespace-pre-wrap font-medium text-foreground leading-loose tracking-wide">{{ entry.lesson_development || 'No implementation details shared.' }}</p>
@@ -341,7 +381,8 @@ const getStatusColor = (status: string) => {
                                         <div class="h-1.5 w-1.5 bg-emerald-500 rounded-full"></div> Lesson Conclusion
                                     </Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.conclusion" class="w-full min-h-[120px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <textarea v-model="form.conclusion" class="w-full min-h-[120px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background transition-all outline-none focus:ring-4 focus:ring-blue-600/5"></textarea>
+                                        <InputError :message="form.errors.conclusion" />
                                     </div>
                                     <div v-else class="p-6 bg-slate-50/50 border border-border/40 rounded-2xl prose prose-sm max-w-none">
                                         <p class="text-[15px] font-medium text-foreground leading-relaxed">{{ entry.conclusion || 'Wrap up and summarization.' }}</p>
@@ -368,7 +409,8 @@ const getStatusColor = (status: string) => {
                                 <div class="space-y-4 md:col-span-2">
                                     <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Learning Activities (Learner-Centered)</Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.learning_activities" class="w-full min-h-[140px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                        <textarea v-model="form.learning_activities" class="w-full min-h-[140px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                        <InputError :message="form.errors.learning_activities" />
                                     </div>
                                     <div v-else class="p-6 bg-slate-50 border border-border/40 rounded-2xl">
                                         <p class="text-sm font-medium leading-relaxed">{{ entry.learning_activities || '--' }}</p>
@@ -379,7 +421,8 @@ const getStatusColor = (status: string) => {
                                 <div class="space-y-4 md:col-span-2">
                                     <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Teacher Activities (Facilitation)</Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.teacher_activities" class="w-full min-h-[140px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                        <textarea v-model="form.teacher_activities" class="w-full min-h-[140px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                        <InputError :message="form.errors.teacher_activities" />
                                     </div>
                                     <div v-else class="p-6 bg-slate-50 border border-border/40 rounded-2xl">
                                         <p class="text-sm font-medium leading-relaxed">{{ entry.teacher_activities || '--' }}</p>
@@ -390,7 +433,8 @@ const getStatusColor = (status: string) => {
                                 <div class="space-y-2">
                                     <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Teaching Aids & Resources</Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.resources" class="w-full min-h-[80px] rounded-xl border-border bg-muted/20 p-4 text-xs font-bold outline-none"></textarea>
+                                        <textarea v-model="form.resources" class="w-full min-h-[80px] rounded-xl border-border bg-muted/30 p-4 text-xs font-bold outline-none"></textarea>
+                                        <InputError :message="form.errors.resources" />
                                     </div>
                                     <p v-else class="text-xs font-bold text-foreground bg-muted/20 p-4 rounded-xl border border-border/40 italic">{{ entry.resources || 'None listed.' }}</p>
                                 </div>
@@ -399,7 +443,8 @@ const getStatusColor = (status: string) => {
                                 <div class="space-y-2">
                                     <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Textbook References</Label>
                                     <div v-if="isEditing">
-                                        <textarea v-model="form.references" class="w-full min-h-[80px] rounded-xl border-border bg-muted/20 p-4 text-xs font-bold outline-none"></textarea>
+                                        <textarea v-model="form.references" class="w-full min-h-[80px] rounded-xl border-border bg-muted/30 p-4 text-xs font-bold outline-none"></textarea>
+                                        <InputError :message="form.errors.references" />
                                     </div>
                                     <p v-else class="text-xs font-bold text-blue-600 bg-blue-50/30 p-4 rounded-xl border border-blue-100/30 uppercase tracking-tighter italic">{{ entry.references || 'None listed.' }}</p>
                                 </div>
@@ -442,7 +487,8 @@ const getStatusColor = (status: string) => {
                                      <div class="space-y-2">
                                          <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Assessment Strategy</Label>
                                          <div v-if="isEditing">
-                                             <textarea v-model="form.assessment" class="w-full min-h-[100px] rounded-xl border-border bg-muted/20 p-4 text-sm font-medium outline-none"></textarea>
+                                             <textarea v-model="form.assessment" class="w-full min-h-[100px] rounded-xl border-border bg-muted/30 p-4 text-sm font-medium outline-none"></textarea>
+                                             <InputError :message="form.errors.assessment" />
                                          </div>
                                          <p v-else class="text-sm font-bold text-emerald-700 bg-emerald-50/30 p-4 rounded-xl border border-emerald-100/50 italic leading-relaxed">{{ entry.assessment || '--' }}</p>
                                      </div>
@@ -451,7 +497,8 @@ const getStatusColor = (status: string) => {
                                      <div class="space-y-2">
                                          <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Further Learning / Homework</Label>
                                          <div v-if="isEditing">
-                                             <textarea v-model="form.homework" class="w-full min-h-[100px] rounded-xl border-border bg-muted/20 p-4 text-sm font-medium outline-none"></textarea>
+                                             <textarea v-model="form.homework" class="w-full min-h-[100px] rounded-xl border-border bg-muted/30 p-4 text-sm font-medium outline-none"></textarea>
+                                             <InputError :message="form.errors.homework" />
                                          </div>
                                          <p v-else class="text-sm font-bold text-indigo-700 bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50 italic leading-relaxed">{{ entry.homework || '--' }}</p>
                                      </div>
@@ -460,11 +507,27 @@ const getStatusColor = (status: string) => {
                                 <!-- Remarks -->
                                 <div class="space-y-4">
                                      <Label class="text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em] ml-1">Instructional Remarks & Reflection</Label>
-                                     <div v-if="isEditing">
-                                         <textarea v-model="form.remarks" placeholder="Observations after lesson delivery..." class="w-full min-h-[120px] rounded-2xl border-border bg-muted/20 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                     <div v-if="isEditing" class="space-y-6">
+                                         <div class="space-y-2">
+                                             <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Teacher Remarks</Label>
+                                             <textarea v-model="form.remarks" placeholder="Observations after lesson delivery..." class="w-full min-h-[100px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                             <InputError :message="form.errors.remarks" />
+                                         </div>
+                                         <div class="space-y-2">
+                                             <Label class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Self Reflection</Label>
+                                             <textarea v-model="form.reflection" placeholder="What went well? What could be improved?" class="w-full min-h-[100px] rounded-2xl border-border bg-muted/30 p-6 text-sm font-medium focus:bg-background outline-none"></textarea>
+                                             <InputError :message="form.errors.reflection" />
+                                         </div>
                                      </div>
-                                     <div v-else class="p-6 bg-slate-100/50 border border-border/40 rounded-2xl border-l-4 border-l-slate-400">
-                                          <p class="text-sm font-bold text-foreground leading-relaxed italic">"{{ entry.remarks || 'No post-instructional remarks recorded yet.' }}"</p>
+                                     <div v-else class="space-y-6">
+                                          <div class="p-6 bg-slate-100/50 border border-border/40 rounded-2xl border-l-4 border-l-slate-400">
+                                               <p class="text-[12px] font-bold text-muted-foreground uppercase tracking-widest mb-2">Remarks</p>
+                                               <p class="text-sm font-bold text-foreground leading-relaxed italic">"{{ entry.remarks || 'No post-instructional remarks recorded yet.' }}"</p>
+                                          </div>
+                                          <div class="p-6 bg-blue-50/50 border border-blue-100/50 rounded-2xl border-l-4 border-l-blue-400">
+                                               <p class="text-[12px] font-bold text-blue-600 uppercase tracking-widest mb-2">Teacher Reflection</p>
+                                               <p class="text-sm font-bold text-foreground leading-relaxed italic">"{{ entry.reflection || 'No teacher reflection recorded yet.' }}"</p>
+                                          </div>
                                      </div>
                                 </div>
                             </div>

@@ -370,6 +370,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/planner/schemes/{scheme}/entries/{entry}/generate-lessons', [AcademicPlannerController::class, 'generateLessonsFromScheme']);
         Route::post('curriculum/planner/schemes/{scheme}/bulk-generate-lessons', [AcademicPlannerController::class, 'bulkGenerateLessons'])->name('curriculum.planner.schemes.bulk-generate-lessons');
         Route::post('curriculum/planner/schemes/{scheme}/import', [AcademicPlannerController::class, 'importSchemeEntries'])->name('curriculum.planner.schemes.import');
+        Route::post('curriculum/planner/schemes/{scheme}/bulk-delete-entries', [AcademicPlannerController::class, 'bulkDeleteSchemeEntries'])->name('curriculum.planner.schemes.bulk-delete-entries');
+        Route::get('curriculum/planner/schemes/{scheme}/download', [AcademicPlannerController::class, 'downloadSchemePdf'])->name('curriculum.planner.schemes.download');
+        Route::get('curriculum/planner/schemes/{scheme}/entries/{entry}/download', [AcademicPlannerController::class, 'downloadSchemeEntryPdf'])->name('curriculum.planner.schemes.entries.download');
 
         Route::get('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'lessonPlans'])->name('curriculum.planner.lesson-plans');
         Route::post('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'storeLessonPlan'])->name('curriculum.planner.lesson-plans.store');

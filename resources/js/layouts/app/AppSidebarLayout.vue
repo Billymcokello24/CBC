@@ -7,6 +7,8 @@ import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import TailPanelHeader from '@/components/TailPanelHeader.vue';
 import Toast from '@/components/Toast.vue';
 import type { BreadcrumbItem } from '@/types';
+import { usePage } from '@inertiajs/vue3';
+import { watchEffect } from 'vue';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
@@ -14,6 +16,17 @@ type Props = {
 
 withDefaults(defineProps<Props>(), {
     breadcrumbs: () => [],
+});
+
+watchEffect(() => {
+    const page = usePage();
+    const themeColor = page.props.auth?.school?.theme_color;
+    if (themeColor) {
+        document.documentElement.style.setProperty('--primary', themeColor);
+        document.documentElement.style.setProperty('--ring', themeColor);
+        document.documentElement.style.setProperty('--sidebar-primary', themeColor);
+        document.documentElement.style.setProperty('--sidebar-ring', themeColor);
+    }
 });
 </script>
 

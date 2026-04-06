@@ -47,6 +47,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const isEditingProfile = ref(false);
 
+const getSettingValue = (key: string, defaultValue: any) => {
+    const setting = props.settings.find((s: any) => s.key === key);
+    if (!setting) return defaultValue;
+    if (setting.type === 'boolean') return setting.value === '1' || setting.value === true;
+    if (setting.type === 'integer') return parseInt(setting.value);
+    return setting.value;
+};
+
 const profileForm = useForm({
     name: props.school.name,
     registration_number: props.school.registration_number,
@@ -61,6 +69,7 @@ const profileForm = useForm({
     county: props.school.county,
     sub_county: props.school.sub_county,
     ward: props.school.ward,
+    pdf_theme_color: getSettingValue('pdf_theme_color', '#1e40af'),
 });
 
 const submitProfile = () => {
@@ -99,14 +108,7 @@ const getLogoUrl = (path: string) => {
 };
 
 // Security Settings
-const getSettingValue = (key: string, defaultValue: any) => {
-    const setting = props.settings.find((s: any) => s.key === key);
-    if (!setting) return defaultValue;
-    if (setting.type === 'boolean') return setting.value === '1' || setting.value === true;
-    if (setting.type === 'integer') return parseInt(setting.value);
-    return setting.value;
-};
-
+// moved getSettingValue up
 const securityForm = useForm({
     password_expiry_days: getSettingValue('password_expiry_days', 90),
     require_2fa: getSettingValue('require_2fa', false),
@@ -334,6 +336,18 @@ const getStatusColor = (status: string) => {
                                         <Label class="text-xs font-bold uppercase tracking-wider text-slate-500">Mission Statement</Label>
                                         <Textarea v-model="profileForm.mission" :disabled="!isEditingProfile" class="min-h-[100px] leading-relaxed" />
                                     </div>
+                                    <div class="md:col-span-2 grid gap-2 pt-2 border-t border-slate-100">
+                                        <Label class="text-xs font-bold uppercase tracking-wider text-slate-500">PDF Theme Color</Label>
+                                        <div class="flex items-center gap-3">
+                                            <input 
+                                                type="color" 
+                                                v-model="profileForm.pdf_theme_color" 
+                                                :disabled="!isEditingProfile"
+                                                class="h-10 w-12 rounded bg-transparent cursor-pointer border-0 p-0" 
+                                            />
+                                            <p class="text-[10px] text-slate-400 font-medium max-w-[280px]">Select the primary brand color to be applied to all generated PDF exports (e.g. Schemes, Reports, Printouts).</p>
+                                        </div>
+                                    </div>
                                 </CardContent>
                             </Card>
 
@@ -487,7 +501,7 @@ const getStatusColor = (status: string) => {
                                             <Label class="text-xs font-black text-slate-800 uppercase tracking-tight">Mandatory MFA</Label>
                                             <p class="text-[10px] text-slate-400 font-medium leading-relaxed">Enforce Two-Factor Authentication for all active staff profiles.</p>
                                         </div>
-                                        <Switch :checked="securityForm.require_2fa" @update:checked="(val) => securityForm.require_2fa = val" />
+                                        <Switch :checked="securityForm.require_2fa" @update:checked="(val: boolean) => securityForm.require_2fa = val" />
                                     </div>
                                 </div>
                             </CardContent>

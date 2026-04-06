@@ -51,9 +51,15 @@ class SettingsController extends Controller
             'county' => 'nullable|string|max:100',
             'sub_county' => 'nullable|string|max:100',
             'ward' => 'nullable|string|max:100',
+            'pdf_theme_color' => 'nullable|string|max:20',
         ]);
 
-        $school->update($validated);
+        $schoolData = collect($validated)->except(['pdf_theme_color'])->toArray();
+        $school->update($schoolData);
+
+        if (array_key_exists('pdf_theme_color', $validated)) {
+            $school->setSetting('pdf_theme_color', $validated['pdf_theme_color'], 'string', 'general');
+        }
 
         return back()->with('success', 'School profile updated successfully.');
     }

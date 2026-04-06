@@ -315,15 +315,68 @@ class AcademicPlannerController extends Controller
             'inquiry_questions' => 'nullable|string',
         ]);
 
+        // Ensure array fields are not null if sent as empty
+        $validated['core_competencies'] = $request->input('core_competencies', []);
+        $validated['pci'] = $request->input('pci', []);
+
         $entry->update($validated);
 
         return back()->with('success', 'Entry updated successfully.');
+    }
+
+    public function downloadSchemePdf(SchemeOfWork $scheme)
+    {
+        $scheme->load([
+            'school',
+            'subject', 
+            'gradeLevel', 
+            'academicTerm.academicYear', 
+            'preparedBy', 
+            'entries.strand', 
+            'entries.subStrand'
+        ]);
+
+        $school = $scheme->school;
+        $themeColor = $school?->getSetting('pdf_theme_color', '#1e40af') ?? '#1e40af';
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.scheme', compact('scheme', 'school', 'themeColor'))
+            ->setPaper('a4', 'landscape');
+            
+        $filename = "Scheme_of_Work_" . ($scheme->subject?->name ?? 'Export') . "_" . ($scheme->gradeLevel?->name ?? '') . ".pdf";
+        return $pdf->download($filename);
+    }
+
+    public function downloadSchemeEntryPdf(SchemeOfWork $scheme, SchemeEntry $entry)
+    {
+        $scheme->load(['school', 'subject', 'gradeLevel', 'academicTerm.academicYear', 'preparedBy']);
+        $entry->load(['strand', 'subStrand']);
+
+        $school = $scheme->school;
+        $themeColor = $school?->getSetting('pdf_theme_color', '#1e40af') ?? '#1e40af';
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.scheme_entry', compact('scheme', 'entry', 'school', 'themeColor'))
+            ->setPaper('a4', 'portrait');
+            
+        return $pdf->download("Lesson_Instruction_{$entry->week_number}_{$entry->lesson_number}.pdf");
     }
 
     public function destroySchemeEntry(SchemeOfWork $scheme, SchemeEntry $entry): RedirectResponse
     {
         $entry->delete();
         return back()->with('success', 'Entry removed.');
+    }
+
+    public function bulkDeleteSchemeEntries(Request $request, SchemeOfWork $scheme): RedirectResponse
+    {
+        $request->validate([
+            'entry_ids' => 'required|array|min:1',
+            'entry_ids.*' => 'integer|exists:scheme_entries,id',
+        ]);
+
+        SchemeEntry::where('scheme_id', $scheme->id)
+            ->whereIn('id', $request->input('entry_ids'))
+            ->delete();
+
+        $count = count($request->input('entry_ids'));
+        return back()->with('success', "{$count} entries removed successfully.");
     }
 
     public function showSchemeEntry(SchemeOfWork $scheme, SchemeEntry $entry): Response
@@ -425,20 +478,41 @@ class AcademicPlannerController extends Controller
                     // Basic row skip if empty
                     if (empty(array_filter($row))) continue;
 
-                    // Find strand if name provided
+                    // Find strand if name provided — auto-create if not found
                     $strandId = null;
                     if (!empty($row['strand_name'])) {
-                        $strandId = Strand::where('subject_id', $scheme->subject_id)
+                        $strand = Strand::where('subject_id', $scheme->subject_id)
                             ->where('grade_level_id', $scheme->grade_level_id)
-                            ->where('name', 'like', '%' . $row['strand_name'] . '%')
-                            ->value('id');
+                            ->where('name', 'like', '%' . trim($row['strand_name']) . '%')
+                            ->first();
+
+                        if (!$strand) {
+                            $strand = Strand::create([
+                                'subject_id' => $scheme->subject_id,
+                                'grade_level_id' => $scheme->grade_level_id,
+                                'school_id' => $scheme->school_id,
+                                'name' => trim($row['strand_name']),
+                                'code' => \Illuminate\Support\Str::slug(substr(trim($row['strand_name']), 0, 10)) . '-' . rand(100, 999),
+                            ]);
+                        }
+                        $strandId = $strand->id;
                     }
 
                     $subStrandId = null;
                     if ($strandId && !empty($row['sub_strand_name'])) {
-                        $subStrandId = SubStrand::where('strand_id', $strandId)
-                            ->where('name', 'like', '%' . $row['sub_strand_name'] . '%')
-                            ->value('id');
+                        $subStrand = SubStrand::where('strand_id', $strandId)
+                            ->where('name', 'like', '%' . trim($row['sub_strand_name']) . '%')
+                            ->first();
+
+                        if (!$subStrand) {
+                            $subStrand = SubStrand::create([
+                                'strand_id' => $strandId,
+                                'school_id' => $scheme->school_id,
+                                'name' => trim($row['sub_strand_name']),
+                                'code' => \Illuminate\Support\Str::slug(substr(trim($row['sub_strand_name']), 0, 10)) . '-' . rand(100, 999),
+                            ]);
+                        }
+                        $subStrandId = $subStrand->id;
                     }
 
                     $scheme->entries()->create([

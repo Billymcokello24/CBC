@@ -43,6 +43,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'school' => ($user && $user->school) ? array_merge($user->school->toArray(), [
                     'logo' => $user->school->logo ? (str_starts_with($user->school->logo, 'http') ? $user->school->logo : \Illuminate\Support\Facades\Storage::url($user->school->logo)) : null,
+                    'theme_color' => $user->school->getSetting('pdf_theme_color', '#1e40af'),
                 ]) : null,
                 'roles' => $user ? $user->getRoleNames() : [],
                 'permissions' => $user ? $user->getAllPermissions()->pluck('name') : [],

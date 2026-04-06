@@ -6,7 +6,8 @@ import {
     MoreHorizontal, Edit2, Trash2, Calendar, 
     BookOpen, Sparkles, LayoutGrid, ListFilter,
     ArrowLeft, Eye, Clock, CheckCircle2,
-    GraduationCap, Layers, Save, ChevronRight
+    GraduationCap, Layers, Save, ChevronRight,
+    CheckSquare, Square, XCircle
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,6 +105,42 @@ const selectedEntries = computed(() => {
 
 const isAddingEntry = ref(false);
 const editingEntryId = ref(null);
+
+// Multi-select state
+const selectedEntryIds = ref([]);
+const isAllSelected = computed(() => {
+    if (!props.scheme.entries?.length) return false;
+    return props.scheme.entries.every(e => selectedEntryIds.value.includes(e.id));
+});
+const hasSelection = computed(() => selectedEntryIds.value.length > 0);
+
+const toggleSelectEntry = (id) => {
+    const idx = selectedEntryIds.value.indexOf(id);
+    if (idx > -1) {
+        selectedEntryIds.value.splice(idx, 1);
+    } else {
+        selectedEntryIds.value.push(id);
+    }
+};
+
+const toggleSelectAll = () => {
+    if (isAllSelected.value) {
+        selectedEntryIds.value = [];
+    } else {
+        selectedEntryIds.value = props.scheme.entries.map(e => e.id);
+    }
+};
+
+const bulkDeleteForm = useForm({ entry_ids: [] });
+const bulkDelete = () => {
+    if (!confirm(`Are you sure you want to delete ${selectedEntryIds.value.length} entries?`)) return;
+    bulkDeleteForm.entry_ids = [...selectedEntryIds.value];
+    bulkDeleteForm.post(`/curriculum/planner/schemes/${props.scheme.id}/bulk-delete-entries`, {
+        onSuccess: () => {
+            selectedEntryIds.value = [];
+        }
+    });
+};
 
 const submitEntry = () => {
     if (editingEntryId.value) {
@@ -299,9 +336,13 @@ const getStatusVariant = (status) => {
                                 <Download class="mr-2 h-3.5 w-3.5" /> Get Template
                             </Button>
                         </a>
-                        <div class="w-px h-3 bg-border/40 mx-1"></div>
-                        <Button @click="triggerImport" variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-[0.15em] hover:bg-background text-emerald-600">
-                            <FileText class="mr-2 h-3.5 w-3.5" /> Bulk Upload
+                        <a :href="`/curriculum/planner/schemes/${scheme.id}/download`" target="_blank">
+                            <Button variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-[0.15em] hover:bg-background text-blue-600">
+                                <FileText class="mr-2 h-3.5 w-3.5" /> Download PDF
+                            </Button>
+                        </a>
+                        <Button variant="ghost" size="sm" class="h-9 px-4 rounded-lg font-bold text-[10px] uppercase tracking-[0.15em] hover:bg-background text-emerald-600" @click="triggerImport">
+                            <ListFilter class="mr-2 h-3.5 w-3.5" /> Bulk Upload
                         </Button>
                     </div>
                     
@@ -350,6 +391,12 @@ const getStatusVariant = (status) => {
                     <table class="w-full text-left border-collapse table-fixed min-w-[1200px]">
                         <thead>
                             <tr class="bg-muted/30 text-muted-foreground border-b border-border/50">
+                                <th class="px-4 py-4 w-12 text-center">
+                                    <button @click="toggleSelectAll" class="h-5 w-5 inline-flex items-center justify-center rounded border transition-all" :class="isAllSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-border hover:border-blue-400'">
+                                        <CheckSquare v-if="isAllSelected" class="h-3.5 w-3.5" />
+                                        <Square v-else class="h-3.5 w-3.5 opacity-40" />
+                                    </button>
+                                </th>
                                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-24 text-center">Timing</th>
                                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-64">Strand & Sub-Strand</th>
                                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest w-64">Instructional Topic</th>
@@ -359,7 +406,13 @@ const getStatusVariant = (status) => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/30">
-                            <tr v-for="entry in scheme.entries" :key="entry.id" class="hover:bg-muted/20 transition-all group cursor-pointer" @click="viewDetails(entry)">
+                            <tr v-for="entry in scheme.entries" :key="entry.id" class="hover:bg-muted/20 transition-all group cursor-pointer" :class="{ 'bg-blue-50/50': selectedEntryIds.includes(entry.id) }" @click="viewDetails(entry)">
+                                <td class="px-4 py-5 text-center" @click.stop>
+                                    <button @click="toggleSelectEntry(entry.id)" class="h-5 w-5 inline-flex items-center justify-center rounded border transition-all" :class="selectedEntryIds.includes(entry.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-border hover:border-blue-400'">
+                                        <CheckSquare v-if="selectedEntryIds.includes(entry.id)" class="h-3.5 w-3.5" />
+                                        <Square v-else class="h-3.5 w-3.5 opacity-40" />
+                                    </button>
+                                </td>
                                 <td class="px-6 py-5 text-center">
                                     <div class="inline-flex flex-col items-center justify-center px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-100/50">
                                         <span class="text-[11px] font-bold text-blue-600 tracking-tight leading-none uppercase">Wk {{ entry.week_number }}</span>
@@ -425,7 +478,7 @@ const getStatusVariant = (status) => {
                                 </td>
                             </tr>
                             <tr v-if="!scheme.entries?.length">
-                                <td colspan="6" class="px-6 py-32 text-center text-muted-foreground bg-muted/5">
+                                <td colspan="7" class="px-6 py-32 text-center text-muted-foreground bg-muted/5">
                                     <div class="flex flex-col items-center gap-4 max-w-sm mx-auto">
                                         <div class="h-20 w-20 rounded-3xl bg-muted/50 flex items-center justify-center text-muted-foreground/30 border border-border shadow-inner">
                                             <FileText class="h-10 w-10" />
@@ -444,6 +497,32 @@ const getStatusVariant = (status) => {
                     </table>
                 </div>
             </div>
+
+            <!-- Floating Bulk Action Bar -->
+            <Transition
+                enter-active-class="transition-all duration-300 ease-out"
+                enter-from-class="translate-y-10 opacity-0"
+                enter-to-class="translate-y-0 opacity-100"
+                leave-active-class="transition-all duration-200 ease-in"
+                leave-from-class="translate-y-0 opacity-100"
+                leave-to-class="translate-y-10 opacity-0"
+            >
+                <div v-if="hasSelection" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+                    <div class="flex items-center gap-4 px-6 py-3.5 bg-slate-900 text-white rounded-2xl shadow-2xl border border-white/10 backdrop-blur-xl">
+                        <div class="flex items-center gap-2">
+                            <CheckSquare class="h-4 w-4 text-blue-400" />
+                            <span class="text-sm font-bold">{{ selectedEntryIds.length }} selected</span>
+                        </div>
+                        <div class="w-px h-5 bg-white/20"></div>
+                        <Button size="sm" class="bg-rose-600 hover:bg-rose-700 text-white h-9 px-5 rounded-xl font-bold text-[10px] uppercase tracking-wider" @click="bulkDelete" :disabled="bulkDeleteForm.processing">
+                            <Trash2 class="mr-2 h-3.5 w-3.5" /> Delete Selected
+                        </Button>
+                        <Button size="sm" variant="ghost" class="text-white/70 hover:text-white hover:bg-white/10 h-9 px-3 rounded-xl" @click="selectedEntryIds = []">
+                            <XCircle class="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </Transition>
         </div>
     </AppLayout>
 
