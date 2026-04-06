@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('model_has_roles', function (Blueprint $table) {
-            $table->unsignedBigInteger('team_id')->nullable()->change();
-        });
+        if (Schema::hasColumn('model_has_roles', 'team_id')) {
+            Schema::table('model_has_roles', function (Blueprint $table) {
+                $table->unsignedBigInteger('team_id')->nullable()->change();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('model_has_roles', function (Blueprint $table) {
-            $table->unsignedBigInteger('team_id')->nullable(false)->change();
-        });
+        if (Schema::hasColumn('model_has_roles', 'team_id')) {
+            Schema::table('model_has_roles', function (Blueprint $table) {
+                $table->unsignedBigInteger('team_id')->nullable(false)->change();
+            });
+        }
     }
 };
