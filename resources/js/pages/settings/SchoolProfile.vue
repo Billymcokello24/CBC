@@ -337,7 +337,7 @@ const getStatusColor = (status: string) => {
                                         <Textarea v-model="profileForm.mission" :disabled="!isEditingProfile" class="min-h-[100px] leading-relaxed" />
                                     </div>
                                     <div class="md:col-span-2 grid gap-2 pt-2 border-t border-slate-100">
-                                        <Label class="text-xs font-bold uppercase tracking-wider text-slate-500">PDF Theme Color</Label>
+                                        <Label class="text-xs font-bold uppercase tracking-wider text-slate-500">System Brand Color</Label>
                                         <div class="flex items-center gap-3">
                                             <input 
                                                 type="color" 
@@ -345,7 +345,7 @@ const getStatusColor = (status: string) => {
                                                 :disabled="!isEditingProfile"
                                                 class="h-10 w-12 rounded bg-transparent cursor-pointer border-0 p-0" 
                                             />
-                                            <p class="text-[10px] text-slate-400 font-medium max-w-[280px]">Select the primary brand color to be applied to all generated PDF exports (e.g. Schemes, Reports, Printouts).</p>
+                                            <p class="text-[10px] text-slate-400 font-medium max-w-[280px]">Select the primary brand color. This styles the entire system interface (buttons, sidebar menus) globally, as well as generated PDFs.</p>
                                         </div>
                                     </div>
                                 </CardContent>
