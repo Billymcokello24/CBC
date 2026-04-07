@@ -116,7 +116,7 @@ class AcademicPlannerController extends Controller
         $stats = [
             'total_plans' => LessonPlan::count(),
             'approved_plans' => LessonPlan::where('status', 'approved')->count(),
-            'pending_plans' => LessonPlan::where('status', 'pending')->count(),
+            'pending_plans' => LessonPlan::where('status', 'submitted')->count(),
             'draft_plans' => LessonPlan::where('status', 'draft')->count(),
         ];
 
@@ -125,7 +125,7 @@ class AcademicPlannerController extends Controller
             $stats = [
                 'total_plans' => LessonPlan::where('teacher_id', $teacher_id)->count(),
                 'approved_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'approved')->count(),
-                'pending_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'pending')->count(),
+                'pending_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'submitted')->count(),
                 'draft_plans' => LessonPlan::where('teacher_id', $teacher_id)->where('status', 'draft')->count(),
             ];
         }
@@ -150,7 +150,7 @@ class AcademicPlannerController extends Controller
 
         $classesQuery = $gradeLevel->classes()->active()->with(['classTeacher']);
 
-        if (!$user->hasRole(['admin', 'principal']) && $user->teacher) {
+        if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal']) && $user->teacher) {
             $assignedClassIds = $user->teacher->assignedClasses()->pluck('classes.id');
             $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id');
             $allMyClassIds = $assignedClassIds->merge($classTeacherClassIds)->unique();
@@ -160,7 +160,7 @@ class AcademicPlannerController extends Controller
 
         $classes = $classesQuery->get()->map(function ($class) use ($user) {
             $query = LessonPlan::where('class_id', $class->id);
-            if (!$user->hasRole(['admin', 'principal'])) {
+            if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
                 $query->where('teacher_id', $user->teacher?->id);
             }
             $class->lesson_plans_count = $query->count();
@@ -182,7 +182,7 @@ class AcademicPlannerController extends Controller
             $query = LessonPlan::where('class_id', $schoolClass->id)
                 ->where('subject_id', $subject->id);
 
-            if (!$user->hasRole(['admin', 'principal'])) {
+            if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
                 $query->where('teacher_id', $user->teacher?->id);
             }
 
@@ -205,8 +205,7 @@ class AcademicPlannerController extends Controller
         $query = LessonPlan::with(['subject', 'classroom', 'academicTerm', 'teacher'])
             ->where('class_id', $schoolClass->id)
             ->where('subject_id', $subject->id);
-
-        if (!$user->hasRole(['admin', 'principal'])) {
+        if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
             $query->where('teacher_id', $teacher?->id ?? 0);
         }
@@ -245,11 +244,15 @@ class AcademicPlannerController extends Controller
             'core_competencies' => 'nullable|array',
             'values' => 'nullable|array',
             'life_skills' => 'nullable|array',
+            'pci' => 'nullable|array',
+            'inquiry_questions' => 'nullable|string',
             'teaching_aids' => 'nullable|string',
             'references' => 'nullable|string',
             'key_vocabulary' => 'nullable|string',
             'introduction' => 'nullable|string',
             'learning_activities' => 'nullable|array', // Multi-activity structure
+            'teacher_activities' => 'nullable|string',
+            'learner_activities' => 'nullable|string',
             'conclusion' => 'nullable|string',
             'assessment_methods' => 'nullable|string',
             'reflection' => 'nullable|string',
@@ -290,11 +293,15 @@ class AcademicPlannerController extends Controller
             'core_competencies' => 'nullable|array',
             'values' => 'nullable|array',
             'life_skills' => 'nullable|array',
+            'pci' => 'nullable|array',
+            'inquiry_questions' => 'nullable|string',
             'teaching_aids' => 'nullable|string',
             'references' => 'nullable|string',
             'key_vocabulary' => 'nullable|string',
             'introduction' => 'nullable|string',
             'learning_activities' => 'nullable|array',
+            'teacher_activities' => 'nullable|string',
+            'learner_activities' => 'nullable|string',
             'conclusion' => 'nullable|string',
             'assessment_methods' => 'nullable|string',
             'reflection' => 'nullable|string',
@@ -306,14 +313,51 @@ class AcademicPlannerController extends Controller
         return back()->with('success', 'Lesson plan updated successfully.');
     }
 
+    public function showLessonPlan(LessonPlan $plan)
+    {
+        $plan->load(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm', 'academicTerm.academicYear']);
+        
+        return Inertia::render('curriculum/planner/LessonPlanShow', [
+            'plan' => $plan,
+            'school' => Auth::user()->school,
+        ]);
+    }
+
     public function downloadLessonPlanPdf(LessonPlan $plan)
     {
-        $plan->load(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm']);
+        $plan->load(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm', 'academicTerm.academicYear']);
         $school = Auth::user()->school;
+        $themeColor = $school?->getSetting('pdf_theme_color', '#1e40af') ?? '#1e40af';
 
-        $pdf = Pdf::loadView('pdf.lesson_plan', compact('plan', 'school'));
+        $pdf = Pdf::loadView('pdf.lesson_plan', compact('plan', 'school', 'themeColor'));
         
-        return $pdf->download("Lesson_Plan_{$plan->id}.pdf");
+        return $pdf->download("Lesson_Plan_" . \Illuminate\Support\Str::slug($plan->title) . ".pdf");
+    }
+
+    public function downloadAllLessonPlansPdf(SchoolClass $schoolClass, Subject $subject)
+    {
+        $user = Auth::user();
+        $query = LessonPlan::with(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm', 'academicTerm.academicYear'])
+            ->where('class_id', $schoolClass->id)
+            ->where('subject_id', $subject->id);
+
+        if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            $query->where('teacher_id', $teacher?->id ?? 0);
+        }
+
+        $plans = $query->orderBy('week_number', 'asc')->orderBy('lesson_date', 'asc')->get();
+        $school = $user->school;
+        $themeColor = $school?->getSetting('pdf_theme_color', '#1e40af') ?? '#1e40af';
+
+        if ($plans->isEmpty()) {
+            return back()->with('error', 'No lesson plans found to download.');
+        }
+
+        $pdf = Pdf::loadView('pdf.all_lesson_plans', compact('plans', 'school', 'schoolClass', 'subject', 'themeColor'))
+            ->setPaper('a4', 'portrait');
+            
+        return $pdf->download("Lesson_Plans_{$schoolClass->name}_{$subject->name}.pdf");
     }
 
     public function importLessonPlans(Request $request): RedirectResponse
@@ -331,35 +375,90 @@ class AcademicPlannerController extends Controller
         $teacher = Teacher::where('user_id', Auth::id())->first();
         $school_id = Auth::user()->school_id;
         $academic_term_id = AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->first()?->id;
+        $grade_level_id = \App\Models\Academic\SchoolClass::find($request->class_id)?->grade_level_id;
 
         while (($row = fgetcsv($handle)) !== FALSE) {
+            if (count($header) !== count($row)) continue;
             $data = array_combine($header, $row);
             
+            $strandId = null;
+            if (!empty($data['strand'])) {
+                $strandName = trim($data['strand']);
+                $strand = Strand::whereRaw('LOWER(name) = ?', [strtolower($strandName)])
+                    ->where('subject_id', $request->subject_id)
+                    ->where('grade_level_id', $grade_level_id)
+                    ->where('school_id', $school_id)
+                    ->first();
+
+                if (!$strand) {
+                    $strand = Strand::create([
+                        'name' => \Illuminate\Support\Str::title($strandName),
+                        'subject_id' => $request->subject_id,
+                        'grade_level_id' => $grade_level_id,
+                        'school_id' => $school_id,
+                        'is_active' => true,
+                        'code' => strtoupper(\Illuminate\Support\Str::slug($strandName, '_')) . '-' . rand(100, 999),
+                    ]);
+                }
+                $strandId = $strand->id;
+            }
+
+            $subStrandId = null;
+            if ($strandId && !empty($data['sub_strand'])) {
+                $subStrandName = trim($data['sub_strand']);
+                $subStrand = SubStrand::whereRaw('LOWER(name) = ?', [strtolower($subStrandName)])
+                    ->where('strand_id', $strandId)
+                    ->where('school_id', $school_id)
+                    ->first();
+
+                if (!$subStrand) {
+                    $subStrand = SubStrand::create([
+                        'name' => \Illuminate\Support\Str::title($subStrandName),
+                        'strand_id' => $strandId,
+                        'school_id' => $school_id,
+                        'is_active' => true,
+                        'code' => strtoupper(\Illuminate\Support\Str::slug($subStrandName, '_')) . '-' . rand(100, 999),
+                    ]);
+                }
+                $subStrandId = $subStrand->id;
+            }
+
             LessonPlan::create([
                 'school_id' => $school_id,
                 'class_id' => $request->class_id,
                 'subject_id' => $request->subject_id,
                 'teacher_id' => $teacher?->id,
                 'academic_term_id' => $academic_term_id,
+                'strand_id' => $strandId,
+                'sub_strand_id' => $subStrandId,
                 'title' => $data['title'] ?? 'Untitled Lesson',
                 'lesson_date' => $data['date'] ?? now()->toDateString(),
+                'week_number' => $data['week'] ?? null,
+                'period_number' => $data['lesson'] ?? null,
+                'duration_minutes' => $data['duration'] ?? 35,
                 'number_of_learners' => $data['learners'] ?? null,
                 'learning_outcomes' => $data['outcomes'] ?? null,
-                'core_competencies' => isset($data['competencies']) ? explode(',', $data['competencies']) : [],
-                'values' => isset($data['values']) ? explode(',', $data['values']) : [],
-                'life_skills' => isset($data['life_skills']) ? explode(',', $data['life_skills']) : [],
+                'key_vocabulary' => $data['vocabulary'] ?? null,
+                'core_competencies' => isset($data['competencies']) ? array_map('trim', explode(',', $data['competencies'])) : [],
+                'values' => isset($data['values']) ? array_map('trim', explode(',', $data['values'])) : [],
+                'life_skills' => isset($data['life_skills']) ? array_map('trim', explode(',', $data['life_skills'])) : [],
+                'teaching_aids' => $data['aids'] ?? null,
+                'references' => $data['references'] ?? null,
                 'introduction' => $data['introduction'] ?? null,
-                'learning_activities' => isset($data['activities']) ? explode(';', $data['activities']) : [],
+                'learning_activities' => isset($data['activities']) ? array_map('trim', preg_split('/[;|\n]/', $data['activities'])) : [],
+                'teacher_activities' => $data['teacher_activities'] ?? null,
+                'learner_activities' => $data['learner_activities'] ?? null,
                 'conclusion' => $data['conclusion'] ?? null,
                 'assessment_methods' => $data['assessment'] ?? null,
-                'pci' => isset($data['pci']) ? explode(',', $data['pci']) : [],
+                'reflection' => $data['reflection'] ?? null,
+                'homework' => $data['homework'] ?? null,
+                'pci' => isset($data['pci']) ? array_map('trim', explode(',', $data['pci'])) : [],
                 'inquiry_questions' => $data['questions'] ?? null,
                 'status' => 'draft',
             ]);
         }
 
         fclose($handle);
-
         return back()->with('success', 'Lesson plans imported successfully.');
     }
 
@@ -370,25 +469,27 @@ class AcademicPlannerController extends Controller
             'Content-Disposition' => 'attachment; filename="lesson_plans_template.csv"',
         ];
 
-        $columns = ['title', 'date', 'learners', 'outcomes', 'competencies', 'values', 'life_skills', 'introduction', 'activities', 'conclusion', 'assessment', 'pci', 'questions'];
+        $columns = [
+            'title', 'date', 'week', 'lesson', 'duration', 'learners', 
+            'strand', 'sub_strand', 'outcomes', 'vocabulary', 'competencies', 
+            'values', 'life_skills', 'aids', 'references', 'introduction', 
+            'activities', 'teacher_activities', 'learner_activities', 
+            'conclusion', 'assessment', 'reflection', 'homework', 'pci', 'questions'
+        ];
 
         $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
             fputcsv($file, $columns);
             fputcsv($file, [
-                'Introduction to Plants', 
-                '2026-04-06', 
-                '35', 
-                'Identify plant parts', 
-                'Critical thinking, Collaboration', 
-                'Responsibility', 
-                'Teamwork', 
-                'Show real plant', 
-                'Define parts;Group observation;Presentation', 
-                'Summarize lesson', 
-                'Oral quiz',
-                'Environmental awareness, Health education',
-                'What are the parts of a plant?'
+                'Introduction to Plants', '2026-04-06', '1', '1', '35', '40', 
+                'Living Things', 'Plants', 'Identify plant parts', 'Roots, Stem, Leaf', 
+                'Critical thinking, Collaboration', 'Responsibility', 'Teamwork', 
+                'Charts, Real plant', 'Our Environment Grade 2 Page 45', 
+                'Greet learners and show a plant', 'Define parts;Group observation;Presentation', 
+                'Demonstrate plant grouping', 'Group observation and naming', 
+                'Summarize lesson together', 'Observation, Oral quiz', 
+                'The lesson went well, children were engaged', 'Draw a leaf in your book', 
+                'Environmental awareness', 'What are the parts of a plant?'
             ]);
             fclose($file);
         };
@@ -422,7 +523,7 @@ class AcademicPlannerController extends Controller
 
     public function submitLessonPlan(LessonPlan $plan): RedirectResponse
     {
-        $plan->update(['status' => 'pending']);
+        $plan->update(['status' => 'submitted']);
         return back()->with('success', 'Lesson plan submitted for review.');
     }
 
@@ -852,5 +953,19 @@ class AcademicPlannerController extends Controller
         });
 
         return back()->with('success', "Generated " . count($entryIds) . " lesson plans.");
+    }
+
+    public function bulkDeleteLessonPlans(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:lesson_plans,id',
+        ]);
+
+        LessonPlan::whereIn('id', $request->ids)
+            ->where('school_id', Auth::user()->school_id)
+            ->delete();
+
+        return back()->with('success', count($request->ids) . ' lesson plans deleted successfully.');
     }
 }

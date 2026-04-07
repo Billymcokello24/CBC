@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { Head, useForm, router, Link } from '@inertiajs/vue3';
 import { 
     FileText, Plus, Search, Filter, 
@@ -8,7 +8,8 @@ import {
     Clock, AlertCircle, ChevronRight,
     ListChecks, BookCopy, Lightbulb, Users,
     Wand2, ClipboardCheck, Sparkles, Check, Info, Trash,
-    MapPin, MoreHorizontal, CheckSquare, Square, ArrowLeft
+    MapPin, MoreHorizontal, CheckSquare, Square, ArrowLeft, Download, X,
+    ArrowUpDown, ChevronUp, ChevronDown, ChevronLeft, ChevronsLeft, ChevronsRight
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -66,22 +67,188 @@ const searchQuery = ref('');
 const showFilters = ref(true);
 const selectedSubjectId = ref('all');
 const selectedStatus = ref('all');
+const selectedTermId = ref('all');
+const selectedWeek = ref('all');
+const sortBy = ref('date_desc');
+const showDuplicatesOnly = ref(false);
+
+// Pagination State
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+
+watch([searchQuery, selectedStatus, selectedSubjectId, selectedTermId, selectedWeek, showDuplicatesOnly], () => {
+    currentPage.value = 1;
+});
+
+const clearFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'all';
+    selectedSubjectId.value = 'all';
+    selectedTermId.value = 'all';
+    selectedWeek.value = 'all';
+    sortBy.value = 'date_desc';
+    showDuplicatesOnly.value = false;
+    currentPage.value = 1;
+};
+
+
+const duplicateGroups = computed(() => {
+    const groups: Record<string, any[]> = {};
+    props.plans.forEach(plan => {
+        // Group strictly by Title (Case-Insensitive) as requested by user
+        const key = plan.title?.toLowerCase().trim();
+        if (!key) return;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(plan);
+    });
+    
+    // Filter to only groups with >1 entry
+    const duplicates: Record<string, any[]> = {};
+    for (const key in groups) {
+        if (groups[key].length > 1) {
+            duplicates[key] = groups[key];
+        }
+    }
+    return duplicates;
+});
+
+const getDuplicateStatus = (plan: any) => {
+    const key = plan.title?.toLowerCase().trim();
+    const group = duplicateGroups.value[key];
+    if (!group) return null;
+    
+    const sortedGroup = [...group].sort((a, b) => a.id - b.id);
+    return sortedGroup[0].id === plan.id ? 'original' : 'duplicate';
+};
+
+const duplicateCount = computed(() => {
+    return Object.values(duplicateGroups.value).reduce((acc, group) => acc + (group.length - 1), 0);
+});
+
+const selectRedundancies = () => {
+    const idsToSelect: number[] = [];
+    Object.values(duplicateGroups.value).forEach(group => {
+        // Sort by ID to keep the oldest (original) record, select the rest
+        const sortedGroup = [...group].sort((a, b) => a.id - b.id);
+        for (let i = 1; i < sortedGroup.length; i++) {
+            idsToSelect.push(sortedGroup[i].id);
+        }
+    });
+    selectedIds.value = [...new Set([...selectedIds.value, ...idsToSelect])];
+    showDuplicatesOnly.value = true;
+};
+
+const mergeAll = () => {
+    const idsToSelect: number[] = [];
+    Object.values(duplicateGroups.value).forEach(group => {
+        const sortedGroup = [...group].sort((a, b) => a.id - b.id);
+        for (let i = 1; i < sortedGroup.length; i++) {
+            idsToSelect.push(sortedGroup[i].id);
+        }
+    });
+
+    if (idsToSelect.length === 0) return;
+
+    if (confirm(`Merge Action: This will keep the original (first) record for each lesson plan and permanently delete the remaining ${idsToSelect.length} duplicates. Proceed?`)) {
+        router.post(`/curriculum/planner/lesson-plans/bulk-delete`, {
+            ids: idsToSelect
+        }, {
+            onSuccess: () => {
+                showDuplicatesOnly.value = false;
+                selectedIds.value = [];
+            }
+        });
+    }
+};
+
+const mergeGroup = (plan: any) => {
+    const key = plan.title?.toLowerCase().trim();
+    if (!key) return;
+    const group = duplicateGroups.value[key];
+    if (!group) return;
+
+    const sortedGroup = [...group].sort((a, b) => a.id - b.id);
+    const idsToDelete = sortedGroup.slice(1).map(p => p.id);
+
+    if (idsToDelete.length === 0) return;
+
+    if (confirm(`Merge Action: This will keep this original record and permanently delete the ${idsToDelete.length} other duplicates of "${plan.title}". Proceed?`)) {
+        router.post(`/curriculum/planner/lesson-plans/bulk-delete`, {
+            ids: idsToDelete
+        });
+    }
+};
+
+const toggleSort = (field: string) => {
+    if (field === 'title') {
+        sortBy.value = sortBy.value === 'alphabetical' ? 'alphabetical_desc' : 'alphabetical';
+    } else if (field === 'date') {
+        sortBy.value = sortBy.value === 'date_desc' ? 'date_asc' : 'date_desc';
+    } else if (field === 'week') {
+        sortBy.value = sortBy.value === 'week_asc' ? 'week_desc' : 'week_asc';
+    } else if (field === 'status') {
+        sortBy.value = sortBy.value === 'status_asc' ? 'status_desc' : 'status_asc';
+    }
+};
 
 const filteredPlans = computed(() => {
-    return props.plans.filter(plan => {
+    let results = props.plans.filter(plan => {
         const matchesSearch = plan.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                             plan.subject?.name?.toLowerCase().includes(searchQuery.value.toLowerCase());
         const matchesSubject = selectedSubjectId.value === 'all' || plan.subject_id == selectedSubjectId.value;
         const matchesStatus = selectedStatus.value === 'all' || plan.status === selectedStatus.value;
+        const matchesTerm = selectedTermId.value === 'all' || plan.academic_term_id == selectedTermId.value;
+        const matchesWeek = selectedWeek.value === 'all' || plan.week_number == selectedWeek.value;
         
-        return matchesSearch && matchesSubject && matchesStatus;
+        let matchesDuplicates = true;
+        if (showDuplicatesOnly.value) {
+            const key = plan.title?.toLowerCase().trim();
+            matchesDuplicates = key ? !!duplicateGroups.value[key] : false;
+        }
+        
+        return matchesSearch && matchesSubject && matchesStatus && matchesDuplicates && matchesTerm && matchesWeek;
     });
+
+    results.sort((a, b) => {
+        if (showDuplicatesOnly.value) {
+            return (a.title || '').localeCompare(b.title || '');
+        }
+        
+        switch (sortBy.value) {
+            case 'alphabetical':
+                return (a.title || '').localeCompare(b.title || '');
+            case 'alphabetical_desc':
+                return (b.title || '').localeCompare(a.title || '');
+            case 'week_asc':
+                return (parseInt(a.week_number) || 0) - (parseInt(b.week_number) || 0);
+            case 'week_desc':
+                return (parseInt(b.week_number) || 0) - (parseInt(a.week_number) || 0);
+            case 'status_asc':
+                return (a.status || '').localeCompare(b.status || '');
+            case 'status_desc':
+                return (b.status || '').localeCompare(a.status || '');
+            case 'date_desc':
+                return new Date(b.lesson_date).getTime() - new Date(a.lesson_date).getTime();
+            case 'date_asc':
+                return new Date(a.lesson_date).getTime() - new Date(b.lesson_date).getTime();
+            default:
+                return 0;
+        }
+    });
+    
+    return results;
+});
+
+const totalPages = computed(() => Math.ceil(filteredPlans.value.length / itemsPerPage.value));
+const paginatedPlans = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value;
+    return filteredPlans.value.slice(start, start + itemsPerPage.value);
 });
 
 const stats = computed(() => ({
     total: props.plans.length,
     approved: props.plans.filter(p => p.status === 'approved').length,
-    pending: props.plans.filter(p => p.status === 'pending').length,
+    pending: props.plans.filter(p => p.status === 'submitted').length,
     drafts: props.plans.filter(p => p.status === 'draft').length,
 }));
 
@@ -122,16 +289,55 @@ const form = useForm({
     core_competencies: [] as string[],
     values: [] as string[],
     life_skills: [] as string[],
+    pci: [] as string[],
+    inquiry_questions: '',
     teaching_aids: '',
     references: '',
     introduction: '',
     learning_activities: [''] as string[], // Multi-activity list
+    teacher_activities: '',
+    learner_activities: '',
     conclusion: '',
     assessment_methods: '',
     reflection: '',
     homework: '',
     scheme_entry_id: '',
 });
+
+// Selection State
+const selectedIds = ref<number[]>([]);
+const selectAll = computed({
+    get: () => filteredPlans.value.length > 0 && selectedIds.value.length === filteredPlans.value.length,
+    set: (value) => {
+        if (value) {
+            selectedIds.value = filteredPlans.value.map(p => p.id);
+        } else {
+            selectedIds.value = [];
+        }
+    }
+});
+
+const toggleSelection = (id: number) => {
+    if (selectedIds.value.includes(id)) {
+        selectedIds.value = selectedIds.value.filter(i => i !== id);
+    } else {
+        selectedIds.value.push(id);
+    }
+};
+
+const bulkDelete = () => {
+    if (selectedIds.value.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${selectedIds.value.length} selected lesson plans?`)) {
+        router.post(`/curriculum/planner/lesson-plans/bulk-delete`, {
+            ids: selectedIds.value
+        }, {
+            onSuccess: () => {
+                selectedIds.value = [];
+            }
+        });
+    }
+};
 
 const filteredStrands = computed(() => {
     if (!form.subject_id) return [];
@@ -162,10 +368,14 @@ const openModal = (plan: any = null) => {
         form.core_competencies = plan.core_competencies || [];
         form.values = plan.values || [];
         form.life_skills = plan.life_skills || [];
+        form.pci = plan.pci || [];
+        form.inquiry_questions = plan.inquiry_questions;
         form.teaching_aids = plan.teaching_aids;
         form.references = plan.references;
         form.introduction = plan.introduction;
         form.learning_activities = (plan.learning_activities && plan.learning_activities.length) ? plan.learning_activities : [''];
+        form.teacher_activities = plan.teacher_activities;
+        form.learner_activities = plan.learner_activities;
         form.conclusion = plan.conclusion;
         form.assessment_methods = plan.assessment_methods;
         form.reflection = plan.reflection;
@@ -286,31 +496,35 @@ const submit = () => {
 
 const submitForReview = (plan: any) => {
     if (confirm('Send this plan for approval?')) {
-        useForm({}).post(route('curriculum.planner.lesson-plans.submit', plan.id));
+        router.post(route('curriculum.planner.lesson-plans.submit', plan.id));
     }
 };
 
 const approvePlan = (plan: any) => {
     if (confirm('Approve this plan?')) {
-        useForm({}).post(route('curriculum.planner.lesson-plans.approve', plan.id));
+        router.post(route('curriculum.planner.lesson-plans.approve', plan.id));
     }
 };
 
 const rejectPlan = (plan: any) => {
     const feedback = prompt('Provide feedback for revision (optional):');
     if (feedback !== null) {
-        useForm({ feedback }).post(route('curriculum.planner.lesson-plans.reject', plan.id));
+        router.post(route('curriculum.planner.lesson-plans.reject', plan.id), { feedback });
     }
 };
 
 const deletePlan = (plan: any) => {
     if (confirm('Are you sure you want to delete this plan?')) {
-        useForm({}).delete(`/curriculum/planner/lesson-plans/${plan.id}`);
+        router.delete(route('curriculum.planner.lesson-plans.destroy', plan.id));
     }
 };
 
 const downloadPdf = (plan: any) => {
-    window.open(`/curriculum/planner/lesson-plans/${plan.id}/download`, '_blank');
+    window.location.href = `/curriculum/planner/lesson-plans/${plan.id}/download`;
+};
+
+const downloadAllPdf = () => {
+    window.location.href = `/curriculum/planner/lesson-plans/class/${props.currentClass.id}/subject/${props.currentSubject.id}/download-all`;
 };
 
 const showBulkModal = ref(false);
@@ -332,10 +546,14 @@ const handleBulkUpload = () => {
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-        case 'pending': return 'bg-amber-50 text-amber-600 border-amber-100';
+        case 'submitted': return 'bg-amber-50 text-amber-600 border-amber-100';
         case 'draft': return 'bg-slate-50 text-slate-600 border-slate-100';
         default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
+};
+
+const viewPlan = (plan: any) => {
+    router.visit(`/curriculum/planner/lesson-plans/${plan.id}`);
 };
 
 onMounted(() => {
@@ -367,231 +585,276 @@ onMounted(() => {
     }
 });
 
-import Download from 'lucide-vue-next'; // fallback wrapper if needed
+
 </script>
 
 <template>
     <Head :title="`${currentClass?.name} - Lesson Plans`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
-            <!-- Page Navigation & Header -->
-            <div class="flex flex-col md:flex-row md:items-center gap-6 pb-6 border-b border-border/40 justify-between">
-                <div class="flex items-center gap-6">
-                    <Link :href="`/curriculum/planner/lesson-plans/class/${currentClass?.id}/subjects`">
-                        <Button variant="outline" size="icon" class="h-10 w-10 rounded-full border-border bg-background hover:bg-muted shadow-sm transition-all">
-                            <ArrowLeft class="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    <div class="space-y-1">
-                        <h1 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
-                            {{ currentSubject?.name }}
-                            <span class="text-muted-foreground/30 font-thin text-xl">in</span>
-                            <span class="text-primary/80">{{ currentClass?.name }}</span>
-                        </h1>
-                        <p class="text-[14px] font-medium text-muted-foreground">
-                            {{ currentClass?.grade_level?.name }} Daily Planning Matrix
-                        </p>
+        <div class="flex h-full flex-1 flex-col gap-6 p-6 md:p-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto w-full">
+            <!-- Page Header (Standard Academic Arrangement) -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shadow-sm border border-primary/5">
+                        <BookOpen class="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{ currentSubject?.name }} &nbsp;Plans</h1>
+                        <p class="text-sm text-muted-foreground font-medium">{{ currentClass?.name }} • {{ currentClass?.grade_level?.name }}</p>
                     </div>
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        @click="showBulkModal = true"
-                        class="inline-flex items-center justify-center rounded-2xl px-6 h-11 text-[10px] font-black uppercase tracking-widest border-border shadow-sm hover:bg-muted transition-all"
-                    >
-                        <BookCopy class="mr-2.5 h-4 w-4" /> Bulk Upload
+                <div class="flex items-center gap-2">
+                    <Button variant="outline" as-child class="rounded-xl h-10 px-4 font-semibold">
+                        <Link :href="`/curriculum/planner/lesson-plans/class/${currentClass?.id}/subjects`">
+                            <ArrowLeft class="mr-2 h-4 w-4" /> Back to Subjects
+                        </Link>
                     </Button>
-                    <Button
-                        @click="openModal()"
-                        class="inline-flex items-center justify-center rounded-2xl bg-primary px-8 h-11 text-[10px] font-black uppercase tracking-widest text-primary-foreground shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95"
-                    >
-                        <Plus class="mr-2.5 h-4 w-4" /> New Lesson
+                    <Button variant="outline" @click="downloadAllPdf" class="rounded-xl h-10 px-4 font-semibold">
+                        <Download class="mr-2 h-4 w-4" /> Download PDF
+                    </Button>
+                    <Button variant="outline" @click="showBulkModal = true" class="rounded-xl h-10 px-4 font-semibold">
+                        <BookCopy class="mr-2 h-4 w-4" /> Bulk Upload
+                    </Button>
+                    <Button @click="openModal()" class="bg-primary hover:opacity-90 rounded-xl h-10 px-6 font-bold shadow-lg shadow-primary/20">
+                        <Plus class="mr-2 h-4 w-4" /> New Plan
                     </Button>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Total Lessons</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.total.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-                        <FileText class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Taught / Approved</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.approved.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                         <CheckCircle2 class="h-6 w-6" />
+            <!-- Stats Grid (Aligned with Students Page) -->
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
+                    <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Total Lessons</div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-2xl font-black text-slate-900">{{ stats.total }}</div>
+                        <div class="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                            <FileText class="h-4 w-4" />
+                        </div>
                     </div>
                 </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Pending Review</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.pending.toLocaleString() }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                        <Clock class="h-6 w-6" />
+                <div class="rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
+                    <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Awaiting Review</div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-2xl font-black text-slate-900">{{ stats.pending }}</div>
+                        <div class="h-8 w-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                            <Clock class="h-4 w-4" />
+                        </div>
                     </div>
                 </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Drafts</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.drafts.toLocaleString() }}</h3>
+                <div class="rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
+                    <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Operational Plans</div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-2xl font-black text-slate-900">{{ stats.approved }}</div>
+                        <div class="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                            <CheckCircle2 class="h-4 w-4" />
+                        </div>
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600">
-                        <Edit2 class="h-6 w-6" />
+                </div>
+                <div class="rounded-xl border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
+                    <div class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Draft Records</div>
+                    <div class="flex items-center justify-between">
+                        <div class="text-2xl font-black text-slate-900">{{ stats.drafts }}</div>
+                        <div class="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                            <Edit2 class="h-4 w-4" />
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Table Card -->
-            <div class="rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden">
-                <!-- Toolbar -->
-                <div class="p-8 border-b border-border/50 space-y-6 bg-muted/5">
-                    <div class="flex flex-col md:flex-row gap-6 items-center justify-between">
-                        <div class="relative w-full md:max-w-xl group">
-                            <Search class="absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600" />
-                            <Input v-model="searchQuery" placeholder="Search lessons by title, subject or context..." class="pl-11 h-12 bg-background border-border/60 rounded-2xl focus:ring-4 focus:ring-blue-600/5 transition-all text-sm font-medium shadow-sm" />
-                        </div>
-                        
-                        <div class="flex items-center gap-3 w-full md:w-auto">
-                            <Button variant="outline" class="h-12 px-6 rounded-2xl border-border font-bold text-[10px] uppercase tracking-widest bg-background hover:bg-muted/50 shadow-sm" @click="showFilters = !showFilters">
-                                <Filter class="mr-2.5 h-4 w-4 opacity-70" /> {{ showFilters ? 'Hide Engine' : 'Filter Logic' }}
-                            </Button>
-                        </div>
+            <!-- Duplication Alert (Standard Blue/Slate Palette) -->
+            <div v-if="duplicateCount > 0" class="mb-2 p-5 rounded-3xl bg-primary/[0.03] border border-primary/10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in zoom-in-95 duration-500">
+                <div class="flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-primary/10 flex flex-shrink-0 items-center justify-center text-primary shadow-inner">
+                        <Sparkles class="h-6 w-6" />
                     </div>
-
-                    <!-- Filters Engine -->
-                    <div v-if="showFilters" class="grid gap-4 pt-2 md:grid-cols-2 animate-in slide-in-from-top-4 duration-300">
-                        <div class="space-y-2">
-                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Sequence Status</Label>
-                             <select v-model="selectedStatus" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-primary/5 outline-none appearance-none cursor-pointer transition-all shadow-sm">
-                                <option value="all">Global Status</option>
-                                <option value="draft">Draft Protocol</option>
-                                <option value="pending">Awaiting Review</option>
-                                <option value="approved">Operational</option>
-                             </select>
-                        </div>
-                        <div class="space-y-2">
-                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-3">Subject Discipline</Label>
-                             <select v-model="selectedSubjectId" class="h-12 w-full rounded-2xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-primary/5 outline-none appearance-none cursor-pointer transition-all shadow-sm">
-                                <option value="all">All Disciplines</option>
-                                <option v-for="subject in subjects" :key="subject.id" :value="String(subject.id)">{{ subject.name }}</option>
-                             </select>
-                        </div>
+                    <div>
+                        <h3 class="text-sm font-black uppercase tracking-wider text-slate-900">Duplication Management</h3>
+                        <p class="text-xs font-semibold text-muted-foreground mt-0.5">Identified {{ duplicateCount }} redundant titles. Use individual or bulk merge to consolidate.</p>
                     </div>
                 </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" size="sm" @click="showDuplicatesOnly = !showDuplicatesOnly" class="h-10 px-5 rounded-2xl border-slate-200 text-slate-700 font-bold text-[10px] uppercase tracking-widest shadow-sm hover:bg-muted">
+                        {{ showDuplicatesOnly ? 'View All Matrix' : 'Filter Duplicates' }}
+                    </Button>
+                    <Button @click="mergeAll" class="h-10 px-5 rounded-2xl bg-primary hover:opacity-90 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 transition-all">
+                        Execute Bulk Merge
+                    </Button>
+                </div>
+            </div>
 
-                <!-- Main Table -->
+            <!-- Toolbar (Aligned with Students Page) -->
+            <div class="flex flex-col gap-4 rounded-xl border bg-card p-4 md:flex-row md:items-center shadow-sm">
+                <div class="relative flex-1 md:max-w-md group">
+                    <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <Input 
+                        v-model="searchQuery" 
+                        placeholder="Search lesson titles..." 
+                        class="pl-10 h-11 rounded-xl border-slate-200 bg-slate-50/30 focus:bg-white transition-all shadow-none" 
+                    />
+                </div>
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                    <Button variant="outline" size="sm" @click="showFilters = !showFilters" class="h-10 rounded-xl font-bold uppercase text-[10px] tracking-widest gap-2">
+                        <Filter class="h-3.5 w-3.5" />
+                        {{ showFilters ? 'Hide Matrix' : 'Advanced Filters' }}
+                    </Button>
+                    
+                    <Button variant="ghost" size="sm" @click="clearFilters" class="h-10 rounded-xl text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
+                        Reset
+                    </Button>
+
+                    <div v-if="selectedIds.length > 0" class="h-8 w-px bg-border mx-2 hidden md:block"></div>
+
+                    <Button v-if="selectedIds.length > 0" variant="destructive" size="sm" @click="bulkDelete" class="h-10 rounded-xl font-bold uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-destructive/20">
+                        <Trash2 class="h-3.5 w-3.5" /> Delete ({{ selectedIds.length }})
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Extended Filter Engine -->
+            <div v-if="showFilters" class="grid gap-4 rounded-xl border bg-card p-4 md:grid-cols-4">
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Order By</label>
+                    <select v-model="sortBy" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="alphabetical">Title (A-Z)</option>
+                        <option value="week_asc">Institutional Focus (Week)</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Plan Status</label>
+                    <select v-model="selectedStatus" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <option value="all">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="submitted">Awaiting Review</option>
+                        <option value="approved">Operational</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Academic Context</label>
+                    <select v-model="selectedTermId" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <option value="all">All Academic Terms</option>
+                        <option v-for="term in terms" :key="term.id" :value="String(term.id)">{{ term.name }}</option>
+                    </select>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-medium">Time Context</label>
+                    <select v-model="selectedWeek" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <option value="all">All Focus Weeks</option>
+                        <option v-for="w in 15" :key="w" :value="String(w)">Week {{ w }}</option>
+                    </select>
+                </div>
+            </div>
+
+                <!-- Main Table (Standard Aesthetic) -->
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full">
                         <thead>
-                            <tr class="bg-muted/10 text-muted-foreground border-b border-border/40">
-                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Lesson Sequence</th>
-                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Execution Date</th>
-                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Instructional Focus</th>
-                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em]">Status</th>
-                                <th class="px-8 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-right">Operations</th>
+                            <tr class="border-b bg-muted/50">
+                                <th class="px-4 py-3 text-left">
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="selectAll"
+                                        class="h-4 w-4 rounded border-border"
+                                    />
+                                </th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-primary transition-colors" @click="toggleSort('title')">
+                                    Lesson Title
+                                    <ArrowUpDown class="ml-2 inline h-3 w-3 opacity-50" />
+                                </th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground cursor-pointer hover:text-primary transition-colors" @click="toggleSort('date')">
+                                    Execution Date
+                                    <ArrowUpDown class="ml-2 inline h-3 w-3 opacity-50" />
+                                </th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Instructional Context</th>
+                                <th class="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Status</th>
+                                <th class="px-4 py-3 text-right text-sm font-medium text-muted-foreground">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-border/30">
+                        <tbody>
                             <tr 
-                                v-for="plan in filteredPlans" 
+                                v-for="plan in paginatedPlans" 
                                 :key="plan.id" 
-                                class="hover:bg-muted/20 transition-all group cursor-pointer relative"
-                                @click="openModal(plan)"
+                                class="border-b transition-colors hover:bg-muted/50 group"
+                                :class="{ 'bg-primary/5': selectedIds.includes(plan.id) }"
                             >
-                                <td class="px-8 py-6">
-                                    <div class="flex items-center gap-5">
-                                        <div class="h-12 w-12 flex-shrink-0 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30">
-                                             <FileText class="h-6 w-6" />
-                                        </div>
-                                        <div class="flex flex-col gap-0.5">
-                                            <span class="text-[15px] font-black text-foreground tracking-tight group-hover:text-blue-600 transition-colors">{{ plan.title }}</span>
-                                            <div class="flex items-center gap-2">
-                                                <Badge variant="outline" class="text-[8px] font-black bg-muted/50 rounded-md py-0 px-2 uppercase tracking-widest border-border/50">{{ plan.subject?.name }}</Badge>
-                                                <span class="text-[10px] text-muted-foreground font-bold italic opacity-60">{{ plan.class?.name }}</span>
+                                <td class="px-4 py-3" @click.stop>
+                                    <input 
+                                        type="checkbox" 
+                                        :value="plan.id"
+                                        v-model="selectedIds"
+                                        class="h-4 w-4 rounded border-border"
+                                    />
+                                </td>
+                                <td class="px-4 py-3" @click="viewPlan(plan)">
+                                    <div class="flex flex-col">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-slate-900">{{ plan.title }}</span>
+                                            <div v-if="getDuplicateStatus(plan)" class="flex items-center gap-1">
+                                                <template v-if="getDuplicateStatus(plan) === 'original'">
+                                                    <Badge variant="default" class="bg-green-600 text-[9px] h-4">Original</Badge>
+                                                    <Button 
+                                                        v-if="showDuplicatesOnly"
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        @click.stop="mergeGroup(plan)"
+                                                        class="h-4 px-1.5 text-[8px] font-bold uppercase bg-amber-50 text-amber-600 border border-amber-100 hover:bg-amber-600 hover:text-white"
+                                                    >
+                                                        Merge
+                                                    </Button>
+                                                </template>
+                                                <Badge v-else variant="secondary" class="text-[9px] h-4">Duplicate</Badge>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-8 py-6">
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex items-center gap-2 text-[13px] font-bold text-foreground">
-                                            <Calendar class="h-3.5 w-3.5 text-blue-500/70" />
-                                            {{ plan.lesson_date }}
-                                        </div>
-                                        <div class="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-60 ml-0.5">
-                                            <Clock class="h-3 w-3" />
-                                            Period {{ plan.period_number }} • {{ plan.duration_minutes }} MINS
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <span class="text-xs text-muted-foreground">{{ plan.subject?.name }}</span>
+                                            <span class="text-[10px] text-muted-foreground/60">• Week {{ plan.week_number }}</span>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-8 py-6">
-                                    <div class="flex flex-col gap-1 max-w-[200px]">
-                                        <span class="truncate text-foreground font-black uppercase text-[10px] tracking-tight">{{ plan.strand?.name || 'Protocol Strand' }}</span>
-                                        <span class="truncate text-[10px] italic font-medium opacity-60">{{ plan.sub_strand?.name || 'Sub-Strand' }}</span>
+                                <td class="px-4 py-3 text-sm text-slate-600">{{ plan.lesson_date }}</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex flex-col text-xs space-y-0.5">
+                                        <span class="font-medium text-slate-700">{{ plan.strand?.name || '---' }}</span>
+                                        <span class="text-muted-foreground truncate max-w-[150px]">{{ plan.sub_strand?.name || '---' }}</span>
                                     </div>
                                 </td>
-                                <td class="px-8 py-6">
-                                     <Badge variant="outline" :class="[getStatusColor(plan.status), 'rounded-xl px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border-2 shadow-sm flex items-center gap-2 w-fit transform transition-all group-hover:scale-105']">
-                                         {{ plan.status }}
-                                     </Badge>
+                                <td class="px-4 py-3">
+                                    <Badge :variant="plan.status === 'approved' ? 'default' : 'secondary'">{{ plan.status }}</Badge>
                                 </td>
-                                <td class="px-8 py-6 text-right">
-                                    <div class="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-                                        <Button variant="ghost" size="icon" class="h-10 w-10 rounded-2xl hover:bg-muted font-black border border-border/20 transition-all" @click.stop="openModal(plan)"><Eye class="h-5 w-5" /></Button>
-                                        
-                                        <DropdownMenu @click.stop>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-10 w-10 rounded-2xl hover:bg-muted font-black border border-border/20 transition-all"><MoreHorizontal class="h-5 w-5" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-64 p-2 rounded-2xl border border-border shadow-2xl backdrop-blur-xl bg-card/95">
-                                                 <div class="px-3 py-2.5 mb-1 border-b border-border/10">
-                                                    <p class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Deployment Options</p>
-                                                </div>
-                                                <DropdownMenuItem class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group" @click="openModal(plan)"><Eye class="mr-3 h-4 w-4 opacity-60 transition-colors group-hover:text-blue-600" /> Operational Details</DropdownMenuItem>
-                                                <DropdownMenuItem class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group" @click="openModal(plan)"><Edit2 class="mr-3 h-4 w-4 opacity-60 transition-colors group-hover:text-amber-600" /> Adjust Strategy</DropdownMenuItem>
-                                                
-                                                <DropdownMenuItem @click="openAssessmentWizard(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group text-blue-600 bg-blue-50/50 hover:bg-blue-600 hover:text-white transition-all">
-                                                    <Wand2 class="mr-3 h-4 u-4" /> Derive Assessment
+                                <td class="px-4 py-3 text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <Button variant="ghost" size="icon" class="h-8 w-8">
+                                                <MoreHorizontal class="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" class="w-56">
+                                            <DropdownMenuItem @click="viewPlan(plan)">
+                                                <Eye class="mr-2 h-4 w-4" /> View Details
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem @click="openModal(plan)">
+                                                <Edit2 class="mr-2 h-4 w-4" /> Edit Lesson
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem @click="downloadPdf(plan)">
+                                                <Download class="mr-2 h-4 w-4" /> Download PDF
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem @click="openAssessmentWizard(plan)">
+                                                <Wand2 class="mr-2 h-4 w-4" /> Create Assessment
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <template v-if="plan.status !== 'approved'">
+                                                <DropdownMenuItem @click="approvePlan(plan)" class="text-green-600">
+                                                    <CheckCircle2 class="mr-2 h-4 w-4" /> Approve Plan
                                                 </DropdownMenuItem>
-
-                                                <DropdownMenuItem @click="downloadPdf(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider group">
-                                                    <FileText class="mr-3 h-4 w-4 opacity-60" /> Download PDF
-                                                </DropdownMenuItem>
-
-                                                <template v-if="plan.status === 'draft'">
-                                                    <DropdownMenuItem @click="submitForReview(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider text-amber-600 hover:bg-amber-600 hover:text-white transition-all">
-                                                        <CheckCircle2 class="mr-3 h-4 w-4" /> Finalize Deployment
-                                                    </DropdownMenuItem>
-                                                </template>
-
-                                                <template v-if="plan.status === 'pending'">
-                                                    <DropdownMenuItem @click="approvePlan(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all">
-                                                        <CheckCircle2 class="mr-3 h-4 w-4" /> Approve Execution
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem @click="rejectPlan(plan)" class="rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider text-rose-600 hover:bg-rose-600 hover:text-white transition-all">
-                                                        <AlertCircle class="mr-3 h-4 w-4" /> Reject Strategy
-                                                    </DropdownMenuItem>
-                                                </template>
-                                                
-                                                <DropdownMenuSeparator class="my-1.5 bg-border/5" />
-                                                <DropdownMenuItem class="text-rose-600 rounded-xl px-3 py-2.5 font-bold text-[11px] uppercase tracking-wider hover:bg-rose-600 hover:text-white transition-colors" @click="deletePlan(plan)"><Trash2 class="mr-3 h-4 w-4" /> Purge Plan</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                            </template>
+                                            <DropdownMenuItem class="text-destructive" @click="deletePlan(plan)">
+                                                <Trash2 class="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </td>
                             </tr>
                             <tr v-if="filteredPlans.length === 0">
@@ -602,7 +865,71 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination Footer -->
+                <div class="p-6 border-t border-border/40 bg-muted/5 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div class="text-[11px] font-bold text-muted-foreground uppercase tracking-widest bg-white/50 px-4 py-2 rounded-xl border border-border/40 shadow-sm">
+                         Showing <span class="text-foreground">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span> to 
+                         <span class="text-foreground">{{ Math.min(currentPage * itemsPerPage, filteredPlans.length) }}</span> of 
+                         <span class="text-foreground">{{ filteredPlans.length }}</span> Lessons
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-10 w-10 rounded-xl border-border/60 hover:bg-white shadow-sm disabled:opacity-30 transition-all"
+                            :disabled="currentPage === 1"
+                            @click="currentPage = 1"
+                        >
+                            <ChevronsLeft class="h-4 w-4" />
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-10 w-10 rounded-xl border-border/60 hover:bg-white shadow-sm disabled:opacity-30 transition-all"
+                            :disabled="currentPage === 1"
+                            @click="currentPage--"
+                        >
+                            <ChevronLeft class="h-4 w-4" />
+                        </Button>
+
+                        <div class="flex items-center gap-1.5 px-3">
+                            <template v-for="page in totalPages" :key="page">
+                                <Button 
+                                    v-if="Math.abs(page - currentPage) < 3 || page === 1 || page === totalPages"
+                                    variant="outline" 
+                                    class="h-10 min-w-[40px] rounded-xl border-border/60 font-black text-xs transition-all shadow-sm"
+                                    :class="currentPage === page ? 'bg-blue-600 text-white border-blue-600 shadow-blue-500/20' : 'hover:bg-white text-foreground'"
+                                    @click="currentPage = page"
+                                >
+                                    {{ page }}
+                                </Button>
+                                <span v-else-if="Math.abs(page - currentPage) === 3" class="px-1 text-muted-foreground opacity-40 font-black">...</span>
+                            </template>
+                        </div>
+
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-10 w-10 rounded-xl border-border/60 hover:bg-white shadow-sm disabled:opacity-30 transition-all"
+                            :disabled="currentPage === totalPages"
+                            @click="currentPage++"
+                        >
+                            <ChevronRight class="h-4 w-4" />
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            class="h-10 w-10 rounded-xl border-border/60 hover:bg-white shadow-sm disabled:opacity-30 transition-all"
+                            :disabled="currentPage === totalPages"
+                            @click="currentPage = totalPages"
+                        >
+                            <ChevronsRight class="h-4 w-4" />
+                        </Button>
+                </div>
             </div>
+
         </div>
 
         <Dialog v-model:open="showModal">
@@ -737,6 +1064,26 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                     <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Key Vocabulary</Label>
                                     <Input v-model="form.key_vocabulary" placeholder="e.g. Numerator, Denominator, Vinculum" class="h-12 rounded-2xl border-slate-100 bg-slate-50/30 text-xs font-bold" />
                                 </div>
+
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div class="grid gap-3">
+                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">PCI (Pertinent Issues)</Label>
+                                        <div class="flex flex-wrap gap-2 p-3 rounded-2xl border border-slate-100 bg-slate-50/30">
+                                            <Badge v-for="issue in ['Environmental awareness', 'Citizenship', 'Health education', 'Life skills', 'Financial literacy']" 
+                                                   :key="issue"
+                                                   @click="form.pci.includes(issue) ? form.pci = form.pci.filter(i => i !== issue) : form.pci.push(issue)"
+                                                   :variant="form.pci.includes(issue) ? 'default' : 'outline'"
+                                                   class="cursor-pointer text-[9px] uppercase tracking-tight py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                                            >
+                                                {{ issue }}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                    <div class="grid gap-3">
+                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Inquiry Questions</Label>
+                                        <Textarea v-model="form.inquiry_questions" placeholder="What strategies can you use to win an argument in a debate?" class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[80px] text-sm italic" />
+                                    </div>
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="delivery" class="space-y-6 mt-0">
@@ -758,9 +1105,26 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                         <div class="space-y-4">
                                             <div v-for="(activity, idx) in form.learning_activities" :key="idx" class="flex gap-3 relative group">
                                                 <div class="h-10 w-10 flex-shrink-0 rounded-full bg-emerald-100/50 flex items-center justify-center text-[10px] font-black text-emerald-600 italic border border-emerald-200/50">{{ idx + 1 }}</div>
-                                                <Textarea v-model="form.learning_activities[idx]" :placeholder="`Activity ${idx + 1}: Learners in groups observe real plant...`" class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm flex-1" />
+                                                <div class="grid gap-2 flex-1">
+                                                    <Textarea v-model="form.learning_activities[idx]" :placeholder="`Shared Activity ${idx + 1}: Learners in groups observe real plant...`" class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm" />
+                                                </div>
                                                 <Button v-if="form.learning_activities.length > 1" variant="ghost" size="icon" @click="form.learning_activities.splice(idx, 1)" class="h-8 w-8 text-rose-300 hover:text-rose-600 absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition-all"><Trash class="h-3.5 w-3.5" /></Button>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid md:grid-cols-2 gap-4">
+                                        <div class="p-6 rounded-3xl bg-indigo-50/50 border border-indigo-100/50">
+                                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-4 flex items-center gap-2">
+                                                <User class="h-4 w-4" /> Teacher Activities
+                                            </h4>
+                                            <Textarea v-model="form.teacher_activities" placeholder="What the teacher will be doing..." class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm" />
+                                        </div>
+                                        <div class="p-6 rounded-3xl bg-amber-50/50 border border-amber-100/50">
+                                            <h4 class="text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-4 flex items-center gap-2">
+                                                <Users class="h-4 w-4" /> Learner Activities
+                                            </h4>
+                                            <Textarea v-model="form.learner_activities" placeholder="What the learners will be doing..." class="rounded-2xl border-0 bg-white/80 min-h-[80px] text-sm italic shadow-sm" />
                                         </div>
                                     </div>
 
@@ -774,7 +1138,7 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                             </TabsContent>
 
                             <TabsContent value="reflection" class="space-y-6 mt-0">
-                                <div class="grid md:grid-cols-2 gap-6">
+                                <div class="grid md:grid-cols-3 gap-6">
                                     <div class="grid gap-3">
                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Teaching Aids</Label>
                                         <Textarea v-model="form.teaching_aids" placeholder="Charts, digital content, realia..." class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[100px] text-sm italic" />
@@ -783,13 +1147,25 @@ import Download from 'lucide-vue-next'; // fallback wrapper if needed
                                         <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Assessment Methods</Label>
                                         <Textarea v-model="form.assessment_methods" placeholder="Observation, oral testing, written work..." class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[100px] text-sm italic" />
                                     </div>
+                                    <div class="grid gap-3">
+                                        <Label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">References</Label>
+                                        <Textarea v-model="form.references" placeholder="Textbooks, page numbers, digital URLs..." class="rounded-2xl border-slate-100 bg-slate-50/30 min-h-[100px] text-sm italic" />
+                                    </div>
                                 </div>
 
-                                <div class="p-6 rounded-3xl bg-rose-50/30 border border-rose-100/30">
-                                    <h4 class="text-xs font-black uppercase tracking-[0.2em] text-rose-600 mb-4 flex items-center gap-2">
-                                        <Sparkles class="h-4 w-4" /> Professional Reflection
-                                    </h4>
-                                    <Textarea v-model="form.reflection" placeholder="What went well? What would you change next time?" class="rounded-2xl border-slate-100 bg-white min-h-[100px] text-sm italic" />
+                                <div class="grid md:grid-cols-2 gap-6">
+                                    <div class="p-6 rounded-3xl bg-rose-50/30 border border-rose-100/30">
+                                        <h4 class="text-xs font-black uppercase tracking-[0.2em] text-rose-600 mb-4 flex items-center gap-2">
+                                            <Sparkles class="h-4 w-4" /> Professional Reflection
+                                        </h4>
+                                        <Textarea v-model="form.reflection" placeholder="What went well? What would you change next time?" class="rounded-2xl border-slate-100 bg-white min-h-[100px] text-sm italic" />
+                                    </div>
+                                    <div class="p-6 rounded-3xl bg-indigo-50/30 border border-indigo-100/30">
+                                        <h4 class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-4 flex items-center gap-2">
+                                            <Home class="h-4 w-4" /> Homework / Extended Learning
+                                        </h4>
+                                        <Textarea v-model="form.homework" placeholder="Tasks for students to complete at home..." class="rounded-2xl border-slate-100 bg-white min-h-[100px] text-sm italic" />
+                                    </div>
                                 </div>
                             </TabsContent>
                         </Tabs>

@@ -380,11 +380,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/planner/lesson-plans/grade/{gradeLevel}', [AcademicPlannerController::class, 'lessonPlansGrade'])->name('curriculum.planner.lesson-plans.grade');
         Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subjects', [AcademicPlannerController::class, 'lessonPlansClassSubjects'])->name('curriculum.planner.lesson-plans.class.subjects');
         Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subject/{subject}', [AcademicPlannerController::class, 'lessonPlansClassSubject'])->name('curriculum.planner.lesson-plans.class.subject');
+        Route::get('curriculum/planner/lesson-plans/class/{schoolClass}/subject/{subject}/download-all', [AcademicPlannerController::class, 'downloadAllLessonPlansPdf'])->name('curriculum.planner.lesson-plans.download-all');
         Route::post('curriculum/planner/lesson-plans', [AcademicPlannerController::class, 'storeLessonPlan'])->name('curriculum.planner.lesson-plans.store');
         Route::post('curriculum/planner/lesson-plans/bulk-upload', [AcademicPlannerController::class, 'importLessonPlans'])->name('curriculum.planner.lesson-plans.bulk-upload');
+        Route::post('curriculum/planner/lesson-plans/bulk-delete', [AcademicPlannerController::class, 'bulkDeleteLessonPlans'])->name('curriculum.planner.lesson-plans.bulk-delete');
         Route::get('curriculum/planner/lesson-plans/template', [AcademicPlannerController::class, 'downloadLessonPlanTemplate'])->name('curriculum.planner.lesson-plans.template');
         Route::put('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'updateLessonPlan'])->name('curriculum.planner.lesson-plans.update');
         Route::delete('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'destroyLessonPlan'])->name('curriculum.planner.lesson-plans.destroy');
+        Route::get('curriculum/planner/lesson-plans/{plan}', [AcademicPlannerController::class, 'showLessonPlan'])->name('curriculum.planner.lesson-plans.show');
         Route::get('curriculum/planner/lesson-plans/{plan}/download', [AcademicPlannerController::class, 'downloadLessonPlanPdf'])->name('curriculum.planner.lesson-plans.download');
         Route::post('curriculum/planner/lesson-plans/{plan}/submit', [AcademicPlannerController::class, 'submitLessonPlan'])->name('curriculum.planner.lesson-plans.submit');
         Route::post('curriculum/planner/lesson-plans/{plan}/approve', [AcademicPlannerController::class, 'approveLessonPlan'])->name('curriculum.planner.lesson-plans.approve');
@@ -399,6 +402,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/assignments/attachments/{attachment}/download', [AssignmentController::class, 'download'])->name('curriculum.assignments.attachments.download');
         
         Route::get('curriculum/resources', [LearningResourceController::class, 'index'])->name('curriculum.resources.index');
+        Route::get('curriculum/resources/{resource}', [LearningResourceController::class, 'show'])->name('curriculum.resources.show');
     });
 
     Route::middleware(['check_permission:curriculum.create'])->group(function () {
@@ -407,6 +411,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])->name('curriculum.assignments.submit');
         
         Route::post('curriculum/resources', [LearningResourceController::class, 'store'])->name('curriculum.resources.store');
+        Route::get('curriculum/resources/create', [LearningResourceController::class, 'create'])->name('curriculum.resources.create');
     });
 
     Route::middleware(['check_permission:curriculum.update'])->group(function () {
@@ -415,6 +420,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/assignments/submissions/{submission}/grade', [AssignmentController::class, 'grade'])->name('curriculum.assignments.submissions.grade');
         
         Route::put('curriculum/resources/{resource}', [LearningResourceController::class, 'update'])->name('curriculum.resources.update');
+        Route::get('curriculum/resources/{resource}/edit', [LearningResourceController::class, 'edit'])->name('curriculum.resources.edit');
     });
 
     Route::middleware(['check_permission:curriculum.delete'])->group(function () {

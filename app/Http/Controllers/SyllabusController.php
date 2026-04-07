@@ -375,7 +375,9 @@ class SyllabusController extends Controller
                 $learningArea = null;
 
                 if ($learningAreaName) {
-                    $allAreas = LearningArea::where(function ($q) use ($school_id) {
+                    // Bypass SchoolScope so we also find global (school_id=NULL) seeded areas
+                    $allAreas = LearningArea::withoutGlobalScopes()
+                        ->where(function ($q) use ($school_id) {
                             $q->where('school_id', $school_id)->orWhereNull('school_id');
                         })->get();
 
@@ -438,7 +440,7 @@ class SyllabusController extends Controller
 
                         $code = $baseCode;
                         $i = 1;
-                        while (LearningArea::where('code', $code)->exists()) {
+                        while (LearningArea::withoutGlobalScopes()->where('code', $code)->exists()) {
                             $code = $baseCode . $i++;
                         }
 
@@ -456,15 +458,56 @@ class SyllabusController extends Controller
                     continue;
                 }
 
+                // Resolve a globally-unique subject code
+                // (subjects_code_unique index covers ALL schools, not per-school)
+                $rawCode = !empty($data['code']) ? strtoupper(trim($data['code'])) : null;
+
+                if (!$rawCode) {
+                    // Generate from name initials
+                    $words = explode(' ', $data['name']);
+                    $rawCode = count($words) > 1
+                        ? strtoupper(implode('', array_map(fn($w) => substr($w, 0, 1), $words)))
+                        : strtoupper(substr($data['name'], 0, 3));
+                }
+
+                // Check if this code already belongs to THIS school's subject already
+                $existingForThisSchool = Subject::withoutGlobalScopes()
+                    ->where('code', $rawCode)
+                    ->where('school_id', $school_id)
+                    ->first();
+
+                if ($existingForThisSchool) {
+                    // Update the existing record instead of inserting
+                    $existingForThisSchool->update([
+                        'learning_area_id' => $learningArea->id,
+                        'name'             => $data['name'],
+                        'description'      => $data['description'] ?? null,
+                        'is_active'        => true,
+                    ]);
+                    $count++;
+                    continue;
+                }
+
+                // If code is taken globally (other school or seeded), make a school-specific variant
+                $subjectCode = $rawCode;
+                if (Subject::withoutGlobalScopes()->where('code', $subjectCode)->exists()) {
+                    $subjectCode = $rawCode . '-' . $school_id;
+                    $i = 1;
+                    while (Subject::withoutGlobalScopes()->where('code', $subjectCode)->exists()) {
+                        $subjectCode = $rawCode . '-' . $school_id . '-' . $i++;
+                    }
+                }
+
                 Subject::create([
-                    'school_id' => $school_id,
+                    'school_id'        => $school_id,
                     'learning_area_id' => $learningArea->id,
-                    'name' => $data['name'],
-                    'code' => $data['code'] ?? null,
-                    'description' => $data['description'] ?? null,
-                    'is_active' => true,
+                    'name'             => $data['name'],
+                    'code'             => $subjectCode,
+                    'description'      => $data['description'] ?? null,
+                    'is_active'        => true,
                 ]);
                 $count++;
+
             }
 
             if (!empty($errors)) {

@@ -24,6 +24,36 @@ class LearningResourceController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('curriculum/resources/Create', [
+            'subjects' => Subject::active()->get(['id', 'name']),
+            'grades' => GradeLevel::all(['id', 'name']),
+        ]);
+    }
+
+    public function edit(CurriculumResource $resource): Response
+    {
+        return Inertia::render('curriculum/resources/Edit', [
+            'resource' => $resource,
+            'subjects' => Subject::active()->get(['id', 'name']),
+            'grades' => GradeLevel::all(['id', 'name']),
+        ]);
+    }
+
+    public function show(CurriculumResource $resource): Response
+    {
+        $resource->load(['subject', 'gradeLevel']);
+        
+        return Inertia::render('curriculum/resources/Show', [
+            'resource' => $resource,
+            'relatedResources' => CurriculumResource::where('resource_type', $resource->resource_type)
+                ->where('id', '!=', $resource->id)
+                ->limit(5)
+                ->get()
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
