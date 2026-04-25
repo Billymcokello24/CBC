@@ -225,9 +225,21 @@ class AcademicPlannerController extends Controller
     public function lessonPlansClassSubjects(SchoolClass $schoolClass)
     {
         $user = Auth::user();
+        $subjectsQuery = Subject::active();
 
-        // Get all active subjects for this school
-        $subjects = Subject::active()->get()->map(function ($subject) use ($schoolClass, $user) {
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = $user->teacher;
+            if ($teacher) {
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->where('class_id', $schoolClass->id)
+                    ->pluck('subject_id')
+                    ->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+            }
+        }
+
+        $subjects = $subjectsQuery->get()->map(function ($subject) use ($schoolClass, $user) {
             $query = LessonPlan::where('class_id', $schoolClass->id)
                 ->where('subject_id', $subject->id);
 
@@ -239,9 +251,6 @@ class AcademicPlannerController extends Controller
             return $subject;
         });
 
-        // Optionally, filter to show only subjects that have schemes or plans if desired,
-        // but here we show all so they can start planning new ones.
-        
         return Inertia::render('curriculum/planner/LessonPlansSubjects', [
             'currentClass' => $schoolClass->load('gradeLevel'),
             'subjects' => $subjects,
@@ -254,8 +263,24 @@ class AcademicPlannerController extends Controller
         $query = LessonPlan::with(['subject', 'classroom', 'academicTerm', 'teacher'])
             ->where('class_id', $schoolClass->id)
             ->where('subject_id', $subject->id);
+
         if (!$user->hasRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
             $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            
+            // Explicit assignment check
+            $isAssigned = \App\Models\TeacherSubject::where('teacher_id', $teacher?->id)
+                ->where('class_id', $schoolClass->id)
+                ->where('subject_id', $subject->id)
+                ->exists();
+
+            if (!$isAssigned) {
+                // Also check if they are the class teacher of this class
+                $isClassTeacher = $schoolClass->class_teacher_id === $user->id;
+                if (!$isClassTeacher) {
+                    abort(403, 'Unauthorized access to this subject for this class.');
+                }
+            }
+
             $query->where('teacher_id', $teacher?->id ?? 0);
         }
 
@@ -264,7 +289,7 @@ class AcademicPlannerController extends Controller
             'currentSubject' => $subject,
             'plans' => $query->latest()->get(),
             'subjects' => Subject::active()->where('id', $subject->id)->get(['id', 'name']), // Locked to current
-            'grades' => GradeLevel::all(['id', 'name']), 
+            'grades' => GradeLevel::query()->get(['id', 'name']), 
             'classes' => SchoolClass::active()->where('id', $schoolClass->id)->get(['id', 'name']), 
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
             'strands' => \App\Models\Curriculum\Strand::where('subject_id', $subject->id)->get(['id', 'name', 'subject_id', 'grade_level_id']),
