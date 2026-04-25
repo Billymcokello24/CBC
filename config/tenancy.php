@@ -19,6 +19,8 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
+        'cbc.digiprojects.co.ke',
+        'www.cbc.digiprojects.co.ke',
     ],
 
     /**
