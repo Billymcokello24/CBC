@@ -486,41 +486,47 @@ class ParentPortalController extends Controller
         $guardian = $this->guardian();
         $guardian->load(['students.currentClass:id,name']);
 
-        $classIds = $guardian->students->pluck('current_class_id')->filter()->unique();
-        $studentIds = $guardian->students->pluck('id');
+        $children = $guardian->students->map(function ($student) {
+            $class = $student->currentClass;
+            
+            // Get published assignments for this child's class
+            $assignments = Assignment::with(['subject:id,name', 'teacher:id,first_name,last_name'])
+                ->where('class_id', $student->current_class_id)
+                ->where('status', 'published')
+                ->latest('due_date')
+                ->get()
+                ->map(function (Assignment $a) use ($student) {
+                    $submission = AssignmentSubmission::where('assignment_id', $a->id)
+                        ->where('student_id', $student->id)
+                        ->first();
 
-        $assignments = Assignment::with(['subject:id,name', 'classroom:id,name', 'teacher:id,first_name,last_name'])
-            ->whereIn('class_id', $classIds)
-            ->where('status', 'published')
-            ->latest('due_date')
-            ->get()
-            ->map(function (Assignment $a) use ($studentIds) {
-                $submissions = AssignmentSubmission::whereIn('student_id', $studentIds)
-                    ->where('assignment_id', $a->id)
-                    ->get();
+                    return [
+                        'id' => $a->id,
+                        'title' => $a->title,
+                        'subject' => $a->subject?->name,
+                        'class' => $student->currentClass?->name,
+                        'teacher' => $a->teacher ? trim($a->teacher->first_name . ' ' . $a->teacher->last_name) : null,
+                        'assignment_type' => $a->assignment_type,
+                        'due_date' => $a->due_date?->format('Y-m-d H:i'),
+                        'total_marks' => $a->total_marks,
+                        'is_overdue' => $a->due_date && $a->due_date->isPast(),
+                        'status' => $submission ? $submission->status : 'pending',
+                        'marks_obtained' => $submission?->marks_obtained,
+                        'final_marks' => $submission?->final_marks,
+                    ];
+                });
 
-                return [
-                    'id' => $a->id,
-                    'title' => $a->title,
-                    'subject' => $a->subject?->name,
-                    'class' => $a->classroom?->name,
-                    'teacher' => $a->teacher ? trim($a->teacher->first_name . ' ' . $a->teacher->last_name) : null,
-                    'assignment_type' => $a->assignment_type,
-                    'due_date' => $a->due_date?->format('Y-m-d H:i'),
-                    'total_marks' => $a->total_marks,
-                    'is_overdue' => $a->due_date && $a->due_date->isPast(),
-                    'submissions_count' => $submissions->count(),
-                    'has_unsubmitted' => $submissions->count() < $studentIds->count(),
-                ];
-            });
+            return [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'class' => $class?->name,
+                'assignments' => $assignments,
+            ];
+        });
 
         return Inertia::render('guardians/Assignments/Index', [
-            'assignments' => $assignments,
-            'children' => $guardian->students->map(fn($s) => [
-                'id' => $s->id,
-                'name' => $s->full_name,
-                'class' => $s->currentClass?->name,
-            ])->values(),
+            'children' => $children,
+            'total_assignments_count' => $children->sum(fn($c) => count($c['assignments'])),
         ]);
     }
 
