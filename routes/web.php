@@ -83,6 +83,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('children/{student}', [ParentPortalController::class, 'childProfile'])->name('children.show');
         Route::get('assignments', [ParentPortalController::class, 'assignments'])->name('assignments');
         Route::get('assignments/{assignment}', [ParentPortalController::class, 'assignmentShow'])->name('assignments.show');
+        Route::get('assignments/submissions/{submission}/download-marked', [ParentPortalController::class, 'downloadMarkedAssignment'])->name('assignments.submissions.download-marked');
         Route::post('assignments/{assignment}/submit', [ParentPortalController::class, 'submitAssignment'])->name('assignments.submit');
     });
 
@@ -397,12 +398,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Assignments & Learning Resources
     Route::middleware(['check_permission:curriculum.view'])->group(function () {
         Route::get('curriculum/assignments', [AssignmentController::class, 'index'])->name('curriculum.assignments.index');
-        Route::get('curriculum/assignments/{assignment}', [AssignmentController::class, 'show'])->name('curriculum.assignments.show');
-        Route::get('curriculum/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('curriculum.assignments.submissions');
+        Route::get('curriculum/assignments/vault', [AssignmentController::class, 'vault'])->name('curriculum.assignments.vault');
         Route::get('curriculum/assignments/attachments/{attachment}/download', [AssignmentController::class, 'download'])->name('curriculum.assignments.attachments.download');
-        
         Route::get('curriculum/resources', [LearningResourceController::class, 'index'])->name('curriculum.resources.index');
-        Route::get('curriculum/resources/{resource}', [LearningResourceController::class, 'show'])->name('curriculum.resources.show');
     });
 
     Route::middleware(['check_permission:curriculum.create'])->group(function () {
@@ -411,6 +409,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('curriculum/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])->name('curriculum.assignments.submit');
         
         Route::post('curriculum/resources', [LearningResourceController::class, 'store'])->name('curriculum.resources.store');
+        Route::post('curriculum/resources/folders', [LearningResourceController::class, 'storeFolder'])->name('curriculum.resources.folders.store');
         Route::get('curriculum/resources/create', [LearningResourceController::class, 'create'])->name('curriculum.resources.create');
     });
 
@@ -423,11 +422,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/resources/{resource}/edit', [LearningResourceController::class, 'edit'])->name('curriculum.resources.edit');
     });
 
+    Route::middleware(['check_permission:curriculum.view'])->group(function () {
+        Route::get('curriculum/assignments/{assignment}', [AssignmentController::class, 'show'])->name('curriculum.assignments.show');
+        Route::get('curriculum/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('curriculum.assignments.submissions');
+        Route::get('curriculum/assignments/{assignment}/submissions/{submission}/review', [AssignmentController::class, 'reviewSubmission'])->name('curriculum.assignments.submissions.review');
+        Route::get('curriculum/assignments/submissions/{submission}/download-compiled', [AssignmentController::class, 'downloadCompiledPdf'])->name('curriculum.assignments.submissions.download-compiled');
+        Route::get('curriculum/resources/{resource}', [LearningResourceController::class, 'show'])->name('curriculum.resources.show');
+    });
+
     Route::middleware(['check_permission:curriculum.delete'])->group(function () {
         Route::delete('curriculum/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('curriculum.assignments.destroy');
         Route::delete('curriculum/assignments/attachments/{attachment}', [AssignmentController::class, 'destroyAttachment'])->name('curriculum.assignments.attachments.destroy');
         
         Route::delete('curriculum/resources/{resource}', [LearningResourceController::class, 'destroy'])->name('curriculum.resources.destroy');
+        Route::post('curriculum/resources/bulk-delete', [LearningResourceController::class, 'bulkDelete'])->name('curriculum.resources.bulk-delete');
     });
 
     // ──────────────────────────────────────────────

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { route } from 'ziggy-js';
 import {
     ArrowLeft, Calendar, Clock, CheckCircle2,
     Users, BookOpen, Target, Layers, Download,
@@ -12,6 +14,9 @@ import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
     assignment: any;
+    submissions: any[];
+    children: any[];
+    userRole: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -26,12 +31,37 @@ const deleteAssignment = () => {
     }
 };
 
+const isGuardian = computed(() => props.userRole === 'parent');
+const isInstructor = computed(() => !isGuardian.value);
+
+const form = useForm({
+    student_id: props.children.length === 1 ? props.children[0].id : '',
+    content: '',
+    attachments: [] as File[],
+});
+
+const handleFileChange = (e: Event) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files) {
+        form.attachments = Array.from(files);
+    }
+};
+
+const submitAssignment = () => {
+    form.post(route('curriculum.assignments.submit', props.assignment.id), {
+        onSuccess: () => {
+            form.reset('content', 'attachments');
+        },
+    });
+};
+
 const getStatusBadge = (status: string) => {
     switch (status) {
         case 'published': return 'bg-emerald-50 text-emerald-600';
         case 'draft': return 'bg-slate-50 text-slate-500';
+        case 'submitted': return 'bg-blue-50 text-blue-600';
+        case 'graded': return 'bg-purple-50 text-purple-600';
         case 'closed': return 'bg-red-50 text-red-600';
-        case 'graded': return 'bg-blue-50 text-blue-600';
         default: return 'bg-slate-50 text-slate-500';
     }
 };
@@ -46,8 +76,6 @@ const getFileIcon = (type: string) => {
     if (type.includes('pdf')) return '📄';
     if (type.includes('image')) return '🖼️';
     if (type.includes('word') || type.includes('document')) return '📝';
-    if (type.includes('spreadsheet') || type.includes('excel')) return '📊';
-    if (type.includes('presentation') || type.includes('powerpoint')) return '📑';
     return '📎';
 };
 </script>
@@ -71,7 +99,7 @@ const getFileIcon = (type: string) => {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3" v-if="isInstructor">
                     <Button @click="deleteAssignment" variant="outline" class="h-10 px-4 rounded-xl border-red-100 bg-white font-semibold text-xs text-red-500 shadow-sm hover:bg-red-50 hover:border-red-200">
                         <Trash2 class="mr-2 h-4 w-4" /> Delete
                     </Button>
@@ -85,6 +113,11 @@ const getFileIcon = (type: string) => {
                             <Users class="mr-2 h-4 w-4" /> Review Submissions ({{ assignment.submissions?.length || 0 }})
                         </Button>
                     </Link>
+                </div>
+                <div v-else class="flex items-center gap-3">
+                    <Badge variant="outline" class="h-10 px-4 rounded-xl border-blue-100 bg-blue-50/30 font-bold text-xs text-blue-600">
+                         Guardian Submission Portal
+                    </Badge>
                 </div>
             </div>
 
@@ -113,7 +146,7 @@ const getFileIcon = (type: string) => {
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-50 flex items-center justify-between bg-[#f9fafb]/50">
                             <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Paperclip class="h-3 w-3" /> Uploaded Files ({{ assignment.attachments?.length || 0 }})
+                                <Paperclip class="h-3 w-3" /> Assignment Files ({{ assignment.attachments?.length || 0 }})
                             </h3>
                         </div>
 
@@ -134,11 +167,101 @@ const getFileIcon = (type: string) => {
                                     </a>
                                 </div>
                             </div>
-                            <div v-else class="text-center py-12 px-6">
-                                <div class="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 mx-auto mb-3">
-                                    <Paperclip class="h-6 w-6" />
+                            <div v-else class="text-center py-8">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">No resources attached</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submission Portal (For Guardians) -->
+                    <div v-if="isGuardian" class="space-y-6">
+                        <div class="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
+                            <div class="px-6 py-4 border-b border-blue-50 bg-blue-50/30 flex items-center justify-between">
+                                <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                                    <Paperclip class="h-3 w-3" /> Digital Submission Studio
+                                </h3>
+                            </div>
+                            
+                            <form @submit.prevent="submitAssignment" class="p-8 space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Student Context</label>
+                                        <select v-model="form.student_id" class="w-full h-12 rounded-xl border-2 border-slate-100 bg-slate-50/50 px-4 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all" required>
+                                            <option value="" disabled>Select Student...</option>
+                                            <option v-for="child in children" :key="child.id" :value="child.id">
+                                                {{ child.first_name }} {{ child.last_name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Evidence Acquisition (Photos/Scans)</label>
+                                        <div class="relative">
+                                            <input type="file" multiple @change="handleFileChange" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                            <div class="h-12 w-full rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center gap-2 group-hover:border-blue-500 transition-all">
+                                                <Paperclip class="h-4 w-4 text-slate-400" />
+                                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                    {{ form.attachments.length ? `${form.attachments.length} files selected` : 'Choose Images' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">No attachments uploaded</p>
+
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Brief Commentary (Optional)</label>
+                                    <textarea v-model="form.content" placeholder="Any specific notes for the instructor..." class="w-full min-h-[120px] rounded-2xl border-2 border-slate-100 bg-slate-50/50 p-4 text-xs font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all"></textarea>
+                                </div>
+
+                                <div class="flex items-center justify-end">
+                                    <Button type="submit" :disabled="form.processing" class="h-12 px-10 rounded-xl bg-blue-600 hover:bg-blue-700 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-500/20 text-white border-0">
+                                        {{ form.processing ? 'DEPOSITING...' : 'Certify & Submit Work' }}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Previous Submissions (For selected student) -->
+                        <div v-if="submissions.length" class="space-y-4">
+                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">Portfolio History</h3>
+                            <div v-for="submission in submissions" :key="submission.id" class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden p-6 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <Calendar class="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">SUBMITTED ON</div>
+                                            <div class="text-xs font-black text-slate-700">{{ new Date(submission.submitted_at).toLocaleDateString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <a :href="route('curriculum.assignments.submissions.download-compiled', submission.id)" target="_blank" class="h-10 px-4 rounded-xl border border-slate-100 bg-slate-50 flex items-center justify-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-100 transition-all shadow-sm">
+                                            <Download class="h-3.5 w-3.5" /> PDF Archive
+                                        </a>
+                                        <Badge :class="['rounded border-0 text-[10px] font-bold px-2.5 py-0.5 uppercase tracking-wider', getStatusBadge(submission.status)]">
+                                            {{ submission.status }}
+                                        </Badge>
+                                    </div>
+                                </div>
+
+                                <div v-if="submission.feedback" class="p-4 bg-purple-50 rounded-xl border border-purple-100">
+                                    <div class="text-[9px] font-black text-purple-600 uppercase tracking-widest mb-1 italic">Instructor Feedback</div>
+                                    <p class="text-xs text-purple-800 font-medium">{{ submission.feedback }}</p>
+                                    <div v-if="submission.marks_obtained !== null" class="mt-2 text-xs font-black text-purple-900 border-t border-purple-100 pt-2 animate-in slide-in-from-bottom-2">
+                                        Performance Index: {{ submission.marks_obtained }} / {{ assignment.total_marks }}
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-4 md:grid-cols-6 gap-3 pt-4 border-t border-slate-50">
+                                    <div v-for="attachment in submission.attachments" :key="attachment.id" class="aspect-square rounded-lg border border-slate-100 bg-slate-50 flex flex-col items-center justify-center p-2 group hover:border-blue-300 transition-all cursor-pointer overflow-hidden">
+                                        <template v-if="attachment.file_type.includes('image')">
+                                            <img :src="`/storage/${attachment.file_path}`" class="w-full h-full object-cover rounded shadow-sm opacity-60 group-hover:opacity-100 transition-opacity" />
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-lg">{{ getFileIcon(attachment.file_type) }}</span>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

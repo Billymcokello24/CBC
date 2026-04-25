@@ -201,6 +201,8 @@ class RolesAndPermissionsSeeder extends Seeder
         $parent->givePermissionTo([
             'students.view_own',
             'guardians.view_own',
+            'curriculum.view',
+            'curriculum.create',
             'assessments.view_own',
             'attendance.view_own',
             'finance.view_own',

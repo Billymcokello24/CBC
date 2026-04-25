@@ -8,6 +8,7 @@ import {
     CheckCircle2, AlertCircle, ChevronRight,
     FileText, TrendingUp, Users, MoreHorizontal
 } from 'lucide-vue-next';
+import { route } from 'ziggy-js';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,8 @@ const props = defineProps<{
     assignments: any[];
     subjects: any[];
     classes: any[];
+    children: any[];
+    userRole: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -47,9 +50,15 @@ const getStatusBadge = (status: string) => {
     }
 };
 
+const isGuardian = computed(() => props.userRole === 'parent');
+
 const publishedCount = computed(() => props.assignments.filter(a => a.status === 'published').length);
 const draftCount = computed(() => props.assignments.filter(a => a.status === 'draft').length);
 const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a: any) => acc + (a.submissions_count || 0), 0));
+
+// Guardian specific stats
+const pendingSubmissions = computed(() => props.assignments.filter(a => !a.submissions?.length).length);
+const gradedSubmissions = computed(() => props.assignments.filter(a => a.submissions?.some((s: any) => s.status === 'graded')).length);
 
 </script>
 
@@ -60,11 +69,18 @@ const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a
             <!-- Header -->
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">Assignments</h1>
-                    <p class="text-sm text-slate-500">Manage tasks and track student progress.</p>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                        {{ isGuardian ? 'Student Assignments' : 'Assignments' }}
+                    </h1>
+                    <p class="text-sm text-slate-500">
+                        {{ isGuardian ? 'Keep track of your children\'s academic tasks and progress.' : 'Manage tasks and track student progress.' }}
+                    </p>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3" v-if="!isGuardian">
+                    <Link :href="route('curriculum.assignments.vault')" class="h-10 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 font-semibold text-xs text-white shadow-sm transition-all inline-flex items-center gap-2">
+                        <Archive class="h-4 w-4 text-blue-400" /> Academic Vault
+                    </Link>
                     <Link href="/curriculum/assignments/create" class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 font-semibold text-xs text-white shadow-sm transition-all inline-flex items-center gap-2">
                         <Plus class="h-4 w-4" /> New Assignment
                     </Link>
@@ -75,40 +91,73 @@ const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
                     <div class="space-y-0.5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ isGuardian ? 'Active Tasks' : 'Total' }}</p>
                         <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ assignments.length }}</h2>
                     </div>
                     <div class="h-11 w-11 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
                         <FileText class="h-5 w-5" />
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                    <div class="space-y-0.5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Published</p>
-                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ publishedCount }}</h2>
+                
+                <template v-if="!isGuardian">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Published</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ publishedCount }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+                            <CheckCircle2 class="h-5 w-5" />
+                        </div>
                     </div>
-                    <div class="h-11 w-11 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500">
-                        <CheckCircle2 class="h-5 w-5" />
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drafts</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ draftCount }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                            <AlertCircle class="h-5 w-5" />
+                        </div>
                     </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                    <div class="space-y-0.5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Drafts</p>
-                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ draftCount }}</h2>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submissions</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ totalSubmissions }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                            <Users class="h-5 w-5" />
+                        </div>
                     </div>
-                    <div class="h-11 w-11 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
-                        <AlertCircle class="h-5 w-5" />
+                </template>
+
+                <template v-else>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ pendingSubmissions }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500">
+                            <Clock class="h-5 w-5" />
+                        </div>
                     </div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-                    <div class="space-y-0.5">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submissions</p>
-                        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ totalSubmissions }}</h2>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Graded</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ gradedSubmissions }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500">
+                            <TrendingUp class="h-5 w-5" />
+                        </div>
                     </div>
-                    <div class="h-11 w-11 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
-                        <Users class="h-5 w-5" />
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-0.5">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Children</p>
+                            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">{{ children.length }}</h2>
+                        </div>
+                        <div class="h-11 w-11 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                            <Users class="h-5 w-5" />
+                        </div>
                     </div>
-                </div>
+                </template>
             </div>
 
             <!-- Main Content -->
@@ -153,7 +202,7 @@ const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a
                                         <div class="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
                                             <FileText class="h-4 w-4" />
                                         </div>
-                                        <Link :href="`/curriculum/assignments/${assignment.id}`" class="flex flex-col">
+                                        <Link :href="route('curriculum.assignments.show', assignment.id)" class="flex flex-col">
                                             <span class="text-sm font-bold text-slate-800 line-clamp-1 hover:text-blue-600 transition-colors">{{ assignment.title }}</span>
                                             <span class="text-[10px] font-medium text-slate-400 uppercase">{{ assignment.assignment_type || 'homework' }}</span>
                                         </Link>
@@ -162,7 +211,12 @@ const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a
                                 <td class="px-4 py-4 text-xs font-semibold text-slate-600">{{ assignment.subject?.name || '—' }}</td>
                                 <td class="px-4 py-4 text-xs font-semibold text-slate-600">{{ assignment.classroom?.name || '—' }}</td>
                                 <td class="px-4 py-4 text-center">
-                                    <Badge class="rounded bg-blue-50 text-blue-600 border-0 text-[9px] font-bold px-2 py-0.5">
+                                    <Link v-if="!isGuardian" :href="route('curriculum.assignments.submissions', assignment.id)">
+                                        <Badge class="rounded bg-blue-50 text-blue-600 border-0 text-[10px] font-black px-3 py-1 hover:bg-blue-600 hover:text-white transition-all cursor-pointer shadow-sm">
+                                            {{ assignment.submissions_count || 0 }} Submissions
+                                        </Badge>
+                                    </Link>
+                                    <Badge v-else class="rounded bg-blue-50 text-blue-600 border-0 text-[9px] font-bold px-2 py-0.5">
                                         {{ assignment.submissions_count || 0 }}
                                     </Badge>
                                 </td>
@@ -174,10 +228,14 @@ const totalSubmissions = computed(() => props.assignments.reduce((acc: number, a
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <Link :href="`/curriculum/assignments/${assignment.id}/submissions`" class="h-9 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all inline-flex items-center">
+                                        <Link :href="`/curriculum/assignments/${assignment.id}/submissions`" v-if="!isGuardian" class="h-9 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all inline-flex items-center">
                                             Review <ChevronRight class="ml-1 h-3.5 w-3.5" />
                                         </Link>
-                                        <DropdownMenu>
+                                        <Link :href="`/curriculum/assignments/${assignment.id}`" v-else class="h-9 px-4 rounded-xl bg-blue-50 text-blue-600 font-bold text-[10px] uppercase hover:bg-blue-600 hover:text-white transition-all inline-flex items-center">
+                                            Open Task <ChevronRight class="ml-1 h-3.5 w-3.5" />
+                                        </Link>
+                                        
+                                        <DropdownMenu v-if="!isGuardian">
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-slate-100 text-slate-400">
                                                     <MoreVertical class="h-3.5 w-3.5" />

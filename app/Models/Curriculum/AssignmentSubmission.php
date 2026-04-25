@@ -27,6 +27,7 @@ class AssignmentSubmission extends Model
         'grade',
         'feedback',
         'private_notes',
+        'marked_file_path',
         'graded_by',
         'graded_at',
     ];

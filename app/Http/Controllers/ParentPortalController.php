@@ -8,15 +8,24 @@ use App\Models\Curriculum\SubmissionAttachment;
 use App\Models\Guardian;
 use App\Models\Student;
 use App\Models\TeacherSubject;
+use App\Services\Curriculum\AssignmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ParentPortalController extends Controller
 {
+    protected $assignmentService;
+
+    public function __construct(AssignmentService $assignmentService)
+    {
+        $this->assignmentService = $assignmentService;
+    }
+
     /**
      * Get the authenticated parent's guardian model and verify ownership of a student.
      */
@@ -394,11 +403,13 @@ class ParentPortalController extends Controller
                 'final_marks' => $submission->final_marks,
                 'feedback' => $submission->feedback,
                 'grade' => $submission->grade,
+                'private_notes' => $submission->private_notes ? json_decode($submission->private_notes) : null,
                 'attachments' => $submission->attachments->map(fn($a) => [
                     'id' => $a->id,
                     'file_name' => $a->file_name,
                     'file_type' => $a->file_type,
                     'file_size' => $a->file_size,
+                    'file_path' => $a->file_path,
                 ]),
             ] : null,
         ]);
@@ -511,5 +522,21 @@ class ParentPortalController extends Controller
                 'class' => $s->currentClass?->name,
             ])->values(),
         ]);
+    }
+
+    public function downloadMarkedAssignment(AssignmentSubmission $submission)
+    {
+        $guardian = $this->guardian();
+        $this->authorizeChild($guardian, $submission->student);
+
+        // Prioritize the pre-generated marked copy if it exists
+        $path = $submission->marked_file_path;
+        
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            $path = $this->assignmentService->generateAndStoreMarkedPdf($submission);
+            $submission->update(['marked_file_path' => $path]);
+        }
+
+        return Storage::disk('public')->download($path, 'marked_assignment_'.$submission->id.'.pdf');
     }
 }

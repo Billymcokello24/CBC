@@ -7,8 +7,10 @@ import type { BreadcrumbItem } from '@/types';
 import { ref } from 'vue';
 import {
     ArrowLeft, Paperclip, Download, Upload, Send, Clock,
-    User, BookOpen, FileText, Loader2, X, CheckCircle2, AlertCircle
+    User, BookOpen, FileText, Loader2, X, CheckCircle2, AlertCircle, Eye
 } from 'lucide-vue-next';
+import MarkingTool from '@/components/curriculum/assignments/MarkingTool.vue';
+import { route } from 'ziggy-js';
 
 const props = defineProps<{
     assignment: {
@@ -48,11 +50,13 @@ const props = defineProps<{
         final_marks: number | null;
         feedback: string | null;
         grade: string | null;
+        private_notes: any | null;
         attachments: Array<{
             id: number;
             file_name: string;
             file_type: string;
             file_size: number;
+            file_path: string;
         }>;
     } | null;
 }>();
@@ -233,6 +237,36 @@ const getStatusColor = (status: string) => {
                         <div v-if="submission.feedback" class="mt-5 bg-blue-50 border border-blue-100 rounded-xl p-5">
                             <h4 class="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2">Teacher Feedback</h4>
                             <p class="text-sm text-blue-700 leading-relaxed">{{ submission.feedback }}</p>
+                        </div>
+
+                        <!-- Graded Status & Download for Parents -->
+                        <div v-if="submission.status === 'graded'" class="mt-8 pt-8 border-t">
+                            <div class="bg-white rounded-[2rem] border border-slate-200 p-10 shadow-2xl shadow-blue-500/5 flex flex-col items-center text-center gap-8">
+                                <div class="h-20 w-20 rounded-[1.5rem] bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+                                    <CheckCircle2 class="h-10 w-10" />
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <h4 class="text-2xl font-black text-slate-900 tracking-tight uppercase">Marked & Graded</h4>
+                                    <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">
+                                        Your instructor has completed the assessment. You can now download the official marked copy with all corrections and stamps.
+                                    </p>
+                                </div>
+
+                                <!-- Primary Download Action -->
+                                <a 
+                                    :href="route('guardian.assignments.submissions.download-marked', { submission: String(submission.id) })" 
+                                    class="h-14 px-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 flex items-center gap-3 transition-all active:scale-95 group"
+                                >
+                                    <Download class="h-5 w-5 group-hover:translate-y-0.5 transition-transform" /> 
+                                    Download Marked Assignment
+                                </a>
+
+                                <div class="flex items-center gap-2 mt-4 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div class="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse"></div>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Digital Official Record</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

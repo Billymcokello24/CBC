@@ -16,6 +16,7 @@ class CurriculumResource extends Model
         'resourceable_type',
         'resourceable_id',
         'grade_level_id',
+        'folder_id',
         'title',
         'resource_type',
         'description',
@@ -37,6 +38,11 @@ class CurriculumResource extends Model
     public function resourceable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function folder()
+    {
+        return $this->belongsTo(ResourceFolder::class, 'folder_id');
     }
 
     public function subject()
