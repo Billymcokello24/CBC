@@ -9,7 +9,7 @@ import {
     Share2, Info, GraduationCap, ArrowLeft,
     CheckCircle2, X, Music, FileArchive, FileCode,
     LayoutGrid, List, ArrowUpDown, Clock, ExternalLink, MoreHorizontal,
-    ChevronLeft, ChevronRight, FolderPlus
+    ChevronLeft, ChevronRight, FolderPlus, BookOpen
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';

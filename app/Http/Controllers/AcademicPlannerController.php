@@ -29,7 +29,7 @@ class AcademicPlannerController extends Controller
         $query = SchemeOfWork::with(['subject', 'gradeLevel', 'academicTerm', 'preparedBy']);
 
         // Role-based filtering
-        if (!$user->hasRole(['admin', 'principal'])) {
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
             $query->where('prepared_by', $user->id);
         }
 
@@ -116,7 +116,7 @@ class AcademicPlannerController extends Controller
             }]);
 
         // If not admin, teacher only sees their assigned classes' grades
-        if (!$user->hasRole(['admin', 'principal']) && $user->teacher) {
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin']) && $user->teacher) {
             $assignedClassIds = $user->teacher->assignedClasses()->pluck('classes.id');
             // Or if teacher is a class teacher of some classes
             $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id');
@@ -132,7 +132,7 @@ class AcademicPlannerController extends Controller
                 $q->where('grade_level_id', $grade->id);
             });
 
-            if (!$user->hasRole(['admin', 'principal'])) {
+            if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
                 $query->where('teacher_id', $user->teacher?->id);
             }
 
@@ -147,7 +147,7 @@ class AcademicPlannerController extends Controller
             'draft_plans' => LessonPlan::where('status', 'draft')->count(),
         ];
 
-        if (!$user->hasRole(['admin', 'principal'])) {
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
             $teacher_id = $user->teacher?->id;
             $stats = [
                 'total_plans' => LessonPlan::where('teacher_id', $teacher_id)->count(),

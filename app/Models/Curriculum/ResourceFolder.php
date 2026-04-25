@@ -16,7 +16,13 @@ class ResourceFolder extends Model
         'school_id',
         'subject_id',
         'grade_level_id',
+        'created_by',
     ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
 
     public function resources(): HasMany
     {

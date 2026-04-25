@@ -22,8 +22,14 @@ class CheckPermission
             abort(403, 'Unauthorized');
         }
 
-        // Super admin and school admin bypass all permission checks
-        if ($user->hasAnyRole(['super_admin', 'school_admin'])) {
+        // Administrative roles bypass all permission checks
+        if ($user->hasAnyRole(['super_admin', 'school_admin', 'admin', 'principal'])) {
+            return $next($request);
+        }
+
+        // Teachers are allowed access to curriculum features by default
+        // The individual controllers will handle data scoping (ownership checks)
+        if ($user->hasRole('teacher') && collect($permissions)->contains(fn($p) => str_starts_with($p, 'curriculum.'))) {
             return $next($request);
         }
 

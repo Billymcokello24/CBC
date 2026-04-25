@@ -47,11 +47,16 @@ class LearningResourceController extends Controller
             $gradesQuery = $gradesQuery->get();
         }
 
+        $foldersQuery = ResourceFolder::withCount('resources')->latest();
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $foldersQuery->where('created_by', auth()->id());
+        }
+
         return Inertia::render('curriculum/resources/Index', [
             'resources' => $query->latest()->get(),
             'subjects' => $subjectsQuery->get(['id', 'name']),
             'grades' => $gradesQuery,
-            'folders' => ResourceFolder::withCount('resources')->latest()->get(),
+            'folders' => $foldersQuery->get(),
         ]);
     }
 
@@ -79,10 +84,15 @@ class LearningResourceController extends Controller
             $gradesQuery = $gradesQuery->get();
         }
 
+        $foldersQuery = ResourceFolder::latest();
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $foldersQuery->where('created_by', auth()->id());
+        }
+
         return Inertia::render('curriculum/resources/Create', [
             'subjects' => $subjectsQuery->get(['id', 'name']),
             'grades' => $gradesQuery,
-            'folders' => ResourceFolder::latest()->get(['id', 'name']),
+            'folders' => $foldersQuery->get(['id', 'name']),
             'selectedFolderId' => $request->folder_id,
         ]);
     }
@@ -95,11 +105,16 @@ class LearningResourceController extends Controller
             }
         }
 
+        $foldersQuery = ResourceFolder::latest();
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $foldersQuery->where('created_by', auth()->id());
+        }
+
         return Inertia::render('curriculum/resources/Edit', [
             'resource' => $resource,
             'subjects' => Subject::active()->get(['id', 'name']),
-            'grades' => GradeLevel::all(['id', 'name']),
-            'folders' => ResourceFolder::latest()->get(['id', 'name']),
+            'grades' => GradeLevel::query()->get(['id', 'name']),
+            'folders' => $foldersQuery->get(['id', 'name']),
         ]);
     }
 
@@ -282,6 +297,7 @@ class LearningResourceController extends Controller
             'school_id' => auth()->user()->school_id,
             'subject_id' => $request->subject_id,
             'grade_level_id' => $request->grade_level_id,
+            'created_by' => auth()->id(),
         ]);
 
         return back()->with('success', 'Registry folder initialized successfully.');
