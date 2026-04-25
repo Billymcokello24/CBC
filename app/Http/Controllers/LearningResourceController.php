@@ -14,23 +14,74 @@ use Inertia\Response;
 
 class LearningResourceController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
+        if (auth()->user()->hasRole('parent')) {
+            return redirect()->route('guardian.resources');
+        }
+
         $query = CurriculumResource::with(['subject', 'gradeLevel', 'folder']);
+        $subjectsQuery = Subject::active();
+        $gradesQuery = GradeLevel::query();
+
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = \App\Models\Teacher::where('user_id', auth()->id())->first();
+            if ($teacher) {
+                $query->where('created_by', auth()->id());
+                
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                $assignedGradeIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->with('schoolClass')
+                    ->get()
+                    ->pluck('schoolClass.grade_level_id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $gradesQuery = GradeLevel::whereIn('id', $assignedGradeIds)->get();
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } else {
+            $gradesQuery = $gradesQuery->get();
+        }
 
         return Inertia::render('curriculum/resources/Index', [
             'resources' => $query->latest()->get(),
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'grades' => GradeLevel::all(['id', 'name']),
+            'subjects' => $subjectsQuery->get(['id', 'name']),
+            'grades' => $gradesQuery,
             'folders' => ResourceFolder::withCount('resources')->latest()->get(),
         ]);
     }
 
     public function create(Request $request): Response
     {
+        $subjectsQuery = Subject::active();
+        $gradesQuery = GradeLevel::query();
+
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = \App\Models\Teacher::where('user_id', auth()->id())->first();
+            if ($teacher) {
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                $assignedGradeIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->with('schoolClass')
+                    ->get()
+                    ->pluck('schoolClass.grade_level_id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $gradesQuery = GradeLevel::whereIn('id', $assignedGradeIds)->get();
+            }
+        } else {
+            $gradesQuery = $gradesQuery->get();
+        }
+
         return Inertia::render('curriculum/resources/Create', [
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'grades' => GradeLevel::all(['id', 'name']),
+            'subjects' => $subjectsQuery->get(['id', 'name']),
+            'grades' => $gradesQuery,
             'folders' => ResourceFolder::latest()->get(['id', 'name']),
             'selectedFolderId' => $request->folder_id,
         ]);
@@ -38,6 +89,12 @@ class LearningResourceController extends Controller
 
     public function edit(CurriculumResource $resource): Response
     {
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            if ($resource->created_by != auth()->id()) {
+                abort(403, 'Unauthorized access to Edit this resource.');
+            }
+        }
+
         return Inertia::render('curriculum/resources/Edit', [
             'resource' => $resource,
             'subjects' => Subject::active()->get(['id', 'name']),
@@ -48,6 +105,12 @@ class LearningResourceController extends Controller
 
     public function show(CurriculumResource $resource): Response
     {
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            if ($resource->created_by != auth()->id()) {
+                abort(403, 'Unauthorized access to this resource.');
+            }
+        }
+
         $resource->load(['subject', 'gradeLevel']);
         
         return Inertia::render('curriculum/resources/Show', [
@@ -78,6 +141,9 @@ class LearningResourceController extends Controller
             'title', 'resource_type', 'description', 
             'subject_id', 'grade_level_id', 'folder_id', 'url'
         ]);
+
+        $baseData['school_id'] = auth()->user()->school_id;
+        $baseData['created_by'] = auth()->id();
 
         if ($request->subject_id) {
             $baseData['resourceable_type'] = Subject::class;
@@ -169,6 +235,12 @@ class LearningResourceController extends Controller
 
     public function destroy(CurriculumResource $resource): RedirectResponse
     {
+        if (!auth()->user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            if ($resource->created_by != auth()->id()) {
+                abort(403, 'Unauthorized access to Delete this resource.');
+            }
+        }
+
         if ($resource->file_path) {
             Storage::disk('public')->delete($resource->file_path);
         }

@@ -33,16 +33,43 @@ class AcademicPlannerController extends Controller
             $query->where('prepared_by', $user->id);
         }
 
+        $gradesQuery = GradeLevel::query();
+        $subjectsQuery = Subject::active();
+
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                $assignedGradeIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->with('schoolClass')
+                    ->get()
+                    ->pluck('schoolClass.grade_level_id')
+                    ->filter()
+                    ->unique()
+                    ->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $gradesQuery = GradeLevel::whereIn('id', $assignedGradeIds)->get();
+            }
+        } else {
+            $gradesQuery = $gradesQuery->get();
+        }
+
         return Inertia::render('curriculum/planner/Schemes', [
             'schemes' => $query->latest()->get(),
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'grades' => GradeLevel::all(['id', 'name']),
+            'subjects' => $subjectsQuery->get(['id', 'name']),
+            'grades' => $gradesQuery,
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
         ]);
     }
 
     public function showScheme(SchemeOfWork $scheme): Response
     {
+        if (!Auth::user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            if ($scheme->prepared_by != Auth::id()) {
+                abort(403, 'Unauthorized access to this Scheme of Work.');
+            }
+        }
         $scheme->load(['subject', 'gradeLevel', 'academicTerm', 'preparedBy', 'entries.strand', 'entries.subStrand', 'entries.lessonPlan']);
 
         return Inertia::render('curriculum/planner/SchemeDetails', [
@@ -130,12 +157,34 @@ class AcademicPlannerController extends Controller
             ];
         }
 
+        $allSubjectsQuery = Subject::active();
+        $allGradesQuery = GradeLevel::query();
+        $allClassesQuery = SchoolClass::active();
+
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = $user->teacher;
+            if ($teacher) {
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                $assignedClassIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('class_id')->toArray();
+                $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
+                $finalClassIds = array_unique(array_merge($assignedClassIds, $classTeacherClassIds));
+                
+                $assignedGradeIds = SchoolClass::whereIn('id', $finalClassIds)->pluck('grade_level_id')->unique()->toArray();
+                
+                $allSubjectsQuery->whereIn('id', $assignedSubjectIds);
+                $allGradesQuery = GradeLevel::whereIn('id', $assignedGradeIds)->get();
+                $allClassesQuery->whereIn('id', $finalClassIds);
+            }
+        } else {
+            $allGradesQuery = $allGradesQuery->get();
+        }
+
         return Inertia::render('curriculum/planner/LessonPlansIndex', [
             'grades' => $gradesList,
             'stats' => $stats,
-            'allGrades' => GradeLevel::all(['id', 'name']),
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'classes' => SchoolClass::active()->get(['id', 'name', 'grade_level_id']),
+            'allGrades' => $allGradesQuery,
+            'subjects' => $allSubjectsQuery->get(['id', 'name']),
+            'classes' => $allClassesQuery->get(['id', 'name', 'grade_level_id']),
             'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
             'strands' => \App\Models\Curriculum\Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
             'sub_strands' => \App\Models\Curriculum\SubStrand::all(['id', 'name', 'strand_id']),
@@ -315,6 +364,11 @@ class AcademicPlannerController extends Controller
 
     public function showLessonPlan(LessonPlan $plan)
     {
+        if (!Auth::user()->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            if ($plan->teacher_id != Auth::user()->teacher?->id) {
+                abort(403, 'Unauthorized access to this Lesson Plan.');
+            }
+        }
         $plan->load(['subject', 'classroom.gradeLevel', 'strand', 'subStrand', 'teacher.user', 'academicTerm', 'academicTerm.academicYear']);
         
         return Inertia::render('curriculum/planner/LessonPlanShow', [

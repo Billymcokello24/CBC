@@ -226,8 +226,10 @@ class DashboardController extends Controller
             $pendingAssignmentsCount = AssignmentSubmission::whereHas('assignment', fn($q) => $q->where('teacher_id', $teacher->id))
                 ->where('status', '!=', 'graded')->count();
             $pendingTasks = [
-                ['title' => 'Assessments to Grade', 'count' => $pendingGradingCount, 'link' => '/assessments/grading'],
-                ['title' => 'Assignments to Review', 'count' => $pendingAssignmentsCount, 'link' => '/assignments'],
+                ['title' => 'Assessments to Grade', 'count' => $pendingGradingCount, 'link' => '/assessments/grading', 'icon' => 'GraduationCap'],
+                ['title' => 'Assignments to Review', 'count' => $pendingAssignmentsCount, 'link' => '/curriculum/assignments', 'icon' => 'ClipboardCheck'],
+                ['title' => 'Upload Learning Resource', 'count' => null, 'link' => '/curriculum/resources/create', 'icon' => 'FilePlus'],
+                ['title' => 'Create New Assignment', 'count' => null, 'link' => '/curriculum/assignments/create', 'icon' => 'PlusCircle'],
             ];
 
             // 3. Class Teacher Specific Data

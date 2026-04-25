@@ -118,6 +118,12 @@ class Teacher extends Model
         return $this->hasMany(SchoolClass::class, 'class_teacher_id', 'user_id');
     }
 
+    public function assignedClasses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'teacher_subjects', 'teacher_id', 'class_id')
+            ->wherePivot('is_active', true);
+    }
+
     public function timetableSlots(): HasMany
     {
         return $this->hasMany(\App\Models\Academic\TimetableSlot::class, 'teacher_id');

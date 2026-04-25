@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Curriculum\CurriculumResource;
 use App\Models\Curriculum\Assignment;
 use App\Models\Curriculum\AssignmentSubmission;
 use App\Models\Curriculum\SubmissionAttachment;
@@ -302,6 +303,37 @@ class ParentPortalController extends Controller
                 ]);
         }
 
+        // Learning Resources for the child's grade
+        $resourcesBySubject = [];
+        if ($student->currentClass?->grade_level_id) {
+            $resourcesBySubject = CurriculumResource::with(['subject:id,name,code', 'folder:id,name'])
+                ->where('school_id', $student->school_id)
+                ->where(function($q) use ($student) {
+                    $q->where('grade_level_id', $student->currentClass->grade_level_id)
+                      ->orWhereHas('folder', function($fq) use ($student) {
+                          $fq->where('grade_level_id', $student->currentClass->grade_level_id);
+                      });
+                })
+                ->get()
+                ->groupBy(function ($r) {
+                    return $r->subject->name ?? 'General Reference';
+                })->map(function ($items, $subjectName) {
+                    return [
+                        'subject_name' => $subjectName,
+                        'resources' => $items->map(fn($r) => [
+                            'id' => $r->id,
+                            'title' => $r->title,
+                            'description' => $r->description,
+                            'resource_type' => $r->resource_type,
+                            'file_path' => $r->file_path,
+                            'url' => $r->url,
+                            'folder' => $r->folder?->name,
+                            'download_url' => $r->file_path ? asset('storage/' . $r->file_path) : null,
+                        ]),
+                    ];
+                })->values();
+        }
+
         return Inertia::render('guardians/Children/Show', [
             'child' => [
                 'id' => $student->id,
@@ -326,6 +358,7 @@ class ParentPortalController extends Controller
             ],
             'subjects' => $subjectsWithTeachers,
             'assignments' => $assignments,
+            'resources' => $resourcesBySubject,
             'attendance_summary' => $attendanceSummary ? [
                 'total_days' => (int)$attendanceSummary->total_days,
                 'present' => (int)$attendanceSummary->present,
@@ -487,46 +520,42 @@ class ParentPortalController extends Controller
         $guardian->load(['students.currentClass:id,name']);
 
         $children = $guardian->students->map(function ($student) {
-            $class = $student->currentClass;
-            
-            // Get published assignments for this child's class
-            $assignments = Assignment::with(['subject:id,name', 'teacher:id,first_name,last_name'])
+            $assignments = Assignment::with(['subject:id,name', 'classroom:id,name', 'teacher:id,first_name,last_name'])
                 ->where('class_id', $student->current_class_id)
                 ->where('status', 'published')
                 ->latest('due_date')
                 ->get()
                 ->map(function (Assignment $a) use ($student) {
-                    $submission = AssignmentSubmission::where('assignment_id', $a->id)
-                        ->where('student_id', $student->id)
+                    $submission = AssignmentSubmission::where('student_id', $student->id)
+                        ->where('assignment_id', $a->id)
                         ->first();
 
                     return [
                         'id' => $a->id,
                         'title' => $a->title,
                         'subject' => $a->subject?->name,
-                        'class' => $student->currentClass?->name,
-                        'teacher' => $a->teacher ? trim($a->teacher->first_name . ' ' . $a->teacher->last_name) : null,
+                        'class' => $a->classroom?->name,
+                        'teacher' => $a->teacher ? trim($a->teacher->first_name . ' ' . $a->teacher->last_name) : 'TBD',
                         'assignment_type' => $a->assignment_type,
                         'due_date' => $a->due_date?->format('Y-m-d H:i'),
-                        'total_marks' => $a->total_marks,
                         'is_overdue' => $a->due_date && $a->due_date->isPast(),
+                        'total_marks' => $a->total_marks,
                         'status' => $submission ? $submission->status : 'pending',
-                        'marks_obtained' => $submission?->marks_obtained,
-                        'final_marks' => $submission?->final_marks,
+                        'submitted' => !!$submission,
                     ];
                 });
 
             return [
                 'id' => $student->id,
                 'name' => $student->full_name,
-                'class' => $class?->name,
+                'class' => $student->currentClass?->name,
                 'assignments' => $assignments,
             ];
         });
 
         return Inertia::render('guardians/Assignments/Index', [
             'children' => $children,
-            'total_assignments_count' => $children->sum(fn($c) => count($c['assignments'])),
+            'total_assignments' => $children->sum(fn($c) => count($c['assignments'])),
         ]);
     }
 
@@ -544,5 +573,52 @@ class ParentPortalController extends Controller
         }
 
         return Storage::disk('public')->download($path, 'marked_assignment_'.$submission->id.'.pdf');
+    }
+
+    /**
+     * Learning resources organized by child and grade.
+     */
+    public function resources(): Response
+    {
+        $guardian = $this->guardian();
+        $guardian->load(['students.currentClass.gradeLevel']);
+
+        $children = $guardian->students->map(function ($student) {
+            $resources = [];
+            if ($student->currentClass?->grade_level_id) {
+                $resources = CurriculumResource::with(['subject:id,name', 'folder:id,name'])
+                    ->where('school_id', $student->school_id)
+                    ->where(function($q) use ($student) {
+                        $q->where('grade_level_id', $student->currentClass->grade_level_id)
+                          ->orWhereHas('folder', function($fq) use ($student) {
+                              $fq->where('grade_level_id', $student->currentClass->grade_level_id);
+                          });
+                    })
+                    ->latest()
+                    ->get()
+                    ->map(fn($r) => [
+                        'id' => $r->id,
+                        'title' => $r->title,
+                        'subject' => $r->subject?->name ?? 'General',
+                        'folder' => $r->folder?->name,
+                        'resource_type' => $r->resource_type,
+                        'file_path' => $r->file_path,
+                        'url' => $r->url,
+                        'download_url' => $r->file_path ? asset('storage/' . $r->file_path) : null,
+                    ]);
+            }
+
+            return [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'class' => $student->currentClass?->name,
+                'resources' => $resources,
+            ];
+        });
+
+        return Inertia::render('guardians/Resources/Index', [
+            'children' => $children,
+            'total_resources' => $children->sum(fn($c) => count($c['resources'])),
+        ]);
     }
 }

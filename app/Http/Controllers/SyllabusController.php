@@ -29,8 +29,35 @@ class SyllabusController extends Controller
             ->map(fn($rows) => collect($rows)->pluck('grade_level_id')->values())
             ->all();
 
-        $subjects = Subject::active()
-            ->with(['learningArea:id,name'])
+        $subjectsQuery = Subject::active();
+        $gradesQuery = GradeLevel::orderBy('level_order');
+        $classesQuery = SchoolClass::query()
+            ->with(['gradeLevel:id,name', 'stream:id,name', 'academicYear:id,name'])
+            ->orderByDesc('academic_year_id')
+            ->orderBy('name');
+
+        $user = auth()->user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                // 1. Subjects they teach
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->unique()->toArray();
+                
+                // 2. Classes they teach or are class teacher of
+                $subjectClassIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('class_id')->toArray();
+                $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
+                $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds));
+                
+                // 3. Grades associated with those classes
+                $assignedGradeIds = SchoolClass::whereIn('id', $myClassIds)->pluck('grade_level_id')->unique()->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $gradesQuery->whereIn('id', $assignedGradeIds);
+                $classesQuery->whereIn('id', $myClassIds);
+            }
+        }
+
+        $subjects = $subjectsQuery->with(['learningArea:id,name'])
             ->orderBy('name')
             ->get(['id', 'name', 'learning_area_id'])
             ->map(function ($subject) use ($subjectGrades) {
@@ -43,7 +70,7 @@ class SyllabusController extends Controller
                 ];
             });
 
-        $grades = GradeLevel::orderBy('level_order')->get(['id', 'name']);
+        $grades = $gradesQuery->get(['id', 'name']);
         $learningAreas = LearningArea::active()->ordered()->get(['id', 'name']);
 
         $academicYear = DB::table('academic_years')->where('is_current', true)->first() 
@@ -58,11 +85,7 @@ class SyllabusController extends Controller
                 'staff_number' => $t->staff_number,
             ]);
 
-        $classes = SchoolClass::query()
-            ->with(['gradeLevel:id,name', 'stream:id,name', 'academicYear:id,name'])
-            ->orderByDesc('academic_year_id')
-            ->orderBy('name')
-            ->get()
+        $classes = $classesQuery->get()
             ->map(fn($c) => [
                 'id' => $c->id,
                 'name' => $c->name,
@@ -127,6 +150,23 @@ class SyllabusController extends Controller
                 'teacher_name' => $a->teacher?->full_name,
             ]);
 
+        $user = auth()->user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                $isAssigned = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->where('subject_id', $subject->id)
+                    ->whereHas('schoolClass', function($q) use ($grade) {
+                        $q->where('grade_level_id', $grade->id);
+                    })
+                    ->exists();
+                
+                if (!$isAssigned) {
+                    abort(403, 'Unauthorized access to this Syllabus section.');
+                }
+            }
+        }
+
         return Inertia::render('curriculum/syllabus/Show', [
             'subject' => $subject,
             'grade' => $grade,
@@ -140,6 +180,23 @@ class SyllabusController extends Controller
 
     public function showTopic(Request $request, Strand $strand): Response
     {
+        $user = auth()->user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                $isAssigned = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)
+                    ->where('subject_id', $strand->subject_id)
+                    ->whereHas('schoolClass', function($q) use ($strand) {
+                        $q->where('grade_level_id', $strand->grade_level_id);
+                    })
+                    ->exists();
+                
+                if (!$isAssigned) {
+                    abort(403, 'Unauthorized access to this topic.');
+                }
+            }
+        }
+
         $strand->load(['subStrands.learningOutcomes.indicators', 'subject', 'gradeLevel']);
 
         return Inertia::render('curriculum/syllabus/TopicShow', [

@@ -60,24 +60,57 @@ class AssignmentController extends Controller
             }
         }
 
+        $subjectsQuery = Subject::active();
+        $classesQuery = SchoolClass::active();
+
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin', 'deputy_principal'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                $assignedClassIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('class_id')->toArray();
+                $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
+                $allMyClassIds = array_unique(array_merge($assignedClassIds, $classTeacherClassIds));
+                
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $classesQuery->whereIn('id', $allMyClassIds);
+            }
+        }
+
         return Inertia::render('curriculum/assignments/Index', [
             'assignments' => $query->latest()->get(),
-            'subjects' => Subject::active()->get(['id', 'name']),
-            'classes' => SchoolClass::active()->get(['id', 'name']),
-            'children' => $user->hasRole('guardian') ? Guardian::where('user_id', $user->id)->first()?->students()->get(['students.id', 'first_name', 'last_name', 'current_class_id']) : [],
+            'subjects' => $subjectsQuery->get(['id', 'name']),
+            'classes' => $classesQuery->get(['id', 'name']),
+            'children' => $user->hasRole('parent') ? Guardian::where('user_id', $user->id)->first()?->students()->get(['students.id', 'first_name', 'last_name', 'current_class_id']) : [],
             'userRole' => $user->roles->first()?->name ?? 'user',
         ]);
     }
 
     public function create(Request $request): Response
     {
-        $subjects = Subject::active()->get(['id', 'name']);
-        $classes = SchoolClass::active()->get(['id', 'name']);
+        $user = Auth::user();
+        $subjectsQuery = Subject::active();
+        $classesQuery = SchoolClass::active();
+
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin', 'deputy_principal'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher) {
+                $assignedClassIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('class_id')->toArray();
+                $classTeacherClassIds = SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
+                $allMyClassIds = array_unique(array_merge($assignedClassIds, $classTeacherClassIds));
+                
+                $assignedSubjectIds = \App\Models\TeacherSubject::where('teacher_id', $teacher->id)->pluck('subject_id')->toArray();
+                
+                $subjectsQuery->whereIn('id', $assignedSubjectIds);
+                $classesQuery->whereIn('id', $allMyClassIds);
+            }
+        }
+
         $strands = Strand::with('subStrands:id,strand_id,name,code')->get(['id', 'subject_id', 'grade_level_id', 'name', 'code']);
 
         return Inertia::render('curriculum/assignments/Create', [
-            'subjects' => $subjects,
-            'classes' => $classes,
+            'subjects' => $subjectsQuery->get(['id', 'name']),
+            'classes' => $classesQuery->get(['id', 'name']),
             'strands' => $strands,
         ]);
     }
@@ -153,6 +186,16 @@ class AssignmentController extends Controller
             $assignment->load('submissions.student');
         }
 
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher && $assignment->teacher_id != $teacher->id) {
+                // If not their assignment, check if it's their child's (for parents)
+                if (!$user->hasRole('parent')) {
+                    abort(403, 'Unauthorized access to this assignment.');
+                }
+            }
+        }
+
         return Inertia::render('curriculum/assignments/Show', [
             'assignment' => $assignment,
             'submissions' => $submissions,
@@ -163,6 +206,14 @@ class AssignmentController extends Controller
 
     public function edit(Assignment $assignment): Response
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher && $assignment->teacher_id != $teacher->id) {
+                abort(403, 'Unauthorized access to Edit this assignment.');
+            }
+        }
+
         return Inertia::render('curriculum/assignments/Edit', [
             'assignment' => $assignment->load(['attachments']),
             'subjects' => Subject::active()->get(['id', 'name']),
@@ -191,6 +242,14 @@ class AssignmentController extends Controller
 
     public function submissions(Assignment $assignment): Response
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher && $assignment->teacher_id != $teacher->id) {
+                abort(403, 'Unauthorized access to submissions.');
+            }
+        }
+
         $assignment->load([
             'submissions.student', 
             'submissions.attachments', 
@@ -240,6 +299,14 @@ class AssignmentController extends Controller
 
     public function reviewSubmission(Assignment $assignment, AssignmentSubmission $submission): Response
     {
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['admin', 'principal', 'school_admin', 'super_admin'])) {
+            $teacher = Teacher::where('user_id', $user->id)->first();
+            if ($teacher && ($assignment->teacher_id != $teacher->id || $submission->assignment_id != $assignment->id)) {
+                abort(403, 'Unauthorized access to review this submission.');
+            }
+        }
+
         $submission->load(['student', 'attachments']);
         $assignment->load(['subject', 'classroom']);
 

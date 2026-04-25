@@ -85,6 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('assignments/{assignment}', [ParentPortalController::class, 'assignmentShow'])->name('assignments.show');
         Route::get('assignments/submissions/{submission}/download-marked', [ParentPortalController::class, 'downloadMarkedAssignment'])->name('assignments.submissions.download-marked');
         Route::post('assignments/{assignment}/submit', [ParentPortalController::class, 'submitAssignment'])->name('assignments.submit');
+        Route::get('resources', [ParentPortalController::class, 'resources'])->name('resources');
     });
 
     // ──────────────────────────────────────────────

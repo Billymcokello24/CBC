@@ -522,17 +522,24 @@ const teacherNavigation = computed(() => {
                     icon: Users,
                     hidden: !teacherRoles.value.assigned_classes_count && !teacherRoles.value.is_class_teacher
                 },
-                { 
-                    title: 'My Subjects', 
-                    href: '/curriculum', 
-                    icon: BookOpen,
-                    hidden: !teacherRoles.value.assigned_subjects_count
-                },
             ],
         },
         {
             title: 'Academic',
             items: [
+                {
+                    title: 'Curriculum & Planning',
+                    href: '/curriculum',
+                    icon: BookOpen,
+                    children: [
+                        { title: 'Syllabus Overview', href: '/curriculum' },
+                        { title: 'Competencies', href: '/curriculum/competencies' },
+                        { title: 'Scheme of Work', href: '/curriculum/planner/schemes' },
+                        { title: 'Lesson Plan', href: '/curriculum/planner/lesson-plans' },
+                        { title: 'Learning Resources', href: '/curriculum/resources' },
+                        { title: 'Assignments', href: '/curriculum/assignments', icon: NotebookPen },
+                    ],
+                },
                 {
                     title: 'Learners',
                     href: '/students',
@@ -562,7 +569,6 @@ const teacherNavigation = computed(() => {
                     ],
                 },
                 { title: 'Timetable', href: '/timetable/my', icon: Calendar },
-                { title: 'Remarks', href: '/curriculum/assignments', icon: NotebookPen },
             ],
         },
     ];

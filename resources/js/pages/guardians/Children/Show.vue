@@ -8,7 +8,7 @@ import { ref, computed } from 'vue';
 import {
     ArrowLeft, User, BookOpen, ClipboardList, Clock, Calendar,
     GraduationCap, CheckCircle2, AlertCircle, ArrowRight, Users,
-    Activity, BarChart3, TrendingUp
+    Activity, BarChart3, TrendingUp, FileText, Link as LinkIcon
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -85,6 +85,19 @@ const props = defineProps<{
         subject: string | null;
         teacher: string | null;
     }>;
+    resources: Array<{
+        subject_name: string;
+        resources: Array<{
+            id: number;
+            title: string;
+            description: string | null;
+            resource_type: string;
+            file_path: string | null;
+            url: string | null;
+            folder: string | null;
+            download_url: string | null;
+        }>;
+    }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -101,6 +114,7 @@ const tabs = [
     { id: 'assignments', name: 'Assignments', icon: ClipboardList },
     { id: 'attendance', name: 'Attendance', icon: Calendar },
     { id: 'results', name: 'Results', icon: BarChart3 },
+    { id: 'resources', name: 'Resources', icon: BookOpen },
     { id: 'timetable', name: 'Timetable', icon: Clock },
 ];
 
@@ -539,6 +553,50 @@ const overdueAssignments = computed(() => props.assignments.filter(a => a.is_ove
                         </div>
                     </div>
 
+                    <!-- RESOURCES TAB -->
+                    <div v-else-if="activeTab === 'resources'" class="space-y-6">
+                        <div class="rounded-2xl border bg-card p-7 shadow-sm">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><BookOpen class="h-5 w-5" /></div>
+                                <h3 class="text-lg font-bold">Reference Registry</h3>
+                            </div>
+
+                            <div v-if="resources.length === 0" class="text-center py-20 bg-slate-50/50 rounded-2xl border border-dashed">
+                                <BookOpen class="h-12 w-12 mx-auto text-slate-200 mb-4" />
+                                <p class="text-sm font-bold text-slate-400 uppercase tracking-widest">No resources found for this student's grade</p>
+                            </div>
+
+                            <div v-else class="space-y-10">
+                                <section v-for="subject in resources" :key="subject.subject_name" class="space-y-4">
+                                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-[0.2em] px-2 flex items-center gap-3">
+                                        {{ subject.subject_name }}
+                                        <div class="h-px bg-slate-100 flex-1"></div>
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <a v-for="res in subject.resources" :key="res.id" 
+                                            :href="res.download_url || res.url || '#'" target="_blank"
+                                            class="flex items-center gap-4 rounded-xl border p-4 hover:border-blue-200 hover:bg-blue-50/50 transition-all group"
+                                        >
+                                            <div class="h-10 w-10 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:border-blue-100 shadow-sm transition-all">
+                                                <FileText v-if="res.resource_type === 'pdf' || res.resource_type === 'document'" class="h-5 w-5" />
+                                                <LinkIcon v-else-if="res.resource_type === 'link'" class="h-5 w-5" />
+                                                <Activity v-else class="h-5 w-5" />
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-bold text-slate-900 truncate">{{ res.title }}</p>
+                                                <div class="flex items-center gap-2 mt-0.5">
+                                                    <Badge v-if="res.folder" class="bg-slate-100 text-slate-500 border-0 text-[8px] font-bold px-1.5 rounded uppercase">{{ res.folder }}</Badge>
+                                                    <span class="text-[10px] font-medium text-slate-400 uppercase tracking-tight">{{ res.resource_type }}</span>
+                                                </div>
+                                            </div>
+                                            <ArrowRight class="h-4 w-4 text-slate-100 group-hover:text-blue-200 transition-colors" />
+                                        </a>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- TIMETABLE TAB -->
                     <div v-else-if="activeTab === 'timetable'" class="space-y-6">
                         <div class="rounded-2xl border bg-card p-7 shadow-sm">
@@ -553,19 +611,21 @@ const overdueAssignments = computed(() => props.assignments.filter(a => a.is_ove
                             </div>
 
                             <div v-else class="space-y-6">
-                                <div v-for="(slots, day) in timetableByDay" :key="day">
-                                    <h4 class="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">{{ day }}</h4>
+                                <div v-for="(slots, day) in timetableByDay" :key="day" class="animate-in slide-in-from-left duration-300">
+                                    <h4 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-3 px-2">{{ day }}</h4>
                                     <div class="space-y-2">
                                         <div v-for="(slot, idx) in slots" :key="idx"
-                                            class="flex items-center gap-4 rounded-xl border p-3.5"
-                                            :class="slot.type === 'break' ? 'bg-amber-50/50 border-amber-100' : 'hover:bg-muted/20'">
-                                            <div class="text-xs text-muted-foreground font-mono w-28 flex-shrink-0">
+                                            class="flex items-center gap-4 rounded-xl border p-4 transition-all hover:border-blue-100 hover:bg-blue-50/20"
+                                            :class="slot.type === 'break' ? 'bg-amber-50/50 border-amber-100' : 'bg-white shadow-sm border-slate-100'">
+                                            <div class="text-xs font-black text-slate-400 font-mono w-28 flex-shrink-0">
                                                 {{ slot.start_time }} – {{ slot.end_time }}
                                             </div>
-                                            <div v-if="slot.type === 'break'" class="text-xs font-bold text-amber-700 uppercase">Break</div>
+                                            <div v-if="slot.type === 'break'" class="text-xs font-black text-amber-700 uppercase tracking-widest bg-amber-100/50 px-2.5 py-1 rounded-lg">Break Time</div>
                                             <div v-else class="flex-1 min-w-0">
-                                                <p class="text-sm font-bold text-foreground">{{ slot.subject || 'Free' }}</p>
-                                                <p v-if="slot.teacher" class="text-xs text-muted-foreground">{{ slot.teacher }}</p>
+                                                <p class="text-sm font-black text-slate-900 uppercase tracking-tight">{{ slot.subject || 'Independent Study' }}</p>
+                                                <p v-if="slot.teacher" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                                                    <User class="h-3 w-3" /> {{ slot.teacher }}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
