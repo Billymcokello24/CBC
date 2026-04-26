@@ -10,8 +10,10 @@ import {
     Bell,
     Lock,
     ExternalLink,
-    AlertTriangle,
     CheckCircle2,
+    AlertTriangle,
+    Home,
+    ChevronRight,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -63,22 +65,21 @@ const submit = () => {
     <Head title="System Configuration" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="animate-in space-y-8 duration-700 fade-in slide-in-from-bottom-4"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Header -->
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div>
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-foreground"
-                    >
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Global Dashboard</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">System Configuration</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Settings
                     </h1>
-                    <p
-                        class="text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
+                    <p class="text-sm text-muted-foreground sm:text-sm">
                         Configure global platform parameters and status.
                     </p>
                 </div>

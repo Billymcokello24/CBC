@@ -18,6 +18,8 @@ import {
     Cpu,
     Database,
     Network,
+    Home,
+    ChevronRight,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import schoolsRoutes from '@/routes/super-admin/schools';
@@ -86,31 +88,34 @@ const currentStep = ref(1);
     <Head title="Provision New Tenant" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="animate-in space-y-8 duration-700 fade-in">
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <div class="mx-auto max-w-5xl space-y-8">
                 <!-- Navigation Header -->
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <Link :href="schoolsRoutes.index().url">
-                            <Button
-                                variant="ghost"
-                                class="h-10 w-10 rounded-xl border border-border bg-card text-muted-foreground/40 shadow-sm transition-all hover:text-foreground"
-                            >
-                                <ChevronLeft class="h-5 w-5" />
-                            </Button>
-                        </Link>
-                        <div>
-                            <h1
-                                class="text-2xl font-bold tracking-tight text-foreground"
-                            >
+                <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                    <div class="flex flex-col gap-1">
+                        <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                            <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span class="font-medium tracking-tight text-foreground uppercase">Tenant Registry</span>
+                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                            <span class="font-medium tracking-tight text-foreground uppercase">Provision Node</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <Link :href="schoolsRoutes.index().url">
+                                <Button
+                                    variant="ghost"
+                                    class="h-10 w-10 shrink-0 rounded-xl border border-border bg-card text-muted-foreground/40 shadow-sm transition-all hover:text-foreground"
+                                >
+                                    <ChevronLeft class="h-5 w-5" />
+                                </Button>
+                            </Link>
+                            <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                                 Add New School
                             </h1>
-                            <p
-                                class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >
-                                Register a new institution on the platform.
-                            </p>
                         </div>
+                        <p class="text-sm text-muted-foreground sm:text-sm">
+                            Register a new institution on the platform and provision its root account.
+                        </p>
                     </div>
                 </div>
 

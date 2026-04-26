@@ -18,6 +18,8 @@ import {
     ChevronDown,
     ArrowUpDown,
     Check,
+    Home,
+    ChevronRight,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -143,22 +145,21 @@ watch([schoolFilter, statusFilter], () => {
     <Head title="Identity Registry" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="animate-in space-y-8 duration-700 fade-in slide-in-from-bottom-4"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Header -->
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div>
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-foreground"
-                    >
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Global Dashboard</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Identity Registry</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Users
                     </h1>
-                    <p
-                        class="text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
+                    <p class="text-sm text-muted-foreground sm:text-sm">
                         Manage platform users and access levels.
                     </p>
                 </div>
@@ -226,36 +227,24 @@ watch([schoolFilter, statusFilter], () => {
             </div>
 
             <!-- Table -->
-            <div
-                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-            >
+            <div class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5">
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/30">
-                                <th
-                                    class="p-5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >
+                            <tr class="border-b border-border/50 bg-muted/5">
+                                <th class="px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     User Details
                                 </th>
-                                <th
-                                    class="p-5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >
+                                <th class="px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     School
                                 </th>
-                                <th
-                                    class="p-5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >
+                                <th class="px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     Roles
                                 </th>
-                                <th
-                                    class="p-5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >
+                                <th class="px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     Status
                                 </th>
-                                <th
-                                    class="p-5 text-right text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >
+                                <th class="px-5 py-4 sm:px-6 text-right text-xs font-bold tracking-tight text-foreground uppercase">
                                     Actions
                                 </th>
                             </tr>
@@ -264,9 +253,9 @@ watch([schoolFilter, statusFilter], () => {
                             <tr
                                 v-for="user in users.data"
                                 :key="user.id"
-                                class="group transition-colors hover:bg-muted/10"
+                                class="group transition-all hover:bg-muted/30"
                             >
-                                <td class="p-5">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <div class="flex items-center gap-4">
                                         <div
                                             class="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-sm font-bold text-primary uppercase"
@@ -285,7 +274,7 @@ watch([schoolFilter, statusFilter], () => {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-5">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <div
                                         class="flex items-center gap-2"
                                         v-if="user.school"
@@ -308,7 +297,7 @@ watch([schoolFilter, statusFilter], () => {
                                         >System User</span
                                     >
                                 </td>
-                                <td class="p-5">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <div class="flex flex-wrap gap-1.5">
                                         <Badge
                                             v-for="role in user.roles"
@@ -319,7 +308,7 @@ watch([schoolFilter, statusFilter], () => {
                                         </Badge>
                                     </div>
                                 </td>
-                                <td class="p-5">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <div
                                         :class="[
                                             'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium tracking-tight uppercase',
@@ -339,7 +328,7 @@ watch([schoolFilter, statusFilter], () => {
                                         {{ user.status }}
                                     </div>
                                 </td>
-                                <td class="p-5 text-right">
+                                <td class="px-5 py-3.5 text-right sm:px-6 sm:py-4">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
                                             <Button
@@ -404,12 +393,8 @@ watch([schoolFilter, statusFilter], () => {
                 </div>
 
                 <!-- Pagination -->
-                <div
-                    class="flex items-center justify-between border-t border-border/50 bg-muted/10 p-5"
-                >
-                    <p
-                        class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                    >
+                <div class="flex flex-col gap-4 border-t border-border/50 bg-muted/5 p-4 sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6">
+                    <p class="text-xs font-bold tracking-tight text-muted-foreground uppercase">
                         Page {{ users.current_page }} of {{ users.last_page }}
                     </p>
                     <div class="flex items-center gap-2">

@@ -16,6 +16,8 @@ import {
     LayoutGrid,
     List,
     Download,
+    Home,
+    ChevronRight,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { impersonate } from '@/routes/super-admin';
@@ -73,23 +75,22 @@ const stats = {
     <Head title="Tenant Management" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="animate-in space-y-8 duration-700 fade-in slide-in-from-bottom-4"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Header Section -->
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div>
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-foreground"
-                    >
-                        Schools
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Global Dashboard</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Tenant Registry</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Schools Registry
                     </h1>
-                    <p
-                        class="text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Manage and monitor all registered school accounts.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Manage and monitor all registered school accounts within the system.
                     </p>
                 </div>
 
@@ -133,13 +134,9 @@ const stats = {
             </div>
 
             <!-- Table Card -->
-            <div
-                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-            >
+            <div class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5">
                 <!-- Toolbar -->
-                <div
-                    class="flex flex-col gap-4 border-b border-border bg-muted/20 p-4 lg:flex-row lg:items-center lg:justify-between"
-                >
+                <div class="flex flex-col gap-4 border-b border-border/50 bg-muted/5 p-4 lg:flex-row lg:items-center lg:justify-between sm:px-6">
                     <div class="relative w-full lg:w-[400px]">
                         <Search
                             class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground/40"
@@ -190,29 +187,19 @@ const stats = {
                     <table class="w-full border-collapse text-left">
                         <thead>
                             <tr class="bg-muted/10">
-                                <th
-                                    class="w-[40%] border-b border-border px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground/50 uppercase"
-                                >
+                                <th class="w-[40%] border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     School Information
                                 </th>
-                                <th
-                                    class="border-b border-border px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground/50 uppercase"
-                                >
+                                <th class="border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     Code
                                 </th>
-                                <th
-                                    class="border-b border-border px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground/50 uppercase"
-                                >
+                                <th class="border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     Population
                                 </th>
-                                <th
-                                    class="border-b border-border px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground/50 uppercase"
-                                >
+                                <th class="border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6 text-xs font-bold tracking-tight text-foreground uppercase">
                                     Status
                                 </th>
-                                <th
-                                    class="border-b border-border px-6 py-4 text-right text-xs font-bold tracking-tight text-muted-foreground/50 uppercase"
-                                >
+                                <th class="border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6 text-right text-xs font-bold tracking-tight text-foreground uppercase">
                                     Actions
                                 </th>
                             </tr>
@@ -221,49 +208,32 @@ const stats = {
                             <tr
                                 v-for="school in schools.data"
                                 :key="school.id"
-                                class="group transition-all hover:bg-muted/20"
+                                class="group transition-all hover:bg-muted/30"
                             >
-                                <td class="px-6 py-6">
-                                    <div class="flex items-center gap-4">
-                                        <div
-                                            class="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-lg font-bold text-primary shadow-sm transition-transform group-hover:scale-105 group-hover:-rotate-2"
-                                        >
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-600 ring-2 ring-white transition-colors group-hover:bg-blue-600 group-hover:text-white">
                                             {{ school.name[0].toUpperCase() }}
                                             <div
-                                                class="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-card bg-emerald-500 shadow-sm"
-                                                v-if="
-                                                    school.status === 'active'
-                                                "
+                                                class="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-emerald-500 shadow-sm"
+                                                v-if="school.status === 'active'"
                                             ></div>
                                         </div>
                                         <div class="flex flex-col">
-                                            <span
-                                                class="text-base leading-none font-bold tracking-tight text-foreground transition-colors group-hover:text-primary"
-                                                >{{ school.name }}</span
-                                            >
-                                            <div
-                                                class="mt-1 flex items-center gap-2 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                            >
-                                                <span
-                                                    class="flex items-center gap-1"
-                                                    ><MapPin
-                                                        class="h-3 w-3 opacity-40"
-                                                    />
-                                                    {{
-                                                        school.county ||
-                                                        'Unmapped'
-                                                    }}</span
-                                                >
-                                            </div>
+                                            <span class="mb-1 text-xs leading-none font-bold tracking-tight text-foreground sm:text-sm">
+                                                {{ school.name }}
+                                            </span>
+                                            <span class="text-xs font-semibold tracking-tighter text-muted-foreground uppercase flex items-center gap-1">
+                                                <MapPin class="h-3 w-3 opacity-40" />
+                                                {{ school.county || 'Unmapped' }}
+                                            </span>
                                         </div>
                                     </div>
                                 </td>
-                                <td
-                                    class="px-6 py-6 font-mono text-sm font-bold tracking-tight text-muted-foreground/80"
-                                >
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4 font-mono text-xs font-bold tracking-tight text-muted-foreground">
                                     {{ school.code }}
                                 </td>
-                                <td class="px-6 py-6">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <div class="flex items-center gap-6">
                                         <div class="flex flex-col">
                                             <div
@@ -295,7 +265,7 @@ const stats = {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-6">
+                                <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                     <Badge
                                         :variant="
                                             school.status === 'active'
@@ -318,7 +288,7 @@ const stats = {
                                         Inactive
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-6 text-right">
+                                <td class="px-5 py-3.5 text-right sm:px-6 sm:py-4">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
                                             <Button
@@ -389,12 +359,8 @@ const stats = {
                 </div>
 
                 <!-- Footer Pagination -->
-                <div
-                    class="flex flex-col gap-4 border-t border-border bg-muted/20 p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                    <p
-                        class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                    >
+                <div class="flex flex-col gap-4 border-t border-border/50 bg-muted/5 p-4 sm:flex-row sm:items-center sm:justify-between px-5 sm:px-6">
+                    <p class="text-xs font-bold tracking-tight text-muted-foreground uppercase">
                         Showing 1 - {{ schools.data.length }} of
                         {{ stats.total }} Schools
                     </p>

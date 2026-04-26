@@ -1,0 +1,23 @@
+
+> build
+> vite build
+
+vite v7.3.1 building client environment for production...
+[plugin @laravel/vite-plugin-wayfinder] Types generated for actions, routes, form variants
+transforming...
+✓ 3905 modules transformed.
+✗ Build failed in 14.65s
+error during build:
+[vite:vue] [plugin vite:vue] resources/js/components/ui/sidebar/Sidebar.vue (68:15): Error parsing JavaScript expression: Unexpected token (1:644)
+file: /home/billy/PhpstormProjects/CBC/resources/js/components/ui/sidebar/Sidebar.vue:68:15
+SyntaxError: [plugin vite:vue] resources/js/components/ui/sidebar/Sidebar.vue (68:15): Error parsing JavaScript expression: Unexpected token (1:644)
+    at createCompilerError (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:1374:17)
+    at emitError (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:2980:5)
+    at createExp (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:2973:7)
+    at Object.onattribend (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:2528:29)
+    at Tokenizer.handleInAttrValue (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:959:16)
+    at Tokenizer.stateInAttrValueDoubleQuotes (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:969:10)
+    at Tokenizer.parse (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:1113:16)
+    at Object.baseParse (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-core/dist/compiler-core.cjs.prod.js:3012:13)
+    at Object.parse (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-dom/dist/compiler-dom.cjs.prod.js:665:23)
+    at Object.parse$1 [as parse] (/home/billy/PhpstormProjects/CBC/node_modules/@vue/compiler-sfc/dist/compiler-sfc.cjs.js:1824:24)

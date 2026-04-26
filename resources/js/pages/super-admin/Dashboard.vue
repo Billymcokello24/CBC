@@ -16,6 +16,7 @@ import {
     HardDrive,
     Cloud,
     DollarSign,
+    Home,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { impersonate } from '@/routes/super-admin';
@@ -93,31 +94,27 @@ const distributionChartData = {
     <Head title="Super Admin Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="animate-in space-y-10 duration-1000 fade-in slide-in-from-bottom-4"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Simple Welcome Header -->
-            <div
-                class="flex flex-col justify-between gap-6 md:flex-row md:items-end"
-            >
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-bold tracking-tight text-foreground"
-                    >
+            <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Global Operations</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Dashboard Overview
                     </h1>
-                    <p
-                        class="text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Welcome back! Here's what's happening with the platform
-                        today.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Welcome back! Here's what's happening with the platform today.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Link
                         href="/super-admin/schools/create"
-                        class="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        class="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-xs font-bold tracking-tight text-white uppercase shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
                     >
                         <School class="mr-2 h-4 w-4" />
                         New Tenant
@@ -185,22 +182,17 @@ const distributionChartData = {
 
                     <div class="grid gap-8 md:grid-cols-2">
                         <!-- Recent Activity -->
-                        <div
-                            class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-                        >
-                            <div
-                                class="flex items-center justify-between border-b border-border/50 p-6"
-                            >
-                                <h3
-                                    class="text-xs font-medium tracking-tight text-foreground uppercase"
-                                >
+                        <div class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5">
+                            <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6">
+                                <h3 class="text-sm font-bold tracking-tight text-foreground uppercase sm:text-base">
                                     Recent Events
                                 </h3>
                                 <Link
                                     href="/super-admin/activity-logs"
-                                    class="text-xs font-medium tracking-tight text-primary uppercase hover:underline"
-                                    >View All</Link
+                                    class="text-xs font-bold tracking-tight text-blue-600 uppercase hover:underline sm:text-xs"
                                 >
+                                    View All
+                                </Link>
                             </div>
                             <div class="divide-y divide-border/30">
                                 <div
@@ -215,21 +207,17 @@ const distributionChartData = {
                                             class="h-4 w-4 text-muted-foreground/40"
                                         />
                                     </div>
-                                    <div class="min-w-0 flex-1">
-                                        <p
-                                            class="truncate text-sm font-bold text-foreground"
-                                        >
-                                            {{ log.description }}
-                                        </p>
-                                        <p
-                                            class="text-xs font-bold tracking-tighter text-muted-foreground/40 uppercase"
-                                        >
-                                            {{
-                                                new Date(
-                                                    log.created_at,
-                                                ).toLocaleTimeString()
-                                            }}
-                                        </p>
+                                    <div class="min-w-0 flex-1 flex items-center justify-between gap-4">
+                                        <div class="flex flex-col">
+                                            <span class="mb-1 text-xs leading-none font-bold tracking-tight text-foreground sm:text-sm">
+                                                {{ log.description }}
+                                            </span>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span class="text-xs font-bold text-foreground tabular-nums sm:text-sm">
+                                                {{ new Date(log.created_at).toLocaleTimeString() }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div
@@ -242,14 +230,12 @@ const distributionChartData = {
                         </div>
 
                         <!-- System Status -->
-                        <div
-                            class="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
-                        >
-                            <h3
-                                class="text-xs font-medium tracking-tight text-foreground uppercase"
-                            >
-                                System Telemetry
-                            </h3>
+                        <div class="flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5">
+                            <div class="mb-6">
+                                <h3 class="text-base font-semibold text-foreground">
+                                    System Telemetry
+                                </h3>
+                            </div>
 
                             <div class="space-y-6">
                                 <div class="space-y-2">
@@ -348,15 +334,14 @@ const distributionChartData = {
                     />
 
                     <!-- Recent Tenants List -->
-                    <div
-                        class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-                    >
-                        <div class="border-b border-border/50 p-6">
-                            <h3
-                                class="text-xs font-medium tracking-tight text-foreground uppercase"
-                            >
+                    <div class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5">
+                        <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6">
+                            <h3 class="text-sm font-bold tracking-tight text-foreground uppercase sm:text-base">
                                 Recent Tenants
                             </h3>
+                            <Link href="/super-admin/schools" class="text-xs font-bold tracking-tight text-blue-600 uppercase hover:underline sm:text-xs">
+                                View All
+                            </Link>
                         </div>
                         <div class="divide-y divide-border/30">
                             <div
@@ -370,17 +355,13 @@ const distributionChartData = {
                                     >
                                         <School class="h-5 w-5" />
                                     </div>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="truncate text-sm font-bold tracking-tight text-foreground uppercase"
-                                        >
+                                    <div class="flex flex-col">
+                                        <span class="mb-1 text-xs leading-none font-bold tracking-tight text-foreground sm:text-sm uppercase">
                                             {{ school.name }}
-                                        </p>
-                                        <p
-                                            class="text-xs font-bold text-muted-foreground/60 uppercase"
-                                        >
+                                        </span>
+                                        <span class="text-xs font-semibold tracking-tighter text-muted-foreground uppercase">
                                             {{ school.county || 'Global' }}
-                                        </p>
+                                        </span>
                                     </div>
                                 </div>
                                 <div
@@ -393,13 +374,10 @@ const distributionChartData = {
                                 ></div>
                             </div>
                         </div>
-                        <div class="bg-muted/20 p-4">
-                            <Link
-                                href="/super-admin/schools"
-                                class="block w-full rounded-xl border border-border bg-card py-2 text-center text-xs font-medium tracking-tight text-muted-foreground uppercase transition-all hover:border-primary/20 hover:text-primary"
-                            >
-                                Platform Registry
-                            </Link>
+                        <div v-if="!recent_schools?.length">
+                           <div class="px-6 py-12 text-center text-xs font-medium text-muted-foreground uppercase">
+                              No recent tenants recorded.
+                           </div>
                         </div>
                     </div>
 
