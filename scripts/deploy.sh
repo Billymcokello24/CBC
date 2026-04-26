@@ -5,6 +5,8 @@
 
 set -e
 
+export COMPOSER_ALLOW_SUPERUSER=1
+
 PROJECT_PATH="/var/www/CBC"
 PHP_VERSION="8.2"
 
