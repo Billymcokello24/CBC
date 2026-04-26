@@ -14,6 +14,11 @@ import {
     User,
     Key,
     Fingerprint,
+    Camera,
+    ShieldCheck,
+    Database,
+    Zap,
+    TrendingUp,
 } from 'lucide-vue-next';
 import { ref, computed, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
@@ -45,18 +50,16 @@ const props = defineProps<{
 
 const title = computed(() => {
     if (props.preselectedRole) {
-        return `Register New ${props.preselectedRole
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ')}`;
+        const role = props.preselectedRole.replace('_', ' ').toUpperCase();
+        return `ENROLL_${role}_ENTITY`;
     }
-    return 'Register New User';
+    return 'ENROLL_FACULTY_ENTITY';
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'User Directory', href: '/staffs/directory' },
-    { title: title.value, href: '/staffs/create' },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Faculty Registry', href: '/staffs' },
+    { title: 'Enrollment', href: '/staffs/create' },
 ];
 
 const form = useForm({
@@ -129,705 +132,324 @@ const resetForm = () => {
 </script>
 
 <template>
-    <Head :title="title" />
+    <Head title="Faculty Enrollment Hub" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col gap-8 p-6 duration-700 fade-in"
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col gap-12 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
-            <!-- Header section -->
+            <!-- Strategic Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
-                <div class="flex items-center gap-5">
+                <div class="flex items-center gap-6">
                     <Button
                         variant="outline"
                         size="icon"
                         as-child
-                        class="h-11 w-11 rounded-2xl border-border bg-card shadow-sm transition-all hover:bg-muted"
+                        class="h-12 w-12 rounded-2xl border-border bg-card shadow-sm transition-all hover:bg-muted"
                     >
-                        <Link href="/staffs/directory"
-                            ><ArrowLeft class="h-5 w-5 text-muted-foreground"
-                        /></Link>
+                        <Link href="/staffs">
+                            <ArrowLeft class="h-5 w-5 text-muted-foreground" />
+                        </Link>
                     </Button>
-                    <div>
+                    <div class="space-y-1">
                         <div class="flex items-center gap-3">
-                            <h1
-                                class="text-3xl font-bold tracking-tight text-foreground"
-                            >
+                            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black uppercase">
                                 {{ title }}
                             </h1>
-                            <Badge
-                                variant="outline"
-                                class="rounded-lg border-blue-100 bg-blue-50 px-2.5 py-0.5 text-xs font-bold tracking-wider text-blue-600 uppercase"
-                            >
-                                Institutional
-                            </Badge>
+                            <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase shadow-sm">Institutional</Badge>
                         </div>
-                        <p
-                            class="mt-1 text-sm font-medium text-muted-foreground"
-                        >
-                            Onboard a new member to the institution's directory.
-                        </p>
+                        <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Synchronizing new personnel to secure faculty registry</p>
                     </div>
                 </div>
             </div>
 
             <!-- Bulk Hub -->
-            <div
-                class="group relative overflow-hidden rounded-2xl border border-border bg-card p-8 shadow-sm transition-all hover:shadow-md"
-            >
-                <div
-                    class="absolute -top-12 -right-12 h-48 w-48 rounded-full bg-purple-500/5 transition-transform duration-700 group-hover:scale-110"
-                ></div>
-                <div
-                    class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"
-                >
-                    <div class="flex items-center gap-5">
-                        <div
-                            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-lg shadow-purple-200"
-                        >
-                            <Users class="h-7 w-7" />
+            <div class="group relative overflow-hidden rounded-[2.5rem] border border-border bg-card p-10 shadow-sm transition-all hover:border-primary/20">
+                <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/5 transition-transform duration-1000 group-hover:scale-110"></div>
+                <div class="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center gap-6">
+                        <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary text-white shadow-2xl shadow-primary/30">
+                            <Users class="h-8 w-8" />
                         </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 class="text-lg font-bold text-foreground">
-                                    Bulk Registration
-                                </h2>
-                                <Badge
-                                    class="border-0 bg-emerald-500/10 px-2 py-0 text-xs font-bold text-emerald-600 hover:bg-emerald-500/20"
-                                    >EFFICIENT</Badge
-                                >
-                            </div>
-                            <p class="mt-1 text-sm text-muted-foreground">
-                                Import multiple teacher records at once using
-                                our standardized template.
-                            </p>
+                        <div class="space-y-1">
+                            <h2 class="text-xl font-bold tracking-tight text-foreground uppercase">Bulk Ingestion Matrix</h2>
+                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60 max-w-md">Import high-volume personnel records using standardized institutional templates</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <Button
-                            variant="outline"
-                            class="h-11 rounded-xl border-border bg-background px-6 text-xs font-bold transition-all hover:bg-muted"
-                            as-child
-                        >
+                    <div class="flex flex-wrap items-center gap-4">
+                        <Button variant="ghost" class="h-12 rounded-2xl px-6 text-[10px] font-bold tracking-widest uppercase hover:bg-muted" as-child>
                             <a href="/staffs/template/download">
-                                <Download
-                                    class="mr-2 h-4 w-4 text-purple-600"
-                                />
-                                Download Template
+                                <Download class="mr-2.5 h-4 w-4 text-primary" />
+                                Download Protocol
                             </a>
                         </Button>
-                        <Button
-                            class="h-11 rounded-xl border-0 bg-purple-600 px-8 text-xs font-bold text-white shadow-lg shadow-purple-100 transition-all hover:bg-purple-700"
-                            @click="bulkUploadOpen = true"
-                        >
-                            <Upload class="mr-2 h-4 w-4" />
-                            Upload CSV File
+                        <Button @click="bulkUploadOpen = true" class="h-12 rounded-2xl bg-slate-900 px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl transition-all hover:bg-slate-800">
+                            <Upload class="mr-2.5 h-4 w-4" />
+                            Upload CSV Matrix
                         </Button>
                     </div>
                 </div>
             </div>
 
-            <form
-                @submit.prevent="submit"
-                class="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-12"
-            >
-                <!-- Left Sidebar: Profile Photo & Key Info -->
-                <div class="space-y-6 lg:col-span-4">
-                    <div
-                        class="overflow-hidden rounded-xl border border-border bg-card shadow-xl shadow-purple-500/5 transition-all"
-                    >
-                        <div
-                            class="relative overflow-hidden bg-gradient-to-br from-purple-600 to-indigo-700 p-8 text-white"
-                        >
-                            <div
-                                class="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-3xl"
-                            ></div>
-                            <div
-                                class="relative z-10 flex flex-col items-center gap-6"
-                            >
-                                <ProfilePhotoUpload
-                                    v-model="form.photo"
-                                    :error="form.errors.photo"
-                                >
+            <form @submit.prevent="submit" class="grid grid-cols-1 gap-12 lg:grid-cols-12">
+                <!-- Left Intelligence Stack -->
+                <div class="space-y-8 lg:col-span-4">
+                    <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                         <div class="relative overflow-hidden bg-slate-900 p-10 text-white">
+                            <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl opacity-20"></div>
+                            <div class="relative z-10 flex flex-col items-center gap-8">
+                                <ProfilePhotoUpload v-model="form.photo" :error="form.errors.photo">
                                     <template #default="{ isUploading }">
-                                        <div
-                                            class="group relative h-40 w-40 cursor-pointer overflow-hidden rounded-xl border-4 border-white/20 bg-white/10 shadow-lg backdrop-blur-md transition-transform duration-500 hover:scale-[1.02]"
-                                        >
-                                            <div
-                                                v-if="!form.photo"
-                                                class="flex h-full w-full items-center justify-center text-white/40"
-                                            >
-                                                <User class="h-16 w-16" />
-                                            </div>
+                                        <div class="group relative h-40 w-40 cursor-pointer overflow-hidden rounded-[2rem] border-4 border-white/10 bg-white/5 shadow-2xl transition-transform duration-500 hover:scale-[1.05]">
+                                            <div v-if="!form.photo" class="flex h-full w-full items-center justify-center text-white/20"><User class="h-16 w-16" /></div>
                                             <div v-else class="h-full w-full">
-                                                <!-- Preview handled internally by ProfilePhotoUpload in non-auto mode? 
-                                                     Actually, I need to show the local preview here. -->
-                                                <img
-                                                    :src="photoPreview"
-                                                    v-if="photoPreview"
-                                                    class="h-full w-full object-cover"
-                                                />
+                                                <img v-if="photoPreview" :src="photoPreview" class="h-full w-full object-cover" />
                                             </div>
-                                            <div
-                                                class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-                                            >
-                                                <Camera
-                                                    class="h-8 w-8 text-white"
-                                                />
-                                                <span
-                                                    class="text-xs font-bold tracking-tight text-white uppercase"
-                                                    >Capture</span
-                                                >
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                                <Camera class="h-8 w-8 text-white" />
+                                                <span class="text-[9px] font-bold tracking-widest text-white uppercase">Capture</span>
                                             </div>
                                         </div>
                                     </template>
                                 </ProfilePhotoUpload>
-                                <div class="text-center">
-                                    <h3
-                                        class="text-xl font-bold tracking-tight"
-                                    >
-                                        Profile Picture
-                                    </h3>
-                                    <p
-                                        class="mt-1 text-xs font-medium text-white/60"
-                                    >
-                                        Capture a professional photo for the
-                                        institutional directory.
-                                    </p>
+                                <div class="text-center space-y-1">
+                                    <h3 class="text-lg font-bold tracking-tight uppercase">Profile Hub</h3>
+                                    <p class="text-[9px] font-bold tracking-widest text-white/40 uppercase">Capturing biometric visual ID</p>
                                 </div>
                             </div>
-                        </div>
-                        <div class="space-y-6 p-8">
-                            <div class="space-y-2">
-                                <Label
-                                    for="role"
-                                    class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                    >System Access Role *</Label
-                                >
-                                <select
-                                    id="role"
-                                    v-model="form.role"
-                                    class="h-12 w-full appearance-none rounded-2xl border border-border bg-muted/30 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat px-4 text-sm font-bold tracking-tight uppercase transition-all outline-none focus:ring-2 focus:ring-purple-600/10"
-                                    required
-                                >
-                                    <option value="">Select Role</option>
-                                    <option
-                                        v-for="role in roles"
-                                        :key="role.id"
-                                        :value="role.name"
-                                    >
-                                        {{
-                                            role.name
-                                                .replace('_', ' ')
-                                                .toUpperCase()
-                                        }}
-                                    </option>
-                                </select>
+                         </div>
+                         <div class="p-10 space-y-8">
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Strategic role *</Label>
+                                <div class="relative">
+                                    <select v-model="form.role" class="h-12 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-5 text-xs font-bold tracking-tight uppercase outline-none focus:bg-background" required>
+                                        <option value="">Select Protocol</option>
+                                        <option v-for="role in roles" :key="role.id" :value="role.name">{{ role.name.replace('_', ' ').toUpperCase() }}</option>
+                                    </select>
+                                    <ChevronDown class="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                </div>
                                 <InputError :message="form.errors.role" />
                             </div>
-                            <div class="space-y-2">
-                                <Label
-                                    for="status"
-                                    class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                    >Initial Status *</Label
-                                >
-                                <select
-                                    id="status"
-                                    v-model="form.status"
-                                    class="h-12 w-full appearance-none rounded-2xl border border-border bg-muted/30 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat px-4 text-sm font-bold transition-all outline-none focus:ring-2 focus:ring-purple-600/10"
-                                    required
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                    <option value="on_leave">On Leave</option>
-                                </select>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Activation state *</Label>
+                                <div class="relative">
+                                    <select v-model="form.status" class="h-12 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-5 text-xs font-bold tracking-tight uppercase outline-none focus:bg-background" required>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Dormant</option>
+                                        <option value="on_leave">External Leave</option>
+                                    </select>
+                                    <ChevronDown class="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                </div>
                             </div>
-                        </div>
+                         </div>
                     </div>
 
-                    <div
-                        class="group flex items-center justify-between rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:bg-muted/30"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600"
-                            >
-                                <Fingerprint class="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Auth Protocol
-                                </p>
-                                <p class="text-sm font-bold text-foreground">
-                                    Cloud Sync Active
-                                </p>
+                    <!-- Cloud Sync Node -->
+                    <div class="flex items-center justify-between rounded-3xl border border-border bg-card p-6 shadow-sm transition-all hover:bg-muted/10">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm"><Database class="h-5 w-5" /></div>
+                            <div class="space-y-0.5">
+                                <p class="text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-40">System Protocol</p>
+                                <p class="text-xs font-bold tracking-tight text-foreground uppercase">Cloud Sync Active</p>
                             </div>
                         </div>
-                        <div
-                            class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"
-                        ></div>
+                        <div class="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
                     </div>
                 </div>
 
-                <!-- Right Column: Multi-section form -->
-                <div class="space-y-8 lg:col-span-8">
-                    <!-- Personal Information -->
-                    <div
-                        class="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-                    >
-                        <div
-                            class="border-b border-border/50 bg-muted/20 px-8 py-5"
-                        >
-                            <h2
-                                class="flex items-center gap-2 text-base font-bold text-foreground"
-                            >
-                                <User class="h-5 w-5 text-purple-600" />
-                                Personal Information
-                            </h2>
-                            <p class="mt-0.5 text-xs text-muted-foreground">
-                                Identity and demographic details
-                            </p>
+                <!-- Right Data Stack -->
+                <div class="space-y-12 lg:col-span-8">
+                    <!-- Personal Identity -->
+                    <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                        <div class="border-b border-border/50 bg-muted/10 px-10 py-6">
+                            <div class="flex items-center gap-4">
+                                <User class="h-5 w-5 text-primary" />
+                                <div class="space-y-0.5">
+                                    <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">Identity Matrix</h2>
+                                    <p class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Legal and demographic synchronization</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-8">
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label
-                                        for="first_name"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >First Name *</Label
-                                    >
-                                    <Input
-                                        id="first_name"
-                                        v-model="form.first_name"
-                                        placeholder="John"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.first_name"
-                                    />
+                        <div class="p-10">
+                            <div class="grid gap-8 md:grid-cols-2">
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Primary Identifier (First) *</Label>
+                                    <Input v-model="form.first_name" placeholder="John" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase focus:bg-background" />
+                                    <InputError :message="form.errors.first_name" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="middle_name"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Middle Name</Label
-                                    >
-                                    <Input
-                                        id="middle_name"
-                                        v-model="form.middle_name"
-                                        placeholder="Doe"
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.middle_name"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Legal Alias (Middle)</Label>
+                                    <Input v-model="form.middle_name" placeholder="Doe" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase focus:bg-background" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="last_name"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Last Name *</Label
-                                    >
-                                    <Input
-                                        id="last_name"
-                                        v-model="form.last_name"
-                                        placeholder="Smith"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.last_name"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Legacy Identifier (Last) *</Label>
+                                    <Input v-model="form.last_name" placeholder="Smith" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase focus:bg-background" />
+                                    <InputError :message="form.errors.last_name" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="gender"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Gender *</Label
-                                    >
-                                    <select
-                                        id="gender"
-                                        v-model="form.gender"
-                                        class="h-12 w-full appearance-none rounded-2xl border border-border bg-background bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat px-4 text-sm font-medium transition-all outline-none focus:ring-2 focus:ring-purple-600/10"
-                                    >
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <InputError :message="form.errors.gender" />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Biological Mode *</Label>
+                                    <div class="relative">
+                                        <select v-model="form.gender" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase outline-none focus:bg-background">
+                                            <option value="male">Male</option>
+                                            <option value="female">Female</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                        <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                    </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="date_of_birth"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Date of Birth</Label
-                                    >
-                                    <Input
-                                        id="date_of_birth"
-                                        v-model="form.date_of_birth"
-                                        type="date"
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.date_of_birth"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Temporal Birth Cycle</Label>
+                                    <Input v-model="form.date_of_birth" type="date" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold uppercase focus:bg-background" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="id_number"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >ID / Passport Number</Label
-                                    >
-                                    <Input
-                                        id="id_number"
-                                        v-model="form.id_number"
-                                        placeholder="12345678"
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.id_number"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">State ID / Passport</Label>
+                                    <Input v-model="form.id_number" placeholder="12345678" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase focus:bg-background" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Professional Details -->
-                    <div
-                        class="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-                    >
-                        <div
-                            class="border-b border-border/50 bg-muted/20 px-8 py-5"
-                        >
-                            <h2
-                                class="flex items-center gap-2 text-base font-bold text-foreground"
-                            >
-                                <Briefcase class="h-5 w-5 text-purple-600" />
-                                Professional Details
-                            </h2>
-                            <p class="mt-0.5 text-xs text-muted-foreground">
-                                Employment and assignment information
-                            </p>
+                    <!-- Professional Node -->
+                    <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                        <div class="border-b border-border/50 bg-muted/10 px-10 py-6">
+                            <div class="flex items-center gap-4">
+                                <Briefcase class="h-5 w-5 text-primary" />
+                                <div class="space-y-0.5">
+                                    <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">Professional Designation</h2>
+                                    <p class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Employment and assignment synchronization</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-8">
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label
-                                        for="staff_number"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Staff Number *</Label
-                                    >
-                                    <Input
-                                        id="staff_number"
-                                        v-model="form.staff_number"
-                                        placeholder="TCH1001"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-muted/20 px-4 font-bold tracking-tight uppercase transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.staff_number"
-                                    />
+                        <div class="p-10">
+                            <div class="grid gap-8 md:grid-cols-2">
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Institutional Key (Staff No) *</Label>
+                                    <Input v-model="form.staff_number" placeholder="FAC/001" required class="h-14 rounded-2xl border-border bg-slate-100/50 px-6 text-sm font-black tracking-[0.2em] text-primary uppercase focus:bg-background" />
+                                    <InputError :message="form.errors.staff_number" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="tsc_number"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >TSC Number</Label
-                                    >
-                                    <Input
-                                        id="tsc_number"
-                                        v-model="form.tsc_number"
-                                        placeholder="TSC123456"
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.tsc_number"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">External TSC Key</Label>
+                                    <Input v-model="form.tsc_number" placeholder="TSC-123456" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase focus:bg-background" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="department_id"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Department *</Label
-                                    >
-                                    <select
-                                        id="department_id"
-                                        v-model="form.department_id"
-                                        class="h-12 w-full appearance-none rounded-2xl border border-border bg-background bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat px-4 text-sm font-medium transition-all outline-none focus:ring-2 focus:ring-purple-600/10"
-                                        required
-                                    >
-                                        <option value="">
-                                            Select Department
-                                        </option>
-                                        <option
-                                            v-for="dept in departments"
-                                            :key="dept.id"
-                                            :value="dept.id"
-                                        >
-                                            {{ dept.name }}
-                                        </option>
-                                    </select>
-                                    <InputError
-                                        :message="form.errors.department_id"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Strategic Department *</Label>
+                                    <div class="relative">
+                                        <select v-model="form.department_id" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase outline-none focus:bg-background" required>
+                                            <option value="">Select Node</option>
+                                            <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.name }}</option>
+                                        </select>
+                                        <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                    </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="contract_type"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Contract Type</Label
-                                    >
-                                    <select
-                                        id="contract_type"
-                                        v-model="form.contract_type"
-                                        class="h-12 w-full appearance-none rounded-2xl border border-border bg-background bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat px-4 text-sm font-medium transition-all outline-none focus:ring-2 focus:ring-purple-600/10"
-                                    >
-                                        <option value="Permanent">
-                                            Permanent
-                                        </option>
-                                        <option value="Contract">
-                                            Contract
-                                        </option>
-                                        <option value="Part-time">
-                                            Part-time
-                                        </option>
-                                        <option value="Internship">
-                                            Internship
-                                        </option>
-                                    </select>
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Protocol Contract</Label>
+                                    <div class="relative">
+                                        <select v-model="form.contract_type" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold tracking-tight uppercase outline-none focus:bg-background">
+                                            <option value="Permanent">Permanent</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Part-time">Part-time</option>
+                                        </select>
+                                        <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Contact & Communication -->
-                    <div
-                        class="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-                    >
-                        <div
-                            class="border-b border-border/50 bg-muted/20 px-8 py-5"
-                        >
-                            <h2
-                                class="flex items-center gap-2 text-base font-bold text-foreground"
-                            >
-                                <Key class="h-5 w-5 text-purple-600" />
-                                Account Setup
-                            </h2>
-                            <p class="mt-0.5 text-xs text-muted-foreground">
-                                Login credentials and communication
-                            </p>
+                    <!-- Auth Hub -->
+                    <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                        <div class="border-b border-border/50 bg-muted/10 px-10 py-6">
+                            <div class="flex items-center gap-4">
+                                <Zap class="h-5 w-5 text-primary" />
+                                <div class="space-y-0.5">
+                                    <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">Protocol Auth & Security</h2>
+                                    <p class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Access keys and global communication</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="p-8">
-                            <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
-                                    <Label
-                                        for="email"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Email Address *</Label
-                                    >
-                                    <Input
-                                        id="email"
-                                        v-model="form.email"
-                                        type="email"
-                                        placeholder="teacher@example.com"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
+                        <div class="p-10">
+                            <div class="grid gap-8 md:grid-cols-2">
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Primary Matrix Email *</Label>
+                                    <Input v-model="form.email" type="email" placeholder="faculty@institution.com" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight focus:bg-background" />
                                     <InputError :message="form.errors.email" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="phone"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Phone Number *</Label
-                                    >
-                                    <Input
-                                        id="phone"
-                                        v-model="form.phone"
-                                        placeholder="+2547XXXXXXXX"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Secure Phone Key *</Label>
+                                    <Input v-model="form.phone" placeholder="+254700000000" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-tight focus:bg-background" />
                                     <InputError :message="form.errors.phone" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="password"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Initial Password *</Label
-                                    >
-                                    <Input
-                                        id="password"
-                                        v-model="form.password"
-                                        type="password"
-                                        placeholder="Minimum 8 characters"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
-                                    <InputError
-                                        :message="form.errors.password"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Initial Access Key *</Label>
+                                    <Input v-model="form.password" type="password" placeholder="MIN_8_CHARS" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-[0.2em] focus:bg-background" />
+                                    <InputError :message="form.errors.password" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label
-                                        for="password_confirmation"
-                                        class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                        >Confirm Password *</Label
-                                    >
-                                    <Input
-                                        id="password_confirmation"
-                                        v-model="form.password_confirmation"
-                                        type="password"
-                                        placeholder="Re-enter password"
-                                        required
-                                        class="h-12 rounded-2xl border-border bg-background px-4 font-medium transition-all focus:ring-2 focus:ring-purple-600/10"
-                                    />
+                                <div class="space-y-3">
+                                    <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Confirm Protocol Key *</Label>
+                                    <Input v-model="form.password_confirmation" type="password" placeholder="RE_ENTER_KEY" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold tracking-[0.2em] focus:bg-background" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action Hub -->
-                    <div
-                        class="flex flex-wrap items-center justify-end gap-4 pt-4"
-                    >
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            class="h-14 rounded-2xl px-10 font-bold text-muted-foreground transition-all hover:text-foreground"
-                            as-child
-                        >
-                            <Link href="/staffs">Cancel Registration</Link>
+                    <!-- Final Action Command -->
+                    <div class="flex flex-wrap items-center justify-end gap-6 pt-6">
+                        <Button variant="ghost" class="h-14 rounded-[1.5rem] px-10 text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase hover:bg-muted" as-child>
+                            <Link href="/staffs">Abort Enrollment</Link>
                         </Button>
-                        <Button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="h-14 rounded-2xl border-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-12 font-bold text-white shadow-xl shadow-purple-500/20 transition-all hover:shadow-purple-500/30"
-                        >
-                            <Loader2
-                                v-if="form.processing"
-                                class="mr-2 h-5 w-5 animate-spin"
-                            />
-                            <UserPlus v-else class="mr-2 h-5 w-5" />
-                            Register Staff Member
+                        <Button type="submit" :disabled="form.processing" class="h-14 rounded-[1.5rem] bg-primary px-14 text-[10px] font-bold tracking-[0.2em] text-white uppercase shadow-2xl shadow-primary/30 transition-all hover:scale-[1.05] active:scale-[0.98]">
+                            <Loader2 v-if="form.processing" class="mr-3 h-5 w-5 animate-spin" />
+                            <UserPlus v-else class="mr-3 h-5 w-5" />
+                            Initialize Synchronization
                         </Button>
                     </div>
                 </div>
             </form>
         </div>
 
-        <!-- Confirmation Modal -->
+        <!-- Strategic Dialogs -->
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
-            <DialogContent
-                class="overflow-hidden border-0 p-0 shadow-lg sm:max-w-md"
-            >
-                <div class="relative p-8 pt-12 text-center">
-                    <div
-                        class="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500"
-                    ></div>
-                    <div
-                        class="mx-auto mb-6 flex h-20 w-20 animate-in items-center justify-center rounded-full border-4 border-white bg-purple-50 shadow-sm ring-1 ring-purple-100 duration-300 zoom-in"
-                    >
-                        <AlertTriangle class="h-10 w-10 text-purple-600" />
+            <DialogContent class="sm:max-w-[480px] rounded-[2.5rem] border-border bg-card p-0 overflow-hidden shadow-2xl">
+                <div class="p-10">
+                    <div class="flex items-center gap-5 mb-8">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-3xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/5">
+                            <AlertTriangle class="h-7 w-7" />
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-xl font-bold tracking-tight text-foreground uppercase">Confirmation protocol</h3>
+                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Registry integrity check</p>
+                        </div>
                     </div>
-                    <DialogHeader>
-                        <DialogTitle
-                            class="text-center text-2xl font-bold text-foreground"
-                            >Confirm Registration</DialogTitle
-                        >
-                        <DialogDescription
-                            class="mt-3 px-4 text-center text-sm leading-relaxed text-muted-foreground"
-                        >
-                            Are you sure you want to register
-                            <span class="font-bold text-foreground"
-                                >{{ form.first_name }}
-                                {{ form.last_name }}</span
-                            >
-                            as a new teacher staff member?
-                        </DialogDescription>
-                    </DialogHeader>
-                </div>
-                <DialogFooter
-                    class="flex flex-col gap-2 border-t bg-muted/30 p-6 sm:flex-row sm:justify-center"
-                >
-                    <Button
-                        variant="ghost"
-                        @click="confirmOpen = false"
-                        class="h-11 w-full rounded-xl px-8 font-bold transition-all hover:bg-background sm:w-auto"
-                    >
-                        Review Details
-                    </Button>
-                    <Button
-                        @click="confirmSubmit"
-                        :disabled="form.processing"
-                        class="h-11 w-full rounded-xl border-0 bg-purple-600 px-10 font-bold text-white shadow-lg shadow-purple-100 transition-all hover:bg-purple-700 sm:w-auto"
-                    >
-                        <Loader2
-                            v-if="form.processing"
-                            class="mr-2 h-4 w-4 animate-spin"
-                        />
-                        Yes, Register Staff
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        <!-- Success Modal -->
-        <Dialog :open="successOpen" @update:open="successOpen = $event">
-            <DialogContent
-                class="overflow-hidden border-0 p-0 shadow-lg sm:max-w-md"
-            >
-                <div class="relative p-8 pt-12 text-center">
-                    <div
-                        class="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500"
-                    ></div>
-                    <div
-                        class="bounce-in mx-auto mb-6 flex h-24 w-24 animate-in items-center justify-center rounded-full border-8 border-white bg-emerald-50 shadow-sm ring-1 ring-emerald-100 duration-500 zoom-in"
-                    >
-                        <CheckCircle2 class="h-12 w-12 text-emerald-600" />
-                    </div>
-                    <h3 class="text-3xl font-bold text-foreground">
-                        Educator Registered!
-                    </h3>
-                    <p
-                        class="mt-4 px-6 text-sm leading-relaxed text-muted-foreground"
-                    >
-                        Staff member
-                        <span class="font-bold text-foreground"
-                            >{{ form.first_name }} {{ form.last_name }}</span
-                        >
-                        has been successfully added to the system directory.
+                    
+                    <p class="text-sm font-bold leading-relaxed text-muted-foreground">
+                        You are initiating the enrollment of <span class="text-foreground uppercase font-black">{{ form.first_name }} {{ form.last_name }}</span> into the institutional faculty matrix. This action is auditable.
                     </p>
                 </div>
-                <DialogFooter
-                    class="flex flex-col gap-2 border-t bg-muted/30 p-6 sm:flex-row sm:justify-center"
-                >
-                    <Button
-                        variant="outline"
-                        @click="resetForm"
-                        class="h-11 w-full rounded-xl border-border bg-background px-6 font-bold transition-all hover:bg-muted sm:w-auto"
-                    >
-                        <UserPlus class="mr-2 h-4 w-4 text-purple-600" />
-                        Add Another
-                    </Button>
-                    <Button
-                        as-child
-                        class="h-11 w-full rounded-xl border-0 bg-foreground px-8 font-bold text-background shadow-lg shadow-foreground/10 transition-all sm:w-auto"
-                    >
-                        <Link href="/staffs">
-                            <Users class="mr-2 h-4 w-4" />
-                            Return to Directory
-                        </Link>
-                    </Button>
-                </DialogFooter>
+
+                <div class="flex items-center justify-between gap-4 bg-muted/10 p-8 border-t border-border/50">
+                    <Button variant="ghost" @click="confirmOpen = false" class="h-12 rounded-2xl px-8 text-[10px] font-bold tracking-widest uppercase">Abort</Button>
+                    <Button @click="confirmSubmit" :disabled="form.processing" class="h-12 rounded-2xl bg-primary px-10 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg shadow-primary/20">Authorize Sync</Button>
+                </div>
             </DialogContent>
         </Dialog>
 
-        <StaffBulkUploadModal v-model:open="bulkUploadOpen" />
+        <Dialog :open="successOpen" @update:open="successOpen = $event">
+             <DialogContent class="sm:max-w-[480px] rounded-[2.5rem] border-border bg-card p-0 overflow-hidden shadow-2xl">
+                <div class="p-12 text-center">
+                    <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-emerald-50 text-emerald-500 shadow-sm ring-1 ring-emerald-100">
+                        <CheckCircle2 class="h-12 w-12" />
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tight text-foreground uppercase mb-4">Enrollment Success</h3>
+                    <p class="text-sm font-bold text-muted-foreground leading-relaxed uppercase opacity-60">The faculty node has been successfully synchronized and persisted in the global registry.</p>
+                </div>
+                <div class="flex items-center justify-center p-10 bg-muted/10 border-t border-border/50">
+                    <Button @click="resetForm" class="h-14 w-full rounded-2xl bg-slate-900 px-12 text-[10px] font-bold tracking-[0.2em] text-white uppercase shadow-xl transition-all hover:bg-slate-800">Dismiss Intelligence</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <StaffBulkUploadModal v-model:open="bulkUploadOpen" @uploaded="() => router.reload()" />
     </AppLayout>
 </template>

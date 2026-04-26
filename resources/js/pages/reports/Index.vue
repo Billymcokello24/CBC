@@ -12,334 +12,348 @@ import {
     PieChart,
     LineChart,
     Activity,
+    Home,
+    ChevronRight,
+    ArrowUpRight,
+    Search,
+    Filter,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Reports', href: '/reports' },
+    { title: 'Intelligence', href: '/reports' },
 ];
+
 const reportCategories = [
     {
-        title: 'Academic Reports',
+        title: 'Academic Intelligence',
         icon: GraduationCap,
         color: 'blue',
+        stats: '4 Matrices',
         reports: [
             {
-                name: 'Student Performance',
+                name: 'Performance Variance',
                 description: 'Individual and class performance analysis',
             },
             {
-                name: 'Subject Analysis',
-                description: 'Subject-wise performance breakdown',
+                name: 'Area Breakdown',
+                description: 'Subject-wise performance distribution',
             },
             {
-                name: 'Report Cards',
-                description: 'Generate student report cards',
+                name: 'Digital Report Cards',
+                description: 'Generate student performance journals',
             },
             {
-                name: 'Competency Tracking',
-                description: 'CBC competency achievement reports',
+                name: 'Competency Mapping',
+                description: 'CBC achievement synchronization',
             },
         ],
     },
     {
-        title: 'Attendance Reports',
+        title: 'Attendance Flux',
         icon: CalendarCheck,
         color: 'green',
+        stats: '12 Logs',
         reports: [
             {
-                name: 'Daily Attendance',
-                description: 'Daily attendance summary',
+                name: 'Daily Register',
+                description: 'Daily attendance synchronization',
             },
             {
-                name: 'Monthly Attendance',
-                description: 'Monthly attendance trends',
+                name: 'Monthly Trends',
+                description: 'Longitudinal attendance vectors',
             },
             {
-                name: 'Absentee Report',
-                description: 'Students with high absenteeism',
+                name: 'Anomaly Detection',
+                description: 'High absenteeism detection',
             },
             {
-                name: 'Teacher Attendance',
-                description: 'Staff attendance tracking',
+                name: 'Staff Registry',
+                description: 'Faculty attendance oversight',
             },
         ],
     },
     {
-        title: 'Financial Reports',
+        title: 'Financial Liquidity',
         icon: DollarSign,
         color: 'amber',
+        stats: '8 Ledgers',
         reports: [
-            { name: 'Fee Collection', description: 'Fee collection summary' },
-            { name: 'Outstanding Fees', description: 'Pending fee balances' },
+            { name: 'Collection Pulse', description: 'Fee collection summary' },
+            { name: 'Residual Balances', description: 'Outstanding fee ledgers' },
             {
-                name: 'Payment History',
-                description: 'Payment transaction history',
+                name: 'Transaction History',
+                description: 'Audit-ready payment records',
             },
             {
-                name: 'Expense Report',
-                description: 'School expenses breakdown',
+                name: 'Outflow Analysis',
+                description: 'School institutional expenses',
             },
         ],
     },
     {
-        title: 'Administrative Reports',
+        title: 'Administrative Density',
         icon: Users,
         color: 'purple',
+        stats: '6 Nodes',
         reports: [
             {
-                name: 'Student Enrollment',
-                description: 'Enrollment statistics',
+                name: 'Enrollment Growth',
+                description: 'Institutional expansion stats',
             },
-            { name: 'Staff Directory', description: 'Complete staff listing' },
-            { name: 'Class Statistics', description: 'Class-wise statistics' },
+            { name: 'Faculty Directory', description: 'Complete staff mapping' },
+            { name: 'Node Statistics', description: 'Class-wise metric analysis' },
             {
-                name: 'Demographics',
-                description: 'Student demographics analysis',
+                name: 'Demographic Scoping',
+                description: 'Student population distribution',
             },
         ],
     },
 ];
+
 const getColorClasses = (color: string) => {
-    const colors: Record<string, { bg: string; text: string; iconBg: string }> =
+    const colors: Record<string, { bg: string; text: string; iconBg: string; border: string }> =
         {
             blue: {
-                bg: 'from-blue-50 to-blue-100/50 dark:from-blue-950/50 dark:to-blue-900/30',
+                bg: 'bg-blue-500/5 hover:bg-blue-500/10',
                 text: 'text-blue-600',
-                iconBg: 'bg-blue-500/10',
+                iconBg: 'bg-blue-500/10 text-blue-600',
+                border: 'border-blue-500/20',
             },
             green: {
-                bg: 'from-green-50 to-green-100/50 dark:from-green-950/50 dark:to-green-900/30',
+                bg: 'bg-green-500/5 hover:bg-green-500/10',
                 text: 'text-green-600',
-                iconBg: 'bg-green-500/10',
+                iconBg: 'bg-green-500/10 text-green-600',
+                border: 'border-green-500/20',
             },
             amber: {
-                bg: 'from-amber-50 to-amber-100/50 dark:from-amber-950/50 dark:to-amber-900/30',
+                bg: 'bg-amber-500/5 hover:bg-amber-500/10',
                 text: 'text-amber-600',
-                iconBg: 'bg-amber-500/10',
+                iconBg: 'bg-amber-500/10 text-amber-600',
+                border: 'border-amber-500/20',
             },
             purple: {
-                bg: 'from-purple-50 to-purple-100/50 dark:from-purple-950/50 dark:to-purple-900/30',
+                bg: 'bg-purple-500/5 hover:bg-purple-500/10',
                 text: 'text-purple-600',
-                iconBg: 'bg-purple-500/10',
+                iconBg: 'bg-purple-500/10 text-purple-600',
+                border: 'border-purple-500/20',
             },
         };
     return colors[color] || colors.blue;
 };
 </script>
+
 <template>
-    <Head title="Reports & Analytics" />
+    <Head title="Intelligence & Analytics" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10"
-                    >
-                        <BarChart3 class="h-6 w-6 text-rose-600" />
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
+            <!-- Page Header -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
+                        <Home class="h-3 w-3" />
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span>Analysis</span>
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span class="text-foreground">Intelligence Hub</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Reports & Analytics
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Generate insights and comprehensive reports
-                        </p>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Intelligence & Analytics
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
+                        Synthesize institutional data into actionable performance insights.
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="relative hidden sm:block">
+                        <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+                        <Input placeholder="Search matrices..." class="h-10 w-64 rounded-xl border-border bg-muted/20 pl-9 text-xs font-bold transition-all focus:ring-2 focus:ring-primary/10" />
+                    </div>
+                    <Button variant="outline" class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase shadow-sm">
+                        <Filter class="mr-2 h-4 w-4 opacity-40" /> Refine
+                    </Button>
+                </div>
+            </div>
+
+            <!-- Dashboard Pulse Nodes -->
+            <div class="grid grid-cols-2 gap-4 px-1 sm:gap-6 lg:grid-cols-4">
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20">
+                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-blue-500/5 blur-3xl group-hover:bg-blue-500/10 transition-all"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
+                            <TrendingUp class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Academic Yield</p>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">72.5%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20">
+                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-emerald-500/5 blur-3xl group-hover:bg-emerald-500/10 transition-all"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-sm transition-all group-hover:bg-emerald-600 group-hover:text-white">
+                            <CalendarCheck class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Attendance Ratio</p>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">94.5%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20">
+                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/5 blur-3xl group-hover:bg-amber-500/10 transition-all"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shadow-sm transition-all group-hover:bg-amber-600 group-hover:text-white">
+                            <DollarSign class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Collection Index</p>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">86%</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-purple-500/20">
+                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-purple-500/5 blur-3xl group-hover:bg-purple-500/10 transition-all"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 shadow-sm transition-all group-hover:bg-purple-600 group-hover:text-white">
+                            <Users class="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Population Density</p>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">1,250</h3>
+                        </div>
                     </div>
                 </div>
             </div>
-            <!-- Quick Stats -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div
-                    class="flex items-center gap-4 rounded-xl border bg-card p-4"
-                >
-                    <div class="rounded-lg bg-blue-500/10 p-3">
-                        <TrendingUp class="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                        <p class="text-sm text-muted-foreground">
-                            Avg. Performance
-                        </p>
-                        <p class="text-2xl font-bold">72.5%</p>
-                    </div>
-                </div>
-                <div
-                    class="flex items-center gap-4 rounded-xl border bg-card p-4"
-                >
-                    <div class="rounded-lg bg-green-500/10 p-3">
-                        <CalendarCheck class="h-6 w-6 text-green-600" />
-                    </div>
-                    <div>
-                        <p class="text-sm text-muted-foreground">
-                            Attendance Rate
-                        </p>
-                        <p class="text-2xl font-bold">94.5%</p>
-                    </div>
-                </div>
-                <div
-                    class="flex items-center gap-4 rounded-xl border bg-card p-4"
-                >
-                    <div class="rounded-lg bg-amber-500/10 p-3">
-                        <DollarSign class="h-6 w-6 text-amber-600" />
-                    </div>
-                    <div>
-                        <p class="text-sm text-muted-foreground">
-                            Fee Collection
-                        </p>
-                        <p class="text-2xl font-bold">86%</p>
-                    </div>
-                </div>
-                <div
-                    class="flex items-center gap-4 rounded-xl border bg-card p-4"
-                >
-                    <div class="rounded-lg bg-purple-500/10 p-3">
-                        <Users class="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                        <p class="text-sm text-muted-foreground">
-                            Total Students
-                        </p>
-                        <p class="text-2xl font-bold">1,250</p>
-                    </div>
-                </div>
-            </div>
-            <!-- Report Categories -->
-            <div class="grid gap-6 lg:grid-cols-2">
+
+            <!-- Intelligence Map -->
+            <div class="grid gap-6 px-1 lg:grid-cols-2">
                 <div
                     v-for="category in reportCategories"
                     :key="category.title"
-                    :class="[
-                        'rounded-xl border bg-gradient-to-br p-6',
-                        getColorClasses(category.color).bg,
-                    ]"
+                    class="flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:shadow-lg"
                 >
-                    <div class="mb-4 flex items-center gap-3">
-                        <div
-                            :class="[
-                                'rounded-lg p-2',
-                                getColorClasses(category.color).iconBg,
-                            ]"
-                        >
-                            <component
-                                :is="category.icon"
+                    <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
+                        <div class="flex items-center gap-4">
+                            <div
                                 :class="[
-                                    'h-6 w-6',
-                                    getColorClasses(category.color).text,
+                                    'flex h-10 w-10 items-center justify-center rounded-xl shadow-inner transition-all',
+                                    getColorClasses(category.color).iconBg,
                                 ]"
-                            />
+                            >
+                                <component :is="category.icon" class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">
+                                    {{ category.title }}
+                                </h2>
+                                <p class="text-[10px] font-bold text-muted-foreground/40 uppercase">{{ category.stats }} Synchronized</p>
+                            </div>
                         </div>
-                        <h2 class="text-lg font-semibold">
-                            {{ category.title }}
-                        </h2>
+                        <Badge variant="outline" class="h-6 rounded-lg text-[9px] font-bold tracking-tighter opacity-40">SYSTEM READY</Badge>
                     </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
+
+                    <div class="grid gap-4 p-8 sm:grid-cols-2">
                         <div
                             v-for="report in category.reports"
                             :key="report.name"
-                            class="cursor-pointer rounded-lg border bg-card/80 p-4 transition-shadow hover:shadow-md"
+                            class="group/report relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-muted/10 p-5 transition-all hover:border-primary/20 hover:bg-background hover:shadow-md"
                         >
-                            <div class="flex items-start justify-between">
-                                <div>
-                                    <h3 class="text-sm font-medium">
-                                        {{ report.name }}
-                                    </h3>
-                                    <p
-                                        class="mt-1 text-xs text-muted-foreground"
-                                    >
-                                        {{ report.description }}
-                                    </p>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    class="h-8 w-8 shrink-0"
-                                >
-                                    <Download class="h-4 w-4" />
+                            <div class="relative z-10 flex flex-col gap-2">
+                                <h3 class="text-xs font-bold text-foreground transition-colors group-hover/report:text-primary uppercase">
+                                    {{ report.name }}
+                                </h3>
+                                <p class="text-[10px] font-bold leading-relaxed text-muted-foreground/50 uppercase">
+                                    {{ report.description }}
+                                </p>
+                            </div>
+                            <div class="mt-4 flex items-center justify-between opacity-0 transition-opacity group-hover/report:opacity-100">
+                                <span class="text-[9px] font-bold tracking-widest text-primary uppercase">Execute Matrix</span>
+                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg bg-primary/10 text-primary">
+                                    <ArrowUpRight class="h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- Recent Reports -->
-            <div class="rounded-xl border bg-card">
-                <div class="flex items-center justify-between border-b p-4">
-                    <h3 class="font-semibold">Recently Generated Reports</h3>
-                    <Button variant="ghost" size="sm">View All</Button>
+
+            <!-- Historical Sync Log -->
+            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm px-1">
+                <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <FileText class="h-5 w-5" />
+                        </div>
+                        <h3 class="text-sm font-bold tracking-tight text-foreground uppercase">Recent Intelligence Bursts</h3>
+                    </div>
+                    <Button variant="ghost" size="sm" class="h-9 rounded-xl text-[10px] font-bold tracking-tight uppercase hover:bg-muted">
+                        Archive Feed
+                    </Button>
                 </div>
-                <div class="divide-y">
-                    <div
-                        class="flex items-center justify-between p-4 hover:bg-muted/50"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30"
-                            >
-                                <FileText class="h-5 w-5 text-blue-600" />
+
+                <div class="divide-y divide-border/30">
+                    <div class="group flex items-center justify-between p-6 transition-all hover:bg-muted/10">
+                        <div class="flex items-center gap-5">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-500/10 bg-blue-500/5 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white">
+                                <BarChart3 class="h-6 w-6" />
                             </div>
                             <div>
-                                <p class="font-medium">
-                                    Term 1 Report Cards - Grade 5
-                                </p>
-                                <p class="text-sm text-muted-foreground">
-                                    Generated on Mar 10, 2026
+                                <h4 class="text-sm font-bold text-foreground group-hover:text-blue-600 transition-colors uppercase">
+                                    Term 1 Performance Distribution <span class="mx-2 opacity-10">/</span> <span class="text-[10px] text-muted-foreground/40">Grade 5 Map</span>
+                                </h4>
+                                <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-0.5">
+                                    Generated 12 Hours Ago <span class="mx-1 opacity-30">•</span> System UID: R-88219
                                 </p>
                             </div>
                         </div>
-                        <Button variant="outline" size="sm"
-                            ><Download class="mr-2 h-4 w-4" />Download</Button
-                        >
+                        <Button variant="outline" class="h-9 rounded-xl border-border bg-background px-4 text-[10px] font-bold tracking-tight uppercase shadow-sm hover:bg-primary hover:text-white transition-all">
+                            <Download class="mr-2 h-3.5 w-3.5" /> Synchronize PDF
+                        </Button>
                     </div>
-                    <div
-                        class="flex items-center justify-between p-4 hover:bg-muted/50"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="rounded-lg bg-green-100 p-2 dark:bg-green-900/30"
-                            >
-                                <FileText class="h-5 w-5 text-green-600" />
+
+                    <div class="group flex items-center justify-between p-6 transition-all hover:bg-muted/10">
+                        <div class="flex items-center gap-5">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl border-emerald-500/10 bg-emerald-500/5 text-emerald-600 transition-all group-hover:bg-emerald-600 group-hover:text-white">
+                                <Activity class="h-6 w-6" />
                             </div>
                             <div>
-                                <p class="font-medium">
-                                    Monthly Attendance Summary - February
-                                </p>
-                                <p class="text-sm text-muted-foreground">
-                                    Generated on Mar 5, 2026
+                                <h4 class="text-sm font-bold text-foreground group-hover:text-emerald-600 transition-colors uppercase">
+                                    Institutional Attendance Flux <span class="mx-2 opacity-10">/</span> <span class="text-[10px] text-muted-foreground/40">Monthly Drift</span>
+                                </h4>
+                                <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-0.5">
+                                    Generated 2 Days Ago <span class="mx-1 opacity-30">•</span> System UID: R-88102
                                 </p>
                             </div>
                         </div>
-                        <Button variant="outline" size="sm"
-                            ><Download class="mr-2 h-4 w-4" />Download</Button
-                        >
-                    </div>
-                    <div
-                        class="flex items-center justify-between p-4 hover:bg-muted/50"
-                    >
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/30"
-                            >
-                                <FileText class="h-5 w-5 text-amber-600" />
-                            </div>
-                            <div>
-                                <p class="font-medium">
-                                    Fee Collection Report - Term 1
-                                </p>
-                                <p class="text-sm text-muted-foreground">
-                                    Generated on Mar 1, 2026
-                                </p>
-                            </div>
-                        </div>
-                        <Button variant="outline" size="sm"
-                            ><Download class="mr-2 h-4 w-4" />Download</Button
-                        >
+                        <Button variant="outline" class="h-9 rounded-xl border-border bg-background px-4 text-[10px] font-bold tracking-tight uppercase shadow-sm hover:bg-primary hover:text-white transition-all">
+                            <Download class="mr-2 h-3.5 w-3.5" /> Synchronize PDF
+                        </Button>
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Loader2, Save } from 'lucide-vue-next';
+import {
+    ArrowLeft,
+    Loader2,
+    Save,
+    Rows3,
+    ShieldCheck,
+    ShieldOff,
+    Activity,
+    Database,
+    Zap,
+    ChevronDown,
+} from 'lucide-vue-next';
+import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Rows3, ShieldCheck, ShieldOff } from 'lucide-vue-next';
 
 const props = defineProps<{
     stream: {
@@ -28,9 +32,9 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Streams', href: '/streams' },
-    { title: 'Edit Stream', href: `/streams/${props.stream.id}/edit` },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Academic Streams', href: '/streams' },
+    { title: 'Channel Mutation', href: `/streams/${props.stream.id}/edit` },
 ];
 
 const form = useForm({
@@ -45,201 +49,108 @@ const submit = () => {
         ...data,
         capacity: data.capacity ? Number(data.capacity) : null,
         is_active: Boolean(data.is_active),
-    })).put(`/streams/${props.stream.id}`);
+    })).put(`/streams/${props.stream.id}`, {
+        preserveScroll: true,
+    });
 };
 </script>
 
 <template>
-    <Head title="Edit Stream" />
+    <Head :title="`MUTATE_CHANNEL_${stream.name.toUpperCase()}`" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="w-full animate-in space-y-12 px-4 py-12 duration-500 fade-in sm:px-6 lg:px-8"
+            class="mx-auto flex h-full max-w-[1000px] flex-1 animate-in flex-col gap-12 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
-            <!-- Header Section -->
+            <!-- Strategic Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg"
+                <div class="flex items-center gap-6">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        as-child
+                        class="h-12 w-12 rounded-2xl border-border bg-card shadow-sm transition-all hover:bg-muted"
                     >
-                        <Rows3 class="h-6 w-6" />
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                Edit Stream
+                        <Link href="/streams">
+                            <ArrowLeft class="h-5 w-5 text-muted-foreground" />
+                        </Link>
+                    </Button>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black uppercase">
+                                Mutate academic channel
                             </h1>
-                            <Badge
-                                variant="secondary"
-                                class="h-5 rounded-full border-none bg-blue-50 px-3 py-0.5 text-xs font-bold text-blue-600 uppercase"
-                                >School Structure</Badge
-                            >
+                            <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase shadow-sm">Audit Mode</Badge>
                         </div>
-                        <p class="mt-1 text-sm text-muted-foreground">
-                            Update global stream setup and operational status
-                            for
-                            <span class="font-bold text-slate-900">{{
-                                stream.name
-                            }}</span
-                            >.
-                        </p>
+                        <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Modifying infrastructure node: {{ stream.name }}</p>
                     </div>
                 </div>
-                <Button
-                    variant="outline"
-                    as-child
-                    class="h-11 rounded-xl border-slate-200 px-6 text-xs font-bold tracking-wider uppercase shadow-sm transition-all hover:bg-slate-50"
-                >
-                    <Link href="/streams"
-                        ><ArrowLeft class="mr-2 h-4 w-4" />Back to List</Link
-                    >
-                </Button>
             </div>
 
-            <div class="max-w-4xl">
-                <form @submit.prevent="submit" class="space-y-8">
-                    <Card
-                        class="overflow-hidden rounded-2xl border-slate-100 shadow-sm"
-                    >
-                        <CardHeader
-                            class="border-b border-slate-50 bg-slate-50/30 px-8 py-6"
-                        >
-                            <CardTitle class="text-lg font-bold text-slate-900"
-                                >Stream Details</CardTitle
-                            >
-                            <CardDescription
-                                >Primary identification and capacity limits for
-                                this academic stream.</CardDescription
-                            >
-                        </CardHeader>
-                        <CardContent class="p-8">
-                            <div class="grid gap-8 md:grid-cols-2">
-                                <div class="space-y-3">
-                                    <Label
-                                        for="name"
-                                        class="ml-1 text-xs font-bold tracking-wider text-slate-500 uppercase"
-                                        >Stream Name</Label
-                                    >
-                                    <Input
-                                        id="name"
-                                        v-model="form.name"
-                                        placeholder="e.g. RED"
-                                        class="h-12 rounded-xl border-slate-200 uppercase focus:ring-blue-600"
-                                    />
-                                    <InputError :message="form.errors.name" />
-                                </div>
-                                <div class="space-y-3">
-                                    <Label
-                                        for="code"
-                                        class="ml-1 text-xs font-bold tracking-wider text-slate-500 uppercase"
-                                        >Stream Code</Label
-                                    >
-                                    <Input
-                                        id="code"
-                                        v-model="form.code"
-                                        placeholder="e.g. R"
-                                        class="h-12 rounded-xl border-slate-200 uppercase focus:ring-blue-600"
-                                    />
-                                    <InputError :message="form.errors.code" />
-                                </div>
-                                <div class="space-y-3">
-                                    <Label
-                                        for="capacity"
-                                        class="ml-1 text-xs font-bold tracking-wider text-slate-500 uppercase"
-                                        >General Capacity</Label
-                                    >
-                                    <Input
-                                        id="capacity"
-                                        v-model="form.capacity"
-                                        type="number"
-                                        min="1"
-                                        placeholder="e.g. 40"
-                                        class="h-12 rounded-xl border-slate-200 focus:ring-blue-600"
-                                    />
-                                    <InputError
-                                        :message="form.errors.capacity"
-                                    />
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
+            <!-- Mutation Hub -->
+            <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                <div class="border-b border-border/50 bg-muted/10 px-10 py-6">
+                    <div class="flex items-center gap-4">
+                        <Zap class="h-5 w-5 text-primary" />
+                        <div class="space-y-0.5">
+                            <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">Channel configuration</h2>
+                            <p class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Synchronizing infrastructure properties</p>
+                        </div>
+                    </div>
+                </div>
 
-                    <Card
-                        class="overflow-hidden rounded-2xl border-slate-100 shadow-sm"
-                    >
-                        <CardContent
-                            class="flex items-center justify-between bg-slate-50/50 p-8"
-                        >
-                            <div class="flex items-center gap-4">
-                                <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white shadow-sm"
-                                >
-                                    <component
-                                        :is="
-                                            form.is_active
-                                                ? ShieldCheck
-                                                : ShieldOff
-                                        "
-                                        class="h-5 w-5"
-                                        :class="
-                                            form.is_active
-                                                ? 'text-emerald-500'
-                                                : 'text-slate-400'
-                                        "
-                                    />
-                                </div>
-                                <div>
-                                    <Label
-                                        for="is_active_toggle"
-                                        class="text-sm font-bold text-slate-900"
-                                        >Operational Status</Label
-                                    >
-                                    <p class="text-xs text-slate-500">
-                                        {{
-                                            form.is_active
-                                                ? 'Stream is active across all grades'
-                                                : 'Stream is currently deactivated'
-                                        }}
-                                    </p>
-                                </div>
+                <form @submit.prevent="submit" class="p-10 space-y-10">
+                    <div class="grid gap-10 md:grid-cols-2">
+                        <div class="space-y-3">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Strategic Channel Name *</Label>
+                            <Input v-model="form.name" placeholder="NORTH" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-black tracking-widest uppercase focus:bg-background" />
+                            <InputError :message="form.errors.name" />
+                        </div>
+                        <div class="space-y-3">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Protocol identifier (Code) *</Label>
+                            <Input v-model="form.code" placeholder="NRTH" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-black tracking-[0.2em] text-primary uppercase focus:bg-background" />
+                            <InputError :message="form.errors.code" />
+                        </div>
+                        <div class="space-y-3">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Population Capacity Node</Label>
+                            <Input v-model="form.capacity" type="number" min="1" placeholder="40" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                            <InputError :message="form.errors.capacity" />
+                        </div>
+                        <div class="space-y-3">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Node State</Label>
+                            <div class="relative">
+                                <select v-model="form.is_active" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold uppercase outline-none focus:bg-background">
+                                    <option :value="true">Active Synchronization</option>
+                                    <option :value="false">Dormant Node</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
                             </div>
-                            <select
-                                id="is_active"
-                                v-model="form.is_active"
-                                class="h-11 min-w-[140px] rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold tracking-wider uppercase shadow-sm transition-all focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                            >
-                                <option :value="true">Active</option>
-                                <option :value="false">Inactive</option>
-                            </select>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
 
-                    <div class="flex items-center justify-end gap-3 pt-4">
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            as-child
-                            class="h-12 rounded-xl px-8 font-bold text-slate-500 transition-all hover:bg-slate-50"
-                        >
-                            <Link href="/streams">Cancel</Link>
+                    <!-- Final Infrastructure Actions -->
+                    <div class="flex flex-wrap items-center justify-end gap-6 pt-6 border-t border-border/50">
+                        <Button variant="ghost" class="h-14 rounded-[1.5rem] px-10 text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase hover:bg-muted" as-child>
+                            <Link href="/streams">Abort Mutation</Link>
                         </Button>
-                        <Button
-                            type="submit"
-                            :disabled="form.processing"
-                            class="h-12 rounded-xl bg-blue-600 px-10 font-bold text-white shadow-lg shadow-blue-200 transition-all hover:bg-blue-700"
-                        >
-                            <Loader2
-                                v-if="form.processing"
-                                class="mr-2 h-4 w-4 animate-spin"
-                            />
-                            <Save v-else class="mr-2 h-4 w-4" />
-                            Save Changes
+                        <Button type="submit" :disabled="form.processing" class="h-14 rounded-[1.5rem] bg-slate-900 px-14 text-[10px] font-bold tracking-[0.2em] text-white uppercase shadow-2xl transition-all hover:scale-[1.05] active:scale-[0.98]">
+                            <Loader2 v-if="form.processing" class="mr-3 h-5 w-5 animate-spin" />
+                            <Save v-else class="mr-3 h-5 w-5" />
+                            Commit mutation protocol
                         </Button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Operational Integrity Hint -->
+            <div class="flex items-center gap-6 rounded-[2rem] border border-rose-100 bg-rose-50/30 p-8">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-rose-100 transition-transform group-hover:rotate-12"><ShieldCheck class="h-6 w-6 text-rose-500" /></div>
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black tracking-widest text-rose-600 uppercase">Operational Protocol</p>
+                    <p class="text-xs font-bold text-muted-foreground leading-relaxed uppercase opacity-70">Mutating infrastructure nodes affects all linked academic streams. Ensure population density limits are audited before synchronization.</p>
+                </div>
             </div>
         </div>
     </AppLayout>

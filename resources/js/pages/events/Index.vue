@@ -6,9 +6,14 @@ import {
     Star,
     Trophy,
     Plus,
-    ArrowRight,
+    ArrowUpRight,
     MapPin,
     Clock,
+    Home,
+    ChevronRight,
+    Activity,
+    History,
+    Sparkles,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -27,238 +32,237 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Events & Clubs', href: '/events' },
+    { title: 'Institutional Life', href: '/events' },
 ];
 
-const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-    });
+const getMonth = (date: string) => {
+    return new Date(date).toLocaleString('en-US', { month: 'short' });
+};
+
+const getDay = (date: string) => {
+    return new Date(date).getDate();
 };
 </script>
 
 <template>
-    <Head title="Events & Clubs" />
+    <Head title="Events & Engagement" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="font-pulsar flex h-full flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10"
-                    >
-                        <Trophy class="h-6 w-6 text-amber-600" />
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
+            <!-- Page Header -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
+                        <Home class="h-3 w-3" />
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span>Experience</span>
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span class="text-foreground">Activity Matrix</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Events & Clubs
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Manage school calendar, extracurricular clubs and
-                            student activities
-                        </p>
-                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Events & Engagement
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
+                        Synchronize school calendar milestones and extracurricular club architectures.
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    <Button variant="outline" as-child
-                        ><Link href="/events/clubs">View Clubs</Link></Button
-                    >
-                    <Button
-                        as-child
-                        class="font-pulsar bg-amber-600 hover:bg-amber-700"
-                        ><Plus class="mr-2 h-4 w-4" />Create Event</Button
-                    >
+
+                <div class="flex items-center gap-3">
+                    <Button variant="outline" as-child class="h-11 rounded-xl border-border bg-background px-6 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted">
+                        <Link href="/events/clubs">
+                            <Sparkles class="mr-2 h-4 w-4 opacity-40 text-amber-500" />Explore Clubs
+                        </Link>
+                    </Button>
+                    <Button as-child class="h-11 rounded-xl bg-amber-600 px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-amber-500/30 transition-all hover:scale-[1.02] hover:bg-amber-700 active:scale-95 text-white border-0">
+                        <Link href="/events/create">
+                            <Plus class="mr-2 h-4 w-4" />Schedule Event
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div
-                    class="rounded-xl border border-l-4 border-l-amber-500 bg-card p-6 shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-amber-500/10 p-2">
-                            <Calendar class="h-5 w-5 text-amber-600" />
+            <!-- Dashboard Analytics -->
+            <div class="grid grid-cols-1 gap-4 px-1 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Upcoming Events -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-amber-500/5 blur-2xl transition-all group-hover:bg-amber-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shadow-sm transition-all group-hover:bg-amber-600 group-hover:text-white">
+                                <Calendar class="h-5 w-5" />
+                            </div>
+                            <Badge variant="outline" class="h-5 rounded-lg text-[8px] font-bold tracking-tighter opacity-40">CALENDAR READY</Badge>
                         </div>
-                        <span
-                            class="font-pulsar text-xs font-bold tracking-tight text-amber-600 uppercase"
-                            >Upcoming</span
-                        >
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Total Events
-                        </p>
-                        <p class="text-2xl font-bold text-amber-600">
-                            {{ stats.upcoming_events }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.upcoming_events }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Scheduled Institutional Events</p>
+                        </div>
                     </div>
                 </div>
-                <div
-                    class="rounded-xl border border-l-4 border-l-blue-500 bg-card p-6 shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-blue-500/10 p-2">
-                            <Users class="h-5 w-5 text-blue-600" />
+
+                <!-- Active Clubs -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-blue-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-blue-500/5 blur-2xl transition-all group-hover:bg-blue-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
+                                <Users class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-blue-600/40 uppercase">Interest Groups</span>
                         </div>
-                        <span
-                            class="font-pulsar text-xs font-bold tracking-tight text-blue-600 uppercase"
-                            >Active</span
-                        >
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Registered Clubs
-                        </p>
-                        <p class="text-2xl font-bold text-blue-600">
-                            {{ stats.active_clubs }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.active_clubs }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Active Extracurricular Nodes</p>
+                        </div>
                     </div>
                 </div>
-                <div
-                    class="rounded-xl border border-l-4 border-l-emerald-500 bg-card p-6 shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-emerald-500/10 p-2">
-                            <Star class="h-5 w-5 text-emerald-600" />
+
+                <!-- Featured Activities -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/5 blur-2xl transition-all group-hover:bg-emerald-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-sm transition-all group-hover:bg-emerald-600 group-hover:text-white">
+                                <Star class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-emerald-600/40 uppercase">Highlights</span>
                         </div>
-                        <span
-                            class="font-pulsar text-xs font-bold tracking-tight text-emerald-600 uppercase"
-                            >Featured</span
-                        >
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Highlighted Activities
-                        </p>
-                        <p class="text-2xl font-bold text-emerald-600">
-                            {{ stats.featured_events }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.featured_events }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Featured Institutional Spotlights</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-3">
-                <div class="space-y-4 lg:col-span-2">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-bold">Upcoming Calendar</h2>
-                        <Link
-                            href="/events/list"
-                            class="text-sm font-bold text-amber-600 hover:underline"
-                            >View Full Schedule</Link
-                        >
+            <!-- Content Split -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 px-1">
+                <!-- Events Timeline -->
+                <div class="lg:col-span-2 overflow-hidden rounded-3xl border border-border bg-card shadow-sm flex flex-col">
+                    <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+                                <Calendar class="h-5 w-5" />
+                            </div>
+                            <h3 class="text-sm font-bold tracking-tight text-foreground uppercase">Institutional Calendar</h3>
+                        </div>
+                        <Button variant="ghost" size="sm" as-child class="h-9 rounded-xl text-[10px] font-bold tracking-tight uppercase hover:bg-muted">
+                            <Link href="/events/timeline">Full Schedule</Link>
+                        </Button>
                     </div>
-                    <div
-                        v-for="event in upcomingEvents"
-                        :key="event.id"
-                        class="group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all hover:border-amber-200 md:flex-row"
-                    >
+
+                    <div class="divide-y divide-border/30">
                         <div
-                            class="flex w-full flex-col items-center justify-center border-b bg-slate-50 p-4 text-center transition-colors group-hover:bg-amber-50 md:w-32 md:border-r md:border-b-0"
+                            v-for="event in upcomingEvents"
+                            :key="event.id"
+                            class="group relative flex flex-col sm:flex-row transition-all hover:bg-muted/10"
                         >
-                            <span
-                                class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                >{{
-                                    new Date(event.start_date).toLocaleString(
-                                        'en-GB',
-                                        { month: 'short' },
-                                    )
-                                }}</span
-                            >
-                            <span
-                                class="text-3xl font-bold text-slate-900 transition-colors group-hover:text-amber-600"
-                                >{{
-                                    new Date(event.start_date).getDate()
-                                }}</span
-                            >
-                        </div>
-                        <div class="flex-1 p-5">
-                            <div class="mb-2 flex items-start justify-between">
-                                <div>
-                                    <Badge
-                                        variant="outline"
-                                        class="mb-1 border-slate-200 text-xs font-bold tracking-tighter text-slate-500 uppercase"
-                                        >{{ event.status }}</Badge
-                                    >
-                                    <h3
-                                        class="text-lg font-bold text-slate-900"
-                                    >
-                                        {{ event.title }}
-                                    </h3>
-                                </div>
-                                <Star
-                                    v-if="event.is_featured"
-                                    class="h-4 w-4 fill-amber-500 text-amber-500"
-                                />
+                            <!-- Date Node -->
+                            <div class="flex w-full flex-col items-center justify-center bg-muted/5 p-8 text-center border-b border-border/30 sm:w-32 sm:border-b-0 sm:border-r">
+                                <span class="text-[10px] font-bold tracking-widest text-muted-foreground/40 uppercase mb-1">{{ getMonth(event.start_date) }}</span>
+                                <span class="text-3xl font-bold tracking-tighter text-foreground group-hover:text-amber-600 transition-colors">{{ getDay(event.start_date) }}</span>
                             </div>
-                            <div
-                                class="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground"
-                            >
-                                <div class="flex items-center gap-1.5">
-                                    <Clock class="h-3.5 w-3.5" />
-                                    {{ event.start_time || 'All Day' }}
+                            
+                            <!-- Event Details -->
+                            <div class="flex-1 p-8">
+                                <div class="flex items-start justify-between mb-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1.5">
+                                            <Badge variant="outline" class="h-5 rounded-lg text-[9px] font-bold tracking-tighter uppercase px-2">{{ event.status }}</Badge>
+                                            <Star v-if="event.is_featured" class="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                                        </div>
+                                        <h4 class="text-base font-bold text-foreground group-hover:text-amber-600 transition-colors uppercase leading-tight">
+                                            {{ event.title }}
+                                        </h4>
+                                    </div>
+                                    <Button variant="ghost" size="icon" as-child class="h-10 w-10 rounded-xl opacity-0 group-hover:opacity-100 transition-all">
+                                        <Link :href="`/events/${event.id}`"><ArrowUpRight class="h-5 w-5" /></Link>
+                                    </Button>
                                 </div>
-                                <div class="flex items-center gap-1.5">
-                                    <MapPin class="h-3.5 w-3.5" />
-                                    {{ event.venue }}
+                                <div class="flex flex-wrap gap-6">
+                                    <div class="flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground/60 uppercase">
+                                        <Clock class="h-4 w-4 opacity-40 text-blue-500" />
+                                        {{ event.start_time || 'Synchronized All-Day' }}
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground/60 uppercase">
+                                        <MapPin class="h-4 w-4 opacity-40 text-rose-500" />
+                                        {{ event.venue || 'Terminal Matrix' }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div
-                        v-if="upcomingEvents.length === 0"
-                        class="rounded-xl border-2 border-dashed p-12 text-center text-muted-foreground"
-                    >
-                        No upcoming events scheduled for this term.
+                        <div v-if="upcomingEvents.length === 0" class="flex flex-col items-center justify-center p-20 text-center">
+                            <div class="h-16 w-16 rounded-3xl bg-muted/20 flex items-center justify-center mb-4">
+                                <Calendar class="h-8 w-8 text-muted-foreground/20" />
+                            </div>
+                            <p class="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">No active milestones scheduled</p>
+                        </div>
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    <div
-                        class="rounded-xl border bg-gradient-to-br from-amber-500 to-amber-600 p-8 text-white shadow-xl"
-                    >
-                        <h2 class="font-pulsar mb-2 text-2xl font-bold">
-                            Extracurriculars
-                        </h2>
-                        <p class="mb-6 text-sm text-amber-50/80">
-                            Join a club, track memberships and celebrate school
-                            achievements.
-                        </p>
-                        <div class="grid gap-3">
-                            <Button
-                                as-child
-                                size="lg"
-                                class="w-full justify-between border-0 bg-white font-bold text-amber-600 shadow-md transition-transform hover:scale-[1.02] hover:bg-amber-50"
-                            >
-                                <Link href="/events/clubs"
-                                    >Explore School Clubs
-                                    <ArrowRight class="h-4 w-4"
-                                /></Link>
+                <!-- Strategic Engagement Sidebar -->
+                <div class="space-y-6 flex flex-col">
+                    <!-- Featured Achievement Card -->
+                    <div class="relative overflow-hidden rounded-3xl bg-slate-900 px-8 py-10 text-white shadow-2xl flex-1">
+                        <div class="absolute inset-0 opacity-[0.05] grayscale pointer-events-none">
+                            <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                                <defs><pattern id="grid-events" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/></pattern></defs>
+                                <rect width="100%" height="100%" fill="url(#grid-events)" />
+                            </svg>
+                        </div>
+                        
+                        <div class="relative z-10 space-y-8 h-full flex flex-col justify-between">
+                            <div class="space-y-6">
+                                <div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/5 border border-white/10 shadow-2xl transition-all hover:bg-amber-500/20 hover:scale-110">
+                                    <Trophy class="h-10 w-10 text-amber-500" />
+                                </div>
+                                <div class="space-y-3">
+                                    <h4 class="text-2xl font-bold tracking-tight">Institutional Vibrancy</h4>
+                                    <p class="text-sm text-white/50 font-medium leading-relaxed max-w-xs">
+                                        Synchronize student life through club architectures and institutional milestones. Track participant density and achievement matrices.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <Button as-child class="h-14 rounded-2xl bg-amber-600 font-bold text-[10px] tracking-tight text-white uppercase shadow-xl shadow-amber-900/20 hover:bg-amber-500 transition-all active:scale-95 border-0 text-white">
+                                <Link href="/events/clubs">Manage Engagement Nodes <Sparkles class="ml-2 h-4 w-4" /></Link>
                             </Button>
                         </div>
                     </div>
 
-                    <div
-                        class="relative overflow-hidden rounded-xl border bg-card p-6 shadow-sm"
-                    >
-                        <div
-                            class="absolute -right-4 -bottom-4 rotate-12 opacity-5"
-                        >
-                            <Trophy class="h-24 w-24 text-slate-900" />
+                    <!-- attendee Intelligence Card -->
+                    <div class="rounded-3xl border border-border bg-card p-8 shadow-sm group">
+                        <div class="flex items-center gap-4 mb-6 transition-all group-hover:translate-x-1">
+                            <div class="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-sm border border-blue-500/10 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                <History class="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold tracking-tight text-foreground uppercase leading-none">Attendee Metrics</h3>
+                                <p class="text-[10px] font-bold text-muted-foreground/40 uppercase mt-1">Resource allocation mapping</p>
+                            </div>
                         </div>
-                        <h3 class="mb-4 font-bold">Event Registration</h3>
-                        <p class="mb-4 text-sm text-muted-foreground">
-                            Manage tickets, participant lists and resource
-                            allocation for school events.
+                        
+                        <p class="text-[11px] leading-relaxed text-muted-foreground/60 mb-6">
+                            Monitor ticket synchronization, participant lists, and institutional resource allocation for scheduled milestones.
                         </p>
-                        <Button variant="secondary" class="font-pulsar w-full"
-                            >Attendee Analytics</Button
-                        >
+                        
+                        <Button variant="outline" as-child class="w-full h-11 rounded-xl border-border bg-background text-[10px] font-bold tracking-tight uppercase hover:bg-muted group-hover:border-primary/20 transition-all">
+                            <Link href="/events/analytics">Analyze Participation <ArrowUpRight class="ml-2 h-4 w-4 opacity-40 group-hover:opacity-100 transition-opacity" /></Link>
+                        </Button>
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

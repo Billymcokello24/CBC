@@ -23,24 +23,25 @@ import {
     UserCheck,
     ChevronRight,
     Home,
+    SearchCode,
+    Database,
+    Zap,
+    TrendingUp,
+    ShieldAlert,
+    ExternalLink,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { BreadcrumbItem } from '@/types';
 
@@ -50,20 +51,17 @@ const props = defineProps<{
     roles: any[];
     stats: any;
     filters: any;
-    availableClasses: any[];
-    availableSubjects: any[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Home', href: '/dashboard', icon: Home },
-    { title: 'Staff', href: '/staffs' },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Faculty Registry', href: '/staffs' },
 ];
 
 const searchQuery = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || 'all');
 const departmentFilter = ref(props.filters.department_id || 'all');
 const roleFilter = ref(props.filters.role || 'all');
-const viewMode = ref(props.filters.view || 'grid');
 
 const applyFilters = () => {
     router.get(
@@ -73,17 +71,20 @@ const applyFilters = () => {
             status: statusFilter.value,
             department_id: departmentFilter.value,
             role: roleFilter.value,
-            view: viewMode.value,
         },
         { preserveState: true, replace: true },
     );
 };
 
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchQuery, () => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => applyFilters(), 350);
+});
+
 watch(
-    [searchQuery, statusFilter, departmentFilter, roleFilter, viewMode],
-    () => {
-        applyFilters();
-    },
+    [statusFilter, departmentFilter, roleFilter],
+    () => applyFilters(),
 );
 
 const getStatusColor = (status: string) => {
@@ -98,349 +99,165 @@ const getStatusColor = (status: string) => {
             return 'bg-slate-400 text-white';
     }
 };
-
-const deleteStaff = (id: number) => {
-    if (confirm('Are you sure you want to delete this staff member?')) {
-        router.delete(`/staffs/${id}`);
-    }
-};
 </script>
 
 <template>
-    <Head title="Staff Registry" />
+    <Head title="Faculty Intelligence Matrix" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
-            <!-- Header Section -->
+            <!-- Strategic Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
+                class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">People</span>
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Staff Registry</span>
-                    </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        Staff Management
-                    </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        Manage teachers, administrators, and support staff records.
-                    </p>
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black uppercase">Faculty matrix</h1>
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Managing {{ stats.total }} Institutional Assets</p>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <Link
-                        href="/staffs/create"
-                        class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95"
-                    >
-                        <UserPlus class="mr-2 h-4 w-4" />
-                        Add New Staff
-                    </Link>
-                </div>
-            </div>
-
-            <!-- Stats Overview -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 px-1">
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 dark:border-white/5">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                            <Users class="h-5 w-5" />
-                        </div>
-                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Total Employees</span>
-                    </div>
-                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total }}</h3>
-                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Total Personnel</p>
-                </div>
-
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-emerald-200 dark:border-white/5">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-                            <UserCheck class="h-5 w-5" />
-                        </div>
-                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Active Now</span>
-                    </div>
-                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.active }}</h3>
-                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Currently On-Duty</p>
-                </div>
-
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 dark:border-white/5">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                            <GraduationCap class="h-5 w-5" />
-                        </div>
-                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Academic</span>
-                    </div>
-                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.teaching }}</h3>
-                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Teaching Staff</p>
-                </div>
-
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-purple-200 dark:border-white/5">
-                    <div class="mb-4 flex items-center justify-between">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
-                            <Briefcase class="h-5 w-5" />
-                        </div>
-                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Support</span>
-                    </div>
-                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.admins + stats.non_teaching }}</h3>
-                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Administration</p>
-                </div>
-            </div>
-
-            <!-- Toolbar & Filter -->
-            <div class="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:flex-row">
-                <div class="flex w-full flex-1 flex-col gap-3 sm:flex-row sm:items-center">
-                    <div class="group relative w-full sm:max-w-xs">
-                        <Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
-                        <Input
-                            v-model="searchQuery"
-                            placeholder="Find by name or email..."
-                            class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-bold tracking-tight uppercase transition-all focus:bg-background"
-                        />
-                    </div>
-
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <Select v-model="roleFilter">
-                            <SelectTrigger class="h-11 w-full sm:w-[160px] rounded-xl border-border bg-muted/20 text-xs font-bold uppercase tracking-tight">
-                                <SelectValue placeholder="All Roles" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl border-border shadow-xl">
-                                <SelectItem value="all" class="text-xs font-bold uppercase tracking-tight">All Roles</SelectItem>
-                                <SelectItem
-                                    v-for="r in roles"
-                                    :key="r.id"
-                                    :value="r.name"
-                                    class="text-xs font-bold uppercase tracking-tight"
-                                >
-                                    {{ r.display_name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        <Select v-model="departmentFilter">
-                            <SelectTrigger class="h-11 w-full sm:w-[160px] rounded-xl border-border bg-muted/20 text-xs font-bold uppercase tracking-tight">
-                                <SelectValue placeholder="Departments" />
-                            </SelectTrigger>
-                            <SelectContent class="rounded-xl border-border shadow-xl">
-                                <SelectItem value="all" class="text-xs font-bold uppercase tracking-tight">All Depts</SelectItem>
-                                <SelectItem
-                                    v-for="dept in departments"
-                                    :key="dept.id"
-                                    :value="dept.id.toString()"
-                                    class="text-xs font-bold uppercase tracking-tight"
-                                >
-                                    {{ dept.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-1.5 rounded-xl border border-border bg-muted/20 p-1.5 shadow-inner">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-9 w-9 rounded-lg transition-all"
-                        :class="viewMode === 'grid' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground/40'"
-                        @click="viewMode = 'grid'"
-                    >
-                        <LayoutGrid class="h-4.5 w-4.5" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        class="h-9 w-9 rounded-lg transition-all"
-                        :class="viewMode === 'list' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground/40'"
-                        @click="viewMode = 'list'"
-                    >
-                        <ListIcon class="h-4.5 w-4.5" />
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        <Link href="/staffs/create">
+                            <UserPlus class="mr-2.5 h-4 w-4" />
+                            Enroll faculty
+                        </Link>
                     </Button>
                 </div>
             </div>
 
-            <!-- Grid View -->
-            <div
-                v-if="viewMode === 'grid' && teachers.data.length > 0"
-                class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-1"
-            >
-                <div
-                    v-for="teacher in teachers.data"
-                    :key="teacher.id"
-                    class="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/30 dark:border-white/5"
-                >
-                    <div class="flex flex-col items-center gap-4 text-center">
-                        <div class="relative">
-                            <div class="h-20 w-20 overflow-hidden rounded-2xl border border-border shadow-sm group-hover:border-primary/50 transition-all">
-                                <img
-                                    v-if="teacher.photo_url"
-                                    :src="teacher.photo_url"
-                                    class="h-full w-full object-cover"
-                                />
-                                <div
-                                    v-else
-                                    class="flex h-full w-full items-center justify-center bg-muted text-xl font-bold text-muted-foreground uppercase"
-                                >
-                                    {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
-                                </div>
+            <!-- Stats Matrix -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div v-for="(stat, idx) in [
+                    { label: 'Total Personnel', val: stats.total, sub: 'Active Registry', icon: Users, color: 'text-primary' },
+                    { label: 'On-Duty Assets', val: stats.active, sub: 'Operational Capacity', icon: UserCheck, color: 'text-emerald-500' },
+                    { label: 'Teaching Nodes', val: stats.teaching, sub: 'Academic Engine', icon: GraduationCap, color: 'text-blue-500' },
+                    { label: 'Administration', val: stats.admins + (stats.non_teaching || 0), sub: 'Strategic Oversight', icon: Briefcase, color: 'text-purple-500' }
+                ]" :key="idx" class="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all hover:border-primary/20">
+                    <div class="absolute -right-4 -top-4 opacity-[0.03] transition-transform duration-700 group-hover:scale-110">
+                        <component :is="stat.icon" class="h-24 w-24" />
+                    </div>
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ stat.label }}</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight" :class="stat.color">{{ stat.val }}</h3>
+                        <span class="text-[9px] font-bold text-muted-foreground uppercase opacity-40">{{ stat.sub }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faculty Intelligence Hub -->
+            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                <div class="flex h-14 items-center justify-between border-b border-border/50 bg-muted/10 px-8">
+                    <div class="flex items-center gap-3">
+                        <SearchCode class="h-4 w-4 text-primary" />
+                        <span class="text-[10px] font-bold tracking-widest text-foreground uppercase">Faculty Search Protocol</span>
+                    </div>
+                </div>
+                <div class="p-8">
+                     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Personnel Identification</Label>
+                            <div class="relative">
+                                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <Input v-model="searchQuery" placeholder="Name or Email..." class="h-12 rounded-xl border-border bg-muted/20 pl-11 pr-4 text-xs font-bold uppercase focus:bg-background" />
                             </div>
-                            <div
-                                class="absolute -right-1 -bottom-1 h-3.5 w-3.5 rounded-full border-2 border-background ring-1 ring-border shadow-sm"
-                                :class="teacher.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'"
-                            ></div>
                         </div>
-
-                        <div class="min-w-0 flex-1">
-                            <h4 class="truncate text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                                {{ teacher.first_name }} {{ teacher.last_name }}
-                            </h4>
-                            <p class="mt-0.5 truncate text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">
-                                {{ teacher.department?.name || 'Unassigned' }}
-                            </p>
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Department Node</Label>
+                            <div class="relative">
+                                <select v-model="departmentFilter" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                    <option value="all">Global Matrix</option>
+                                    <option v-for="d in departments" :key="d.id" :value="String(d.id)">{{ d.name }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="mt-6 flex items-center gap-2">
-                        <Button
-                            as-child
-                            variant="secondary"
-                            class="h-10 flex-1 rounded-xl bg-muted/40 text-[10px] font-bold tracking-tight uppercase transition-all hover:bg-primary/5 hover:text-primary"
-                        >
-                            <Link :href="`/staffs/${teacher.id}`">
-                                <Eye class="mr-2 h-3.5 w-3.5" />
-                                Details
-                            </Link>
-                        </Button>
-                        <Button
-                            as-child
-                            variant="secondary"
-                            size="icon"
-                            class="h-10 w-10 rounded-xl bg-muted/40 text-muted-foreground transition-all hover:bg-primary hover:text-white"
-                        >
-                            <Link :href="`/staffs/${teacher.id}/edit`">
-                                <Edit class="h-4 w-4" />
-                            </Link>
-                        </Button>
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Role Designation</Label>
+                            <div class="relative">
+                                <select v-model="roleFilter" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                    <option value="all">All Designations</option>
+                                    <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
+                        </div>
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Pulse Mode</Label>
+                             <div class="relative">
+                                <select v-model="statusFilter" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                    <option value="all">Global Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="on_leave">External Leave</option>
+                                    <option value="suspended">Suspended</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- List View -->
-            <div
-                v-else-if="viewMode === 'list' && teachers.data.length > 0"
-                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-            >
-                <div class="scrollbar-hide overflow-x-auto">
-                    <table class="w-full min-w-[800px] text-left">
+            <!-- Faculty Matrix Data -->
+            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/5 text-muted-foreground">
-                                <th class="px-6 py-4 text-xs font-bold tracking-tight uppercase">Staff Member</th>
-                                <th class="px-6 py-4 text-xs font-bold tracking-tight uppercase text-center">Department</th>
-                                <th class="px-6 py-4 text-xs font-bold tracking-tight uppercase text-center">Roles</th>
-                                <th class="px-6 py-4 text-xs font-bold tracking-tight uppercase text-center">Status</th>
-                                <th class="px-6 py-4 text-right text-xs font-bold tracking-tight uppercase">Actions</th>
+                            <tr class="border-b border-border/50 bg-muted/10 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                <th class="px-8 py-5">Personnel Identity</th>
+                                <th class="px-6 py-5">Strategic Node</th>
+                                <th class="px-6 py-5">Designation</th>
+                                <th class="px-6 py-5">Pulse status</th>
+                                <th class="px-8 py-5 text-right font-black">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-border/30">
-                            <tr
-                                v-for="teacher in teachers.data"
-                                :key="teacher.id"
-                                class="group transition-colors hover:bg-muted/30"
-                            >
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 overflow-hidden rounded-xl border border-border shadow-sm group-hover:border-primary/50 transition-colors">
-                                            <img
-                                                v-if="teacher.photo_url"
-                                                :src="teacher.photo_url"
-                                                class="h-full w-full object-cover"
-                                            />
-                                            <div
-                                                v-else
-                                                class="flex h-full w-full items-center justify-center bg-muted text-[10px] font-bold text-muted-foreground uppercase"
-                                            >
-                                                {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
-                                            </div>
+                        <tbody class="divide-y divide-border/50">
+                            <tr v-for="teacher in teachers.data" :key="teacher.id" class="group transition-all hover:bg-muted/30">
+                                <td class="px-8 py-5">
+                                    <div class="flex items-center gap-4">
+                                        <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
+                                            <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
+                                            <div v-else class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-bold text-primary">{{ teacher.name.charAt(0).toUpperCase() }}</div>
                                         </div>
-                                        <div class="flex flex-col">
-                                            <Link
-                                                :href="`/staffs/${teacher.id}`"
-                                                class="text-sm font-bold text-foreground transition-colors group-hover:text-primary"
-                                            >
-                                                {{ teacher.first_name }} {{ teacher.last_name }}
-                                            </Link>
-                                            <span class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">
-                                                {{ teacher.user?.email || 'No Email' }}
-                                            </span>
+                                        <div class="space-y-0.5">
+                                            <p class="text-xs font-bold tracking-tight text-foreground group-hover:text-primary transition-colors uppercase">{{ teacher.name }}</p>
+                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ teacher.email }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <Badge variant="outline" class="h-6 rounded-lg border-none bg-primary/5 px-2 text-[10px] font-bold tracking-tight text-primary uppercase">
-                                        {{ teacher.department?.name || 'N/A' }}
+                                <td class="px-6 py-5">
+                                    <Badge variant="outline" class="rounded-lg border-primary/10 bg-primary/5 px-2 py-0.5 text-[9px] font-bold tracking-tight text-primary uppercase">
+                                        {{ teacher.department_name || 'GENERAL' }}
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-wrap items-center justify-center gap-1.5">
-                                        <Badge
-                                            v-for="role in teacher.user?.roles"
-                                            :key="role.id"
-                                            variant="secondary"
-                                            class="h-5 rounded-md border-none bg-muted/50 px-1.5 text-[9px] font-bold tracking-tight text-muted-foreground uppercase"
-                                        >
-                                            {{ role.name.replace('_', ' ') }}
-                                        </Badge>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <Badge
-                                        variant="secondary"
-                                        class="border-none px-3 py-1 text-[10px] font-bold tracking-tight uppercase"
-                                        :class="teacher.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'"
-                                    >
+                                <td class="px-6 py-5 text-xs font-bold tracking-tight text-foreground uppercase opacity-70">{{ teacher.role || 'Personnel' }}</td>
+                                <td class="px-6 py-5">
+                                    <Badge :class="getStatusColor(teacher.status)" class="rounded-lg border-0 px-2.5 py-1 text-[9px] font-bold tracking-tight uppercase shadow-sm">
                                         {{ teacher.status }}
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center justify-end gap-1 px-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-9 w-9 rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-                                            as-child
-                                        >
-                                            <Link :href="`/staffs/${teacher.id}`"><Eye class="h-4 w-4" /></Link>
+                                <td class="px-8 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm">
+                                            <Link :href="`/staffs/${teacher.id}`"><ExternalLink class="h-4 w-4" /></Link>
                                         </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-9 w-9 rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-                                            as-child
-                                        >
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm">
                                             <Link :href="`/staffs/${teacher.id}/edit`"><Edit class="h-4 w-4" /></Link>
                                         </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
-                                                >
-                                                    <MoreHorizontal class="h-4 w-4" />
-                                                </Button>
+                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-56 rounded-xl border-border p-2 shadow-xl"
-                                            >
-                                                <DropdownMenuItem
-                                                    @click="deleteStaff(teacher.id)"
-                                                    class="rounded-lg py-2.5 text-xs font-bold text-rose-500"
-                                                >
-                                                    <Trash2 class="mr-3 h-4 w-4 opacity-60" />
-                                                    Remove Employee
+                                            <DropdownMenuContent align="end" class="w-48 rounded-2xl border-border bg-card p-2 shadow-2xl">
+                                                <DropdownMenuItem class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-muted-foreground uppercase focus:bg-muted">
+                                                    <Mail class="mr-3 h-4 w-4" />
+                                                    Send Protocol
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator class="my-1 border-border/50" />
+                                                <DropdownMenuItem class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-rose-600 uppercase focus:bg-rose-50" @click="() => router.delete(`/staffs/${teacher.id}`)">
+                                                    <Trash2 class="mr-3 h-4 w-4" />
+                                                    Purge Entity
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -450,68 +267,17 @@ const deleteStaff = (id: number) => {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Empty State -->
-            <div
-                v-else
-                class="flex flex-col items-center justify-center space-y-4 rounded-2xl border-2 border-dashed border-border bg-muted/20 py-24 text-center px-6"
-            >
-                <div class="flex h-20 w-20 items-center justify-center rounded-full bg-muted shadow-inner">
-                    <Users class="h-10 w-10 text-muted-foreground/20" />
-                </div>
-                <div class="max-w-xs space-y-2">
-                    <h3 class="text-lg font-bold text-foreground">No records found</h3>
-                    <p class="text-xs font-medium text-muted-foreground">
-                        We couldn't find any staff members matching your current filters.
-                    </p>
-                </div>
-                <Button
-                    variant="outline"
-                    class="h-10 rounded-xl px-6 text-xs font-bold tracking-tight uppercase hover:bg-muted"
-                    @click="
-                        searchQuery = '';
-                        statusFilter = 'all';
-                        departmentFilter = 'all';
-                        roleFilter = 'all';
-                    "
-                >
-                    Reset filters
-                </Button>
-            </div>
-
-            <!-- Footer Pagination -->
-            <div
-                v-if="teachers.last_page > 1"
-                class="flex flex-col items-center justify-between gap-4 border-t border-border/50 bg-muted/5 px-6 py-4 md:flex-row"
-            >
-                <p class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase">
-                    Showing {{ teachers.from }} - {{ teachers.to }} of {{ teachers.total }} staff records
-                </p>
-                <div class="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        class="h-10 w-10 rounded-xl border-border bg-background p-0 transition-all hover:bg-muted"
-                        :disabled="!teachers.prev_page_url"
-                        as-child
-                    >
-                        <Link :href="teachers.prev_page_url || '#'" :preserve-state="true" class="flex items-center justify-center">
-                            <ChevronDown class="h-4 w-4 rotate-90" />
-                        </Link>
-                    </Button>
-                    <div class="flex items-center gap-2 px-4 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
-                        Page <span class="text-primary">{{ teachers.current_page }}</span> of {{ teachers.last_page }}
+                <!-- Strategic Pagination -->
+                <div class="flex h-20 items-center justify-between border-t border-border/50 px-8 bg-muted/5">
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Faculty Registry: Page {{ teachers.current_page }} of {{ teachers.last_page }}</p>
+                    <div class="flex items-center gap-2">
+                         <template v-for="(link, i) in teachers.links" :key="i">
+                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-9 w-9 rounded-xl text-[10px] font-bold tracking-tight transition-all', link.active ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-border bg-card hover:bg-muted text-muted-foreground']" @click="router.get(link.url!)">{{ link.label }}</Button>
+                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="router.get(link.url!)">Prev</Button>
+                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="router.get(link.url!)">Next</Button>
+                        </template>
                     </div>
-                    <Button
-                        variant="outline"
-                        class="h-10 w-10 rounded-xl border-border bg-background p-0 transition-all hover:bg-muted"
-                        :disabled="!teachers.next_page_url"
-                        as-child
-                    >
-                        <Link :href="teachers.next_page_url || '#'" :preserve-state="true" class="flex items-center justify-center">
-                            <ChevronDown class="h-4 w-4 -rotate-90" />
-                        </Link>
-                    </Button>
                 </div>
             </div>
         </div>

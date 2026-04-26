@@ -24,6 +24,10 @@ import {
     UserPlus,
     Home,
     Upload,
+    Activity,
+    Database,
+    Zap,
+    Loader2,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +41,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import BulkUploadModal from './partials/BulkUploadModal.vue';
@@ -49,10 +54,8 @@ interface LearnerRow {
     class: string | null;
     class_id: number | null;
     status: string;
-    photo: string | null;
     photo_url: string | null;
     age: number | null;
-    admission_date: string | null;
 }
 
 const { props: pageProps } = usePage<any>();
@@ -88,24 +91,19 @@ interface Props {
         status: string;
         class_id: number | null;
         gender: string;
-        boarding_status: string;
-        county: string;
         per_page: number;
         show_filters: boolean;
     };
     classes: Array<{ id: number; name: string }>;
-    counties: string[];
     statusOptions: Array<{ value: string; label: string }>;
     genderOptions: Array<{ value: string; label: string }>;
-    boardingOptions: Array<{ value: string; label: string }>;
 }
 
 const props = defineProps<Props>();
-const page = usePage<{ flash?: { success?: string; error?: string } }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Home', href: '/dashboard', icon: Home },
-    { title: 'Learners', href: '/students' },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Learner Registry', href: '/students' },
 ];
 
 const searchQuery = ref(props.filters.search ?? '');
@@ -114,8 +112,6 @@ const selectedClassId = ref<string>(
     props.filters.class_id ? String(props.filters.class_id) : '',
 );
 const selectedGender = ref(props.filters.gender ?? 'all');
-const selectedBoardingStatus = ref(props.filters.boarding_status ?? 'all');
-const selectedCounty = ref(props.filters.county ?? '');
 const showFilters = ref(props.filters.show_filters ?? true);
 const perPage = ref(props.filters.per_page ?? 15);
 
@@ -124,13 +120,10 @@ const promotionForm = useForm<{ learner_ids: number[] }>({ learner_ids: [] });
 const selectedLearnerIds = ref<number[]>([]);
 const confirmOpen = ref(false);
 const promoteOpen = ref(false);
-const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'bulkDelete'>(
-    'suspend',
-);
+const confirmMode = ref<'suspend' | 'activate' | 'delete'>('suspend');
 const selectedLearner = ref<LearnerRow | null>(null);
 const bulkUploadOpen = ref(false);
-const showToast = ref(false);
-let toastTimer: ReturnType<typeof setTimeout> | null = null;
+const promotionTargetClass = ref('');
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -139,20 +132,9 @@ const applyFilters = (page = 1) => {
         '/students',
         {
             search: searchQuery.value || undefined,
-            status:
-                selectedStatus.value !== 'all'
-                    ? selectedStatus.value
-                    : undefined,
+            status: selectedStatus.value !== 'all' ? selectedStatus.value : undefined,
             class_id: selectedClassId.value || undefined,
-            gender:
-                selectedGender.value !== 'all'
-                    ? selectedGender.value
-                    : undefined,
-            boarding_status:
-                selectedBoardingStatus.value !== 'all'
-                    ? selectedBoardingStatus.value
-                    : undefined,
-            county: selectedCounty.value || undefined,
+            gender: selectedGender.value !== 'all' ? selectedGender.value : undefined,
             show_filters: showFilters.value,
             per_page: perPage.value,
             page,
@@ -161,16 +143,6 @@ const applyFilters = (page = 1) => {
             preserveState: true,
             preserveScroll: true,
             replace: true,
-            only: [
-                'learners',
-                'stats',
-                'filters',
-                'classes',
-                'counties',
-                'statusOptions',
-                'genderOptions',
-                'boardingOptions',
-            ],
         },
     );
 };
@@ -181,14 +153,7 @@ watch(searchQuery, () => {
 });
 
 watch(
-    [
-        selectedStatus,
-        selectedClassId,
-        selectedGender,
-        selectedBoardingStatus,
-        selectedCounty,
-        perPage,
-    ],
+    [selectedStatus, selectedClassId, selectedGender, perPage],
     () => applyFilters(),
 );
 
@@ -197,1121 +162,355 @@ const activeRate = computed(() => {
     return Math.round((props.stats.active / props.stats.total) * 100);
 });
 
-const exportUrl = computed(() => {
-    const params = new URLSearchParams();
-    if (searchQuery.value) params.set('search', searchQuery.value);
-    if (selectedStatus.value !== 'all')
-        params.set('status', selectedStatus.value);
-    if (selectedClassId.value) params.set('class_id', selectedClassId.value);
-    if (selectedGender.value !== 'all')
-        params.set('gender', selectedGender.value);
-    if (selectedBoardingStatus.value !== 'all')
-        params.set('boarding_status', selectedBoardingStatus.value);
-    if (selectedCounty.value) params.set('county', selectedCounty.value);
-    return `/students?${params.toString()}`;
-});
-
-const pdfExportUrl = computed(() => {
-    const params = new URLSearchParams();
-    if (searchQuery.value) params.set('search', searchQuery.value);
-    if (selectedStatus.value !== 'all')
-        params.set('status', selectedStatus.value);
-    if (selectedClassId.value) params.set('class_id', selectedClassId.value);
-    if (selectedGender.value !== 'all')
-        params.set('gender', selectedGender.value);
-    if (selectedBoardingStatus.value !== 'all')
-        params.set('boarding_status', selectedBoardingStatus.value);
-    if (selectedCounty.value) params.set('county', selectedCounty.value);
-    return `/students/export-pdf?${params.toString()}`;
-});
-
-const clearFilters = () => {
-    searchQuery.value = '';
-    selectedStatus.value = 'all';
-    selectedClassId.value = '';
-    selectedGender.value = 'all';
-    selectedBoardingStatus.value = 'all';
-    selectedCounty.value = '';
-    applyFilters();
+const toggleSelection = (id: number) => {
+    const index = selectedLearnerIds.value.indexOf(id);
+    if (index === -1) {
+        selectedLearnerIds.value.push(id);
+    } else {
+        selectedLearnerIds.value.splice(index, 1);
+    }
 };
 
-const toggleFilters = () => {
-    showFilters.value = !showFilters.value;
-    applyFilters();
+const toggleAllSelection = () => {
+    if (selectedLearnerIds.value.length === props.learners.data.length) {
+        selectedLearnerIds.value = [];
+    } else {
+        selectedLearnerIds.value = props.learners.data.map((l) => l.id);
+    }
 };
 
-const flashSuccess = computed(() => page.props.flash?.success ?? '');
-
-watch(
-    flashSuccess,
-    (value) => {
-        if (!value) return;
-        showToast.value = true;
-        if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => {
-            showToast.value = false;
-        }, 3000);
-    },
-    { immediate: true },
-);
-
-const openActionModal = (
-    mode: 'suspend' | 'activate' | 'delete' | 'bulkDelete',
-    learner: LearnerRow | null = null,
-) => {
+const openConfirm = (mode: 'suspend' | 'activate' | 'delete', learner: LearnerRow) => {
     confirmMode.value = mode;
     selectedLearner.value = learner;
     confirmOpen.value = true;
 };
 
-const closeActionModal = () => {
-    confirmOpen.value = false;
-    selectedLearner.value = null;
-};
-
-const confirmAction = () => {
-    if (confirmMode.value === 'bulkDelete') {
-        actionForm
-            .transform(() => ({
-                learner_ids: selectedLearnerIds.value,
-            }))
-            .post('/students/bulk-delete', {
-                preserveScroll: true,
-                onSuccess: () => {
-                    selectedLearnerIds.value = [];
-                    closeActionModal();
-                },
-            });
-        return;
-    }
-
+const handleAction = () => {
     if (!selectedLearner.value) return;
-
-    if (confirmMode.value === 'suspend') {
-        actionForm.patch(`/students/${selectedLearner.value.id}/suspend`, {
-            preserveScroll: true,
-            onSuccess: () => closeActionModal(),
-        });
-        return;
-    }
-
-    if (confirmMode.value === 'activate') {
-        actionForm.patch(`/students/${selectedLearner.value.id}/activate`, {
-            preserveScroll: true,
-            onSuccess: () => closeActionModal(),
-        });
-        return;
-    }
-
-    actionForm.delete(`/students/${selectedLearner.value.id}`, {
-        preserveScroll: true,
-        onSuccess: () => closeActionModal(),
-    });
-};
-
-const modalTitle = computed(() => {
-    if (confirmMode.value === 'activate') return 'Activate learner';
-    if (confirmMode.value === 'delete') return 'Delete learner';
-    if (confirmMode.value === 'bulkDelete') return 'Delete selected learners';
-    return 'Suspend learner';
-});
-
-const modalMessage = computed(() => {
-    if (confirmMode.value === 'bulkDelete')
-        return `Are you sure you want to delete ${selectedLearnerIds.value.length} selected learners? This action cannot be undone.`;
-    if (!selectedLearner.value) return '';
-    if (confirmMode.value === 'activate')
-        return `Activate ${selectedLearner.value.name}?`;
-    if (confirmMode.value === 'delete')
-        return `Delete ${selectedLearner.value.name}? This action will remove the record from the active list.`;
-    return `Suspend ${selectedLearner.value.name}?`;
-});
-
-const pageLabel = computed(() => {
-    const from = props.learners.from ?? 0;
-    const to = props.learners.to ?? 0;
-    return `Showing ${from} to ${to} of ${props.learners.total} learners`;
-});
-
-watch(
-    () => props.learners.data,
-    () => {
-        selectedLearnerIds.value = selectedLearnerIds.value.filter((id) =>
-            props.learners.data.some((learner) => learner.id === id),
-        );
-    },
-    { deep: true },
-);
-
-const allSelectableLearnerIds = computed(() =>
-    props.learners.data
-        .filter((learner) => learner.status === 'active')
-        .map((learner) => learner.id),
-);
-const allSelected = computed(
-    () =>
-        allSelectableLearnerIds.value.length > 0 &&
-        allSelectableLearnerIds.value.every((id) =>
-            selectedLearnerIds.value.includes(id),
-        ),
-);
-const selectedCount = computed(() => selectedLearnerIds.value.length);
-
-const toggleAllLearners = () => {
-    selectedLearnerIds.value = allSelected.value
-        ? []
-        : [...allSelectableLearnerIds.value];
-};
-
-const toggleLearner = (learnerId: number) => {
-    selectedLearnerIds.value = selectedLearnerIds.value.includes(learnerId)
-        ? selectedLearnerIds.value.filter((id) => id !== learnerId)
-        : [...selectedLearnerIds.value, learnerId];
-};
-
-const openPromoteModal = () => {
-    if (!selectedLearnerIds.value.length) return;
-    promoteOpen.value = true;
-};
-
-const closePromoteModal = () => {
-    promoteOpen.value = false;
-};
-
-const promoteSelectedLearners = () => {
-    if (!selectedLearnerIds.value.length) return;
-    promotionForm.learner_ids = [...selectedLearnerIds.value];
-    promotionForm.post('/students/promote', {
-        preserveScroll: true,
+    
+    const url = confirmMode.value === 'delete' 
+        ? `/students/${selectedLearner.value.id}`
+        : `/students/${selectedLearner.value.id}/${confirmMode.value}`;
+        
+    const method = confirmMode.value === 'delete' ? 'delete' : 'post';
+    
+    actionForm[method](url, {
         onSuccess: () => {
-            selectedLearnerIds.value = [];
-            closePromoteModal();
+            confirmOpen.value = false;
+            router.reload();
         },
     });
 };
 
-const openBulkUploadModal = () => {
-    bulkUploadOpen.value = true;
+const handleBulkPromotion = () => {
+    promotionForm.learner_ids = selectedLearnerIds.value;
+    promotionForm.post(`/students/bulk-promote/${promotionTargetClass.value}`, {
+        onSuccess: () => {
+            promoteOpen.value = false;
+            selectedLearnerIds.value = [];
+            router.reload();
+        },
+    });
 };
 
-const exportToPDF = () => {
-    window.location.href = pdfExportUrl.value;
-};
-
-const getStatusColor = (active: boolean) => {
-    return active
-        ? 'bg-emerald-500 text-white shadow-sm'
-        : 'bg-slate-400 text-white';
+const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'active':
+            return 'bg-emerald-500 text-white shadow-sm';
+        case 'suspended':
+            return 'bg-rose-500 text-white shadow-sm';
+        case 'inactive':
+        case 'withdrawn':
+            return 'bg-slate-400 text-white shadow-sm';
+        case 'graduated':
+            return 'bg-blue-600 text-white shadow-sm';
+        default:
+            return 'bg-primary text-white shadow-sm';
+    }
 };
 </script>
 
 <template>
-    <Head title="Learners" />
+    <Head title="Learner Intelligence Registry" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div v-if="showToast && flashSuccess" class="fixed top-4 right-4 z-50">
-            <div
-                class="flex items-center gap-2 rounded-lg border bg-background px-4 py-3 shadow-lg"
-            >
-                <CheckCircle2 class="h-4 w-4 text-green-600" />
-                <span class="text-sm font-medium">{{ flashSuccess }}</span>
-            </div>
-        </div>
-
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
-            <!-- Page Header -->
+            <!-- Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
+                class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Academic Registry</span>
-                    </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        Learner Registry
-                    </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        View and manage student enrollment and profile data.
-                    </p>
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black">Registry Matrix</h1>
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Synchronizing {{ stats.total }} Institutional Assets</p>
                 </div>
 
-                <div class="flex items-center gap-2 sm:gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <Button
                         variant="outline"
-                        class="hidden h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted/50 sm:flex"
-                        @click="exportToPDF"
+                        @click="bulkUploadOpen = true"
+                        class="h-12 rounded-2xl border-border bg-card px-6 text-[10px] font-bold tracking-widest uppercase hover:bg-muted"
                     >
-                        <Download class="mr-2 h-4 w-4 opacity-70" />
-                        Export
+                        <Upload class="mr-2.5 h-4 w-4 text-primary" />
+                        Bulk Matrix
                     </Button>
-                    <Button
-                        variant="outline"
-                        class="hidden h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted/50 sm:flex"
-                        @click="openBulkUploadModal"
-                    >
-                        <Upload class="mr-2 h-4 w-4 opacity-70" />
-                        Upload
+                    <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                        <Link href="/students/create">
+                            <Plus class="mr-2.5 h-4 w-4" />
+                            Enroll Entity
+                        </Link>
                     </Button>
-                    <Link
-                        v-if="hasPermission('students.create')"
-                        href="/students/create"
-                        class="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-6 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95 sm:flex-none"
-                    >
-                        <Plus class="mr-2 h-4 w-4" />
-                        Enroll Student
-                    </Link>
                 </div>
             </div>
 
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-2 gap-3 px-1 sm:gap-6 lg:grid-cols-4">
-                <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/20 sm:flex-row sm:items-center sm:p-6"
-                >
-                    <div>
-                        <p
-                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                        >
-                            Total Learners
-                        </p>
-                        <h3
-                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
-                        >
-                            {{ stats.total.toLocaleString() }}
-                        </h3>
+            <!-- Stats Matrix -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div v-for="(stat, idx) in [
+                    { label: 'Global Registry', val: stats.total, sub: `+${stats.new_this_month} Month`, icon: Users },
+                    { label: 'Active Pipeline', val: stats.active, sub: `${activeRate}% Fidelity`, icon: Activity },
+                    { label: 'Growth Vector', val: `${stats.growth}%`, sub: 'Peak Iteration', icon: TrendingUp },
+                    { label: 'Registry Exit', val: stats.withdrawn, sub: 'Dormant Nodes', icon: ShieldAlert }
+                ]" :key="idx" class="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all hover:border-primary/20">
+                    <div class="absolute -right-4 -top-4 opacity-[0.03] transition-transform duration-700 group-hover:scale-110">
+                        <component :is="stat.icon" class="h-24 w-24" />
                     </div>
-                    <div
-                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-primary transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
-                    >
-                        <Users class="h-5 w-5 sm:h-6 sm:w-6" />
-                    </div>
-                </div>
-
-                <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-emerald-200 sm:flex-row sm:items-center sm:p-6"
-                >
-                    <div>
-                        <p
-                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                        >
-                            Active Status
-                        </p>
-                        <h3
-                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
-                        >
-                            {{ stats.active.toLocaleString() }}
-                        </h3>
-                    </div>
-                    <div
-                        class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100/50 bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
-                    >
-                        <div
-                            class="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-emerald-500"
-                            v-if="stats.active > 0"
-                        ></div>
-                        <CheckCircle2 class="h-5 w-5 sm:h-6 sm:w-6" />
-                    </div>
-                </div>
-
-                <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-amber-200 sm:flex-row sm:items-center sm:p-6"
-                >
-                    <div>
-                        <p
-                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                        >
-                            Withdrawn
-                        </p>
-                        <h3
-                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
-                        >
-                            {{ stats.withdrawn.toLocaleString() }}
-                        </h3>
-                    </div>
-                    <div
-                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100/50 bg-amber-50 text-amber-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
-                    >
-                        <ShieldAlert class="h-5 w-5 sm:h-6 sm:w-6" />
-                    </div>
-                </div>
-
-                <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-sky-200 sm:flex-row sm:items-center sm:p-6"
-                >
-                    <div>
-                        <p
-                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                        >
-                            Growth
-                        </p>
-                        <div class="flex items-baseline gap-2">
-                            <h3
-                                class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
-                            >
-                                {{ stats.new_this_month }}
-                            </h3>
-                            <span
-                                class="rounded bg-emerald-50 px-1 text-xs font-bold text-emerald-600"
-                                v-if="stats.growth > 0"
-                                >+{{ stats.growth }}%</span
-                            >
-                        </div>
-                    </div>
-                    <div
-                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100/50 bg-sky-50 text-sky-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
-                    >
-                        <TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" />
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ stat.label }}</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
+                        <span class="text-[9px] font-bold text-primary uppercase">{{ stat.sub }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Table Card -->
-            <div
-                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-            >
-                <!-- Toolbar -->
-                <div class="space-y-4 border-b border-border/50 p-4 sm:p-6">
-                    <div
-                        class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"
-                    >
-                        <div class="group relative w-full lg:max-w-md">
-                            <Search
-                                class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary"
-                            />
-                            <Input
-                                v-model="searchQuery"
-                                placeholder="Search by name or number..."
-                                class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-bold tracking-tight uppercase shadow-none transition-all focus:bg-background"
-                            />
-                        </div>
-
-                        <div class="flex w-full items-center gap-2 lg:w-auto">
-                            <Button
-                                variant="outline"
-                                class="h-11 flex-1 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight whitespace-nowrap uppercase hover:bg-muted/50 lg:flex-none"
-                                @click="toggleFilters"
-                            >
-                                <Filter class="mr-2 h-3.5 w-3.5 opacity-70" />
-                                Filters
-                            </Button>
-
-                            <DropdownMenu v-if="selectedCount > 0">
-                                <DropdownMenuTrigger as-child>
-                                    <Button
-                                        class="h-11 rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/10 hover:bg-primary/90"
-                                    >
-                                        Actions ({{ selectedCount }})
-                                        <ChevronDown
-                                            class="ml-2 h-4 w-4 opacity-70"
-                                        />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    class="w-56 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
-                                >
-                                    <DropdownMenuItem
-                                        @click="openPromoteModal"
-                                        class="rounded-lg"
-                                    >
-                                        <ArrowUpCircle
-                                            class="mr-2 h-4 w-4 text-emerald-500"
-                                        />
-                                        Promote Students
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator class="my-1" />
-                                    <DropdownMenuItem
-                                        class="group rounded-lg text-rose-500"
-                                        @click="openActionModal('bulkDelete')"
-                                    >
-                                        <Trash2
-                                            class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100"
-                                        />
-                                        Delete Selected
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger as-child>
-                                    <Button
-                                        variant="outline"
-                                        class="h-11 w-11 rounded-xl border-border bg-background p-0"
-                                    >
-                                        <MoreHorizontal
-                                            class="h-5 w-5 text-muted-foreground/40"
-                                        />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    class="w-48 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
-                                >
-                                    <DropdownMenuItem
-                                        @click="exportToPDF"
-                                        class="rounded-lg"
-                                    >
-                                        <FileText
-                                            class="mr-2 h-4 w-4 text-rose-500"
-                                        />
-                                        Export List
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        @click="openBulkUploadModal"
-                                        class="rounded-lg"
-                                    >
-                                        <Download
-                                            class="mr-2 h-4 w-4 text-primary"
-                                        />
-                                        Bulk Upload
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
+            <!-- Intelligence Hub (Filters) -->
+            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                <div class="flex h-14 items-center justify-between border-b border-border/50 bg-muted/10 px-8">
+                    <div class="flex items-center gap-3">
+                        <Search class="h-4 w-4 text-primary" />
+                        <span class="text-[10px] font-bold tracking-widest text-foreground uppercase">Registry Filters</span>
                     </div>
-
-                    <!-- Filters Drawer -->
-                    <div
-                        v-if="showFilters"
-                        class="grid animate-in grid-cols-2 gap-3 pt-2 duration-300 slide-in-from-top-2 sm:gap-4 lg:grid-cols-4"
-                    >
-                        <div class="group relative">
-                            <select
-                                v-model="selectedStatus"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
-                            >
-                                <option
-                                    v-for="option in statusOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                            <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
-                            />
+                    <Button variant="ghost" size="sm" @click="showFilters = !showFilters" class="h-8 text-[10px] font-bold uppercase transition-all">
+                        {{ showFilters ? 'Hide Parameters' : 'Show Parameters' }}
+                    </Button>
+                </div>
+                <div v-show="showFilters" class="p-8">
+                     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Global Search</Label>
+                            <div class="relative">
+                                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <Input v-model="searchQuery" placeholder="Name or Identifier..." class="h-12 rounded-xl border-border bg-muted/20 pl-11 pr-4 text-xs font-bold uppercase focus:bg-background" />
+                            </div>
                         </div>
-
-                        <div class="group relative">
-                            <select
-                                v-model="selectedClassId"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
-                            >
-                                <option value="">Every Class</option>
-                                <option
-                                    v-for="schoolClass in classes"
-                                    :key="schoolClass.id"
-                                    :value="String(schoolClass.id)"
-                                >
-                                    {{ schoolClass.name }}
-                                </option>
-                            </select>
-                            <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
-                            />
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Strategic Stream</Label>
+                            <div class="relative">
+                                <select v-model="selectedClassId" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
+                                    <option value="">Aesthetic Channels</option>
+                                    <option v-for="c in classes" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
                         </div>
-
-                        <div class="group relative">
-                            <select
-                                v-model="selectedGender"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
-                            >
-                                <option
-                                    v-for="option in genderOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                            <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
-                            />
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Registry State</Label>
+                            <div class="relative">
+                                <select v-model="selectedStatus" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
+                                    <option value="all">All States</option>
+                                    <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
                         </div>
-
-                        <div class="group relative">
-                            <select
-                                v-model="selectedBoardingStatus"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
-                            >
-                                <option
-                                    v-for="option in boardingOptions"
-                                    :key="option.value"
-                                    :value="option.value"
-                                >
-                                    {{ option.label }}
-                                </option>
-                            </select>
-                            <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
-                            />
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Identity Status</Label>
+                             <div class="relative">
+                                <select v-model="selectedGender" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
+                                    <option value="all">Global Matrix</option>
+                                    <option v-for="opt in genderOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Main Table -->
-                <div class="scrollbar-hide overflow-x-auto">
-                    <table class="w-full min-w-[800px] text-left">
+            <!-- Data Matrix -->
+            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
                         <thead>
-                            <tr
-                                class="border-b border-border/50 bg-muted/5 text-muted-foreground"
-                            >
-                                <th class="h-14 w-14 px-6">
-                                    <button
-                                        @click="toggleAllLearners"
-                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-border bg-background transition-all hover:border-primary/40"
-                                        :class="
-                                            allSelected
-                                                ? 'border-primary bg-primary text-white shadow-md'
-                                                : ''
-                                        "
-                                    >
-                                        <component
-                                            :is="
-                                                allSelected
-                                                    ? CheckSquare
-                                                    : Square
-                                            "
-                                            class="h-3.5 w-3.5"
-                                        />
+                            <tr class="border-b border-border/50 bg-muted/10 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                                <th class="w-12 px-6 py-5">
+                                    <button @click="toggleAllSelection" class="flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedLearnerIds.length === learners.data.length" class="h-3.5 w-3.5 text-primary" />
+                                        <div v-else-if="selectedLearnerIds.length > 0" class="h-2 w-2 rounded-sm bg-primary"></div>
                                     </button>
                                 </th>
-                                <th
-                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Student
-                                </th>
-                                <th
-                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Class
-                                </th>
-                                <th
-                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Status
-                                </th>
-                                <th
-                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Admission
-                                </th>
-                                <th
-                                    class="px-6 py-4 text-right text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                                >
-                                    Actions
-                                </th>
+                                <th class="px-6 py-5">Institutional Identity</th>
+                                <th class="px-6 py-5">Registry Key</th>
+                                <th class="px-6 py-5">Placement Slot</th>
+                                <th class="px-6 py-5">Pulse Status</th>
+                                <th class="px-6 py-5 text-right font-black">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-border/30">
-                            <tr
-                                v-for="learner in learners.data"
-                                :key="learner.id"
-                                class="group cursor-pointer transition-colors hover:bg-muted/30"
-                                @click="router.visit(`/students/${learner.id}`)"
-                            >
-                                <td class="px-6 py-4 text-center" @click.stop>
-                                    <button
-                                        @click="toggleLearner(learner.id)"
-                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-border bg-background transition-all hover:border-primary/40"
-                                        :class="
-                                            selectedLearnerIds.includes(
-                                                learner.id,
-                                            )
-                                                ? 'border-primary bg-primary text-white shadow-md'
-                                                : ''
-                                        "
-                                    >
-                                        <component
-                                            :is="
-                                                selectedLearnerIds.includes(
-                                                    learner.id,
-                                                )
-                                                    ? CheckSquare
-                                                    : Square
-                                            "
-                                            class="h-3.5 w-3.5"
-                                        />
+                        <tbody class="divide-y divide-border/50">
+                            <tr v-for="learner in learners.data" :key="learner.id" class="group transition-all hover:bg-muted/30">
+                                <td class="px-6 py-5">
+                                    <button @click="toggleSelection(learner.id)" class="flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedLearnerIds.includes(learner.id)" class="h-3.5 w-3.5 text-primary" />
                                     </button>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-6 py-5">
                                     <div class="flex items-center gap-4">
-                                        <div
-                                            class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-border shadow-sm transition-all duration-300 group-hover:border-primary/40"
-                                        >
-                                            <img
-                                                v-if="learner.photo_url"
-                                                :src="learner.photo_url"
-                                                class="h-full w-full object-cover"
-                                            />
-                                            <div
-                                                v-else
-                                                class="flex h-full w-full items-center justify-center bg-muted text-[10px] font-bold text-muted-foreground uppercase"
-                                            >
-                                                {{ learner.name.charAt(0) }}
-                                            </div>
+                                        <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
+                                            <img v-if="learner.photo_url" :src="learner.photo_url" class="h-full w-full object-cover" />
+                                            <div v-else class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-bold text-primary">{{ learner.name.charAt(0).toUpperCase() }}</div>
                                         </div>
-                                        <div class="flex min-w-0 flex-col">
-                                            <span
-                                                class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"
-                                                >{{ learner.name }}</span
-                                            >
-                                            <span
-                                                class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                                >{{
-                                                    learner.admission_number ||
-                                                    'No ID'
-                                                }}</span
-                                            >
+                                        <div class="space-y-0.5">
+                                            <p class="text-xs font-bold tracking-tight text-foreground group-hover:text-primary transition-colors uppercase">{{ learner.name }}</p>
+                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ learner.gender }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="text-xs font-bold text-foreground"
-                                            >{{
-                                                learner.class || 'Unassigned'
-                                            }}</span
-                                        >
-                                        <span
-                                            class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase"
-                                            >{{ learner.gender }}</span
-                                        >
-                                    </div>
+                                <td class="px-6 py-5">
+                                    <Badge variant="outline" class="rounded-lg border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-bold tracking-tight text-primary uppercase">
+                                        {{ learner.admission_number || '--' }}
+                                    </Badge>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <Badge
-                                        variant="secondary"
-                                        class="rounded-lg border-none px-3 py-1 text-[10px] font-bold tracking-tight uppercase"
-                                        :class="
-                                            learner.status === 'active'
-                                                ? 'bg-emerald-500/10 text-emerald-600'
-                                                : 'bg-amber-500/10 text-amber-600'
-                                        "
-                                    >
+                                <td class="px-6 py-5 text-xs font-bold tracking-tight text-foreground uppercase">{{ learner.class || 'UNASSIGNED' }}</td>
+                                <td class="px-6 py-5">
+                                    <Badge :class="getStatusColor(learner.status)" class="rounded-lg border-0 px-2.5 py-1 text-[9px] font-bold tracking-tight uppercase shadow-sm">
                                         {{ learner.status }}
                                     </Badge>
                                 </td>
-                                <td
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                >
-                                    {{ learner.admission_date || 'PENDING' }}
-                                </td>
-                                <td class="px-6 py-4 text-right" @click.stop>
-                                    <div
-                                        class="flex items-center justify-end gap-1 px-1"
-                                    >
-                                        <div
-                                            class="flex translate-x-2 transform items-center gap-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
-                                        >
-                                            <Link
-                                                :href="`/students/${learner.id}`"
-                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-muted-foreground transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
-                                                ><Eye class="h-4 w-4"
-                                            /></Link>
-                                            <Link
-                                                v-if="
-                                                    hasPermission(
-                                                        'students.update',
-                                                    )
-                                                "
-                                                :href="`/students/${learner.id}/edit`"
-                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-muted-foreground transition-all hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
-                                                ><Edit class="h-4 w-4"
-                                            /></Link>
-                                        </div>
-
+                                <td class="px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm">
+                                            <Link :href="`/students/${learner.id}`"><Eye class="h-4 w-4" /></Link>
+                                        </Button>
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm" v-if="hasPermission('students.update')">
+                                            <Link :href="`/students/${learner.id}/edit`"><Edit class="h-4 w-4" /></Link>
+                                        </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-9 w-9 rounded-xl hover:bg-muted/50"
-                                                    ><MoreHorizontal
-                                                        class="h-4.5 w-4.5 text-muted-foreground/40"
-                                                /></Button>
+                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-56 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
-                                            >
-                                                <DropdownMenuItem
-                                                    as-child
-                                                    class="rounded-lg"
-                                                    ><Link
-                                                        :href="`/students/${learner.id}`"
-                                                        ><Eye
-                                                            class="mr-2 h-3.5 w-3.5"
-                                                        />
-                                                        View Registry</Link
-                                                    ></DropdownMenuItem
-                                                >
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        hasPermission(
-                                                            'students.update',
-                                                        )
-                                                    "
-                                                    as-child
-                                                    class="rounded-lg"
-                                                >
-                                                    <Link
-                                                        :href="`/students/enrollments/create?student_id=${learner.id}`"
-                                                    >
-                                                        <UserPlus
-                                                            class="mr-2 h-3.5 w-3.5 text-blue-500"
-                                                        />
-                                                        Allocate Context
-                                                    </Link>
+                                            <DropdownMenuContent align="end" class="w-48 rounded-2xl border-border bg-card p-2 shadow-2xl">
+                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openConfirm('suspend', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-rose-500 uppercase focus:bg-rose-50">
+                                                    <ShieldAlert class="mr-3 h-4 w-4" />
+                                                    Suspend Profile
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        hasPermission(
-                                                            'students.update',
-                                                        )
-                                                    "
-                                                    as-child
-                                                    class="rounded-lg"
-                                                    ><Link
-                                                        :href="`/students/${learner.id}/edit`"
-                                                        ><Edit
-                                                            class="mr-2 h-3.5 w-3.5"
-                                                        />
-                                                        Modify Profile</Link
-                                                    ></DropdownMenuItem
-                                                >
-                                                <DropdownMenuSeparator
-                                                    class="my-1"
-                                                />
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        learner.status !==
-                                                            'suspended' &&
-                                                        hasPermission(
-                                                            'students.update',
-                                                        )
-                                                    "
-                                                    @click="
-                                                        openActionModal(
-                                                            'suspend',
-                                                            learner,
-                                                        )
-                                                    "
-                                                    class="rounded-lg"
-                                                    ><ShieldAlert
-                                                        class="mr-2 h-3.5 w-3.5 text-amber-500"
-                                                    />
-                                                    Terminate
-                                                    Access</DropdownMenuItem
-                                                >
-                                                <DropdownMenuItem
-                                                    v-else-if="
-                                                        hasPermission(
-                                                            'students.update',
-                                                        )
-                                                    "
-                                                    @click="
-                                                        openActionModal(
-                                                            'activate',
-                                                            learner,
-                                                        )
-                                                    "
-                                                    class="rounded-lg"
-                                                    ><CheckCircle2
-                                                        class="mr-2 h-3.5 w-3.5 text-emerald-500"
-                                                    />
-                                                    Restore
-                                                    Access</DropdownMenuItem
-                                                >
-                                                <DropdownMenuItem
-                                                    v-if="
-                                                        hasPermission(
-                                                            'students.delete',
-                                                        )
-                                                    "
-                                                    class="group rounded-lg text-rose-600"
-                                                    @click="
-                                                        openActionModal(
-                                                            'delete',
-                                                            learner,
-                                                        )
-                                                    "
-                                                    ><Trash2
-                                                        class="mr-2 h-3.5 w-3.5 opacity-70 group-hover:opacity-100"
-                                                    />
-                                                    Purge
-                                                    Entry</DropdownMenuItem
-                                                >
+                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openConfirm('activate', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-emerald-600 uppercase focus:bg-emerald-50">
+                                                    <CheckCircle2 class="mr-3 h-4 w-4" />
+                                                    Restore Access
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator class="my-1 border-border/50" />
+                                                <DropdownMenuItem @click="openConfirm('delete', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-rose-600 uppercase focus:bg-rose-50" v-if="hasPermission('students.delete')">
+                                                    <Trash2 class="mr-3 h-4 w-4" />
+                                                    Purge Entity
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
-                                </td>
-                            </tr>
-                            <tr v-if="learners.data.length === 0">
-                                <td
-                                    colspan="6"
-                                    class="px-6 py-24 text-center text-xs font-medium tracking-tight text-slate-400 uppercase"
-                                >
-                                    No records identified in registry
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                <div
-                    class="flex flex-col gap-6 border-t border-border/50 bg-muted/5 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between"
-                >
-                    <p
-                        class="order-2 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase md:order-1"
-                    >
-                        {{ pageLabel }}
-                    </p>
-                    <div
-                        class="order-1 flex items-center justify-between gap-6 md:order-2 md:justify-end"
-                    >
-                        <div class="flex items-center gap-3">
-                            <span
-                                class="shrink-0 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                >Page Size</span
-                            >
-                            <select
-                                v-model="perPage"
-                                class="relative cursor-pointer appearance-none rounded-xl border border-border bg-background px-3 py-1.5 pr-8 text-xs font-bold tracking-tight uppercase outline-none focus:ring-2 focus:ring-primary/5"
-                            >
-                                <option :value="15">15 Per Page</option>
-                                <option :value="50">50 Per Page</option>
-                                <option :value="100">100 Per Page</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2">
-                             <Button
-                                variant="outline"
-                                size="sm"
-                                class="h-9 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase"
-                                :disabled="learners.current_page <= 1"
-                                @click="applyFilters(learners.current_page - 1)"
-                                >Prev</Button
-                            >
-                            <div
-                                class="flex h-9 min-w-[70px] items-center justify-center rounded-xl bg-primary px-3 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/20"
-                            >
-                                {{ learners.current_page }} /
-                                {{ learners.last_page }}
-                            </div>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                class="h-9 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase"
-                                :disabled="
-                                    learners.current_page >= learners.last_page
-                                "
-                                @click="applyFilters(learners.current_page + 1)"
-                                >Next</Button
-                            >
-                        </div>
+                <!-- Strategic Pagination -->
+                <div class="flex h-20 items-center justify-between border-t border-border/50 px-8 bg-muted/5">
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Registry Point: {{ learners.from || 0 }} - {{ learners.to || 0 }} of {{ stats.total }}</p>
+                    <div class="flex items-center gap-2">
+                        <template v-for="(link, i) in learners.links" :key="i">
+                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-9 w-9 rounded-xl text-[10px] font-bold tracking-tight transition-all', link.active ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-border bg-card hover:bg-muted text-muted-foreground']" @click="applyFilters(Number(link.label))">{{ link.label }}</Button>
+                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page - 1)">Prev</Button>
+                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page + 1)">Next</Button>
+                        </template>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Action Modals -->
-        <Dialog :open="confirmOpen" @update:open="closeActionModal">
-            <DialogContent
-                class="animate-in overflow-hidden rounded-2xl border-border p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[440px]"
-            >
-                <div class="space-y-6 p-8 text-center bg-card">
-                    <div
-                        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl shadow-xl"
-                        :class="
-                            confirmMode === 'delete' ||
-                            confirmMode === 'bulkDelete'
-                                ? 'bg-rose-50 text-rose-600'
-                                : 'bg-primary/10 text-primary'
-                        "
-                    >
-                        <Trash2
-                            v-if="
-                                confirmMode === 'delete' ||
-                                confirmMode === 'bulkDelete'
-                            "
-                            class="h-10 w-10"
-                        />
-                        <ShieldAlert v-else class="h-10 w-10" />
-                    </div>
-
-                    <div class="space-y-3">
-                        <h2
-                            class="text-xl font-bold tracking-tight text-foreground"
-                        >
-                            {{ modalTitle }}
-                        </h2>
-                        <p
-                            class="px-6 text-sm leading-relaxed font-medium text-muted-foreground"
-                        >
-                            {{ modalMessage }}
-                        </p>
-                    </div>
-
-                    <div class="flex flex-col gap-3 pt-6">
-                        <Button
-                            :variant="
-                                confirmMode === 'delete' ||
-                                confirmMode === 'bulkDelete'
-                                    ? 'destructive'
-                                    : 'default'
-                            "
-                            class="h-12 rounded-xl text-sm font-bold tracking-tight uppercase shadow-xl transition-all"
-                            :class="
-                                confirmMode === 'delete' ||
-                                confirmMode === 'bulkDelete'
-                                    ? 'bg-rose-600 shadow-rose-500/20 hover:bg-rose-700'
-                                    : 'bg-primary shadow-primary/20 hover:bg-primary/90'
-                            "
-                            :disabled="actionForm.processing"
-                            @click="confirmAction"
-                        >
-                            {{
-                                actionForm.processing
-                                    ? 'Processing...'
-                                    : 'Confirm'
-                            }}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            class="h-11 rounded-xl text-xs font-bold tracking-tight text-muted-foreground/60 uppercase transition-all hover:text-foreground"
-                            @click="closeActionModal"
-                            >Cancel</Button
-                        >
+        <!-- Floating Selection Action Bar -->
+        <div v-if="selectedLearnerIds.length > 0" class="fixed bottom-10 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-10">
+            <div class="flex items-center gap-6 rounded-3xl border border-primary/20 bg-slate-900 px-8 py-5 text-white shadow-2xl shadow-primary/20">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20"><Users class="h-5 w-5 text-primary" /></div>
+                    <div class="space-y-0.5">
+                        <p class="text-[10px] font-bold tracking-widest uppercase opacity-60">Selection Matrix</p>
+                        <p class="text-sm font-bold tracking-tight">{{ selectedLearnerIds.length }} Nodes Targeted</p>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
-
-        <Dialog :open="promoteOpen" @update:open="closePromoteModal">
-            <DialogContent
-                class="animate-in overflow-hidden rounded-2xl border-emerald-100 p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[500px]"
-            >
-                <div
-                    class="relative overflow-hidden bg-emerald-600 px-10 py-8 text-white"
-                >
-                    <div
-                        class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-3xl"
-                    ></div>
-                    <div class="relative z-10 flex items-center gap-5">
-                        <div
-                            class="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/20 shadow-xl backdrop-blur-md"
-                        >
-                            <ArrowUpCircle class="h-10 w-10 text-white" />
-                        </div>
-                        <div>
-                            <h2
-                                class="text-2xl leading-none font-bold tracking-tight"
-                            >
-                                Global Promotion
-                            </h2>
-                            <p
-                                class="mt-2 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                            >
-                                Registry Advancement Protocol
-                            </p>
-                        </div>
-                    </div>
+                <div class="h-10 w-px bg-white/10 mx-2"></div>
+                <div class="flex items-center gap-3">
+                    <Button @click="promoteOpen = true" class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.05]">Bulk Promote</Button>
+                    <Button variant="ghost" @click="selectedLearnerIds = []" class="h-12 rounded-2xl px-6 text-[10px] font-bold tracking-widest text-slate-400 uppercase hover:text-white">Clear Matrix</Button>
                 </div>
+            </div>
+        </div>
 
-                <div class="space-y-8 p-10">
-                    <div
-                        class="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/50 p-6"
-                    >
-                        <div>
-                            <p
-                                class="text-xs font-bold tracking-tight text-emerald-600 text-muted-foreground uppercase"
-                            >
-                                Batched Units
-                            </p>
-                            <p
-                                class="text-3xl font-bold tracking-tighter text-emerald-700"
-                            >
-                                {{ selectedCount }}
-                                <span
-                                    class="text-xs tracking-tight uppercase opacity-60"
-                                    >Nodes</span
-                                >
-                            </p>
+        <!-- Dialogs -->
+        <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
+            <DialogContent class="sm:max-w-[480px] rounded-3xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                <div class="p-8">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl" :class="confirmMode === 'delete' ? 'bg-rose-50 text-rose-500' : 'bg-primary/10 text-primary'">
+                            <ShieldAlert class="h-6 w-6" />
                         </div>
-                        <CheckCircle2 class="h-10 w-10 text-emerald-500/30" />
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-bold tracking-tight text-foreground uppercase">Critical Protocol</h3>
+                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Registry Integrity Guard</p>
+                        </div>
                     </div>
-
-                    <p
-                        class="px-2 text-xs leading-relaxed font-bold tracking-tight text-muted-foreground text-slate-500 uppercase"
-                    >
-                        SELECTED LEARNERS WILL BE PROPAGATED TO THE NEXT
-                        SEQUENTIAL GRADE UPON SYSTEM VALIDATION. THIS ACTION IS
-                        IRREVERSIBLE ONCE COMMITTED TO THE CORE REGISTRY.
+                    <p class="text-sm font-bold leading-relaxed text-muted-foreground">
+                        Initialize <span class="text-rose-600 underline decoration-2 underline-offset-4">{{ confirmMode }} event</span> for <span class="text-foreground uppercase">{{ selectedLearner?.name }}</span>? Institutional synchronization will be modified.
                     </p>
-
-                    <div
-                        class="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50/30 p-5"
-                    >
-                        <div
-                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20"
-                        >
-                            <ShieldAlert class="h-5 w-5" />
-                        </div>
-                        <p
-                            class="text-xs leading-relaxed font-bold tracking-tight text-blue-800 uppercase"
-                        >
-                            Example Transformation:<br /><span
-                                class="text-slate-500"
-                                >GRADE 8 WEST</span
-                            >
-                            →
-                            <span class="font-bold text-blue-600"
-                                >GRADE 9 WEST</span
-                            >
-                        </p>
-                    </div>
-
-                    <div class="flex flex-col gap-3 pt-4">
-                        <Button
-                            class="h-14 rounded-[1.5rem] border-0 bg-slate-900 text-sm font-bold tracking-tight text-white uppercase shadow-xl shadow-slate-900/10 transition-all hover:bg-slate-800"
-                            :disabled="promotionForm.processing"
-                            @click="promoteSelectedLearners"
-                        >
-                            {{
-                                promotionForm.processing
-                                    ? 'Promoting...'
-                                    : 'Promote Learners'
-                            }}
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            class="h-12 rounded-2xl text-xs font-bold tracking-tight text-slate-400 uppercase transition-all hover:text-slate-900"
-                            @click="closePromoteModal"
-                            >Cancel</Button
-                        >
-                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-4 bg-muted/10 p-6 border-t border-border/50">
+                    <Button variant="ghost" @click="confirmOpen = false" class="h-12 rounded-2xl px-8 text-[10px] font-bold tracking-widest uppercase">Abort</Button>
+                    <Button @click="handleAction" :disabled="actionForm.processing" class="h-12 rounded-2xl bg-rose-600 px-10 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl">Execute Protocol</Button>
                 </div>
             </DialogContent>
         </Dialog>
-        <BulkUploadModal v-model:open="bulkUploadOpen" />
+
+        <Dialog :open="promoteOpen" @update:open="promoteOpen = $event">
+             <DialogContent class="sm:max-w-[500px] rounded-3xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                <div class="p-8">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500"><ArrowUpCircle class="h-6 w-6" /></div>
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-bold tracking-tight text-foreground uppercase">Promotion Hub</h3>
+                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Academic elevation matrix</p>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="p-5 rounded-2xl border border-primary/10 bg-primary/5">
+                            <p class="text-[10px] font-bold tracking-widest text-primary uppercase opacity-60 mb-1">Target Selection</p>
+                            <p class="text-sm font-black text-foreground">{{ selectedLearnerIds.length }} Nodes identified for elevation.</p>
+                        </div>
+                        <div class="space-y-2.5">
+                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Target Stream Channel</Label>
+                            <div class="relative">
+                                <select v-model="promotionTargetClass" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-5 text-sm font-bold uppercase outline-none focus:bg-background">
+                                    <option value="">Select Target Channel</option>
+                                    <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-4 bg-muted/10 p-6 border-t border-border/50">
+                    <Button variant="ghost" @click="promoteOpen = false" class="h-12 rounded-2xl px-8 text-[10px] font-bold tracking-widest uppercase">Abort</Button>
+                    <Button @click="handleBulkPromotion" :disabled="promotionForm.processing || !promotionTargetClass" class="h-12 rounded-2xl bg-emerald-600 px-10 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl transition-all hover:scale-[1.02]">Initialize Elevation</Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+        
+        <BulkUploadModal v-model:open="bulkUploadOpen" @uploaded="applyFilters()" />
     </AppLayout>
 </template>
-
-<style scoped>
-/* Ensure clean styles */
-select {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-    background-position: right 1rem center;
-    background-repeat: no-repeat;
-    background-size: 1.5em 1.5em;
-    padding-right: 2.5rem;
-}
-</style>
