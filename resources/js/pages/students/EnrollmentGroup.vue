@@ -22,6 +22,10 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -423,47 +427,71 @@ const modalMessage = computed(() => {
             </div>
         </div>
 
-        <div v-if="confirmOpen" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" @click.self="closeActionModal">
-            <div class="w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-2xl border border-slate-100 scale-in-center animate-in zoom-in-95 duration-200">
-                <div class="h-16 w-16 rounded-3xl bg-red-50 flex items-center justify-center mb-6">
-                    <AlertTriangle class="h-8 w-8 text-red-500" />
+        <Dialog :open="confirmOpen" @update:open="closeActionModal">
+            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <div class="p-8 space-y-6 text-center">
+                    <div class="mx-auto h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 shadow-red-500/10" :class="confirmMode === 'activate' ? 'bg-emerald-50 text-emerald-600 shadow-emerald-500/10' : 'bg-red-50 text-red-600'">
+                        <CheckCircle2 v-if="confirmMode === 'activate'" class="h-10 w-10" />
+                        <AlertTriangle v-else class="h-10 w-10" />
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h2 class="text-xl font-black text-slate-900 uppercase italic tracking-tight">{{ modalTitle }} Context</h2>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-relaxed opacity-80 px-6">
+                            Core Registry Modification Inquiry
+                        </p>
+                    </div>
+
+                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest leading-relaxed px-4">
+                        {{ modalMessage }}
+                    </p>
+
+                    <div class="flex flex-col gap-3 pt-6">
+                        <Button
+                            :variant="confirmMode === 'delete' ? 'destructive' : 'default'"
+                            class="h-14 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl transition-all border-0 italic"
+                            :class="confirmMode === 'delete' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/10'"
+                            :disabled="actionForm.processing"
+                            @click="confirmAction"
+                        >
+                            {{ actionForm.processing ? 'EXECUTING_PROTOCOL...' : 'EXECUTE_OVERRIDE' }}
+                        </Button>
+                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closeActionModal">ABORT_OP</Button>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">{{ modalTitle }} Context</h2>
-                <p class="text-xs font-black text-slate-400 uppercase tracking-widest italic opacity-70 mb-6">Core Registry Modification Inquiry</p>
-                
-                <p class="text-sm font-black text-slate-600 uppercase tracking-widest leading-relaxed">{{ modalMessage }}</p>
-                
-                <div class="mt-10 flex flex-col sm:flex-row gap-3">
-                    <Button variant="outline" @click="closeActionModal" class="h-12 flex-1 rounded-2xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">Abort Op</Button>
-                    <Button :variant="confirmMode === 'delete' ? 'destructive' : 'default'" :disabled="actionForm.processing" @click="confirmAction" class="h-12 flex-1 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all">
-                        <Loader2 v-if="actionForm.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        Execute Override
-                    </Button>
-                </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
 
         <!-- Bulk Delete Modal -->
-        <div v-if="bulkDeleteOpen" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300" @click.self="bulkDeleteOpen = false">
-            <div class="w-full max-w-md rounded-[2.5rem] bg-white p-8 shadow-2xl border border-slate-100 scale-in-center animate-in zoom-in-95 duration-200">
-                <div class="h-16 w-16 rounded-3xl bg-red-900 flex items-center justify-center mb-6 shadow-xl shadow-red-900/20">
-                    <Trash2 class="h-8 w-8 text-white" />
+        <Dialog :open="bulkDeleteOpen" @update:open="bulkDeleteOpen = false">
+            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-red-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <div class="p-8 space-y-6 text-center">
+                    <div class="mx-auto h-20 w-20 rounded-[2.5rem] bg-red-900 text-white flex items-center justify-center shadow-2xl shadow-red-900/20 mb-6">
+                        <Trash2 class="h-10 w-10" />
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h2 class="text-xl font-black text-slate-900 uppercase italic tracking-tight">Bulk Purge Op</h2>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic opacity-70">High Impact Batch Operation</p>
+                    </div>
+
+                    <p class="text-xs font-black text-slate-600 uppercase tracking-widest leading-relaxed px-4">
+                        INITIATING PURGE FOR <span class="text-red-600 font-black">{{ selectedEnrollmentIds.length }}</span> REGISTRY NODES. THIS ACTION IS DESTRUCTIVE AND TERMINATES ALL ASSIGNMENT LINKS.
+                    </p>
+
+                    <div class="flex flex-col gap-3 pt-6">
+                        <Button
+                            variant="destructive"
+                            class="h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-red-500/20 transition-all border-0 italic"
+                            :disabled="actionForm.processing"
+                            @click="confirmBulkDelete"
+                        >
+                            {{ actionForm.processing ? 'PURGING_REGISTRY...' : 'AUTHORIZE_PURGE' }}
+                        </Button>
+                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="bulkDeleteOpen = false">CANCEL_PURGE</Button>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Bulk Purge Op</h2>
-                <p class="text-xs font-black text-slate-400 uppercase tracking-widest italic opacity-70 mb-6">High Impact Batch Operation</p>
-                
-                <p class="text-sm font-black text-slate-600 uppercase tracking-widest leading-relaxed">
-                    INITIATING PURGE FOR <span class="text-red-600">{{ selectedEnrollmentIds.length }}</span> REGISTRY NODES. THIS ACTION IS DESTRUCTIVE AND TERMINATES ALL ASSIGNMENT LINKS IN THIS CONTEXT.
-                </p>
-                
-                <div class="mt-10 flex flex-col sm:flex-row gap-3">
-                    <Button variant="outline" @click="bulkDeleteOpen = false" class="h-12 flex-1 rounded-2xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel Purge</Button>
-                    <Button variant="destructive" :disabled="actionForm.processing" @click="confirmBulkDelete" class="h-12 flex-1 rounded-2xl bg-red-600 text-white hover:bg-red-700 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-red-600/10 transition-all">
-                        <Loader2 v-if="actionForm.processing" class="mr-2 h-4 w-4 animate-spin" />
-                        Authorize Purge
-                    </Button>
-                </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

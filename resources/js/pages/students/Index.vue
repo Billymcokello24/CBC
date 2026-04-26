@@ -29,8 +29,13 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -360,14 +365,18 @@ const getStatusColor = (active: boolean) => {
                 </div>
                 
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50" @click="openBulkUploadModal">
+                    <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm" @click="exportToPDF">
                         <Download class="mr-2 h-4 w-4 opacity-70" />
                         Export
+                    </Button>
+                    <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm" @click="openBulkUploadModal">
+                        <Upload class="mr-2 h-4 w-4 opacity-70" />
+                        Propagate
                     </Button>
                     <Link
                         v-if="hasPermission('students.create')"
                         href="/students/create"
-                        class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all"
+                        class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 h-10 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         <Plus class="mr-2 h-4 w-4" />
                         Enroll
@@ -625,52 +634,85 @@ const getStatusColor = (active: boolean) => {
         </div>
 
         <!-- Action Modals -->
-        <div
-            v-if="confirmOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            @click.self="closeActionModal"
-        >
-            <div class="w-full max-w-md rounded-2xl border bg-background p-6 shadow-xl animate-in zoom-in-95 duration-200">
-                <h2 class="text-lg font-bold">{{ modalTitle }}</h2>
-                <p class="mt-2 text-sm text-muted-foreground">{{ modalMessage }}</p>
-                <div class="mt-6 flex justify-end gap-3">
-                    <Button variant="outline" class="rounded-xl" @click="closeActionModal">Cancel</Button>
-                    <Button
-                        :variant="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'destructive' : 'default'"
-                        class="rounded-xl px-6"
-                        :disabled="actionForm.processing"
-                        @click="confirmAction"
-                    >
-                        Confirm
-                    </Button>
-                </div>
-            </div>
-        </div>
+        <Dialog :open="confirmOpen" @update:open="closeActionModal">
+            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <div class="p-8 space-y-6 text-center">
+                    <div class="mx-auto h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
+                        <Trash2 v-if="confirmMode === 'delete' || confirmMode === 'bulkDelete'" class="h-10 w-10" />
+                        <ShieldAlert v-else class="h-10 w-10" />
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h2 class="text-xl font-black text-slate-900 uppercase italic tracking-tight">{{ modalTitle }}</h2>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-relaxed opacity-80 px-6">
+                            {{ modalMessage }}
+                        </p>
+                    </div>
 
-        <div
-            v-if="promoteOpen"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            @click.self="closePromoteModal"
-        >
-            <div class="w-full max-w-lg rounded-2xl border bg-background p-8 shadow-xl animate-in zoom-in-95 duration-200">
-                <div class="h-12 w-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
-                     <ArrowUpCircle class="h-6 w-6" />
+                    <div class="flex flex-col gap-3 pt-6">
+                        <Button
+                            :variant="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'destructive' : 'default'"
+                            class="h-14 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl transition-all border-0 italic"
+                            :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/10'"
+                            :disabled="actionForm.processing"
+                            @click="confirmAction"
+                        >
+                            {{ actionForm.processing ? 'EXECUTING_PROTOCOL...' : 'CONFIRM_AUTHORIZATION' }}
+                        </Button>
+                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closeActionModal">ABORT_MISSION</Button>
+                    </div>
                 </div>
-                <h2 class="text-xl font-bold">Promote Selected Learners</h2>
-                <p class="mt-2 text-sm text-muted-foreground">
-                    {{ selectedCount }} selected learner{{ selectedCount === 1 ? '' : 's' }} will be moved to the next grade if a matching class exists.
-                </p>
-                <div class="mt-4 rounded-xl border bg-muted/30 p-4 text-xs font-medium text-muted-foreground">
-                    Example: <span class="font-bold text-foreground">Grade 8 West</span> → <span class="font-bold text-foreground">Grade 9 West</span>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog :open="promoteOpen" @update:open="closePromoteModal">
+            <DialogContent class="sm:max-w-[500px] rounded-[3rem] border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                <div class="bg-emerald-600 px-10 py-8 text-white relative overflow-hidden">
+                    <div class="absolute -right-8 -top-8 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
+                    <div class="flex items-center gap-5 relative z-10">
+                        <div class="h-16 w-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
+                            <ArrowUpCircle class="h-10 w-10 text-white" />
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-black uppercase italic tracking-tight leading-none">Global Promotion</h2>
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 italic opacity-80">Registry Advancement Protocol</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-8 flex justify-end gap-3">
-                    <Button variant="outline" class="rounded-xl px-6" @click="closePromoteModal">Cancel</Button>
-                    <Button class="rounded-xl px-6 bg-blue-600 hover:bg-blue-700" :disabled="promotionForm.processing" @click="promoteSelectedLearners">
-                        Confirm Promotion
-                    </Button>
+
+                <div class="p-10 space-y-8">
+                    <div class="rounded-[2rem] bg-emerald-50/50 p-6 border border-emerald-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic opacity-70">Batched Units</p>
+                            <p class="text-3xl font-black text-emerald-700 italic tracking-tighter">{{ selectedCount }} <span class="text-xs uppercase tracking-widest opacity-60">Nodes</span></p>
+                        </div>
+                        <CheckCircle2 class="h-10 w-10 text-emerald-500/30" />
+                    </div>
+
+                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed italic opacity-80 px-2">
+                        SELECTED LEARNERS WILL BE PROPAGATED TO THE NEXT SEQUENTIAL GRADE UPON SYSTEM VALIDATION. THIS ACTION IS IRREVERSIBLE ONCE COMMITTED TO THE CORE REGISTRY.
+                    </p>
+
+                    <div class="rounded-2xl border border-blue-100 bg-blue-50/30 p-5 flex items-center gap-4">
+                        <div class="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                            <ShieldAlert class="h-5 w-5" />
+                        </div>
+                        <p class="text-[9px] font-black text-blue-800 uppercase tracking-widest leading-relaxed italic">Example Transformation:<br/><span class="text-slate-500">GRADE 8 WEST</span> → <span class="text-blue-600 font-bold">GRADE 9 WEST</span></p>
+                    </div>
+
+                    <div class="flex flex-col gap-3 pt-4">
+                        <Button 
+                            class="h-14 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
+                            :disabled="promotionForm.processing" 
+                            @click="promoteSelectedLearners"
+                        >
+                            {{ promotionForm.processing ? 'ADVANCING_REGISTRY...' : 'INITIATE_PROMOTION_CYCLE' }}
+                        </Button>
+                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
         <BulkUploadModal v-model:open="bulkUploadOpen" />
     </AppLayout>
 </template>
