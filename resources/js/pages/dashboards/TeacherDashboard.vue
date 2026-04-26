@@ -82,9 +82,9 @@ const stats = [
             </div>
         </template>
 
-        <div class="space-y-6">
+        <div class="space-y-6 p-2 sm:p-4 md:p-6 lg:p-0">
             <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                 <StatCard 
                     v-for="stat in stats" 
                     :key="stat.title"
@@ -95,69 +95,69 @@ const stats = [
             </div>
 
             <!-- Role-Specific Sections -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" v-if="isClassTeacher || isHod">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" v-if="isClassTeacher || isHod">
                 <!-- Class Teacher Quick View -->
-                <div v-if="isClassTeacher && classManagement" class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-3xl p-6 text-white shadow-xl shadow-emerald-200">
-                    <div class="flex items-center justify-between mb-6">
+                <div v-if="isClassTeacher && classManagement" class="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-3xl p-5 sm:p-6 text-white shadow-xl shadow-emerald-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-white/20 rounded-xl backdrop-blur-md">
                                 <UserCircle class="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 class="text-lg font-bold">Class Management</h3>
+                                <h3 class="text-lg font-bold leading-tight">Class Management</h3>
                                 <p class="text-emerald-100 text-xs">{{ classManagement.class?.name }} ({{ classManagement.total_students }} Students)</p>
                             </div>
                         </div>
-                        <Link href="/classes" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center gap-2">
+                        <Link href="/classes" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center justify-center gap-2">
                             Manage Class <ArrowRight class="w-3 h-3" />
                         </Link>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Attendance</p>
-                            <p class="text-xl font-black">{{ classManagement.attendance_rate }}%</p>
+                    <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-emerald-200 mb-1">Attendance</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ classManagement.attendance_rate }}%</p>
                         </div>
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Boys</p>
-                            <p class="text-xl font-black">{{ classManagement.boys_count }}</p>
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-emerald-200 mb-1">Boys</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ classManagement.boys_count }}</p>
                         </div>
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-emerald-200 mb-1">Girls</p>
-                            <p class="text-xl font-black">{{ classManagement.girls_count }}</p>
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-emerald-200 mb-1">Girls</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ classManagement.girls_count }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- HOD Quick View -->
-                <div v-if="isHod && departmentData" class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-6 text-white shadow-xl shadow-blue-200">
-                    <div class="flex items-center justify-between mb-6">
+                <div v-if="isHod && departmentData" class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-3xl p-5 sm:p-6 text-white shadow-xl shadow-blue-200">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                         <div class="flex items-center gap-3">
                             <div class="p-2 bg-white/20 rounded-xl backdrop-blur-md">
                                 <LayoutDashboard class="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 class="text-lg font-bold">Department Overview</h3>
+                                <h3 class="text-lg font-bold leading-tight">Department Overview</h3>
                                 <p class="text-blue-100 text-xs">{{ departmentData.department?.name }}</p>
                             </div>
                         </div>
-                        <Link href="/curriculum" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center gap-2">
+                        <Link href="/curriculum" class="text-xs font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-xl transition-colors backdrop-blur-md flex items-center justify-center gap-2">
                             Full Analytics <ArrowRight class="w-3 h-3" />
                         </Link>
                     </div>
                     
-                    <div class="grid grid-cols-3 gap-4">
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Teachers</p>
-                            <p class="text-xl font-black">{{ departmentData.teachers?.length || 0 }}</p>
+                    <div class="grid grid-cols-3 gap-2 sm:gap-4">
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-blue-200 mb-1">Teachers</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ departmentData.teachers?.length || 0 }}</p>
                         </div>
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Subjects</p>
-                            <p class="text-xl font-black">{{ departmentData.subjects?.length || 0 }}</p>
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-blue-200 mb-1">Subjects</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ departmentData.subjects?.length || 0 }}</p>
                         </div>
-                        <div class="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/10">
-                            <p class="text-[10px] uppercase font-bold text-blue-200 mb-1">Total Students</p>
-                            <p class="text-xl font-black">{{ departmentData.total_students }}</p>
+                        <div class="bg-white/10 rounded-2xl p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+                            <p class="text-[9px] sm:text-[10px] uppercase font-bold text-blue-200 mb-1">Learners</p>
+                            <p class="text-lg sm:text-xl font-black tabular-nums">{{ departmentData.total_students }}</p>
                         </div>
                     </div>
                 </div>
@@ -165,7 +165,7 @@ const stats = [
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Timetable -->
-                <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                             <Clock class="w-5 h-5 text-blue-500" />
@@ -173,39 +173,39 @@ const stats = [
                         </h3>
                     </div>
 
-                    <div v-if="todaysTimetable.length > 0" class="space-y-4">
+                    <div v-if="todaysTimetable.length > 0" class="space-y-3 sm:space-y-4">
                         <div v-for="slot in todaysTimetable" :key="slot.id" 
-                             class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                            <div class="flex-shrink-0 w-20 text-center">
-                                <span class="text-sm font-bold text-blue-600 block">{{ slot.start_time }}</span>
-                                <span class="text-xs text-slate-500">{{ slot.end_time }}</span>
+                             class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 transition-colors hover:bg-slate-100/50">
+                            <div class="flex-shrink-0 w-16 sm:w-20 text-center">
+                                <span class="text-xs sm:text-sm font-bold text-blue-600 block leading-tight">{{ slot.start_time }}</span>
+                                <span class="text-[10px] sm:text-xs text-slate-500 tracking-tight">{{ slot.end_time }}</span>
                             </div>
-                            <div class="flex-1">
-                                <h4 class="font-bold text-slate-800">{{ slot.subject }}</h4>
-                                <p class="text-sm text-slate-500">{{ slot.class }} • {{ slot.room || 'No Room' }}</p>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-slate-800 text-sm sm:text-base truncate">{{ slot.subject }}</h4>
+                                <p class="text-xs sm:text-sm text-slate-500 truncate">{{ slot.class }} • {{ slot.room || 'No Room' }}</p>
                             </div>
-                            <div class="hidden md:block">
-                                <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-600">
-                                    {{ slot.status || 'Scheduled' }}
+                            <div class="hidden sm:block">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-600">
+                                    {{ slot.status || 'Active' }}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <div v-else class="text-center py-12">
-                        <div class="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Clock class="w-8 h-8 text-slate-300" />
+                    <div v-else class="text-center py-10 sm:py-12">
+                        <div class="bg-slate-50 w-12 sm:h-16 w-12 sm:w-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Clock class="w-6 sm:w-8 h-6 sm:h-8 text-slate-300" />
                         </div>
-                        <p class="text-slate-500">No lessons scheduled for today.</p>
+                        <p class="text-slate-500 text-sm">No lessons scheduled for today.</p>
                     </div>
                 </div>
 
                 <!-- Syllabus Coverage -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                     <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                         <CheckCircle class="w-5 h-5 text-emerald-500" />
                         Syllabus Coverage
                     </h3>
-                    <div v-if="syllabusProgress.length > 0" class="space-y-6">
+                    <div v-if="syllabusProgress.length > 0" class="space-y-5 sm:space-y-6">
                         <div v-for="item in syllabusProgress" :key="item.subject + item.class">
                             <div class="flex justify-between items-end mb-2">
                                 <div>
@@ -230,44 +230,45 @@ const stats = [
             <!-- Pending Tasks & Dashboard Analytics -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Pending Tasks -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                     <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                         <AlertCircle class="w-5 h-5 text-amber-500" />
                         Pending Action Items
                     </h3>
-                    <div class="space-y-4">
+                    <div class="space-y-3 sm:space-y-4">
                         <div v-for="task in pendingTasks" :key="task.title" 
-                             class="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between">
+                             class="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-between group hover:bg-amber-100/50 transition-colors">
                             <div>
-                                <h4 class="text-sm font-bold text-amber-900">{{ task.title }}</h4>
-                                <p class="text-2xl font-black text-amber-600">{{ task.count }}</p>
+                                <h4 class="text-xs sm:text-sm font-bold text-amber-900 uppercase tracking-tight">{{ task.title }}</h4>
+                                <p class="text-xl sm:text-2xl font-black text-amber-600 tabular-nums">{{ task.count }}</p>
                             </div>
-                            <Link :href="task.link" class="p-2 bg-white rounded-xl shadow-sm text-amber-600 hover:bg-amber-100 transition-colors">
+                            <Link :href="task.link" class="p-2.5 bg-white rounded-xl shadow-sm text-amber-600 hover:bg-amber-600 hover:text-white transition-all transform group-hover:scale-110">
                                 <ArrowRight class="w-5 h-5" />
                             </Link>
                         </div>
                     </div>
                 </div>
-                <div class="space-y-6">
+
+                <div class="space-y-6 lg:col-span-1">
                     <!-- My Classes -->
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <Users class="w-5 h-5 text-emerald-500" />
                             My Classes
                         </h3>
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             <div v-for="cls in myClasses" :key="cls.id" 
-                                 class="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                                 class="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold group-hover:bg-emerald-600 group-hover:text-white transition-colors">
                                         {{ cls.name.charAt(0) }}
                                     </div>
                                     <div>
                                         <h4 class="text-sm font-bold text-slate-800">{{ cls.name }}</h4>
-                                        <p class="text-xs text-slate-500">{{ cls.learner_count }} Students</p>
+                                        <p class="text-[10px] sm:text-xs text-slate-500 font-medium">{{ cls.learner_count }} Students</p>
                                     </div>
                                 </div>
-                                <span v-if="cls.is_class_teacher" class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-600 font-bold">
+                                <span v-if="cls.is_class_teacher" class="px-2 py-0.5 rounded-full text-[9px] bg-emerald-100 text-emerald-600 font-black uppercase tracking-tighter">
                                     CLASS TEACHER
                                 </span>
                             </div>
@@ -275,87 +276,42 @@ const stats = [
                     </div>
 
                     <!-- My Subjects -->
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                             <BookOpen class="w-5 h-5 text-indigo-500" />
                             My Subjects
                         </h3>
-                        <div class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
                             <div v-for="subject in mySubjects" :key="subject.id + '-' + subject.class_name" 
-                                 class="p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                                <h4 class="text-sm font-bold text-indigo-900">{{ subject.name }}</h4>
-                                <p class="text-xs text-indigo-600/80">{{ subject.class_name }}</p>
+                                 class="p-3 rounded-2xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors group">
+                                <h4 class="text-xs sm:text-sm font-bold text-indigo-900 group-hover:text-indigo-700">{{ subject.name }}</h4>
+                                <p class="text-[10px] text-indigo-600/80 font-bold uppercase tracking-widest leading-none mt-1">{{ subject.class_name }}</p>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Assessments & Attendance -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <!-- Recent Assessments -->
-                 <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <ClipboardList class="w-5 h-5 text-rose-500" />
-                            Recent Assessments
-                        </h3>
-                    </div>
-
-                    <div v-if="recentAssessments.length > 0" class="overflow-x-auto">
-                        <table class="w-full">
-                             <thead>
-                                <tr class="text-left text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    <th class="pb-4">Assessment</th>
-                                    <th class="pb-4">Class</th>
-                                    <th class="pb-4">Date</th>
-                                    <th class="pb-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="assessment in recentAssessments" :key="assessment.id">
-                                    <td class="py-4">
-                                        <p class="text-sm font-bold text-slate-800">{{ assessment.title || assessment.subject?.name }}</p>
-                                        <p class="text-xs text-slate-500">{{ assessment.assessment_type?.name }}</p>
-                                    </td>
-                                    <td class="py-4 text-sm text-slate-600">{{ assessment.class?.name || assessment.school_class?.name }}</td>
-                                    <td class="py-4 text-sm text-slate-600">{{ new Date(assessment.assessment_date).toLocaleDateString() }}</td>
-                                    <td class="py-4">
-                                        <span class="px-2 py-1 rounded-full text-[10px] font-bold"
-                                              :class="assessment.status === 'graded' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'">
-                                            {{ assessment.status?.toUpperCase() || 'PENDING' }}
-                                        </span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div v-else class="text-center py-8">
-                        <p class="text-slate-500 text-sm">No recent assessments found.</p>
                     </div>
                 </div>
 
                 <!-- Attendance Trend -->
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 sm:p-6">
                     <h3 class="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                         <TrendingUp class="w-5 h-5 text-blue-500" />
-                        Attendance Trend (Last 7 Days)
+                        Attendance Trend
                     </h3>
                     
-                    <div v-if="attendanceStats.length > 0" class="h-64 flex items-end justify-between gap-2 px-4">
-                        <div v-for="day in attendanceStats" :key="day.date" class="flex-1 flex flex-col items-center gap-2">
-                            <div class="w-full bg-slate-100 rounded-lg relative overflow-hidden flex flex-col justify-end" style="height: 180px">
-                                <div class="bg-blue-500 absolute w-full transition-all duration-500" 
+                    <div v-if="attendanceStats.length > 0" class="h-48 sm:h-64 flex items-end justify-between gap-1 sm:gap-2 px-1">
+                        <div v-for="day in attendanceStats" :key="day.date" class="flex-1 flex flex-col items-center gap-2 group">
+                            <div class="w-full bg-slate-50 rounded-lg relative overflow-hidden flex flex-col justify-end h-32 sm:h-44 border border-slate-100/50">
+                                <div class="bg-blue-600 absolute w-full transition-all duration-700 rounded-t-sm group-hover:bg-blue-400" 
                                      :style="{ height: day.rate + '%' }"></div>
-                                <div class="absolute inset-0 flex items-center justify-center text-[10px] font-bold" 
-                                     :class="day.rate > 50 ? 'text-white' : 'text-slate-600'">
+                                <div class="absolute inset-x-0 bottom-2 flex items-center justify-center text-[9px] font-black tracking-tighter" 
+                                     :class="day.rate > 40 ? 'text-white' : 'text-slate-600'">
                                     {{ day.rate }}%
                                 </div>
                             </div>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ day.date }}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{{ day.date.substring(0,3) }}</span>
                         </div>
                     </div>
-                    <div v-else class="text-center py-12">
+                    <div v-else class="text-center py-10 sm:py-12">
                         <p class="text-slate-500 text-sm">No attendance data available.</p>
                     </div>
                 </div>

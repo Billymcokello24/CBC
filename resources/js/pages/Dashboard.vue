@@ -124,22 +124,22 @@ const topUnits = computed(() => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
+        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
             <!-- Header Section -->
-            <div class="flex flex-col gap-1">
-                <div class="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <Home class="h-3.5 w-3.5" />
-                    <ChevronRight class="h-3 w-3" />
-                    <span class="font-medium text-foreground">Dashboard</span>
+            <div class="flex flex-col gap-1 px-1">
+                <div class="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground mb-1">
+                    <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    <span class="font-medium text-foreground uppercase tracking-widest">Dashboard</span>
                 </div>
-                <h1 class="text-3xl font-bold tracking-tight text-foreground">Dashboard Overview</h1>
-                <p class="text-[15px] text-muted-foreground">
-                    Welcome back! Here's what's happening with your institutional data today.
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">Institutional Overview</h1>
+                <p class="text-sm sm:text-[15px] text-muted-foreground">
+                    Aggregated metrics and growth indicators for the current academic year.
                 </p>
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     title="Total Collections"
                     :value="formatCurrency(props.stats.fee_collection).split('.')[0]"
@@ -162,7 +162,7 @@ const topUnits = computed(() => {
                     :trend="{ value: props.stats.class_growth, direction: props.stats.class_growth >= 0 ? 'up' : 'down' }"
                 />
                 <StatCard
-                    title="Attendance Rate"
+                    title="Attendance"
                     :value="`${props.stats.attendance_rate}%`"
                     :icon="Activity"
                     variant="success"
@@ -175,20 +175,20 @@ const topUnits = computed(() => {
                 <!-- Large Flow Chart -->
                 <div class="lg:col-span-7 xl:col-span-8">
                     <ChartCard
-                        title="Enrollment Overview"
+                        title="Enrollment Trends"
                         chart-type="area"
                         :data="props.enrollmentTrends"
-                        :height="350"
+                        :height="300"
                     />
                 </div>
 
                 <!-- Secondary Analysis -->
                 <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
                      <ChartCard
-                        title="Performance vs Target"
+                        title="Performance Matrix"
                         chart-type="bar"
                         :data="props.classPerformance"
-                        :height="350"
+                        :height="300"
                     />
                 </div>
             </div>
@@ -197,38 +197,38 @@ const topUnits = computed(() => {
             <div class="grid gap-6 lg:grid-cols-12">
                 <!-- Recent Enrollments table -->
                 <div class="lg:col-span-12 xl:col-span-7 rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden flex flex-col">
-                    <div class="px-6 py-5 border-b border-border/50 flex items-center justify-between">
-                        <h3 class="font-semibold text-base text-foreground">Recent Enrollments</h3>
-                        <Link href="/students" class="text-xs font-medium text-blue-600 hover:underline">View All</Link>
+                    <div class="px-5 sm:px-6 py-4 border-b border-border/50 flex items-center justify-between bg-muted/5">
+                        <h3 class="font-bold text-sm sm:text-base text-foreground uppercase tracking-tight">Recent Enrollments</h3>
+                        <Link href="/students" class="text-[10px] sm:text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest">View All</Link>
                     </div>
                     
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left">
+                        <table class="w-full text-left min-w-[350px]">
                             <tbody class="divide-y divide-border/30">
                                 <tr v-for="student in props.recentEnrollments" :key="student.id" class="hover:bg-muted/30 transition-all group">
-                                    <td class="px-6 py-4">
+                                    <td class="px-5 sm:px-6 py-3.5 sm:py-4">
                                          <div class="flex items-center gap-3">
-                                            <div class="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-bold text-blue-600 ring-2 ring-white">
+                                            <div class="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-[10px] font-black text-blue-600 ring-2 ring-white group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                 {{ student.initials }}
                                             </div>
                                             <div class="flex flex-col">
-                                                <span class="font-semibold text-sm text-foreground">{{ student.name }}</span>
-                                                <span class="text-xs text-muted-foreground">{{ student.class_name }}</span>
+                                                <span class="font-bold text-xs sm:text-sm text-foreground tracking-tight leading-none mb-1">{{ student.name }}</span>
+                                                <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-tighter">{{ student.class_name }}</span>
                                             </div>
                                          </div>
                                     </td>
-                                    <td class="px-6 py-4 text-right">
+                                    <td class="px-5 sm:px-6 py-3.5 sm:py-4 text-right">
                                         <div class="flex flex-col items-end gap-1">
-                                            <span class="font-semibold text-sm text-foreground">{{ student.date }}</span>
-                                            <Badge variant="outline" class="rounded-md border-emerald-100 bg-emerald-50 text-emerald-600 text-[10px] px-2 py-0">
+                                            <span class="font-bold text-xs sm:text-sm text-foreground tabular-nums">{{ student.date }}</span>
+                                            <Badge variant="outline" class="rounded-md border-emerald-100 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-tighter px-2 py-0">
                                                 {{ student.status }}
                                             </Badge>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr v-if="!props.recentEnrollments?.length">
-                                    <td colspan="2" class="px-6 py-12 text-center text-sm text-muted-foreground italic">
-                                        No recent enrollments recorded.
+                                    <td colspan="2" class="px-6 py-12 text-center text-xs text-muted-foreground italic font-medium uppercase">
+                                        No recent synchronizations recorded.
                                     </td>
                                 </tr>
                             </tbody>

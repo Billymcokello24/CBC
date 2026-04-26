@@ -74,37 +74,44 @@ const closeModal = () => {
 
 <template>
     <Dialog :open="open" @update:open="closeModal">
-        <DialogContent class="sm:max-w-[500px]">
-            <DialogHeader>
-                <DialogTitle>Bulk Upload Learners</DialogTitle>
-                <DialogDescription>
-                    Upload a CSV file to add multiple learners at once. 
-                    Download the template below to ensure your data is formatted correctly.
-                </DialogDescription>
-            </DialogHeader>
+        <DialogContent class="sm:max-w-[540px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div class="border-b border-slate-50 bg-slate-50/50 px-8 py-6">
+                <div class="flex items-center gap-4">
+                    <div class="h-12 w-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/10 shrink-0">
+                        <Upload class="h-6 w-6" />
+                    </div>
+                    <div>
+                        <DialogTitle class="text-xl font-black text-slate-900 uppercase italic tracking-tight">Mass Node Ingest</DialogTitle>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic opacity-70">Bulk Registry Propagation Protocol</p>
+                    </div>
+                </div>
+            </div>
 
-            <div class="space-y-6 py-4">
-                <div class="flex items-center justify-between rounded-lg border bg-muted/30 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                            <FileText class="h-6 w-6 text-blue-600" />
+            <div class="p-8 space-y-8">
+                <div class="flex items-center justify-between rounded-[2rem] border border-blue-100 bg-blue-50/20 p-5 group transition-all hover:bg-blue-50/40">
+                    <div class="flex items-center gap-4">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/10">
+                            <FileText class="h-5 w-5" />
                         </div>
                         <div>
-                            <p class="text-sm font-medium">CSV Template</p>
-                            <p class="text-xs text-muted-foreground">Required format for successful upload</p>
+                            <p class="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">Core Template</p>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Structural Manifest Required</p>
                         </div>
                     </div>
-                    <Button variant="outline" size="sm" as-child>
-                        <a href="/students/template/download" download>
-                            <Download class="mr-2 h-4 w-4" />
-                            Download
+                    <Button variant="outline" size="sm" as-child class="h-10 px-5 rounded-xl border-blue-200 bg-white hover:bg-blue-600 hover:text-white hover:border-blue-600 font-black text-[9px] uppercase tracking-[0.2em] transition-all shadow-sm">
+                        <a href="/students/template/download" download class="flex items-center">
+                            <Download class="mr-2 h-3.5 w-3.5" />
+                            GET_SOURCE
                         </a>
                     </Button>
                 </div>
 
                 <div
-                    class="relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-colors"
-                    :class="[dragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/20', form.file ? 'bg-muted/30' : '']"
+                    class="relative flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed p-12 transition-all duration-300 group"
+                    :class="[
+                        dragOver ? 'border-blue-600 bg-blue-50/50 scale-[0.99]' : 'border-slate-200 bg-slate-50/30', 
+                        form.file ? 'border-emerald-500 bg-emerald-50/20' : 'hover:border-slate-300 hover:bg-slate-50/50'
+                    ]"
                     @dragover.prevent="dragOver = true"
                     @dragleave.prevent="dragOver = false"
                     @drop.prevent="handleDrop"
@@ -113,107 +120,112 @@ const closeModal = () => {
                         ref="fileInput"
                         type="file"
                         accept=".csv"
-                        class="absolute inset-0 cursor-pointer opacity-0"
+                        class="absolute inset-0 cursor-pointer opacity-0 z-10"
                         @change="handleFileUpload"
                     />
 
                     <template v-if="!form.file">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                            <Upload class="h-6 w-6 text-muted-foreground" />
+                        <div class="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-white shadow-xl shadow-slate-200/50 group-hover:scale-110 transition-transform duration-500">
+                            <Upload class="h-8 w-8 text-slate-400 group-hover:text-blue-600 transition-colors" />
                         </div>
-                        <p class="mt-4 text-sm font-medium">Click or drag CSV file to upload</p>
-                        <p class="mt-1 text-xs text-muted-foreground">Maximum file size: 5MB</p>
+                        <p class="mt-6 text-[10px] font-black text-slate-900 uppercase tracking-[0.2em] italic">Drop CSV Payload</p>
+                        <p class="mt-2 text-[8px] font-black text-slate-400 uppercase tracking-[0.3em] opacity-60 italic">MAX_DENSITY: 5.0 MB</p>
                     </template>
 
                     <template v-else>
-                        <div class="flex w-full items-center gap-4 min-w-0">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
-                                <FileText class="h-6 w-6 text-blue-600" />
+                        <div class="flex w-full items-center gap-5 min-w-0 animate-in zoom-in-95 duration-300">
+                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-[1.5rem] bg-emerald-600 text-white shadow-xl shadow-emerald-500/20">
+                                <FileText class="h-8 w-8" />
                             </div>
                             <div class="flex-1 min-w-0 overflow-hidden">
-                                <p class="text-sm font-medium break-all leading-tight text-foreground" :title="form.file.name">
+                                <p class="text-[11px] font-black text-slate-900 uppercase tracking-widest italic truncate leading-none" :title="form.file.name">
                                     {{ form.file.name }}
                                 </p>
-                                <p class="mt-1 text-xs text-muted-foreground">{{ (form.file.size / 1024).toFixed(2) }} KB</p>
+                                <p class="mt-2 text-[9px] font-black text-emerald-600 uppercase tracking-widest italic opacity-70">{{ (form.file.size / 1024).toFixed(2) }} KB | READY_FOR_SYNC</p>
                             </div>
-                            <Button variant="ghost" size="icon" class="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive" @click.stop="removeFile">
-                                <X class="h-4 w-4" />
+                            <Button variant="ghost" size="icon" class="h-10 w-10 shrink-0 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all z-20" @click.stop="removeFile">
+                                <X class="h-5 w-5" />
                             </Button>
                         </div>
                     </template>
                 </div>
 
-                <div v-if="form.errors.file" class="flex items-start gap-2 text-xs text-destructive">
-                    <AlertCircle class="h-3 w-3" />
-                    <span>{{ form.errors.file }}</span>
+                <div v-if="form.errors.file" class="flex items-center gap-3 rounded-2xl bg-red-50 p-4 animate-in slide-in-from-top-2 duration-300 border border-red-100">
+                    <AlertCircle class="h-4 w-4 text-red-500 shrink-0" />
+                    <span class="text-[9px] font-black text-red-600 uppercase tracking-widest italic">{{ form.errors.file }}</span>
                 </div>
 
-                <div v-if="flashError" class="flex flex-col gap-2 rounded-lg bg-destructive/10 p-4 text-xs text-destructive border border-destructive/20 max-h-[200px] overflow-y-auto">
-                    <div class="flex items-center gap-2 font-semibold">
+                <div v-if="flashError && !showErrorModal" class="flex flex-col gap-3 rounded-2xl bg-red-50 p-5 text-red-600 border border-red-100 max-h-[160px] overflow-y-auto animate-in fade-in duration-300">
+                    <div class="flex items-center gap-3 font-black text-[10px] uppercase tracking-widest italic">
                         <AlertCircle class="h-4 w-4 shrink-0" />
-                        <span>Upload Failed</span>
+                        <span>Payload Exception Detected</span>
                     </div>
-                    <p class="break-all leading-relaxed whitespace-pre-wrap">{{ flashError }}</p>
-                    <p class="mt-1 text-[10px] opacity-80">Please check your file format and try again. Use the template provided above.</p>
+                    <p class="text-[9px] font-black uppercase tracking-widest leading-relaxed opacity-80 italic">{{ flashError }}</p>
                 </div>
 
-                <div v-if="form.wasSuccessful && !flashError" class="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-600">
-                    <CheckCircle2 class="h-4 w-4" />
-                    <span>File uploaded successfully!</span>
+                <div v-if="form.wasSuccessful && !flashError" class="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-emerald-600 animate-in slide-in-from-top-2 duration-300 border border-emerald-100">
+                    <CheckCircle2 class="h-5 w-5 shrink-0" />
+                    <span class="text-[10px] font-black uppercase tracking-widest italic">PAYLOAD_INGESTED_SUCCESSFULLY</span>
                 </div>
             </div>
 
-            <DialogFooter>
-                <Button variant="outline" @click="closeModal" :disabled="form.processing">Cancel</Button>
-                <Button @click="submit" :disabled="!form.file || form.processing">
-                    <template v-if="form.processing">Uploading...</template>
-                    <template v-else>Start Upload</template>
+            <div class="p-8 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-4">
+                <Button variant="ghost" @click="closeModal" :disabled="form.processing" class="h-12 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all">ABORT</Button>
+                <Button @click="submit" :disabled="!form.file || form.processing" class="h-12 px-10 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/10 transition-all border-0">
+                    <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                    <Upload v-else class="mr-2 h-4 w-4" />
+                    INITIATE_INGEST
                 </Button>
-            </DialogFooter>
+            </div>
         </DialogContent>
     </Dialog>
 
     <!-- Detailed Error Modal -->
     <Dialog :open="showErrorModal" @update:open="showErrorModal = $event">
-        <DialogContent class="sm:max-w-[550px]">
-            <DialogHeader>
-                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-4">
-                    <AlertCircle class="h-6 w-6 text-destructive" />
+        <DialogContent class="sm:max-w-[580px] rounded-[3rem] border-red-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div class="bg-red-600 px-10 py-8 text-white">
+                <div class="flex items-center gap-5">
+                    <div class="h-16 w-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
+                        <AlertCircle class="h-10 w-10 text-white" />
+                    </div>
+                    <div>
+                        <DialogTitle class="text-2xl font-black uppercase italic tracking-tight">Logical Fault Detected</DialogTitle>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] mt-1 italic opacity-80">Payload Validation Breach</p>
+                    </div>
                 </div>
-                <DialogTitle class="text-xl text-destructive">Invalid CSV Format</DialogTitle>
-                <DialogDescription class="text-base">
-                    We encountered some issues with your uploaded file. Please review the errors below.
-                </DialogDescription>
-            </DialogHeader>
-
-            <div class="mt-4 rounded-lg bg-muted p-4 border max-h-[300px] overflow-y-auto">
-                <p class="text-sm font-medium text-foreground mb-2">Error Details:</p>
-                <p class="text-sm text-destructive break-all leading-relaxed whitespace-pre-wrap">
-                    {{ flashError }}
-                </p>
             </div>
 
-            <div class="mt-6 flex flex-col gap-3">
-                <div class="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <FileText class="h-5 w-5 text-primary shrink-0" />
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium">Quick Tip</p>
-                        <p class="text-xs text-muted-foreground">Download our template to ensure your columns match exactly what the system expects.</p>
+            <div class="p-10 space-y-8">
+                <p class="text-sm font-black text-slate-500 uppercase tracking-widest leading-relaxed italic opacity-80 px-2">
+                    THE SUBMITTED MANIFEST CONTAINS STRUCTURAL INCONSISTENCIES THAT COMPROMISE REGISTRY INTEGRITY. REVIEW THE EXCEPTIONS BELOW:
+                </p>
+
+                <div class="rounded-[2rem] bg-slate-50 p-8 border border-slate-100 max-h-[300px] overflow-y-auto shadow-inner">
+                    <p class="text-[9px] font-black text-red-600 uppercase tracking-widest leading-loose italic whitespace-pre-wrap">
+                        {{ flashError }}
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-5 rounded-[2rem] border border-blue-100 bg-blue-50/30 p-6 group transition-all hover:bg-blue-50/50">
+                    <div class="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                        <FileText class="h-6 w-6" />
                     </div>
-                    <Button variant="outline" size="sm" as-child class="shrink-0">
-                        <a href="/students/template/download" download>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">Corrective Action</p>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 italic leading-relaxed">RE-ALIGNE PAYLOAD AGAINST THE OFFICIAL MANIFEST HANDLE FOR SEAMLESS INTEGRATION.</p>
+                    </div>
+                    <Button variant="outline" size="sm" as-child class="h-11 px-5 rounded-xl border-blue-200 bg-white font-black text-[9px] uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all">
+                        <a href="/students/template/download" download class="flex items-center">
                             <Download class="mr-2 h-4 w-4" />
-                            Get Template
+                            MANIFEST_REF
                         </a>
                     </Button>
                 </div>
-            </div>
 
-            <DialogFooter class="mt-6">
-                <Button @click="showErrorModal = false" class="w-full sm:w-auto">
-                    I'll Fix and Try Again
+                <Button @click="showErrorModal = false" class="w-full h-14 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic">
+                    RECALIBRATE & RETRY
                 </Button>
-            </DialogFooter>
+            </div>
         </DialogContent>
     </Dialog>
 </template>

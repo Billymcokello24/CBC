@@ -166,3 +166,387 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE-RESPONSIVE OVERRIDES
+   Global responsive rules for small screens (<768px)
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Layout & Spacing ──────────────────────────────── */
+@media (max-width: 767px) {
+    /* Tighten main content area padding */
+    [data-slot="sidebar-wrapper"] .mx-auto.w-full.p-6 {
+        padding: 0.75rem;
+    }
+    main.flex-1.p-4 {
+        padding: 0.75rem;
+    }
+
+    /* Reduce gap on stat grids */
+    .grid.gap-6 {
+        gap: 0.75rem;
+    }
+    .grid.gap-4 {
+        gap: 0.5rem;
+    }
+    .space-y-8 > * + * {
+        margin-top: 1.25rem;
+    }
+    .space-y-6 > * + * {
+        margin-top: 1rem;
+    }
+
+    /* Page container max-width overrides */
+    .max-w-\[1600px\] {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Full-width stat cards on small screens */
+    .grid.sm\:grid-cols-2,
+    .grid.lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid.lg\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    .grid.lg\:grid-cols-12 {
+        grid-template-columns: 1fr;
+    }
+    .lg\:col-span-7,
+    .lg\:col-span-5,
+    .lg\:col-span-8,
+    .lg\:col-span-4,
+    .lg\:col-span-2,
+    .lg\:col-span-12,
+    .xl\:col-span-7,
+    .xl\:col-span-5,
+    .xl\:col-span-8,
+    .xl\:col-span-4 {
+        grid-column: span 1 / span 1;
+    }
+}
+
+/* ── Typography — smaller on mobile ────────────────── */
+@media (max-width: 767px) {
+    h1, .text-3xl {
+        font-size: 1.25rem !important;
+        line-height: 1.75rem !important;
+    }
+    h2, .text-2xl {
+        font-size: 1.125rem !important;
+        line-height: 1.5rem !important;
+    }
+    h3, .text-xl {
+        font-size: 1rem !important;
+        line-height: 1.375rem !important;
+    }
+    .text-lg {
+        font-size: 0.875rem !important;
+        line-height: 1.25rem !important;
+    }
+    .text-base {
+        font-size: 0.8125rem !important;
+    }
+    .text-sm {
+        font-size: 0.75rem !important;
+    }
+    .text-xs {
+        font-size: 0.6875rem !important;
+    }
+    .text-\[15px\] {
+        font-size: 0.75rem !important;
+    }
+    .text-\[10px\] {
+        font-size: 8px !important;
+    }
+    .text-\[11px\] {
+        font-size: 9px !important;
+    }
+    .text-\[9px\] {
+        font-size: 7px !important;
+    }
+    .text-\[8px\] {
+        font-size: 7px !important;
+    }
+}
+
+/* ── Cards & Panels ────────────────────────────────── */
+@media (max-width: 767px) {
+    .rounded-3xl {
+        border-radius: 1rem;
+    }
+    .rounded-2xl {
+        border-radius: 0.75rem;
+    }
+
+    /* Tighter card padding */
+    .p-6 {
+        padding: 0.875rem;
+    }
+    .p-5 {
+        padding: 0.75rem;
+    }
+    .px-6 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+    .py-5 {
+        padding-top: 0.625rem;
+        padding-bottom: 0.625rem;
+    }
+    .px-10 {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+
+    /* Stat card icon containers */
+    .h-12.w-12 {
+        height: 2.25rem;
+        width: 2.25rem;
+    }
+    .h-10.w-10 {
+        height: 2rem;
+        width: 2rem;
+    }
+    .h-16.w-16 {
+        height: 3rem;
+        width: 3rem;
+    }
+}
+
+/* ── Header — compact on mobile ────────────────────── */
+@media (max-width: 767px) {
+    /* Shrink header height */
+    header .flex.h-16 {
+        height: 3rem;
+    }
+
+    /* Hide search on very small screens, show icon instead */
+    header .flex.flex-1.items-center.justify-center {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    header .relative.w-full.max-w-2xl {
+        max-width: 100%;
+    }
+    header input {
+        height: 2.25rem;
+        font-size: 0.6875rem;
+    }
+    header kbd {
+        display: none !important;
+    }
+
+    /* Smaller header action buttons */
+    header .h-10.w-10 {
+        height: 2rem;
+        width: 2rem;
+    }
+    header .h-10.w-10 svg {
+        height: 1rem;
+        width: 1rem;
+    }
+    header .h-11 {
+        height: 2.25rem;
+    }
+    header .h-8.w-8 {
+        height: 1.5rem;
+        width: 1.5rem;
+    }
+}
+
+/* ── Tables — horizontal scroll + compact ──────────── */
+@media (max-width: 767px) {
+    table {
+        font-size: 0.6875rem;
+    }
+    table th,
+    table td {
+        padding: 0.5rem 0.625rem;
+    }
+    table th {
+        font-size: 8px;
+    }
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ── Buttons — touch-friendly ──────────────────────── */
+@media (max-width: 767px) {
+    button, .btn, [role="button"] {
+        min-height: 2rem;
+    }
+    .h-12 {
+        height: 2.5rem;
+    }
+    .h-14 {
+        height: 2.75rem;
+    }
+
+    /* Smaller action buttons text */
+    .font-black.text-\[10px\] {
+        font-size: 8px !important;
+    }
+    .tracking-widest {
+        letter-spacing: 0.05em;
+    }
+    .tracking-\[0\.2em\] {
+        letter-spacing: 0.1em;
+    }
+    .tracking-\[0\.3em\] {
+        letter-spacing: 0.1em;
+    }
+}
+
+/* ── Folder grid on mobile — 2 cols ────────────────── */
+@media (max-width: 767px) {
+    .grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid.xl\:grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .grid.sm\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Modals / Dialogs — full width on mobile ───────── */
+@media (max-width: 767px) {
+    [role="dialog"] {
+        max-width: calc(100vw - 1rem) !important;
+        margin: 0.5rem;
+        border-radius: 1rem !important;
+    }
+    [role="dialog"] .rounded-\[2rem\] {
+        border-radius: 1rem !important;
+    }
+    [role="dialog"] .px-10 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    [role="dialog"] .pt-10 {
+        padding-top: 1.25rem;
+    }
+    [role="dialog"] .pb-10 {
+        padding-bottom: 1.25rem;
+    }
+}
+
+/* ── Breadcrumbs — smaller on mobile ───────────────── */
+@media (max-width: 767px) {
+    .mb-6.flex.items-center.gap-2.text-\[10px\] {
+        margin-bottom: 0.5rem;
+        gap: 0.25rem;
+        font-size: 7px;
+    }
+}
+
+/* ── Badges — compact ─────────────────────────────── */
+@media (max-width: 767px) {
+    .inline-flex, [data-slot="badge"] {
+        font-size: 0.5625rem;
+    }
+    .h-6 {
+        height: 1.25rem;
+    }
+    .h-7 {
+        height: 1.375rem;
+    }
+    .h-5 {
+        height: 1.125rem;
+    }
+}
+
+/* ── Filter Bars — stack vertically ────────────────── */
+@media (max-width: 767px) {
+    .md\:grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    select {
+        height: 2.5rem !important;
+        font-size: 9px !important;
+    }
+    .h-11 {
+        height: 2.5rem;
+    }
+}
+
+/* ── Attendance bar chart ──────────────────────────── */
+@media (max-width: 767px) {
+    .h-64.flex.items-end {
+        height: 10rem;
+    }
+}
+
+/* ── Mobile sidebar sheet refinements ──────────────── */
+@media (max-width: 767px) {
+    [data-sidebar="sidebar"] {
+        font-size: 0.8125rem;
+    }
+    [data-sidebar="sidebar"] .text-sm {
+        font-size: 0.75rem;
+    }
+    [data-sidebar="sidebar"] .text-xs {
+        font-size: 0.6875rem;
+    }
+    [data-sidebar="sidebar"] .h-5.w-5 {
+        height: 1rem;
+        width: 1rem;
+    }
+    [data-sidebar="sidebar"] .py-6 {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    [data-sidebar="sidebar"] .px-6 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    [data-sidebar="sidebar"] .h-20.w-20 {
+        height: 3.5rem;
+        width: 3.5rem;
+    }
+}
+
+/* ── Pagination — compact on mobile ────────────────── */
+@media (max-width: 767px) {
+    .h-10.w-10.rounded-xl.p-0 {
+        height: 2rem;
+        width: 2rem;
+    }
+    .flex.items-center.gap-1 button {
+        height: 2rem;
+        width: 2rem;
+        font-size: 0.625rem;
+    }
+}
+
+/* ── Gradient hero cards (class teacher / HOD) ─────── */
+@media (max-width: 767px) {
+    .grid-cols-3.gap-4 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.375rem;
+    }
+    .grid-cols-3.gap-4 .text-xl {
+        font-size: 0.875rem !important;
+    }
+    .grid-cols-3.gap-4 .p-4 {
+        padding: 0.5rem;
+    }
+}
+
+/* ── Dropdown menus — wider on mobile ──────────────── */
+@media (max-width: 767px) {
+    [role="menu"] {
+        min-width: 10rem;
+    }
+}
+
+/* ── Form elements — full-width on mobile ──────────── */
+@media (max-width: 767px) {
+    .grid-cols-2.gap-4 {
+        grid-template-columns: 1fr;
+    }
+}

@@ -215,24 +215,25 @@ const getStatusIcon = (status: string) => {
             </div>
         </div>
 
-        <div class="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
+        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
             <!-- Page Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-foreground">Schemes of Work</h1>
-                    <p class="text-[15px] text-muted-foreground">
-                        Manage academic instructional schedules and lesson sequences for the current term.
-                    </p>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                        <Calendar class="h-8 w-8 text-blue-600" />
+                        Schemes of Work
+                    </h1>
+                    <p class="text-xs sm:text-[15px] font-medium text-slate-500">Academic instructional sequences and lesson planning.</p>
                 </div>
                 
-                <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted" @click="showFilters = !showFilters">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-bold text-xs uppercase tracking-widest hover:bg-muted transition-all" @click="showFilters = !showFilters">
                         <Filter class="mr-2 h-4 w-4 opacity-70" />
-                        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+                        Filters
                     </Button>
                     <Button
                         @click="openCreateModal"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all active:scale-95"
+                        class="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white shadow-lg uppercase tracking-widest transition-all active:scale-95"
                     >
                         <Plus class="mr-2 h-4 w-4" />
                         New Scheme
@@ -241,63 +242,39 @@ const getStatusIcon = (status: string) => {
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between group hover:shadow-md transition-all duration-300">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Total Schemes</p>
-                        <h3 class="text-2xl font-bold text-foreground tracking-tight">{{ filteredSchemes.length }}</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                <div v-for="stat in [
+                    { label: 'Total', value: filteredSchemes.length, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+                    { label: 'Pending', value: filteredSchemes.filter(s => s.status === 'submitted').length, icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Approved', value: filteredSchemes.filter(s => s.status === 'approved').length, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                    { label: 'Avg Sched', value: '5 L/Wk', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' }
+                ]" :key="stat.label" class="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm dark:border-white/5 group hover:border-blue-500/50 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-widest">{{ stat.label }}</p>
+                        <div :class="['h-7 w-7 sm:h-9 sm:w-9 rounded-lg flex items-center justify-center transition-colors', stat.bg, stat.color]">
+                            <component :is="stat.icon" class="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                        </div>
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform duration-500">
-                        <FileText class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between group hover:shadow-md transition-all duration-300">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Pending Review</p>
-                        <h3 class="text-2xl font-bold text-foreground tracking-tight">{{ filteredSchemes.filter(s => s.status === 'submitted').length }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform duration-500">
-                        <Clock class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between group hover:shadow-md transition-all duration-300">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Approved</p>
-                        <h3 class="text-2xl font-bold text-foreground tracking-tight">{{ filteredSchemes.filter(s => s.status === 'approved').length }}</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform duration-500">
-                        <CheckCircle2 class="h-6 w-6" />
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex items-center justify-between group hover:shadow-md transition-all duration-300">
-                    <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Avg Schedule</p>
-                        <h3 class="text-2xl font-bold text-foreground tracking-tight">5 L/Wk</h3>
-                    </div>
-                    <div class="h-12 w-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-500">
-                        <TrendingUp class="h-6 w-6" />
-                    </div>
+                    <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums tracking-tight">{{ stat.value }}</h3>
                 </div>
             </div>
 
             <!-- Schemes Table -->
-            <div class="rounded-[2rem] border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden transition-all duration-500">
+            <!-- Schemes Table Container -->
+            <div class="rounded-2xl sm:rounded-[2rem] border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden transition-all duration-500">
                 <!-- Toolbar -->
-                <div class="p-6 border-b border-border/50 space-y-4 bg-muted/5">
-                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
-                        <div class="relative w-full md:max-w-md group">
+                <div class="p-4 sm:p-6 border-b border-border/50 space-y-4 bg-muted/5">
+                    <div class="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                        <div class="relative w-full lg:max-w-md group">
                             <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-blue-600" />
-                            <Input v-model="searchQuery" placeholder="Search schemes by title or subject..." class="pl-10 h-11 bg-background border-border/60 rounded-xl focus:ring-4 focus:ring-blue-600/5 transition-all text-sm shadow-sm" />
+                            <Input v-model="searchQuery" placeholder="Search schemes..." class="pl-10 h-11 bg-background border-border/60 rounded-xl focus:ring-4 focus:ring-blue-600/5 transition-all text-sm shadow-sm" />
                         </div>
                         
-                        <div class="flex items-center gap-2 w-full md:w-auto">
+                        <div class="flex items-center gap-2 w-full lg:w-auto">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="outline" class="h-11 px-5 rounded-xl border-border font-bold text-[10px] uppercase tracking-widest bg-background hover:bg-muted/50 shadow-sm">
-                                        <ListFilter class="mr-2 h-4 w-4 opacity-70" /> Batch Actions <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
+                                    <Button variant="outline" class="h-11 flex-1 lg:flex-none px-5 rounded-xl border-border font-bold text-[10px] uppercase tracking-widest bg-background hover:bg-muted/50 shadow-sm transition-all">
+                                        <ListFilter class="mr-2 h-4 w-4 opacity-70" /> Actions <ChevronDown class="ml-2 h-4 w-4 opacity-50" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border shadow-2xl">
@@ -310,24 +287,24 @@ const getStatusIcon = (status: string) => {
                     </div>
 
                     <!-- Filters Section -->
-                    <div v-if="showFilters" class="grid gap-4 pt-2 md:grid-cols-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div v-if="showFilters" class="grid gap-3 pt-2 grid-cols-1 sm:grid-cols-3 animate-in fade-in slide-in-from-top-2 duration-300">
                         <div class="space-y-1.5">
-                             <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Subject</Label>
-                             <select v-model="selectedSubject" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                             <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Subject</Label>
+                             <select v-model="selectedSubject" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-[11px] font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
                                 <option value="all">All Subjects</option>
                                 <option v-for="subject in subjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
                              </select>
                         </div>
                         <div class="space-y-1.5">
-                             <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Grade Level</Label>
-                             <select v-model="selectedGrade" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                             <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Grade</Label>
+                             <select v-model="selectedGrade" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-[11px] font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
                                 <option value="all">All Grades</option>
                                 <option v-for="grade in grades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
                              </select>
                         </div>
                         <div class="space-y-1.5">
-                             <Label class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground ml-1">Academic Term</Label>
-                             <select v-model="selectedTerm" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-xs font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
+                             <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Term</Label>
+                             <select v-model="selectedTerm" class="h-11 w-full rounded-xl border-border/60 bg-background px-4 text-[11px] font-bold uppercase tracking-wider focus:ring-4 focus:ring-blue-600/5 outline-none appearance-none cursor-pointer hover:border-blue-500/30 transition-all shadow-sm">
                                 <option value="all">All Terms</option>
                                 <option v-for="term in terms" :key="term.id" :value="term.id">{{ term.name }}</option>
                              </select>
@@ -336,15 +313,15 @@ const getStatusIcon = (status: string) => {
                 </div>
 
                 <!-- Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto scrollbar-none">
+                    <table class="w-full text-left border-collapse min-w-[700px] sm:min-w-0">
                         <thead>
                             <tr class="bg-muted/5 text-muted-foreground border-b border-border/40">
-                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Scheme Details</th>
-                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest">Placement & Term</th>
-                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center">Schedule</th>
-                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-center">Status</th>
-                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-right">Actions</th>
+                                <th class="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest">Scheme Details</th>
+                                <th class="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest">Placement</th>
+                                <th class="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Schedule</th>
+                                <th class="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Status</th>
+                                <th class="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/20 uppercase">
@@ -354,55 +331,55 @@ const getStatusIcon = (status: string) => {
                                 class="hover:bg-muted/10 transition-all group cursor-pointer"
                                 @click="router.visit(`/curriculum/planner/schemes/${scheme.id}`)"
                             >
-                                <td class="px-6 py-5">
-                                    <div class="flex items-center gap-4">
-                                        <div class="h-11 w-11 flex-shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30">
-                                            <FileText class="h-5.5 w-5.5" />
+                                <td class="px-4 sm:px-6 py-5">
+                                    <div class="flex items-center gap-3 sm:gap-4">
+                                        <div class="h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-600/30">
+                                            <FileText class="h-5 w-5 sm:h-5.5 sm:w-5.5" />
                                         </div>
-                                        <div class="flex flex-col gap-0.5">
-                                            <span class="text-sm font-bold text-foreground tracking-tight group-hover:text-blue-600 transition-colors uppercase leading-none">{{ scheme.title }}</span>
-                                            <div class="flex items-center gap-2 mt-1">
-                                                <Badge variant="outline" class="text-[8px] font-bold bg-muted/50 rounded-md py-0 px-2 uppercase tracking-widest border-border/50">{{ scheme.subject?.name }}</Badge>
-                                                <span class="text-[9px] text-muted-foreground font-medium italic opacity-60 normal-case">By {{ scheme.prepared_by_user?.name || 'Academic Dept' }}</span>
+                                        <div class="flex flex-col gap-0.5 min-w-0">
+                                            <span class="text-[13px] sm:text-sm font-black text-foreground tracking-tight group-hover:text-blue-600 transition-colors uppercase truncate leading-none">{{ scheme.title }}</span>
+                                            <div class="flex items-center gap-2 mt-1.5 overflow-hidden">
+                                                <Badge variant="outline" class="text-[8px] font-black bg-muted/30 rounded-md py-0 px-2 uppercase tracking-widest border-border/30 shrink-0">{{ scheme.subject?.name }}</Badge>
+                                                <span class="text-[9px] text-muted-foreground font-bold italic opacity-60 normal-case truncate">By {{ scheme.prepared_by_user?.name || 'Academic Dept' }}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
+                                <td class="px-4 sm:px-6 py-5">
                                     <div class="flex flex-col gap-1">
-                                        <div class="flex items-center gap-2 text-[12px] font-bold text-foreground leading-none">
+                                        <div class="flex items-center gap-2 text-[11px] sm:text-[12px] font-black text-foreground leading-none">
                                             <GraduationCap class="h-3.5 w-3.5 text-blue-500/70" />
-                                            {{ scheme.grade_level?.name }}
+                                            {{ scheme.grade_level?.short_name || scheme.grade_level?.name }}
                                         </div>
-                                        <div class="flex items-center gap-2 text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 ml-0.5 leading-none mt-1">
+                                        <div class="flex items-center gap-2 text-[9px] font-black text-muted-foreground uppercase tracking-widest opacity-60 ml-0.5 leading-none mt-1.5">
                                             <Calendar class="h-3 w-3" />
                                             {{ scheme.academic_term?.name || 'Yearly' }}
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5 text-center">
+                                <td class="px-4 sm:px-6 py-5 text-center">
                                     <div class="flex flex-col items-center">
-                                        <span class="text-[13px] font-bold text-foreground tabular-nums leading-none">{{ scheme.total_weeks }} Wks</span>
-                                        <span class="text-[9px] text-muted-foreground font-bold tracking-tight uppercase opacity-60 leading-none mt-1.5">{{ scheme.lessons_per_week }} L/Wk</span>
+                                        <span class="text-xs sm:text-[13px] font-black text-foreground tabular-nums leading-none">{{ scheme.total_weeks }} Wks</span>
+                                        <span class="text-[9px] text-muted-foreground font-black tracking-tight uppercase opacity-60 leading-none mt-1.5">{{ scheme.lessons_per_week }} L/Wk</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
+                                <td class="px-4 sm:px-6 py-5">
                                      <div class="flex justify-center">
-                                        <Badge variant="outline" :class="[getStatusVariant(scheme.status), 'rounded-lg px-3 py-1 text-[9px] font-bold uppercase tracking-widest border transition-all group-hover:scale-105 flex items-center gap-1.5']">
-                                             <component :is="getStatusIcon(scheme.status)" class="h-3.5 w-3.5" />
-                                             {{ scheme.status }}
+                                        <Badge variant="outline" :class="[getStatusVariant(scheme.status), 'rounded-lg px-2 sm:px-3 py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-widest border transition-all group-hover:scale-105 flex items-center gap-1.5']">
+                                             <component :is="getStatusIcon(scheme.status)" class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                             <span class="hidden sm:inline">{{ scheme.status }}</span>
                                          </Badge>
                                      </div>
                                 </td>
-                                <td class="px-6 py-5 text-right">
-                                    <div class="flex items-center justify-end gap-2">
+                                <td class="px-4 sm:px-6 py-5 text-right">
+                                    <div class="flex items-center justify-end gap-1 sm:gap-2">
                                         <Button variant="ghost" size="icon" @click.stop="router.visit(`/curriculum/planner/schemes/${scheme.id}`)" class="h-9 w-9 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all text-muted-foreground">
-                                            <Eye class="h-4.5 w-4.5" />
+                                            <Eye class="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                                         </Button>
                                         
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child @click.stop>
-                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted font-black transition-all"><MoreHorizontal class="h-4.5 w-4.5" /></Button>
+                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted font-black transition-all"><MoreHorizontal class="h-4 w-4 sm:h-4.5 sm:w-4.5" /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-border shadow-2xl">
                                                 <DropdownMenuItem @click="router.visit(`/curriculum/planner/schemes/${scheme.id}`)" class="rounded-lg px-3 py-2 text-[10px] font-bold uppercase tracking-wider group">

@@ -116,118 +116,121 @@ const uploadBulkLearners = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-8 p-6 max-w-[1600px] mx-auto animate-in fade-in duration-700">
             <!-- Header section -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-5">
-                    <Button variant="outline" size="icon" as-child class="h-11 w-11 rounded-2xl border-border bg-card shadow-sm hover:bg-muted transition-all">
-                        <Link href="/students"><ArrowLeft class="h-5 w-5 text-muted-foreground" /></Link>
+            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-1">
+                <div class="flex items-start sm:items-center gap-4 sm:gap-5">
+                    <Button variant="outline" size="icon" as-child class="h-10 w-10 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 transition-all shrink-0">
+                        <Link href="/students"><ArrowLeft class="h-5 w-5 text-slate-400" /></Link>
                     </Button>
                     <div>
-                        <div class="flex items-center gap-3">
-                            <h1 class="text-3xl font-bold tracking-tight text-foreground">Enroll New Learner</h1>
-                            <Badge variant="outline" class="rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-indigo-50 text-indigo-600 border-indigo-100">
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase italic">Enrollment</h1>
+                            <Badge variant="outline" class="rounded-lg px-2 py-0.5 text-[8px] sm:text-[9px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border-blue-100">
                                 Registration
                             </Badge>
                         </div>
-                        <p class="text-sm font-medium text-muted-foreground mt-1">Provide the necessary details to register a new student in the system.</p>
+                        <p class="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mt-1 italic opacity-70">Establish New Learner Identity</p>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-3 bg-muted/30 p-1.5 rounded-2xl border border-border/50">
-                    <div class="flex items-center gap-2 px-3 py-1.5 bg-background rounded-xl border border-border shadow-xs">
-                        <div class="h-5 w-5 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">1</div>
-                        <span class="text-xs font-bold text-foreground">Form Entry</span>
+                <div class="flex items-center gap-2 sm:gap-3 bg-slate-50/50 p-1.5 rounded-2xl border border-slate-100/50 w-full md:w-auto">
+                    <div class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+                        <div class="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-black text-white">1</div>
+                        <span class="text-[9px] font-black text-slate-900 uppercase tracking-widest">Entry</span>
                     </div>
-                    <div class="flex items-center gap-2 px-3 py-1.5 opacity-50">
-                        <div class="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground">2</div>
-                        <span class="text-xs font-bold text-muted-foreground">Review</span>
+                    <div class="flex-1 md:flex-none flex items-center justify-center gap-2 px-3 py-2 opacity-40">
+                        <div class="h-5 w-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500">2</div>
+                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Review</span>
                     </div>
                 </div>
             </div>
 
             <!-- Bulk Hub -->
-            <div class="rounded-2xl border border-border bg-card p-6 shadow-sm overflow-hidden relative group transition-all hover:shadow-md">
-                <div class="absolute -right-10 -bottom-10 opacity-[0.03] group-hover:scale-110 transition-transform duration-1000 text-indigo-600">
+            <div class="rounded-3xl border border-slate-100 bg-white p-6 sm:p-8 shadow-sm overflow-hidden relative group transition-all hover:border-blue-100">
+                <div class="absolute -right-10 -bottom-10 opacity-5 group-hover:scale-110 transition-transform duration-1000 text-blue-600">
                     <Upload class="h-48 w-48" />
                 </div>
-                <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between relative z-10">
-                    <div class="flex items-center gap-5">
-                        <div class="h-14 w-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 shadow-sm border border-indigo-100/50">
-                            <Upload class="h-7 w-7" />
+                <div class="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between relative z-10">
+                    <div class="flex items-start sm:items-center gap-5">
+                        <div class="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/50 shadow-inner">
+                            <Upload class="h-6 w-6 sm:h-7 sm:w-7" />
                         </div>
                         <div>
-                            <h2 class="text-lg font-bold text-foreground flex items-center gap-2">
-                                Bulk Enrollment
-                                <Badge variant="secondary" class="text-[9px] font-bold uppercase tracking-tight bg-emerald-50 text-emerald-600 border-emerald-100/50">Efficient</Badge>
+                            <h2 class="text-lg font-black text-slate-900 flex items-center gap-2 uppercase italic">
+                                Bulk Ingest
+                                <Badge variant="secondary" class="text-[8px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border-emerald-100/50">High Load</Badge>
                             </h2>
-                            <p class="text-sm text-muted-foreground mt-1 max-w-md">Save time by uploading multiple learner records at once using our standardized CSV template.</p>
+                            <p class="text-xs text-slate-400 mt-1.5 max-w-sm font-black uppercase tracking-tight italic opacity-60 leading-relaxed">Modernize enrollment through CSV serialization</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <Button variant="outline" class="h-11 border-border font-bold px-6 rounded-xl bg-background hover:bg-muted transition-all" as-child>
+                    <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                        <Button variant="outline" class="w-full sm:w-auto h-12 border-slate-200 font-black text-[9px] uppercase tracking-[0.2em] px-6 rounded-xl bg-white hover:bg-slate-50 transition-all italic" as-child>
                             <a href="/students/template/download">
-                                <Download class="mr-2 h-4 w-4 text-emerald-600" />
-                                Download Template
+                                <Download class="mr-2 h-4 w-4 text-emerald-500" />
+                                Template
                             </a>
                         </Button>
-                        <Button class="h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 rounded-xl shadow-lg shadow-indigo-200 transition-all border-0" @click="bulkUploadOpen = true">
+                        <Button class="w-full sm:w-auto h-12 bg-slate-900 hover:bg-slate-800 text-white font-black text-[10px] uppercase tracking-[0.2em] px-8 rounded-xl shadow-xl shadow-slate-900/10 transition-all border-0 italic" @click="bulkUploadOpen = true">
                             <Upload class="mr-2 h-4 w-4" />
-                            Upload CSV File
+                            Upload Data
                         </Button>
                     </div>
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="grid gap-8 pb-12">
+            <form @submit.prevent="submit" class="grid gap-6 sm:gap-8 pb-12">
                 <!-- Data Forms Split -->
-                <div class="grid gap-8 lg:grid-cols-12">
+                <div class="grid gap-6 sm:gap-8 lg:grid-cols-12">
                     <!-- Left: Core Info -->
-                    <div class="lg:col-span-8 space-y-8">
-                        <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                            <div class="border-b border-border/50 bg-muted/20 px-8 py-5 flex items-center justify-between">
+                    <div class="lg:col-span-8 space-y-6 sm:gap-8">
+                        <div class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:border-blue-100">
+                             <div class="border-b border-slate-50 bg-slate-50/30 px-6 sm:px-8 py-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
-                                    <h2 class="text-base font-bold text-foreground flex items-center gap-2">
-                                        <GraduationCap class="h-5 w-5 text-indigo-600" />
-                                        Learner Information
+                                    <h2 class="text-sm font-black text-slate-900 flex items-center gap-2 uppercase italic tracking-widest">
+                                        <GraduationCap class="h-5 w-5 text-blue-600" />
+                                        Biometric Identity
                                     </h2>
-                                    <p class="text-xs text-muted-foreground mt-0.5">Basic personal and identification details</p>
+                                    <p class="text-[9px] text-slate-400 mt-1 font-black uppercase tracking-widest italic opacity-60">Primary Demographic Payload</p>
                                 </div>
-                                <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-4 self-end sm:self-auto">
                                     <ProfilePhotoUpload 
                                         v-model="form.photo" 
                                         :error="form.errors.photo"
                                     />
-                                    <Badge variant="outline" class="text-[10px] font-bold text-muted-foreground/60 border-border uppercase tracking-tight h-5 px-2 bg-muted/30">Required</Badge>
+                                    <Badge variant="outline" class="text-[8px] font-black text-slate-400 border-slate-200 uppercase tracking-widest h-5 px-2 bg-slate-50">Required</Badge>
                                 </div>
                             </div>
-                            <div class="p-8">
+                            <div class="p-6 sm:p-8">
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <Label for="first_name" class="text-xs font-semibold text-foreground ml-1">First Name</Label>
-                                        <Input id="first_name" v-model="form.first_name" placeholder="e.g. John" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-indigo-600/10 transition-all font-medium" required />
+                                        <Label for="first_name" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Legal First Name</Label>
+                                        <Input id="first_name" v-model="form.first_name" placeholder="E.G. JOHN" class="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 focus:bg-white transition-all font-black text-[11px] uppercase tracking-widest" required />
                                         <InputError :message="form.errors.first_name" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="last_name" class="text-xs font-semibold text-foreground ml-1">Last Name</Label>
-                                        <Input id="last_name" v-model="form.last_name" placeholder="e.g. Mwangi" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-indigo-600/10 transition-all font-medium" required />
+                                        <Label for="last_name" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Legal Last Name</Label>
+                                        <Input id="last_name" v-model="form.last_name" placeholder="E.G. MWANGI" class="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 focus:bg-white transition-all font-black text-[11px] uppercase tracking-widest" required />
                                         <InputError :message="form.errors.last_name" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="admission_number" class="text-xs font-semibold text-foreground ml-1">Admission Number</Label>
-                                        <Input id="admission_number" v-model="form.admission_number" placeholder="ADM-001" class="h-11 rounded-xl border-border bg-muted/20 px-4 focus:ring-2 focus:ring-indigo-600/10 transition-all font-bold uppercase tracking-tight" required />
+                                        <Label for="admission_number" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Registry Identifier</Label>
+                                        <Input id="admission_number" v-model="form.admission_number" placeholder="ADM-001" class="h-12 rounded-xl border-slate-200 bg-blue-50/30 px-4 focus:bg-white transition-all font-black text-[11px] uppercase tracking-widest text-blue-600 italic" required />
                                         <InputError :message="form.errors.admission_number" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="gender" class="text-xs font-semibold text-foreground ml-1">Gender</Label>
-                                        <select id="gender" v-model="form.gender" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 outline-none border transition-all appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat">
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
-                                        </select>
+                                        <Label for="gender" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Gender Bias</Label>
+                                        <div class="relative">
+                                            <select id="gender" v-model="form.gender" class="h-12 w-full rounded-xl border-slate-200 bg-slate-50/50 px-4 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none transition-all appearance-none cursor-pointer">
+                                                <option value="male">Male</option>
+                                                <option value="female">Female</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                            <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                        </div>
                                         <InputError :message="form.errors.gender" />
                                     </div>
                                     <div class="space-y-2 md:col-span-2">
-                                        <Label for="date_of_birth" class="text-xs font-semibold text-foreground ml-1">Date of Birth</Label>
-                                        <Input id="date_of_birth" v-model="form.date_of_birth" type="date" class="h-11 rounded-xl border-border bg-background px-4 focus:ring-2 focus:ring-indigo-600/10 transition-all font-medium" required />
+                                        <Label for="date_of_birth" class="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Birth Epoch</Label>
+                                        <Input id="date_of_birth" v-model="form.date_of_birth" type="date" class="h-12 rounded-xl border-slate-200 bg-slate-50/50 px-4 focus:bg-white transition-all font-black text-[11px] uppercase tracking-widest" required />
                                         <InputError :message="form.errors.date_of_birth" />
                                     </div>
                                 </div>
@@ -236,84 +239,87 @@ const uploadBulkLearners = () => {
                     </div>
 
                     <!-- Right: Placement -->
-                    <div class="lg:col-span-4 space-y-8">
-                        <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-                             <div class="border-b border-border/50 bg-muted/20 px-6 py-5">
-                                <h2 class="text-sm font-bold text-foreground flex items-center gap-2">
-                                    <GraduationCap class="h-5 w-5 text-indigo-600" />
-                                    School Placement
+                    <div class="lg:col-span-4 space-y-6 sm:space-y-8">
+                        <div class="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:border-blue-100">
+                             <div class="border-b border-slate-50 bg-slate-50/30 px-6 py-5">
+                                <h2 class="text-[11px] font-black text-slate-900 flex items-center gap-2 uppercase italic tracking-widest">
+                                    <GraduationCap class="h-5 w-5 text-blue-600" />
+                                    Placement Logic
                                 </h2>
                             </div>
-                            <div class="p-6 space-y-6">
+                            <div class="p-6 space-y-5">
                                 <div class="space-y-2">
-                                    <Label for="grade_id" class="text-xs font-semibold text-foreground ml-1">Grade Level</Label>
-                                    <select id="grade_id" v-model="form.grade_id" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                        <option value="">Select Grade</option>
-                                        <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">
-                                            {{ grade.name }}
-                                        </option>
-                                    </select>
+                                    <Label for="grade_id" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Academic Level</Label>
+                                    <div class="relative">
+                                        <select id="grade_id" v-model="form.grade_id" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer transition-all">
+                                            <option value="">Select Level</option>
+                                            <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">
+                                                {{ grade.name }}
+                                            </option>
+                                        </select>
+                                        <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="class_id" class="text-xs font-semibold text-foreground ml-1">Stream / Class</Label>
-                                    <select id="class_id" v-model="form.class_id" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 disabled:opacity-40 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all" :disabled="!form.grade_id">
-                                        <option value="">{{ form.grade_id ? 'Select Stream' : 'Grade Required' }}</option>
-                                        <option v-for="schoolClass in filteredClasses" :key="schoolClass.id" :value="String(schoolClass.id)">
-                                            {{ schoolClass.name }}{{ schoolClass.stream_name ? ` • ${schoolClass.stream_name}` : '' }}
-                                        </option>
-                                    </select>
+                                    <Label for="class_id" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Stream Context</Label>
+                                    <div class="relative">
+                                        <select id="class_id" v-model="form.class_id" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none disabled:opacity-40 appearance-none cursor-pointer transition-all" :disabled="!form.grade_id">
+                                            <option value="">{{ form.grade_id ? 'Select Stream' : 'Level Required' }}</option>
+                                            <option v-for="schoolClass in filteredClasses" :key="schoolClass.id" :value="String(schoolClass.id)">
+                                                {{ schoolClass.name }}{{ schoolClass.stream_name ? ` • ${schoolClass.stream_name}` : '' }}
+                                            </option>
+                                        </select>
+                                        <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
                                     <InputError :message="form.errors.class_id" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="county" class="text-xs font-semibold text-foreground ml-1">County of Origin</Label>
-                                    <select id="county" v-model="form.county" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                        <option value="">Select County</option>
-                                        <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
-                                    </select>
+                                    <Label for="county" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Regional Origin</Label>
+                                    <div class="relative">
+                                        <select id="county" v-model="form.county" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer transition-all">
+                                            <option value="">Select County</option>
+                                            <option v-for="county in counties" :key="county" :value="county">{{ county }}</option>
+                                        </select>
+                                        <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
                                     <InputError :message="form.errors.county" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label for="boarding_status" class="text-xs font-semibold text-foreground ml-1">Boarding Status</Label>
-                                    <select id="boarding_status" v-model="form.boarding_status" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                        <option value="day">Day Scholar</option>
-                                        <option value="boarding">Boarding Student</option>
-                                    </select>
+                                    <Label for="boarding_status" class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Residency</Label>
+                                    <div class="relative">
+                                        <select id="boarding_status" v-model="form.boarding_status" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer transition-all">
+                                            <option value="day">Day Scholar</option>
+                                            <option value="boarding">Boarding Hub</option>
+                                        </select>
+                                        <ChevronDown class="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                                    </div>
                                     <InputError :message="form.errors.boarding_status" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label for="status" class="text-xs font-semibold text-foreground ml-1">Registration Status</Label>
-                                    <select id="status" v-model="form.status" class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium focus:ring-2 focus:ring-indigo-600/10 appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23cbd5e1%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E')] bg-[length:18px] bg-[right_1rem_center] bg-no-repeat transition-all">
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="suspended">Suspended</option>
-                                    </select>
-                                    <InputError :message="form.errors.status" />
                                 </div>
                             </div>
                         </div>
 
-                         <div class="p-6 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-100 relative overflow-hidden group">
-                            <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                         <div class="p-6 rounded-3xl bg-slate-900 text-white shadow-xl shadow-slate-200 relative overflow-hidden group border border-slate-800">
+                            <div class="absolute -right-4 -top-4 opacity-5 group-hover:scale-110 transition-transform duration-700">
                                  <AlertTriangle class="h-20 w-20 text-white" />
                             </div>
-                            <h4 class="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-80">Registration Notice</h4>
-                            <p class="text-xs font-medium leading-relaxed italic">
-                                Please ensure all learner details are accurate. Admission numbers must be unique across the entire school system.
+                            <h4 class="text-[9px] font-black uppercase tracking-[0.3em] mb-4 text-blue-500 italic">Validation Guard</h4>
+                            <p class="text-[10px] font-bold leading-relaxed italic text-slate-400">
+                                Global uniqueness required for ADM-ID sequences. Verify biometric consistency before ingestion.
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Hub -->
-                <div class="flex flex-wrap items-center justify-between gap-6 pt-10 border-t border-border/60">
-                    <Button type="button" variant="ghost" class="text-muted-foreground hover:text-foreground font-bold px-8 h-12 rounded-xl transition-all" as-child>
-                        <Link href="/students">Cancel Enrollment</Link>
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pt-10 border-t border-slate-100 italic">
+                    <Button type="button" variant="ghost" class="w-full sm:w-auto text-slate-400 hover:text-slate-900 font-black text-[10px] uppercase tracking-widest h-12 px-8 rounded-xl transition-all" as-child>
+                        <Link href="/students">Abort Protocol</Link>
                     </Button>
-                    <div class="flex gap-4">
-                         <Button type="submit" :disabled="form.processing" class="h-12 px-10 rounded-xl bg-foreground text-background hover:bg-foreground/90 font-bold shadow-lg shadow-foreground/10 transition-all border-0">
+                    <div class="flex gap-4 w-full sm:w-auto">
+                         <Button type="submit" :disabled="form.processing" class="flex-1 sm:flex-none h-12 px-10 rounded-xl bg-blue-600 text-white hover:bg-blue-700 font-black text-[11px] uppercase tracking-widest shadow-xl shadow-blue-500/20 transition-all border-0">
                              <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
                              <Save v-else class="mr-2 h-4 w-4" />
-                             Enroll Learner
+                             Commit Payload
                          </Button>
                     </div>
                 </div>

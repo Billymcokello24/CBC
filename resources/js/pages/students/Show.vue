@@ -137,12 +137,16 @@ const getStatusColor = (status: string) => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="space-y-8 animate-in fade-in duration-500 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
             <!-- Header section -->
-            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-5">
-                    <Button variant="ghost" size="icon" as-child class="h-10 w-10 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100">
-                        <Link href="/students"><ArrowLeft class="h-5 w-5" /></Link>
-                    </Button>
-                    <div class="flex flex-col md:flex-row items-center gap-8 text-center md:text-left">
+            <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-1">
+                <div class="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+                    <div class="flex items-center gap-4 w-full md:w-auto">
+                        <Button variant="ghost" size="icon" as-child class="h-10 w-10 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-slate-100 sm:border-transparent hover:border-blue-100 shrink-0">
+                            <Link href="/students"><ArrowLeft class="h-5 w-5" /></Link>
+                        </Button>
+                        <h1 class="text-xl font-black tracking-tight text-slate-900 md:hidden truncate uppercase tracking-tighter">{{ learner.name }}</h1>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-center gap-6 md:gap-8 w-full">
                         <!-- Profile Photo -->
                         <div class="relative group">
                             <ProfilePhotoUpload 
@@ -150,102 +154,115 @@ const getStatusColor = (status: string) => {
                                 @uploaded="() => router.reload()"
                             >
                                 <template #default="{ isUploading }">
-                                    <div class="h-28 w-28 md:h-36 md:h-36 rounded-[2.5rem] overflow-hidden border-4 border-white dark:border-zinc-900 shadow-2xl bg-muted ring-1 ring-slate-200/50 dark:ring-white/5 relative transition-transform duration-500 group-hover:scale-[1.02]">
+                                    <div class="h-28 w-28 md:h-32 md:w-32 rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border-4 border-white shadow-xl bg-slate-50 ring-1 ring-slate-200/50 relative transition-transform duration-500 group-hover:scale-[1.05]">
                                         <img v-if="learner.photo_url" :src="learner.photo_url" class="h-full w-full object-cover" />
-                                        <div v-else class="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-500 to-blue-600 text-white text-4xl font-black">
-                                            {{ learner.name ? learner.name.charAt(0) : 'S' }}
+                                        <div v-else class="h-full w-full flex items-center justify-center bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-3xl font-black">
+                                            {{ learner.name ? learner.name.charAt(0).toUpperCase() : 'S' }}
                                         </div>
                                         <div class="absolute inset-0 bg-black/40 transition-opacity flex items-center justify-center cursor-pointer" :class="isUploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'">
-                                            <Loader2 v-if="isUploading" class="h-8 w-8 text-white animate-spin" />
-                                            <Camera v-else class="h-8 w-8 text-white" />
+                                            <Loader2 v-if="isUploading" class="h-6 w-6 text-white animate-spin" />
+                                            <Camera v-else class="h-6 w-6 text-white" />
                                         </div>
                                     </div>
                                 </template>
                             </ProfilePhotoUpload>
                         </div>
                         <div>
-                            <div class="flex items-center gap-3">
-                                <h1 class="text-3xl font-bold tracking-tight text-foreground">{{ learner.name }}</h1>
-                                <Badge :class="getStatusColor(learner.status)" class="rounded-lg px-3 py-1 text-[10px] font-bold uppercase tracking-wider border-0 shadow-sm">
+                            <div class="hidden md:flex items-center gap-3">
+                                <h1 class="text-3xl font-black tracking-tight text-slate-900 uppercase italic">{{ learner.name }}</h1>
+                                <Badge :class="getStatusColor(learner.status)" class="rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest border-0 shadow-lg shadow-blue-500/10">
                                     {{ learner.status }}
                                 </Badge>
                             </div>
-                            <div class="flex items-center gap-2 mt-2 text-sm font-medium text-muted-foreground">
-                                <span class="text-blue-600">{{ learner.class_name || 'Unassigned' }}</span>
-                                <span class="h-1 w-1 bg-border rounded-full"></span>
-                                <span>ID: {{ learner.admission_number || '--' }}</span>
-                                <span class="h-1 w-1 bg-border rounded-full"></span>
-                                <span>{{ learner.age }} Years Old</span>
+                            <h2 class="text-2xl font-black text-slate-900 md:hidden uppercase tracking-tight leading-tight">{{ learner.name }}</h2>
+                            
+                            <div class="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-1.5 mt-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <div class="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                    <GraduationCap class="h-3 w-3" />
+                                    {{ learner.class_name || 'UNASSIGNED' }}
+                                </div>
+                                <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg">
+                                    <Activity class="h-3 w-3" />
+                                    ID: {{ learner.admission_number || '--' }}
+                                </div>
+                                <div class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg">
+                                    <Calendar class="h-3 w-3" />
+                                    {{ learner.age }} YRS
+                                </div>
+                                <Badge md:hidden :class="getStatusColor(learner.status)" class="md:hidden rounded-lg px-2.5 py-1 text-[8px] font-black uppercase tracking-widest border-0">
+                                    {{ learner.status }}
+                                </Badge>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <Button as-child variant="outline" class="h-11 px-5 rounded-xl border-blue-100 bg-blue-50/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-700 font-semibold shadow-sm transition-all" v-if="hasPermission('students.update') && !isEditing">
-                        <Link :href="`/students/enrollments/create?student_id=${learner.id}`">
-                            <UserPlus class="mr-2 h-4 w-4" />
-                            Enroll Learner
-                        </Link>
-                    </Button>
-                    <Button v-if="hasPermission('students.update') && !isEditing" variant="outline" class="h-11 px-5 rounded-xl border-border font-semibold shadow-sm hover:bg-muted" @click="isEditing = true">
-                        <Edit2 class="mr-2 h-4 w-4 text-amber-500" />
-                        Edit Profile
-                    </Button>
-                    <Button v-if="hasPermission('finance.view')" variant="outline" class="h-11 px-5 rounded-xl border-border font-semibold shadow-sm hover:bg-muted" as-child>
-                        <Link :href="`/students/fees/${learner.id}`">
-                            <CreditCard class="mr-2 h-4 w-4 text-emerald-600" />
-                            Fees & Payments
-                        </Link>
-                    </Button>
-                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="bg-blue-600 hover:bg-blue-700 h-11 px-6 shadow-md rounded-xl font-semibold text-white">
+
+                <div class="flex flex-wrap items-center justify-center md:justify-end gap-2 sm:gap-3 w-full md:w-auto">
+                    <Button v-if="isEditing" @click="submit" :disabled="form.processing" class="h-11 px-6 shadow-xl shadow-blue-500/20 rounded-xl font-black text-[10px] uppercase tracking-widest text-white transition-all bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                         <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
                         <Save v-else class="mr-2 h-4 w-4" />
-                        Save Changes
+                        Save Context
                     </Button>
+                    
+                    <template v-else>
+                        <Button as-child variant="outline" class="flex-1 sm:flex-none h-11 px-4 rounded-xl border-blue-200 bg-blue-50/50 hover:bg-blue-600 hover:text-white hover:border-blue-600 text-blue-700 font-black text-[10px] uppercase tracking-widest shadow-sm transition-all" v-if="hasPermission('students.update')">
+                            <Link :href="`/students/enrollments/create?student_id=${learner.id}`">
+                                <UserPlus class="mr-2 h-4 w-4" />
+                                Enroll
+                            </Link>
+                        </Button>
+                        <Button variant="outline" class="flex-1 sm:flex-none h-11 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest shadow-sm hover:bg-slate-50" @click="isEditing = true" v-if="hasPermission('students.update')">
+                            <Edit2 class="mr-2 h-3.5 w-3.5 text-amber-500" />
+                            Modify
+                        </Button>
+                        <Button v-if="hasPermission('finance.view')" variant="outline" class="h-11 w-11 p-0 sm:w-auto sm:px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest shadow-sm hover:bg-slate-50 shrink-0" as-child title="Fees">
+                            <Link :href="`/students/fees/${learner.id}`">
+                                <CreditCard class="sm:mr-2 h-4 w-4 text-emerald-600" />
+                                <span class="hidden sm:inline">Finance</span>
+                            </Link>
+                        </Button>
+                    </template>
                 </div>
             </div>
 
             <!-- Main Content Layout -->
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
                 <!-- Navigation Sidebar -->
-                <div class="lg:col-span-3 space-y-4">
-                    <div class="flex flex-col gap-1.5 rounded-2xl border border-border bg-card p-2 shadow-sm">
+                <div class="lg:col-span-3 space-y-6">
+                    <div class="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 scrollbar-hide px-1">
                         <button
                         v-for="tab in tabs"
                         :key="tab.id"
                         @click="activeTab = tab.id"
-                        class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 group relative"
+                        class="flex items-center gap-3 px-5 py-3 lg:py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-300 group relative whitespace-nowrap lg:whitespace-normal shrink-0 lg:shrink"
                         :class="activeTab === tab.id
-                            ? 'bg-blue-600 text-white shadow-md'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+                            ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent'"
                         >
-                            <component :is="tab.icon" class="h-4.5 w-4.5" :class="activeTab === tab.id ? 'text-white' : 'text-muted-foreground/50 group-hover:text-foreground'" />
+                            <component :is="tab.icon" class="h-4 w-4" :class="activeTab === tab.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'" />
                             {{ tab.name }}
-                            <div v-if="activeTab === tab.id" class="ml-auto">
-                                <div class="h-1.5 w-1.5 bg-blue-200 rounded-full animate-pulse"></div>
-                            </div>
                         </button>
                     </div>
 
                     <!-- Quick Metrics Card -->
-                    <div class="rounded-2xl border border-border bg-blue-600 p-6 text-white shadow-xl shadow-blue-100 overflow-hidden relative group">
+                    <div class="hidden lg:block rounded-2xl border border-slate-100 bg-slate-900 p-8 text-white shadow-xl shadow-slate-200 overflow-hidden relative group">
                         <div class="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-1000">
                              <TrendingUp class="h-32 w-32" />
                         </div>
-                        <p class="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-5 italic">Performance Score</p>
-                        <div class="space-y-4 relative z-10">
+                        <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-6 text-slate-400 italic">Academic Pulse</p>
+                        <div class="space-y-5 relative z-10">
                             <div>
-                                <div class="flex justify-between items-center mb-1.5">
-                                    <span class="text-xs font-semibold opacity-80">Attendance</span>
-                                    <span class="text-xs font-bold">98.4%</span>
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Attendance</span>
+                                    <span class="text-[11px] font-black tabular-nums">98.4%</span>
                                 </div>
-                                <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
-                                    <div class="bg-white h-full w-[98.4%] rounded-full"></div>
+                                <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-blue-500 h-full w-[98.4%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center pt-2">
-                                <span class="text-xs font-semibold opacity-80">Assessment Status</span>
-                                <Badge class="bg-blue-500 text-[9px] font-bold uppercase tracking-tighter border-0 rounded-md">Excellent</Badge>
+                                <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Assessment</span>
+                                <Badge class="bg-blue-600 text-[8px] font-black uppercase tracking-widest border-0 rounded-md">Excellent</Badge>
                             </div>
                         </div>
                     </div>

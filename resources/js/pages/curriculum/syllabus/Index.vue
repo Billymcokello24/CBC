@@ -165,25 +165,25 @@ const removeFile = () => {
 };
 
 
+
 </script>
 
 <template>
     <Head title="Syllabus Management" />
+    
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 font-sans max-w-[1600px] mx-auto bg-[#f9fafb]/30">
+        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
             <!-- Header Section -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div class="space-y-1">
-                    <div class="flex items-center gap-3">
-                        <h1 class="text-3xl font-black tracking-tight text-slate-900">Syllabus Management</h1>
-                        <Badge variant="outline" class="rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-blue-600 border-blue-100">
-                            Curriculum
-                        </Badge>
-                    </div>
-                    <p class="text-sm font-medium text-slate-500">Manage your subjects and learning areas here.</p>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+                        <BookOpenCheck class="h-8 w-8 text-blue-600" />
+                        Subjects
+                    </h1>
+                    <p class="text-xs sm:text-[15px] font-medium text-slate-500">Manage institutional learning areas and academic standards.</p>
                 </div>
                 
-                <div class="flex items-center gap-3 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50">
+                <div class="flex items-center gap-2 sm:gap-3 bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50">
                     <Dialog v-model:open="showAddModal">
                         <DialogTrigger as-child>
                             <Button class="h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 font-bold text-xs text-white shadow-lg shadow-blue-200 transition-all border-0">

@@ -18,7 +18,7 @@ const className = computed(() => props.class);
 <template>
     <SidebarInset v-if="props.variant === 'sidebar'" :class="cn('h-full flex flex-col', className)">
         <!-- Provide the same container width, padding and max width used on the Dashboard so pages under School Structure inherit the look -->
-        <div class="mx-auto w-full p-6 flex-1 overflow-y-auto custom-scrollbar">
+        <div class="mx-auto w-full p-2 sm:p-4 md:p-6 flex-1 overflow-y-auto custom-scrollbar">
             <slot />
         </div>
     </SidebarInset>

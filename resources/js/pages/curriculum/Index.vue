@@ -74,61 +74,72 @@ const colors = {
     emerald: 'bg-emerald-50 text-emerald-600',
     amber: 'bg-amber-50 text-amber-600'
 };
+
+const summary = [
+    { label: 'Learning Areas', value: props.stats.learning_areas, icon: Layers, trend: '+2' },
+    { label: 'Subjects', value: props.stats.subjects, icon: BookOpen, trend: '+5' },
+    { label: 'Topics', value: props.stats.strands, icon: Network, trend: '+12' },
+    { label: 'Competencies', value: props.stats.competencies, icon: Zap, trend: '+8' }
+];
+
+const curriculumModules = [
+    { title: 'Syllabus Mapping', description: 'Subjects, topics, and learning goals.', href: '/curriculum/syllabus', icon: BookOpenCheck, color: 'blue' },
+    { title: 'Academic Planner', description: 'Schemes of work and lesson plans.', href: '/curriculum/planner/schemes', icon: Calendar, color: 'indigo' },
+    { title: 'Assignment Center', description: 'Give tasks and grade student work.', href: '/curriculum/assignments', icon: Target, color: 'emerald' },
+    { title: 'Resource Vault', description: 'Teaching notes, videos, and PDFs.', href: '/curriculum/resources', icon: Sparkles, color: 'amber' }
+];
 </script>
 
 <template>
     <Head title="Curriculum" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-8 p-8 font-sans max-w-[1600px] mx-auto animate-in fade-in duration-500">
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
+            <!-- Page Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-slate-900">Curriculum</h1>
-                    <p class="text-sm font-medium text-slate-500">Manage subjects, teaching plans, and learning materials.</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Curriculum Engine</h1>
+                    <p class="text-sm sm:text-[15px] text-muted-foreground font-medium">Design, monitor, and scale academic standards across the institution.</p>
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <Button variant="outline" class="rounded-xl font-bold text-xs uppercase tracking-wider border-slate-200 shadow-sm">
-                        <Settings class="mr-2 h-4 w-4" /> Setup
-                    </Button>
-                    <Button class="bg-blue-600 hover:bg-blue-700 rounded-xl font-bold text-xs uppercase tracking-wider text-white shadow-md">
-                        <Plus class="mr-2 h-4 w-4" /> Add Subject
+                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-bold text-xs uppercase tracking-widest hover:bg-muted transition-all">
+                        <Activity class="mr-2 h-4 w-4 opacity-70" />
+                        Live Audit
                     </Button>
                 </div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div v-for="(stat, index) in [
-                    { label: 'Learning Areas', value: stats.learning_areas, icon: Layers, color: 'text-blue-600', bg: 'bg-blue-50' },
-                    { label: 'Subjects', value: stats.subjects, icon: BookOpen, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-                    { label: 'Topics', value: stats.strands, icon: Network, color: 'text-violet-600', bg: 'bg-violet-50' },
-                    { label: 'Competencies', value: stats.competencies, icon: Zap, color: 'text-amber-600', bg: 'bg-amber-50' }
-                ]" :key="index" class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
-                    <div class="space-y-1">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ stat.label }}</p>
-                        <p class="text-3xl font-black text-slate-900">{{ stat.value }}</p>
+            <!-- Curriculum Summary Cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                <div v-for="item in summary" :key="item.label" 
+                     class="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm dark:border-white/5 group hover:border-blue-500/50 transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                        <p class="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-widest">{{ item.label }}</p>
+                        <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                            <component :is="item.icon" class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        </div>
                     </div>
-                    <div :class="['h-14 w-14 rounded-full flex items-center justify-center shadow-sm', stat.bg]">
-                        <component :is="stat.icon" :class="['h-7 w-7', stat.color]" />
+                    <div class="flex items-baseline gap-1.5">
+                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums">{{ item.value }}</h3>
+                        <span class="text-[9px] sm:text-xs font-bold text-emerald-600" v-if="item.trend">{{ item.trend }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Modules -->
-            <div class="grid md:grid-cols-2 gap-6">
-                <Link v-for="mod in mainModules" :key="mod.title" :href="mod.href" class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
-                    <div class="flex items-center gap-6">
-                        <div :class="['h-16 w-16 rounded-2xl flex items-center justify-center transition-colors', colors[mod.color as keyof typeof colors]]">
-                            <component :is="mod.icon" class="h-8 w-8" />
+            <!-- Management Grid -->
+            <div class="grid gap-4 sm:gap-6 md:grid-cols-2">
+                <Link v-for="mod in curriculumModules" :key="mod.title" :href="mod.href" class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                    <div class="flex items-center gap-4 sm:gap-6">
+                        <div :class="['h-12 w-12 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl flex items-center justify-center transition-colors', colors[mod.color as keyof typeof colors]]">
+                            <component :is="mod.icon" class="h-6 w-6 sm:h-8 sm:w-8" />
                         </div>
-                        <div class="space-y-1">
-                            <h4 class="text-xl font-bold text-slate-900">{{ mod.title }}</h4>
-                            <p class="text-sm text-slate-500">{{ mod.description }}</p>
+                        <div class="space-y-0.5 sm:space-y-1 min-w-0">
+                            <h4 class="text-base sm:text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{{ mod.title }}</h4>
+                            <p class="text-xs sm:text-sm text-slate-500 line-clamp-1">{{ mod.description }}</p>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" class="rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600">
-                        <ArrowRight class="h-6 w-6" />
+                    <Button variant="ghost" size="icon" class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 ml-2">
+                        <ArrowRight class="h-5 w-5" />
                     </Button>
                 </Link>
             </div>
