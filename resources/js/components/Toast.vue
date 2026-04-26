@@ -61,54 +61,54 @@ const dismiss = () => {
     >
         <div
             v-if="show"
-            class="ring-opacity-5 pointer-events-auto fixed top-6 right-6 z-[9999] w-full max-w-sm overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black"
+            class="pointer-events-auto fixed top-6 right-6 z-[9999] w-full max-w-[280px] overflow-hidden rounded-lg border border-border bg-background/95 shadow-xl backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/5"
         >
-            <div class="p-4">
-                <div class="flex items-start">
+            <div class="px-3 py-2.5">
+                <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <CheckCircle2
                             v-if="type === 'success'"
-                            class="h-6 w-6 text-emerald-500"
+                            class="h-4 w-4 text-emerald-500"
                         />
                         <AlertCircle
                             v-else-if="type === 'error'"
-                            class="h-6 w-6 text-rose-500"
+                            class="h-4 w-4 text-rose-500"
                         />
-                        <Info v-else class="h-6 w-6 text-sky-500" />
+                        <Info v-else class="h-4 w-4 text-primary" />
                     </div>
-                    <div class="ml-3 w-0 flex-1 pt-0.5">
+                    <div class="ml-2 w-0 flex-1">
                         <p
-                            class="text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                            class="text-[10px] font-black tracking-[0.2em] uppercase leading-none"
                             :class="
                                 type === 'success'
-                                    ? 'text-emerald-700'
+                                    ? 'text-emerald-500'
                                     : type === 'error'
-                                      ? 'text-rose-700'
-                                      : 'text-sky-700'
+                                      ? 'text-rose-500'
+                                      : 'text-primary'
                             "
                         >
                             {{
                                 type === 'success'
-                                    ? 'Task Finalized'
+                                    ? 'Success'
                                     : type === 'error'
-                                      ? 'System Warning'
-                                      : 'Update'
+                                      ? 'Error'
+                                      : 'Notification'
                             }}
                         </p>
                         <p
-                            class="mt-1 text-sm leading-relaxed font-bold tracking-tight text-gray-500 uppercase opacity-75"
+                            class="mt-1 text-[11px] font-medium leading-tight text-foreground/80"
                         >
                             {{ message }}
                         </p>
                     </div>
-                    <div class="ml-4 flex flex-shrink-0">
+                    <div class="ml-3 flex flex-shrink-0">
                         <button
                             type="button"
                             @click="dismiss"
-                            class="inline-flex rounded-md bg-white text-gray-400 transition-colors hover:text-gray-500 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:outline-none"
+                            class="inline-flex rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none"
                         >
                             <span class="sr-only">Close</span>
-                            <X class="h-5 w-5" />
+                            <X class="h-3.5 w-3.5" />
                         </button>
                     </div>
                 </div>
@@ -116,10 +116,17 @@ const dismiss = () => {
             <!-- Progress Bar -->
             <div
                 v-if="show"
-                class="h-1 w-full overflow-hidden bg-violet-600/10"
+                class="h-0.5 w-full overflow-hidden bg-muted"
             >
                 <div
-                    class="h-full animate-[progress_5s_linear_forwards] bg-violet-600"
+                    class="h-full animate-[progress_5s_linear_forwards]"
+                    :class="
+                        type === 'success'
+                            ? 'bg-emerald-500'
+                            : type === 'error'
+                              ? 'bg-rose-500'
+                              : 'bg-primary'
+                    "
                 ></div>
             </div>
         </div>
