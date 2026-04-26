@@ -170,7 +170,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('staffs/{teacher}/edit', [StaffsController::class, 'edit'])->name('staffs.edit');
         Route::match(['PUT', 'PATCH'], 'staffs/{teacher}', [StaffsController::class, 'update'])->name('staffs.update');
         Route::post('staffs/{teacher}/photo', [StaffsController::class, 'updatePhoto'])->name('staffs.photo.update');
-        Route::delete('staffs/{teacher}', [StaffsController::class, 'destroy'])->name('staffs.destroy');
     });
 
     Route::middleware(['check_permission:staffs.assign_subjects'])->group(function () {
