@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_PATH="/var/www/cbc"
+PROJECT_PATH="/var/www/CBC"
 PHP_VERSION="8.2"
 
 echo "🔄 Starting Deployment..."
