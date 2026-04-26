@@ -30,15 +30,19 @@ const colorStyles = {
     <div class="rounded-xl border bg-card p-6">
         <h3 class="mb-4 text-lg font-semibold">Quick Actions</h3>
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+        <div
+            class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3"
+        >
             <Link
                 v-for="action in actions"
                 :key="action.title"
                 :href="action.href"
-                :class="cn(
-                    'flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-all duration-200',
-                    colorStyles[action.color]
-                )"
+                :class="
+                    cn(
+                        'flex flex-col items-center gap-2 rounded-lg p-4 text-center transition-all duration-200',
+                        colorStyles[action.color],
+                    )
+                "
             >
                 <span class="text-2xl">{{ action.icon }}</span>
                 <span class="text-sm font-medium">{{ action.title }}</span>

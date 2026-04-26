@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { 
-    Clock, Calendar, MapPin, 
-    ChevronLeft, ChevronRight, Download,
-    BookOpen, Printer
+import {
+    Clock,
+    Calendar,
+    MapPin,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    BookOpen,
+    Printer,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { ref } from 'vue';
@@ -18,10 +23,12 @@ const props = defineProps<{
 
 const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'My Timetable', href: '/timetable/my' }
+    { title: 'My Timetable', href: '/timetable/my' },
 ];
 
-const selectedDay = ref(new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase());
+const selectedDay = ref(
+    new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase(),
+);
 </script>
 
 <template>
@@ -30,14 +37,23 @@ const selectedDay = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
 
         <div class="flex h-full flex-1 flex-col gap-6 p-6">
             <!-- Pulsar Header -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
                 <div class="flex items-center gap-4">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10"
+                    >
                         <Clock class="h-6 w-6 text-violet-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight uppercase">My Teaching Schedule</h1>
-                        <p class="text-muted-foreground">Weekly lesson distribution and room assignments, {{ teacher?.first_name }}.</p>
+                        <h1 class="text-2xl font-bold tracking-tight uppercase">
+                            My Teaching Schedule
+                        </h1>
+                        <p class="text-muted-foreground">
+                            Weekly lesson distribution and room assignments,
+                            {{ teacher?.first_name }}.
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -53,49 +69,125 @@ const selectedDay = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
             </div>
 
             <!-- Desktop Grid View (Pulsar Style) -->
-            <div class="hidden lg:block rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div
+                class="hidden overflow-hidden rounded-xl border bg-card shadow-sm lg:block"
+            >
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse">
                         <thead>
-                            <tr class="bg-gray-50/50 border-b">
-                                <th class="p-6 text-left border-r min-w-[150px]">
-                                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Time / Day</span>
+                            <tr class="border-b bg-gray-50/50">
+                                <th
+                                    class="min-w-[150px] border-r p-6 text-left"
+                                >
+                                    <span
+                                        class="text-xs font-bold tracking-tight text-gray-400 uppercase"
+                                        >Time / Day</span
+                                    >
                                 </th>
-                                <th v-for="day in days" :key="day" class="p-6 text-center border-r min-w-[180px]">
-                                    <span class="text-xs font-black text-gray-900 uppercase tracking-widest">{{ day }}</span>
+                                <th
+                                    v-for="day in days"
+                                    :key="day"
+                                    class="min-w-[180px] border-r p-6 text-center"
+                                >
+                                    <span
+                                        class="text-xs font-bold tracking-tight text-gray-900 uppercase"
+                                        >{{ day }}</span
+                                    >
                                 </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y">
                             <tr v-for="period in periods" :key="period.id">
-                                <td class="p-6 border-r bg-gray-50/30">
+                                <td class="border-r bg-gray-50/30 p-6">
                                     <div class="space-y-1">
-                                        <p class="text-xs font-black text-violet-600">{{ period.start_time }}</p>
-                                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{{ period.end_time }}</p>
-                                        <p class="text-[9px] font-black text-gray-300 uppercase mt-2 tracking-widest">{{ period.name }}</p>
+                                        <p
+                                            class="text-xs font-bold text-violet-600"
+                                        >
+                                            {{ period.start_time }}
+                                        </p>
+                                        <p
+                                            class="text-xs font-bold tracking-tighter text-gray-400 uppercase"
+                                        >
+                                            {{ period.end_time }}
+                                        </p>
+                                        <p
+                                            class="mt-2 text-xs font-bold tracking-tight text-gray-300 uppercase"
+                                        >
+                                            {{ period.name }}
+                                        </p>
                                     </div>
                                 </td>
-                                <td v-for="day in days" :key="day" class="p-3 border-r relative min-h-[120px]">
-                                    <div v-if="timetable.find(s => s.day_of_week === day.toLowerCase() && s.period_id === period.id)"
-                                        class="h-full rounded-xl border border-violet-100 bg-linear-to-br from-violet-50/80 to-white p-4 shadow-sm hover:shadow-md transition-all group"
+                                <td
+                                    v-for="day in days"
+                                    :key="day"
+                                    class="relative min-h-[120px] border-r p-3"
+                                >
+                                    <div
+                                        v-if="
+                                            timetable.find(
+                                                (s) =>
+                                                    s.day_of_week ===
+                                                        day.toLowerCase() &&
+                                                    s.period_id === period.id,
+                                            )
+                                        "
+                                        class="group h-full rounded-xl border border-violet-100 bg-linear-to-br from-violet-50/80 to-white p-4 shadow-sm transition-all hover:shadow-md"
                                     >
-                                        <div class="flex flex-col h-full justify-between gap-3">
+                                        <div
+                                            class="flex h-full flex-col justify-between gap-3"
+                                        >
                                             <div>
-                                                <p class="text-xs font-black text-violet-700 leading-tight group-hover:text-violet-900 transition-colors uppercase tracking-tight">
-                                                    {{ timetable.find(s => s.day_of_week === day.toLowerCase() && s.period_id === period.id).subject }}
+                                                <p
+                                                    class="text-xs leading-tight font-bold tracking-tight text-violet-700 uppercase transition-colors group-hover:text-violet-900"
+                                                >
+                                                    {{
+                                                        timetable.find(
+                                                            (s) =>
+                                                                s.day_of_week ===
+                                                                    day.toLowerCase() &&
+                                                                s.period_id ===
+                                                                    period.id,
+                                                        ).subject
+                                                    }}
                                                 </p>
-                                                <p class="text-[9px] font-black text-gray-900 mt-1 uppercase tracking-widest">
-                                                    {{ timetable.find(s => s.day_of_week === day.toLowerCase() && s.period_id === period.id).class }}
+                                                <p
+                                                    class="mt-1 text-xs font-bold tracking-tight text-gray-900 uppercase"
+                                                >
+                                                    {{
+                                                        timetable.find(
+                                                            (s) =>
+                                                                s.day_of_week ===
+                                                                    day.toLowerCase() &&
+                                                                s.period_id ===
+                                                                    period.id,
+                                                        ).class
+                                                    }}
                                                 </p>
                                             </div>
-                                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 opacity-70 italic tracking-tighter">
-                                                <MapPin class="h-3 w-3" /> 
-                                                {{ timetable.find(s => s.day_of_week === day.toLowerCase() && s.period_id === period.id).room || 'General' }}
+                                            <div
+                                                class="flex items-center gap-1.5 text-xs font-bold tracking-tighter text-gray-400 opacity-70"
+                                            >
+                                                <MapPin class="h-3 w-3" />
+                                                {{
+                                                    timetable.find(
+                                                        (s) =>
+                                                            s.day_of_week ===
+                                                                day.toLowerCase() &&
+                                                            s.period_id ===
+                                                                period.id,
+                                                    ).room || 'General'
+                                                }}
                                             </div>
                                         </div>
                                     </div>
-                                    <div v-else-if="period.type === 'break'" class="flex items-center justify-center opacity-30">
-                                        <span class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] -rotate-45">Interval</span>
+                                    <div
+                                        v-else-if="period.type === 'break'"
+                                        class="flex items-center justify-center opacity-30"
+                                    >
+                                        <span
+                                            class="-rotate-45 text-xs font-bold tracking-tight text-gray-300 uppercase"
+                                            >Interval</span
+                                        >
                                     </div>
                                 </td>
                             </tr>
@@ -105,17 +197,18 @@ const selectedDay = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
             </div>
 
             <!-- Mobile List View (Pulsar Style) -->
-            <div class="lg:hidden space-y-6">
+            <div class="space-y-6 lg:hidden">
                 <!-- Day Selector -->
-                <div class="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
-                    <button 
-                        v-for="day in days" :key="day"
+                <div class="scrollbar-hide flex gap-2 overflow-x-auto pb-2">
+                    <button
+                        v-for="day in days"
+                        :key="day"
                         @click="selectedDay = day.toLowerCase()"
                         :class="[
-                            'px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap border',
-                            selectedDay === day.toLowerCase() 
-                                ? 'bg-violet-600 border-violet-600 text-white shadow-lg shadow-violet-100' 
-                                : 'bg-white border-gray-100 text-gray-400 hover:border-violet-200'
+                            'rounded-xl border px-5 py-2.5 text-xs font-medium tracking-tight whitespace-nowrap uppercase transition-all',
+                            selectedDay === day.toLowerCase()
+                                ? 'border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-100'
+                                : 'border-gray-100 bg-white text-gray-400 hover:border-violet-200',
                         ]"
                     >
                         {{ day }}
@@ -124,29 +217,78 @@ const selectedDay = ref(new Date().toLocaleDateString('en-US', { weekday: 'long'
 
                 <!-- Schedule for Selected Day -->
                 <div class="space-y-4">
-                    <div v-for="period in periods" :key="period.id" class="relative">
-                        <div v-if="timetable.find(s => s.day_of_week === selectedDay && s.period_id === period.id)"
-                            class="rounded-2xl border bg-card p-5 flex items-center gap-5 shadow-sm"
+                    <div
+                        v-for="period in periods"
+                        :key="period.id"
+                        class="relative"
+                    >
+                        <div
+                            v-if="
+                                timetable.find(
+                                    (s) =>
+                                        s.day_of_week === selectedDay &&
+                                        s.period_id === period.id,
+                                )
+                            "
+                            class="flex items-center gap-5 rounded-2xl border bg-card p-5 shadow-sm"
                         >
-                            <div class="text-center min-w-[60px] border-r border-dashed border-gray-100 pr-5">
-                                <p class="text-xs font-black text-violet-600">{{ period.start_time }}</p>
-                                <p class="text-[10px] font-bold text-gray-400 uppercase">{{ period.end_time }}</p>
+                            <div
+                                class="min-w-[60px] border-r border-dashed border-gray-100 pr-5 text-center"
+                            >
+                                <p class="text-xs font-bold text-violet-600">
+                                    {{ period.start_time }}
+                                </p>
+                                <p
+                                    class="text-xs font-bold text-gray-400 uppercase"
+                                >
+                                    {{ period.end_time }}
+                                </p>
                             </div>
                             <div class="flex-1">
-                                <p class="text-sm font-black text-gray-900 uppercase leading-none">
-                                    {{ timetable.find(s => s.day_of_week === selectedDay && s.period_id === period.id).subject }}
+                                <p
+                                    class="text-sm leading-none font-bold text-gray-900 uppercase"
+                                >
+                                    {{
+                                        timetable.find(
+                                            (s) =>
+                                                s.day_of_week === selectedDay &&
+                                                s.period_id === period.id,
+                                        ).subject
+                                    }}
                                 </p>
-                                <div class="flex items-center gap-3 mt-2">
-                                    <span class="text-[10px] font-black text-violet-600 bg-violet-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
-                                        {{ timetable.find(s => s.day_of_week === selectedDay && s.period_id === period.id).class }}
+                                <div class="mt-2 flex items-center gap-3">
+                                    <span
+                                        class="rounded-md bg-violet-50 px-2 py-0.5 text-xs font-bold tracking-tight text-violet-600 uppercase"
+                                    >
+                                        {{
+                                            timetable.find(
+                                                (s) =>
+                                                    s.day_of_week ===
+                                                        selectedDay &&
+                                                    s.period_id === period.id,
+                                            ).class
+                                        }}
                                     </span>
-                                    <div class="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 italic">
-                                        <MapPin class="h-3 w-3" /> {{ timetable.find(s => s.day_of_week === selectedDay && s.period_id === period.id).room || 'General' }}
+                                    <div
+                                        class="flex items-center gap-1.5 text-xs font-bold text-gray-400"
+                                    >
+                                        <MapPin class="h-3 w-3" />
+                                        {{
+                                            timetable.find(
+                                                (s) =>
+                                                    s.day_of_week ===
+                                                        selectedDay &&
+                                                    s.period_id === period.id,
+                                            ).room || 'General'
+                                        }}
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div v-else-if="period.type === 'break'" class="py-3 px-8 text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-100 italic font-black text-[9px] text-gray-300 uppercase tracking-[0.3em]">
+                        <div
+                            v-else-if="period.type === 'break'"
+                            class="rounded-xl border border-dashed border-gray-100 bg-gray-50/50 px-8 py-3 text-center text-xs font-bold tracking-tight text-gray-300 uppercase"
+                        >
                             {{ period.name }} interval
                         </div>
                     </div>

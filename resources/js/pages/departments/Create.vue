@@ -7,126 +7,234 @@ import { ArrowLeft, Building2, Save, X } from 'lucide-vue-next';
 
 const page = usePage();
 const form = useForm({
-  name: '',
-  code: '',
-  description: '',
-  head_of_department_id: '',
-  is_active: true
+    name: '',
+    code: '',
+    description: '',
+    head_of_department_id: '',
+    is_active: true,
 });
 
 const submit = () => {
-  form.transform((data) => ({
-    ...data,
-    head_of_department_id: data.head_of_department_id || null
-  })).post('/departments', {
-    onSuccess: () => form.reset()
-  });
+    form.transform((data) => ({
+        ...data,
+        head_of_department_id: data.head_of_department_id || null,
+    })).post('/departments', {
+        onSuccess: () => form.reset(),
+    });
 };
 
 const breadcrumbs = [
-  { title: 'Dashboard', href: '/dashboard' },
-  { title: 'Departments', href: '/departments' },
-  { title: 'Create', href: '#' },
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Departments', href: '/departments' },
+    { title: 'Create', href: '#' },
 ];
 </script>
 
 <template>
-  <Head title="Create Department" />
-  <AppLayout :breadcrumbs="breadcrumbs">
-    <div class="w-full py-8 sm:py-12 px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12 animate-in fade-in duration-500">
-      <!-- Header -->
-      <div class="flex items-center gap-4">
-        <Button variant="ghost" size="icon" as-child class="h-10 w-10 rounded-xl hover:bg-slate-50 text-slate-400 hover:text-blue-600 transition-all">
-          <Link href="/departments">
-            <ArrowLeft class="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 class="text-2xl font-black tracking-tight text-slate-900 uppercase">Create Department</h1>
-          <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Add a new academic faculty or unit</p>
-        </div>
-      </div>
-
-      <div class="grid gap-8 lg:grid-cols-3">
-        <!-- Main Form -->
-        <div class="lg:col-span-2 space-y-8">
-          <div class="rounded-2xl border bg-white p-8 shadow-sm border-slate-100">
-             <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8 flex items-center gap-2">
-              <Building2 class="h-4 w-4 text-blue-600" />
-              Department Information
-            </h3>
-            <div class="grid gap-8">
-              <div class="grid gap-3">
-                <label for="name" class="text-xs font-bold text-slate-700 uppercase tracking-wide">Department Name <span class="text-rose-500">*</span></label>
-                <Input id="name" v-model="form.name" placeholder="e.g., Mathematics & Sciences" class="h-12 rounded-xl border-slate-200 focus:ring-blue-600 transition-all" :class="{ 'border-rose-500': form.errors.name }" />
-                <p v-if="form.errors.name" class="text-[10px] font-bold text-rose-600 uppercase tracking-tight">{{ form.errors.name[0] }}</p>
-              </div>
-
-              <div class="grid gap-3">
-                <label for="code" class="text-xs font-bold text-slate-700 uppercase tracking-wide">Department Code <span class="text-rose-500">*</span></label>
-                <Input id="code" v-model="form.code" placeholder="e.g., MATH" class="h-12 rounded-xl border-slate-200 focus:ring-blue-600 transition-all uppercase" :class="{ 'border-rose-500': form.errors.code }" />
-                <p v-if="form.errors.code" class="text-[10px] font-bold text-rose-600 uppercase tracking-tight">{{ form.errors.code[0] }}</p>
-              </div>
-
-              <div class="grid gap-3">
-                <label for="description" class="text-xs font-bold text-slate-700 uppercase tracking-wide">Department Description</label>
-                <textarea 
-                  id="description" 
-                  v-model="form.description" 
-                  rows="4" 
-                  class="flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all placeholder:text-slate-400"
-                  placeholder="Describe the department's focus and academic responsibilities..."
-                ></textarea>
-                <p v-if="form.errors.description" class="text-[10px] font-bold text-rose-600 uppercase tracking-tight">{{ form.errors.description[0] }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sidebar / Settings -->
-        <div class="space-y-8">
-          <div class="rounded-2xl border bg-white p-8 shadow-sm border-slate-100">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Management Settings</h3>
-            
-            <div class="space-y-8">
-              <div class="grid gap-3">
-                <label for="head" class="text-xs font-bold text-slate-700 uppercase tracking-wide">Head of Department</label>
-                <select v-model="form.head_of_department_id" class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all">
-                  <option value="">-- Choose Instructor --</option>
-                  <option v-for="t in page.props.teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
-                </select>
-                <p v-if="form.errors.head_of_department_id" class="text-[10px] font-bold text-rose-600 uppercase tracking-tight">{{ form.errors.head_of_department_id[0] }}</p>
-              </div>
-
-              <div class="flex items-center justify-between rounded-xl border border-slate-100 p-4 bg-slate-50/50">
-                <div class="space-y-1">
-                  <label for="isActive" class="text-xs font-bold text-slate-900 uppercase tracking-tight">Active Status</label>
-                  <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Visible to staff</p>
+    <Head title="Create Department" />
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div
+            class="w-full animate-in space-y-8 px-4 py-8 duration-500 fade-in sm:space-y-12 sm:px-6 sm:py-12 lg:px-8"
+        >
+            <!-- Header -->
+            <div class="flex items-center gap-4">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    as-child
+                    class="h-10 w-10 rounded-xl text-slate-400 transition-all hover:bg-slate-50 hover:text-blue-600"
+                >
+                    <Link href="/departments">
+                        <ArrowLeft class="h-5 w-5" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1
+                        class="text-2xl font-bold tracking-tight text-slate-900 uppercase"
+                    >
+                        Create Department
+                    </h1>
+                    <p
+                        class="mt-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                    >
+                        Add a new academic faculty or unit
+                    </p>
                 </div>
-                <input 
-                  type="checkbox" 
-                  id="isActive" 
-                  v-model="form.is_active"
-                  class="h-5 w-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-600 transition-all cursor-pointer"
-                />
-              </div>
             </div>
-          </div>
 
-          <div class="flex flex-col gap-4">
-            <Button @click="submit" class="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest shadow-xl shadow-blue-100 transition-all border-0" :disabled="form.processing">
-              <Save class="mr-3 h-5 w-5" />
-              Save Department
-            </Button>
-            <Button variant="ghost" as-child class="w-full h-12 rounded-xl text-slate-400 hover:text-slate-600 font-bold uppercase tracking-wider transition-all">
-              <Link href="/departments">
-                <X class="mr-2 h-4 w-4" />
-                Discard Changes
-              </Link>
-            </Button>
-          </div>
+            <div class="grid gap-8 lg:grid-cols-3">
+                <!-- Main Form -->
+                <div class="space-y-8 lg:col-span-2">
+                    <div
+                        class="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
+                    >
+                        <h3
+                            class="mb-8 flex items-center gap-2 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            <Building2 class="h-4 w-4 text-blue-600" />
+                            Department Information
+                        </h3>
+                        <div class="grid gap-8">
+                            <div class="grid gap-3">
+                                <label
+                                    for="name"
+                                    class="text-xs font-bold tracking-wide text-slate-700 uppercase"
+                                    >Department Name
+                                    <span class="text-rose-500">*</span></label
+                                >
+                                <Input
+                                    id="name"
+                                    v-model="form.name"
+                                    placeholder="e.g., Mathematics & Sciences"
+                                    class="h-12 rounded-xl border-slate-200 transition-all focus:ring-blue-600"
+                                    :class="{
+                                        'border-rose-500': form.errors.name,
+                                    }"
+                                />
+                                <p
+                                    v-if="form.errors.name"
+                                    class="text-xs font-bold tracking-tight text-rose-600 uppercase"
+                                >
+                                    {{ form.errors.name[0] }}
+                                </p>
+                            </div>
+
+                            <div class="grid gap-3">
+                                <label
+                                    for="code"
+                                    class="text-xs font-bold tracking-wide text-slate-700 uppercase"
+                                    >Department Code
+                                    <span class="text-rose-500">*</span></label
+                                >
+                                <Input
+                                    id="code"
+                                    v-model="form.code"
+                                    placeholder="e.g., MATH"
+                                    class="h-12 rounded-xl border-slate-200 uppercase transition-all focus:ring-blue-600"
+                                    :class="{
+                                        'border-rose-500': form.errors.code,
+                                    }"
+                                />
+                                <p
+                                    v-if="form.errors.code"
+                                    class="text-xs font-bold tracking-tight text-rose-600 uppercase"
+                                >
+                                    {{ form.errors.code[0] }}
+                                </p>
+                            </div>
+
+                            <div class="grid gap-3">
+                                <label
+                                    for="description"
+                                    class="text-xs font-bold tracking-wide text-slate-700 uppercase"
+                                    >Department Description</label
+                                >
+                                <textarea
+                                    id="description"
+                                    v-model="form.description"
+                                    rows="4"
+                                    class="flex min-h-[120px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm transition-all placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                    placeholder="Describe the department's focus and academic responsibilities..."
+                                ></textarea>
+                                <p
+                                    v-if="form.errors.description"
+                                    class="text-xs font-bold tracking-tight text-rose-600 uppercase"
+                                >
+                                    {{ form.errors.description[0] }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar / Settings -->
+                <div class="space-y-8">
+                    <div
+                        class="rounded-2xl border border-slate-100 bg-white p-8 shadow-sm"
+                    >
+                        <h3
+                            class="mb-8 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            Management Settings
+                        </h3>
+
+                        <div class="space-y-8">
+                            <div class="grid gap-3">
+                                <label
+                                    for="head"
+                                    class="text-xs font-bold tracking-wide text-slate-700 uppercase"
+                                    >Head of Department</label
+                                >
+                                <select
+                                    v-model="form.head_of_department_id"
+                                    class="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm transition-all focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                >
+                                    <option value="">
+                                        -- Choose Instructor --
+                                    </option>
+                                    <option
+                                        v-for="t in page.props.teachers"
+                                        :key="t.id"
+                                        :value="t.id"
+                                    >
+                                        {{ t.name }}
+                                    </option>
+                                </select>
+                                <p
+                                    v-if="form.errors.head_of_department_id"
+                                    class="text-xs font-bold tracking-tight text-rose-600 uppercase"
+                                >
+                                    {{ form.errors.head_of_department_id[0] }}
+                                </p>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4"
+                            >
+                                <div class="space-y-1">
+                                    <label
+                                        for="isActive"
+                                        class="text-xs font-bold tracking-tight text-slate-900 uppercase"
+                                        >Active Status</label
+                                    >
+                                    <p
+                                        class="text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                    >
+                                        Visible to staff
+                                    </p>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    id="isActive"
+                                    v-model="form.is_active"
+                                    class="h-5 w-5 cursor-pointer rounded-md border-slate-300 text-blue-600 transition-all focus:ring-blue-600"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <Button
+                            @click="submit"
+                            class="h-14 w-full rounded-2xl border-0 bg-blue-600 font-medium tracking-tight text-white uppercase shadow-xl shadow-blue-100 transition-all hover:bg-blue-700"
+                            :disabled="form.processing"
+                        >
+                            <Save class="mr-3 h-5 w-5" />
+                            Save Department
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            as-child
+                            class="h-12 w-full rounded-xl font-bold tracking-wider text-slate-400 uppercase transition-all hover:text-slate-600"
+                        >
+                            <Link href="/departments">
+                                <X class="mr-2 h-4 w-4" />
+                                Discard Changes
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>

@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { 
-    Printer, 
-    Download, 
-    ChevronLeft, 
-    Calendar, 
-    User, 
-    GraduationCap, 
+import {
+    Printer,
+    Download,
+    ChevronLeft,
+    Calendar,
+    User,
+    GraduationCap,
     Award,
     CheckCircle2,
     BookOpen,
     Info,
-    School
+    School,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -53,244 +53,594 @@ const conductAttributes = [
 <template>
     <Head title="Pupil's Termly Assessment Report" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6 max-w-6xl mx-auto print:p-0 print:bg-white overflow-y-auto">
+        <div
+            class="mx-auto flex h-full max-w-6xl flex-1 flex-col gap-6 overflow-y-auto p-6 print:bg-white print:p-0"
+        >
             <!-- Action Bar (Hidden on Print) -->
             <div class="flex items-center justify-between print:hidden">
-                <Button variant="ghost" as-child class="font-black italic uppercase -ml-4">
+                <Button
+                    variant="ghost"
+                    as-child
+                    class="-ml-4 font-bold uppercase"
+                >
                     <Link href="/assessments/report-cards">
                         <ChevronLeft class="mr-2 h-4 w-4" />
                         Back to List
                     </Link>
                 </Button>
                 <div class="flex items-center gap-2">
-                    <Button variant="outline" class="font-black italic uppercase rounded-xl border-slate-200 shadow-sm">
+                    <Button
+                        variant="outline"
+                        class="rounded-xl border-slate-200 font-bold uppercase shadow-sm"
+                    >
                         <Download class="mr-2 h-4 w-4" /> Export PDF
                     </Button>
-                    <Button @click="printReport" class="bg-indigo-600 hover:bg-indigo-700 font-black italic uppercase rounded-xl shadow-lg shadow-indigo-100">
+                    <Button
+                        @click="printReport"
+                        class="rounded-xl bg-indigo-600 font-bold uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700"
+                    >
                         <Printer class="mr-2 h-4 w-4" /> Print Report
                     </Button>
                 </div>
             </div>
 
             <!-- Report Card Container -->
-            <div class="bg-white p-12 shadow-2xl border border-slate-100 print:shadow-none print:border-none print:p-4 text-slate-900 font-serif leading-relaxed">
-                
+            <div
+                class="border border-slate-100 bg-white p-12 font-serif leading-relaxed text-slate-900 shadow-lg print:border-none print:p-4 print:shadow-none"
+            >
                 <!-- Page 1 Header -->
-                <div class="flex flex-col md:flex-row justify-between gap-8 mb-10 border-b-2 border-slate-900 pb-8">
-                     <div class="space-y-4 max-w-xl">
+                <div
+                    class="mb-10 flex flex-col justify-between gap-8 border-b-2 border-slate-900 pb-8 md:flex-row"
+                >
+                    <div class="max-w-xl space-y-4">
                         <div class="flex items-center gap-4">
-                             <div class="h-16 w-16 bg-slate-900 rounded-2xl flex items-center justify-center p-3">
-                                 <School class="h-full w-full text-white" />
-                             </div>
-                             <div>
-                                 <h1 class="text-4xl font-black italic uppercase tracking-tighter text-slate-900">Education Group</h1>
-                                 <p class="text-xs font-bold tracking-[0.3em] text-slate-400 uppercase">Excellence in Competency Based Learning</p>
-                             </div>
+                            <div
+                                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 p-3"
+                            >
+                                <School class="h-full w-full text-white" />
+                            </div>
+                            <div>
+                                <h1
+                                    class="text-4xl font-bold tracking-tighter text-slate-900 uppercase"
+                                >
+                                    Education Group
+                                </h1>
+                                <p
+                                    class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                >
+                                    Excellence in Competency Based Learning
+                                </p>
+                            </div>
                         </div>
-                        <h2 class="text-2xl font-black italic border-l-4 border-indigo-600 pl-4 py-1">PUPIL'S TERMLY ASSESSMENT REPORT</h2>
-                        <div class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold uppercase tracking-wider">
-                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>NAME:</span> <span class="text-indigo-600">{{ student?.first_name }} {{ student?.last_name }}</span></div>
-                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>YEAR:</span> <span class="text-indigo-600">{{ academicYear?.name }}</span></div>
-                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>GRADE:</span> <span class="text-indigo-600">{{ student?.current_class?.name }}</span></div>
-                             <div class="flex justify-between border-b border-slate-100 pb-1"><span>TERM:</span> <span class="text-indigo-600">{{ academicTerm?.name }}</span></div>
+                        <h2
+                            class="border-l-4 border-indigo-600 py-1 pl-4 text-2xl font-bold"
+                        >
+                            PUPIL'S TERMLY ASSESSMENT REPORT
+                        </h2>
+                        <div
+                            class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold tracking-wider uppercase"
+                        >
+                            <div
+                                class="flex justify-between border-b border-slate-100 pb-1"
+                            >
+                                <span>NAME:</span>
+                                <span class="text-indigo-600"
+                                    >{{ student?.first_name }}
+                                    {{ student?.last_name }}</span
+                                >
+                            </div>
+                            <div
+                                class="flex justify-between border-b border-slate-100 pb-1"
+                            >
+                                <span>YEAR:</span>
+                                <span class="text-indigo-600">{{
+                                    academicYear?.name
+                                }}</span>
+                            </div>
+                            <div
+                                class="flex justify-between border-b border-slate-100 pb-1"
+                            >
+                                <span>GRADE:</span>
+                                <span class="text-indigo-600">{{
+                                    student?.current_class?.name
+                                }}</span>
+                            </div>
+                            <div
+                                class="flex justify-between border-b border-slate-100 pb-1"
+                            >
+                                <span>TERM:</span>
+                                <span class="text-indigo-600">{{
+                                    academicTerm?.name
+                                }}</span>
+                            </div>
                         </div>
-                     </div>
+                    </div>
 
-                     <!-- Performance Legend Table -->
-                     <div class="w-full md:w-80">
-                         <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">1.0 LEARNER'S PERFORMANCE KEY</h3>
-                         <table class="w-full text-[10px] border-collapse border border-slate-200 bg-slate-50">
-                             <thead>
-                                 <tr class="bg-slate-900 text-white font-black uppercase tracking-tighter text-[9px]">
-                                     <th class="border border-slate-300 p-1.5 text-left">Performance Level</th>
-                                     <th class="border border-slate-300 p-1.5">Rating</th>
-                                     <th class="border border-slate-300 p-1.5">Key</th>
-                                     <th class="border border-slate-300 p-1.5">Score</th>
-                                 </tr>
-                             </thead>
-                             <tbody>
-                                 <tr v-for="level in performanceLevels" :key="level.code" class="font-bold border-b border-slate-200">
-                                     <td class="border border-slate-200 p-1.5">{{ level.label }}</td>
-                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.rating || '-' }}</td>
-                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.code }}</td>
-                                     <td class="border border-slate-200 p-1.5 text-center">{{ level.range }}</td>
-                                 </tr>
-                             </tbody>
-                         </table>
-                     </div>
+                    <!-- Performance Legend Table -->
+                    <div class="w-full md:w-80">
+                        <h3
+                            class="mb-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                        >
+                            1.0 LEARNER'S PERFORMANCE KEY
+                        </h3>
+                        <table
+                            class="w-full border-collapse border border-slate-200 bg-slate-50 text-xs"
+                        >
+                            <thead>
+                                <tr
+                                    class="bg-slate-900 text-xs font-bold tracking-tighter text-white uppercase"
+                                >
+                                    <th
+                                        class="border border-slate-300 p-1.5 text-left"
+                                    >
+                                        Performance Level
+                                    </th>
+                                    <th class="border border-slate-300 p-1.5">
+                                        Rating
+                                    </th>
+                                    <th class="border border-slate-300 p-1.5">
+                                        Key
+                                    </th>
+                                    <th class="border border-slate-300 p-1.5">
+                                        Score
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="level in performanceLevels"
+                                    :key="level.code"
+                                    class="border-b border-slate-200 font-bold"
+                                >
+                                    <td class="border border-slate-200 p-1.5">
+                                        {{ level.label }}
+                                    </td>
+                                    <td
+                                        class="border border-slate-200 p-1.5 text-center"
+                                    >
+                                        {{ level.rating || '-' }}
+                                    </td>
+                                    <td
+                                        class="border border-slate-200 p-1.5 text-center"
+                                    >
+                                        {{ level.code }}
+                                    </td>
+                                    <td
+                                        class="border border-slate-200 p-1.5 text-center"
+                                    >
+                                        {{ level.range }}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Main Assessment Matrix -->
                 <div class="mb-10 overflow-x-auto">
-                    <table class="w-full text-xs border-collapse border-2 border-slate-900">
+                    <table
+                        class="w-full border-collapse border-2 border-slate-900 text-xs"
+                    >
                         <thead>
-                            <tr class="bg-slate-900 text-white font-black uppercase text-center">
-                                <th rowspan="2" class="border border-white p-4 text-left w-1/4">Learning Area (s) / Activity Area</th>
-                                <th colspan="8" class="border border-white p-2">Assessment Module</th>
-                                <th rowspan="2" class="border border-white p-4 w-1/4">Performance Comments</th>
+                            <tr
+                                class="bg-slate-900 text-center font-bold text-white uppercase"
+                            >
+                                <th
+                                    rowspan="2"
+                                    class="w-1/4 border border-white p-4 text-left"
+                                >
+                                    Learning Area (s) / Activity Area
+                                </th>
+                                <th colspan="8" class="border border-white p-2">
+                                    Assessment Module
+                                </th>
+                                <th
+                                    rowspan="2"
+                                    class="w-1/4 border border-white p-4"
+                                >
+                                    Performance Comments
+                                </th>
                             </tr>
-                            <tr class="bg-slate-800 text-white font-bold text-[9px] uppercase tracking-tighter">
-                                <th colspan="2" class="border border-white p-1">Opening Exam</th>
-                                <th colspan="2" class="border border-white p-1">Mid term Exam</th>
-                                <th colspan="2" class="border border-white p-1">End Term Exam</th>
-                                <th colspan="2" class="border border-indigo-500 p-1 bg-indigo-900">Average</th>
+                            <tr
+                                class="bg-slate-800 text-xs font-bold tracking-tighter text-white uppercase"
+                            >
+                                <th colspan="2" class="border border-white p-1">
+                                    Opening Exam
+                                </th>
+                                <th colspan="2" class="border border-white p-1">
+                                    Mid term Exam
+                                </th>
+                                <th colspan="2" class="border border-white p-1">
+                                    End Term Exam
+                                </th>
+                                <th
+                                    colspan="2"
+                                    class="border border-indigo-500 bg-indigo-900 p-1"
+                                >
+                                    Average
+                                </th>
                             </tr>
-                            <tr class="bg-slate-50 text-slate-400 font-black text-[8px] uppercase tracking-widest text-center">
-                                <td class="border border-slate-200 p-1 text-left px-4">Subject Title</td>
-                                <td class="border border-slate-200 p-1">Score</td>
-                                <td class="border border-slate-200 p-1">Level</td>
-                                <td class="border border-slate-200 p-1">Score</td>
-                                <td class="border border-slate-200 p-1">Level</td>
-                                <td class="border border-slate-200 p-1">Score</td>
-                                <td class="border border-slate-200 p-1">Level</td>
-                                <td class="border border-indigo-200 p-1 bg-indigo-50/50">Score</td>
-                                <td class="border border-indigo-200 p-1 bg-indigo-50/50">Level</td>
-                                <td class="border border-slate-200 p-1 text-left px-4 italic">Feedback Summary</td>
+                            <tr
+                                class="bg-slate-50 text-center text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            >
+                                <td
+                                    class="border border-slate-200 p-1 px-4 text-left"
+                                >
+                                    Subject Title
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Score
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Level
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Score
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Level
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Score
+                                </td>
+                                <td class="border border-slate-200 p-1">
+                                    Level
+                                </td>
+                                <td
+                                    class="border border-indigo-200 bg-indigo-50/50 p-1"
+                                >
+                                    Score
+                                </td>
+                                <td
+                                    class="border border-indigo-200 bg-indigo-50/50 p-1"
+                                >
+                                    Level
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-1 px-4 text-left"
+                                >
+                                    Feedback Summary
+                                </td>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="result in results" :key="result.subject" class="hover:bg-indigo-50/30 transition-colors">
-                                <td class="border border-slate-200 p-3 font-black uppercase italic">{{ result.subject }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.opening?.score || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.opening?.level || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.mid?.score || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.mid?.level || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-bold text-slate-500">{{ result.end?.score || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-center font-black text-indigo-600">{{ result.end?.level || '-' }}</td>
-                                <td class="border border-indigo-100 p-3 text-center font-bold bg-indigo-50/20">{{ result.average?.score || '-' }}</td>
-                                <td class="border border-indigo-100 p-3 text-center font-black text-indigo-700 bg-indigo-50/40">{{ result.average?.level || '-' }}</td>
-                                <td class="border border-slate-200 p-3 text-xs italic text-slate-600 font-medium">{{ result.comments || 'Exhibits clear understanding and high retention of concepts.' }}</td>
+                            <tr
+                                v-for="result in results"
+                                :key="result.subject"
+                                class="transition-colors hover:bg-indigo-50/30"
+                            >
+                                <td
+                                    class="border border-slate-200 p-3 font-bold"
+                                >
+                                    {{ result.subject }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                >
+                                    {{ result.opening?.score || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                >
+                                    {{ result.opening?.level || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                >
+                                    {{ result.mid?.score || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                >
+                                    {{ result.mid?.level || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                >
+                                    {{ result.end?.score || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                >
+                                    {{ result.end?.level || '-' }}
+                                </td>
+                                <td
+                                    class="border border-indigo-100 bg-indigo-50/20 p-3 text-center font-bold"
+                                >
+                                    {{ result.average?.score || '-' }}
+                                </td>
+                                <td
+                                    class="border border-indigo-100 bg-indigo-50/40 p-3 text-center font-bold text-indigo-700"
+                                >
+                                    {{ result.average?.level || '-' }}
+                                </td>
+                                <td
+                                    class="border border-slate-200 p-3 text-xs font-medium text-slate-600"
+                                >
+                                    {{
+                                        result.comments ||
+                                        'Exhibits clear understanding and high retention of concepts.'
+                                    }}
+                                </td>
                             </tr>
                             <!-- Summary Totals -->
-                            <tr class="bg-indigo-50/50 font-black">
-                                <td class="border-2 border-slate-900 p-4 uppercase text-sm tracking-tighter">Total Score / Mean Index</td>
-                                <td colspan="6" class="border border-slate-200 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">Aggregated Summary</td>
-                                <td class="border-2 border-slate-900 p-4 text-center text-lg text-indigo-600">74.2%</td>
-                                <td class="border-2 border-slate-900 p-4 text-center text-indigo-700">ME</td>
-                                <td class="border-2 border-slate-900 p-4 text-right text-[10px] uppercase tracking-widest text-indigo-600 underline">Meeting Expectation</td>
+                            <tr class="bg-indigo-50/50 font-bold">
+                                <td
+                                    class="border-2 border-slate-900 p-4 text-sm tracking-tighter uppercase"
+                                >
+                                    Total Score / Mean Index
+                                </td>
+                                <td
+                                    colspan="6"
+                                    class="border border-slate-200 text-center text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                >
+                                    Aggregated Summary
+                                </td>
+                                <td
+                                    class="border-2 border-slate-900 p-4 text-center text-lg text-indigo-600"
+                                >
+                                    74.2%
+                                </td>
+                                <td
+                                    class="border-2 border-slate-900 p-4 text-center text-indigo-700"
+                                >
+                                    ME
+                                </td>
+                                <td
+                                    class="border-2 border-slate-900 p-4 text-right text-xs tracking-tight text-indigo-600 uppercase underline"
+                                >
+                                    Meeting Expectation
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Page 2 Content -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div class="grid grid-cols-1 gap-10 md:grid-cols-2">
                     <!-- Left Column: Conduct & Behavior -->
                     <div class="space-y-6">
                         <section>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                                <span class="h-5 w-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px]">2.0</span> 
+                            <h3
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                            >
+                                <span
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-slate-900 text-xs text-white"
+                                    >2.0</span
+                                >
                                 CONDUCT AND BEHAVIOUR
                             </h3>
-                            <table class="w-full text-[10px] border-collapse border border-slate-200">
+                            <table
+                                class="w-full border-collapse border border-slate-200 text-xs"
+                            >
                                 <thead>
-                                    <tr class="bg-slate-50 font-black uppercase tracking-tighter">
-                                        <th class="border border-slate-200 p-2 text-left">Attributes / Area</th>
-                                        <th class="border border-slate-200 p-2">Term 1</th>
-                                        <th class="border border-slate-200 p-2">Term 2</th>
-                                        <th class="border border-slate-200 p-2">Term 3</th>
+                                    <tr
+                                        class="bg-slate-50 font-bold tracking-tighter uppercase"
+                                    >
+                                        <th
+                                            class="border border-slate-200 p-2 text-left"
+                                        >
+                                            Attributes / Area
+                                        </th>
+                                        <th class="border border-slate-200 p-2">
+                                            Term 1
+                                        </th>
+                                        <th class="border border-slate-200 p-2">
+                                            Term 2
+                                        </th>
+                                        <th class="border border-slate-200 p-2">
+                                            Term 3
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody class="font-bold">
-                                    <tr v-for="attr in conductAttributes" :key="attr.label">
-                                        <td class="border border-slate-200 p-2 uppercase text-slate-500">{{ attr.label }}</td>
-                                        <td class="border border-slate-200 p-2 text-center text-indigo-600 italic">{{ attr.t1 }}</td>
-                                        <td class="border border-slate-200 p-2 text-center text-slate-300 italic">{{ attr.t2 || '-' }}</td>
-                                        <td class="border border-slate-200 p-2 text-center text-slate-300 italic">{{ attr.t3 || '-' }}</td>
+                                    <tr
+                                        v-for="attr in conductAttributes"
+                                        :key="attr.label"
+                                    >
+                                        <td
+                                            class="border border-slate-200 p-2 text-slate-500 uppercase"
+                                        >
+                                            {{ attr.label }}
+                                        </td>
+                                        <td
+                                            class="border border-slate-200 p-2 text-center text-indigo-600"
+                                        >
+                                            {{ attr.t1 }}
+                                        </td>
+                                        <td
+                                            class="border border-slate-200 p-2 text-center text-slate-300"
+                                        >
+                                            {{ attr.t2 || '-' }}
+                                        </td>
+                                        <td
+                                            class="border border-slate-200 p-2 text-center text-slate-300"
+                                        >
+                                            {{ attr.t3 || '-' }}
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </section>
 
                         <section>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                                <span class="h-5 w-5 rounded bg-indigo-600 text-white flex items-center justify-center text-[10px]">3.0</span> 
+                            <h3
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                            >
+                                <span
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-indigo-600 text-xs text-white"
+                                    >3.0</span
+                                >
                                 CORE COMPETENCIES FEEDBACK
                             </h3>
-                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[140px] text-xs font-medium italic text-slate-600">
-                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">Acquisition of core competencies (Communication, Collaboration, Critical Thinking, etc.):</p>
-                                {{ student?.first_name }} demonstrates strong communication skills and collaborates effectively with peers. Showcases emerging critical thinking during problem-solving activities.
+                            <div
+                                class="min-h-[140px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                            >
+                                <p
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                >
+                                    Acquisition of core competencies
+                                    (Communication, Collaboration, Critical
+                                    Thinking, etc.):
+                                </p>
+                                {{ student?.first_name }} demonstrates strong
+                                communication skills and collaborates
+                                effectively with peers. Showcases emerging
+                                critical thinking during problem-solving
+                                activities.
                             </div>
                         </section>
                     </div>
 
                     <!-- Right Column: Values & CS Learning -->
                     <div class="space-y-6">
-                         <section>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                                <span class="h-5 w-5 rounded bg-indigo-600 text-white flex items-center justify-center text-[10px]">4.0</span> 
+                        <section>
+                            <h3
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                            >
+                                <span
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-indigo-600 text-xs text-white"
+                                    >4.0</span
+                                >
                                 ACQUISITION OF VALUES
                             </h3>
-                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[120px] text-xs font-medium italic text-slate-600">
-                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">(Love, Responsibility, Respect, Unity, Peace, Patriotism, Integrity):</p>
-                                Displays a high sense of responsibility and respect for school property and peers. Consistently acts with integrity.
+                            <div
+                                class="min-h-[120px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                            >
+                                <p
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                >
+                                    (Love, Responsibility, Respect, Unity,
+                                    Peace, Patriotism, Integrity):
+                                </p>
+                                Displays a high sense of responsibility and
+                                respect for school property and peers.
+                                Consistently acts with integrity.
                             </div>
                         </section>
 
                         <section>
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                                <span class="h-5 w-5 rounded bg-slate-900 text-white flex items-center justify-center text-[10px]">5.0</span> 
+                            <h3
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                            >
+                                <span
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-slate-900 text-xs text-white"
+                                    >5.0</span
+                                >
                                 COMMUNITY SERVICE LEARNING
                             </h3>
-                            <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl min-h-[120px] text-xs font-medium italic text-slate-600">
-                                <p class="mb-2 font-bold not-italic font-sans text-[10px] text-slate-400 leading-tight uppercase tracking-tighter">Participation in community service learning program:</p>
-                                Actively participated in the environment cleaning drive and tree planting exercise. Showed great enthusiasm.
+                            <div
+                                class="min-h-[120px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                            >
+                                <p
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                >
+                                    Participation in community service learning
+                                    program:
+                                </p>
+                                Actively participated in the environment
+                                cleaning drive and tree planting exercise.
+                                Showed great enthusiasm.
                             </div>
                         </section>
 
                         <!-- Dates Section -->
                         <div class="grid grid-cols-2 gap-4 pt-4">
-                            <div class="p-4 border-2 border-slate-900 bg-white">
-                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Closing Date</p>
-                                <p class="text-sm font-black italic">{{ new Date().toLocaleDateString('en-GB') }}</p>
+                            <div class="border-2 border-slate-900 bg-white p-4">
+                                <p
+                                    class="mb-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                >
+                                    Closing Date
+                                </p>
+                                <p class="text-sm font-bold">
+                                    {{ new Date().toLocaleDateString('en-GB') }}
+                                </p>
                             </div>
-                            <div class="p-4 border-2 border-slate-900 bg-white">
-                                <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Opening Date</p>
-                                <p class="text-sm font-black italic">TBD</p>
+                            <div class="border-2 border-slate-900 bg-white p-4">
+                                <p
+                                    class="mb-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                >
+                                    Opening Date
+                                </p>
+                                <p class="text-sm font-bold">TBD</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Footer Signatures -->
-                <div class="mt-16 pt-8 border-t-2 border-slate-900">
-                    <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-8">6.0 SIGNING & OFFICIAL STAMP</h3>
+                <div class="mt-16 border-t-2 border-slate-900 pt-8">
+                    <h3
+                        class="mb-8 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                    >
+                        6.0 SIGNING & OFFICIAL STAMP
+                    </h3>
                     <div class="grid grid-cols-3 gap-12">
                         <div class="space-y-4">
-                             <div class="h-10 border-b border-slate-900"></div>
-                             <div>
-                                 <p class="text-[10px] font-black uppercase tracking-widest">Class Teacher</p>
-                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
-                             </div>
+                            <div class="h-10 border-b border-slate-900"></div>
+                            <div>
+                                <p
+                                    class="text-xs font-medium tracking-tight uppercase"
+                                >
+                                    Class Teacher
+                                </p>
+                                <p class="text-xs font-bold text-slate-400">
+                                    Signature / Date
+                                </p>
+                            </div>
                         </div>
                         <div class="space-y-4">
-                             <div class="h-10 border-b border-slate-900"></div>
-                             <div>
-                                 <p class="text-[10px] font-black uppercase tracking-widest">Head Teacher</p>
-                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
-                             </div>
+                            <div class="h-10 border-b border-slate-900"></div>
+                            <div>
+                                <p
+                                    class="text-xs font-medium tracking-tight uppercase"
+                                >
+                                    Head Teacher
+                                </p>
+                                <p class="text-xs font-bold text-slate-400">
+                                    Signature / Date
+                                </p>
+                            </div>
                         </div>
                         <div class="space-y-4">
-                             <div class="h-10 border-b border-slate-900"></div>
-                             <div>
-                                 <p class="text-[10px] font-black uppercase tracking-widest">Parent / Guardian</p>
-                                 <p class="text-[9px] font-bold text-slate-400 italic">Signature / Date</p>
-                             </div>
+                            <div class="h-10 border-b border-slate-900"></div>
+                            <div>
+                                <p
+                                    class="text-xs font-medium tracking-tight uppercase"
+                                >
+                                    Parent / Guardian
+                                </p>
+                                <p class="text-xs font-bold text-slate-400">
+                                    Signature / Date
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- System Metadata -->
-                <div class="mt-20 pt-4 flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
+                <div
+                    class="mt-20 flex items-center justify-between pt-4 text-xs font-medium tracking-tight text-muted-foreground text-slate-300 uppercase"
+                >
                     <span>Generated by CBC Smart LMS v4.2</span>
-                    <span>Document ID: {{ student?.admission_number }}-RC-{{ academicTerm?.id }}</span>
+                    <span
+                        >Document ID: {{ student?.admission_number }}-RC-{{
+                            academicTerm?.id
+                        }}</span
+                    >
                     <span>Page 1 of 1</span>
                 </div>
             </div>
 
             <!-- Print Prompt -->
-            <p class="text-center text-xs text-slate-400 font-bold py-6 italic print:hidden">
-                Tip: Press <kbd class="px-1 py-0.5 bg-slate-100 rounded border">Ctrl + P</kbd> to save this as a high-quality PDF.
+            <p
+                class="py-6 text-center text-xs font-bold text-slate-400 print:hidden"
+            >
+                Tip: Press
+                <kbd class="rounded border bg-slate-100 px-1 py-0.5"
+                    >Ctrl + P</kbd
+                >
+                to save this as a high-quality PDF.
             </p>
         </div>
     </AppLayout>
@@ -304,10 +654,16 @@ const conductAttributes = [
 }
 
 @media print {
-    .p-12 { padding: 0 !important; }
-    .shadow-2xl { box-shadow: none !important; }
-    .border { border: none !important; }
-    
+    .p-12 {
+        padding: 0 !important;
+    }
+    .shadow-lg {
+        box-shadow: none !important;
+    }
+    .border {
+        border: none !important;
+    }
+
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;

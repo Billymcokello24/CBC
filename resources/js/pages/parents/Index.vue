@@ -1,11 +1,28 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { 
-    Users, Search, Filter, Mail, Phone, Building2, 
-    UserPlus, BadgeCheck, LayoutGrid, List as ListIcon,
-    ChevronDown, GraduationCap, Eye, Plus, MoreHorizontal,
-    Heart, Home, MapPin, PhoneForwarded, ShieldCheck,
-    Edit, Trash2
+import {
+    Users,
+    Search,
+    Filter,
+    Mail,
+    Phone,
+    Building2,
+    UserPlus,
+    BadgeCheck,
+    LayoutGrid,
+    List as ListIcon,
+    ChevronDown,
+    GraduationCap,
+    Eye,
+    Plus,
+    MoreHorizontal,
+    Heart,
+    Home,
+    MapPin,
+    PhoneForwarded,
+    ShieldCheck,
+    Edit,
+    Trash2,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -52,9 +69,13 @@ const viewMode = ref('grid');
 
 let debounceTimer: any;
 const applyFilters = () => {
-    router.get('/parents', { 
-        search: searchQuery.value,
-    }, { preserveState: true, replace: true });
+    router.get(
+        '/parents',
+        {
+            search: searchQuery.value,
+        },
+        { preserveState: true, replace: true },
+    );
 };
 
 watch(searchQuery, () => {
@@ -63,11 +84,17 @@ watch(searchQuery, () => {
 });
 
 const getStatusColor = (active: boolean) => {
-    return active ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-400 text-white';
+    return active
+        ? 'bg-emerald-500 text-white shadow-sm'
+        : 'bg-slate-400 text-white';
 };
 
 const deleteParent = (id: number) => {
-    if (confirm('Are you sure you want to delete this parent account? This will unlink all students.')) {
+    if (
+        confirm(
+            'Are you sure you want to delete this parent account? This will unlink all students.',
+        )
+    ) {
         router.delete(`/parents/${id}`);
     }
 };
@@ -76,25 +103,41 @@ const deleteParent = (id: number) => {
 <template>
     <Head title="Parent Registry" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-6 md:p-8">
-            
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-8 p-6 pb-20 duration-700 fade-in slide-in-from-bottom-4 md:p-8"
+        >
             <!-- Page Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div
+                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+            >
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-bold tracking-tight text-foreground">Parent Registry</h1>
-                    <p class="text-[15px] text-muted-foreground">
+                    <h1
+                        class="text-3xl font-bold tracking-tight text-foreground"
+                    >
+                        Parent Registry
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
                         Manage primary guardians and institutional parents.
                     </p>
                 </div>
-                
+
                 <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-medium hover:bg-muted" @click="viewMode = viewMode === 'grid' ? 'list' : 'grid'">
-                        <component :is="viewMode === 'grid' ? ListIcon : LayoutGrid" class="mr-2 h-4 w-4 opacity-70" />
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border px-4 font-medium hover:bg-muted"
+                        @click="
+                            viewMode = viewMode === 'grid' ? 'list' : 'grid'
+                        "
+                    >
+                        <component
+                            :is="viewMode === 'grid' ? ListIcon : LayoutGrid"
+                            class="mr-2 h-4 w-4 opacity-70"
+                        />
                         {{ viewMode === 'grid' ? 'List View' : 'Grid View' }}
                     </Button>
                     <Link
                         href="/parents/create"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 h-10 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-all"
+                        class="inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
                     >
                         <UserPlus class="mr-2 h-4 w-4" />
                         Add Parent
@@ -104,33 +147,67 @@ const deleteParent = (id: number) => {
 
             <!-- Stats Grid -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+                <div
+                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm"
+                >
                     <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Total Parents</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.total.toLocaleString() }}</h3>
+                        <p
+                            class="mb-1 text-sm font-medium text-muted-foreground"
+                        >
+                            Total Parents
+                        </p>
+                        <h3 class="text-2xl font-bold text-foreground">
+                            {{ stats.total.toLocaleString() }}
+                        </h3>
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"
+                    >
                         <Users class="h-6 w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+                <div
+                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm"
+                >
                     <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">Active Accounts</p>
-                        <h3 class="text-2xl font-bold text-foreground">{{ stats.active.toLocaleString() }}</h3>
+                        <p
+                            class="mb-1 text-sm font-medium text-muted-foreground"
+                        >
+                            Active Accounts
+                        </p>
+                        <h3 class="text-2xl font-bold text-foreground">
+                            {{ stats.active.toLocaleString() }}
+                        </h3>
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600"
+                    >
                         <ShieldCheck class="h-6 w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-border bg-card p-6 shadow-sm flex items-center justify-between">
+                <div
+                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm"
+                >
                     <div>
-                        <p class="text-sm font-medium text-muted-foreground mb-1">New Registrations</p>
-                        <h3 class="text-2xl font-bold text-foreground">+{{ stats.new_this_month }}</h3>
-                        <p class="text-[10px] text-muted-foreground mt-0.5 font-bold uppercase tracking-wider">This Month</p>
+                        <p
+                            class="mb-1 text-sm font-medium text-muted-foreground"
+                        >
+                            New Registrations
+                        </p>
+                        <h3 class="text-2xl font-bold text-foreground">
+                            +{{ stats.new_this_month }}
+                        </h3>
+                        <p
+                            class="mt-0.5 text-xs font-bold tracking-wider text-muted-foreground uppercase"
+                        >
+                            This Month
+                        </p>
                     </div>
-                    <div class="h-12 w-12 rounded-2xl bg-blue-50/50 flex items-center justify-center text-blue-500">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50/50 text-blue-500"
+                    >
                         <UserPlus class="h-6 w-6" />
                     </div>
                 </div>
@@ -138,56 +215,87 @@ const deleteParent = (id: number) => {
 
             <!-- Search Bar -->
             <div class="relative max-w-md">
-                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input 
-                    v-model="searchQuery" 
-                    placeholder="Search by name, phone or email..." 
-                    class="pl-11 h-11 bg-card border-border rounded-xl text-sm focus:ring-2 focus:ring-indigo-600/10"
+                <Search
+                    class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                    v-model="searchQuery"
+                    placeholder="Search by name, phone or email..."
+                    class="h-11 rounded-xl border-border bg-card pl-11 text-sm focus:ring-2 focus:ring-indigo-600/10"
                 />
             </div>
 
             <!-- Grid View -->
-            <div v-if="viewMode === 'grid' && parents.total > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                <div 
-                    v-for="parent in parents.data" 
+            <div
+                v-if="viewMode === 'grid' && parents.total > 0"
+                class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            >
+                <div
+                    v-for="parent in parents.data"
                     :key="parent.id"
-                    class="group relative flex flex-col p-6 rounded-2xl border border-border bg-card shadow-sm hover:shadow-md hover:border-blue-500/30 transition-all duration-300"
+                    class="group relative flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-md"
                 >
-                    <div class="flex flex-col items-center text-center space-y-4">
+                    <div
+                        class="flex flex-col items-center space-y-4 text-center"
+                    >
                         <div class="relative">
-                            <div class="h-20 w-20 rounded-full overflow-hidden ring-4 ring-muted bg-muted flex items-center justify-center">
-                                <img v-if="parent.photo" :src="parent.photo" class="h-full w-full object-cover" />
-                                <div v-else class="text-xl font-bold text-blue-600/40 uppercase">
-                                    {{ parent.first_name[0] }}{{ parent.last_name[0] }}
+                            <div
+                                class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-muted ring-4 ring-muted"
+                            >
+                                <img
+                                    v-if="parent.photo"
+                                    :src="parent.photo"
+                                    class="h-full w-full object-cover"
+                                />
+                                <div
+                                    v-else
+                                    class="text-xl font-bold text-blue-600/40 uppercase"
+                                >
+                                    {{ parent.first_name[0]
+                                    }}{{ parent.last_name[0] }}
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="space-y-1">
-                            <h3 class="text-lg font-bold text-foreground group-hover:text-blue-600 transition-colors line-clamp-1">
+                            <h3
+                                class="line-clamp-1 text-lg font-bold text-foreground transition-colors group-hover:text-blue-600"
+                            >
                                 {{ parent.first_name }} {{ parent.last_name }}
                             </h3>
-                            <div class="flex items-center justify-center gap-1.5 text-xs text-muted-foreground font-medium">
+                            <div
+                                class="flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground"
+                            >
                                 <Phone class="h-3 w-3" />
                                 {{ parent.phone }}
                             </div>
                         </div>
-                        
+
                         <!-- Children Pills -->
-                        <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
-                            <Badge 
-                                v-for="student in parent.students" 
+                        <div
+                            class="flex flex-wrap items-center justify-center gap-2 pt-2"
+                        >
+                            <Badge
+                                v-for="student in parent.students"
                                 :key="student.id"
-                                variant="outline" 
-                                class="rounded-lg bg-blue-50/50 border-blue-100 text-blue-700 text-[9px] font-bold px-2 py-0.5 truncate max-w-[120px]"
+                                variant="outline"
+                                class="max-w-[120px] truncate rounded-lg border-blue-100 bg-blue-50/50 px-2 py-0.5 text-xs font-bold text-blue-700"
                             >
                                 {{ student.first_name }}
                             </Badge>
-                            <span v-if="!parent.students?.length" class="text-[10px] italic text-muted-foreground">No students linked</span>
+                            <span
+                                v-if="!parent.students?.length"
+                                class="text-xs text-muted-foreground"
+                                >No students linked</span
+                            >
                         </div>
 
-                        <div class="w-full pt-4 border-t border-border mt-auto">
-                            <Button as-child variant="link" class="w-full h-8 text-xs font-bold text-blue-600 hover:text-blue-700 p-0">
+                        <div class="mt-auto w-full border-t border-border pt-4">
+                            <Button
+                                as-child
+                                variant="link"
+                                class="h-8 w-full p-0 text-xs font-bold text-blue-600 hover:text-blue-700"
+                            >
                                 <Link :href="`/parents/${parent.id}`">
                                     Full Directory Entry
                                 </Link>
@@ -198,81 +306,160 @@ const deleteParent = (id: number) => {
             </div>
 
             <!-- List View -->
-            <div v-else-if="viewMode === 'list' && parents.total > 0" class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden animate-in fade-in duration-500">
+            <div
+                v-else-if="viewMode === 'list' && parents.total > 0"
+                class="animate-in overflow-hidden rounded-2xl border border-border bg-card shadow-sm duration-500 fade-in"
+            >
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="bg-muted/30 border-b">
-                            <th class="p-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Parent Identity</th>
-                            <th class="p-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Children / Dependents</th>
-                            <th class="p-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Primary Contact</th>
-                            <th class="p-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center">Account</th>
-                            <th class="p-6 text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-right">Actions</th>
+                        <tr class="border-b bg-muted/30">
+                            <th
+                                class="p-6 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Parent Identity
+                            </th>
+                            <th
+                                class="p-6 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Children / Dependents
+                            </th>
+                            <th
+                                class="p-6 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Primary Contact
+                            </th>
+                            <th
+                                class="p-6 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Account
+                            </th>
+                            <th
+                                class="p-6 text-right text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Actions
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border">
-                        <tr v-for="parent in parents.data" :key="parent.id" class="group hover:bg-muted/10 transition-all">
+                        <tr
+                            v-for="parent in parents.data"
+                            :key="parent.id"
+                            class="group transition-all hover:bg-muted/10"
+                        >
                             <td class="p-6">
                                 <div class="flex items-center gap-4">
-                                    <div class="h-10 w-10 rounded-xl overflow-hidden bg-muted flex items-center justify-center">
-                                        <img v-if="parent.photo" :src="parent.photo" class="h-full w-full object-cover" />
-                                        <div v-else class="text-sm font-bold text-blue-600/40 uppercase">
-                                            {{ parent.first_name[0] }}{{ parent.last_name[0] }}
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-muted"
+                                    >
+                                        <img
+                                            v-if="parent.photo"
+                                            :src="parent.photo"
+                                            class="h-full w-full object-cover"
+                                        />
+                                        <div
+                                            v-else
+                                            class="text-sm font-bold text-blue-600/40 uppercase"
+                                        >
+                                            {{ parent.first_name[0]
+                                            }}{{ parent.last_name[0] }}
                                         </div>
                                     </div>
                                     <div>
-                                        <p class="font-bold text-foreground leading-tight">{{ parent.first_name }} {{ parent.last_name }}</p>
-                                        <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">ID: {{ parent.id_number || 'N/A' }}</p>
+                                        <p
+                                            class="leading-tight font-bold text-foreground"
+                                        >
+                                            {{ parent.first_name }}
+                                            {{ parent.last_name }}
+                                        </p>
+                                        <p
+                                            class="mt-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                        >
+                                            ID: {{ parent.id_number || 'N/A' }}
+                                        </p>
                                     </div>
                                 </div>
                             </td>
                             <td class="p-6">
                                 <div class="flex flex-wrap gap-2">
-                                    <Badge 
-                                        v-for="student in parent.students" 
+                                    <Badge
+                                        v-for="student in parent.students"
                                         :key="student.id"
-                                        class="bg-blue-50 text-blue-700 border-blue-100 font-bold px-2 py-0.5 text-[9px] uppercase"
+                                        class="border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 uppercase"
                                     >
-                                        {{ student.first_name }} {{ student.last_name }}
+                                        {{ student.first_name }}
+                                        {{ student.last_name }}
                                     </Badge>
                                 </div>
                             </td>
                             <td class="p-6">
                                 <div class="space-y-1">
-                                    <div class="flex items-center gap-2 text-sm font-medium text-foreground">
-                                        <Phone class="h-3.5 w-3.5 text-blue-500" />
+                                    <div
+                                        class="flex items-center gap-2 text-sm font-medium text-foreground"
+                                    >
+                                        <Phone
+                                            class="h-3.5 w-3.5 text-blue-500"
+                                        />
                                         {{ parent.phone }}
                                     </div>
-                                    <div class="flex items-center gap-2 text-[10px] text-muted-foreground truncate max-w-[200px]">
+                                    <div
+                                        class="flex max-w-[200px] items-center gap-2 truncate text-xs text-muted-foreground"
+                                    >
                                         <Mail class="h-3 w-3" />
                                         {{ parent.email }}
                                     </div>
                                 </div>
                             </td>
                             <td class="p-6 text-center">
-                                <Badge :class="parent.is_active ? 'bg-emerald-500 text-white' : 'bg-slate-400 text-white'" class="rounded-lg font-bold px-3 py-1 text-[9px] uppercase border-none">
+                                <Badge
+                                    :class="
+                                        parent.is_active
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-slate-400 text-white'
+                                    "
+                                    class="rounded-lg border-none px-3 py-1 text-xs font-bold uppercase"
+                                >
                                     {{ parent.is_active ? 'Active' : 'Locked' }}
                                 </Badge>
                             </td>
                             <td class="p-6 text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child>
-                                        <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            class="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground"
+                                        >
                                             <MoreHorizontal class="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" class="rounded-xl border-border shadow-lg">
+                                    <DropdownMenuContent
+                                        align="end"
+                                        class="rounded-xl border-border shadow-lg"
+                                    >
                                         <DropdownMenuItem as-child>
-                                            <Link :href="`/parents/${parent.id}`" class="flex items-center gap-2">
-                                                <Eye class="h-4 w-4" /> View Profile
+                                            <Link
+                                                :href="`/parents/${parent.id}`"
+                                                class="flex items-center gap-2"
+                                            >
+                                                <Eye class="h-4 w-4" /> View
+                                                Profile
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem as-child>
-                                            <Link :href="`/parents/${parent.id}/edit`" class="flex items-center gap-2 text-blue-600">
-                                                <Edit class="h-4 w-4" /> Edit Record
+                                            <Link
+                                                :href="`/parents/${parent.id}/edit`"
+                                                class="flex items-center gap-2 text-blue-600"
+                                            >
+                                                <Edit class="h-4 w-4" /> Edit
+                                                Record
                                             </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem @click="deleteParent(parent.id)" class="flex items-center gap-2 text-red-600">
-                                            <Trash2 class="h-4 w-4" /> Delete Account
+                                        <DropdownMenuItem
+                                            @click="deleteParent(parent.id)"
+                                            class="flex items-center gap-2 text-red-600"
+                                        >
+                                            <Trash2 class="h-4 w-4" /> Delete
+                                            Account
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -283,32 +470,62 @@ const deleteParent = (id: number) => {
             </div>
 
             <!-- Empty State -->
-            <div v-if="parents.total === 0" class="flex flex-col items-center justify-center py-32 space-y-4 bg-muted/10 rounded-3xl border border-dashed border-border/60">
-                <div class="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center">
+            <div
+                v-if="parents.total === 0"
+                class="flex flex-col items-center justify-center space-y-4 rounded-3xl border border-dashed border-border/60 bg-muted/10 py-32"
+            >
+                <div
+                    class="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted"
+                >
                     <Users class="h-8 w-8 text-muted-foreground/30" />
                 </div>
-                <div class="text-center space-y-2">
-                    <h3 class="text-xl font-bold text-foreground">No Parents Found</h3>
-                    <p class="text-sm text-muted-foreground max-w-xs mx-auto italic">Try adjusting your search or add a new parent to the registry.</p>
+                <div class="space-y-2 text-center">
+                    <h3 class="text-xl font-bold text-foreground">
+                        No Parents Found
+                    </h3>
+                    <p class="mx-auto max-w-xs text-sm text-muted-foreground">
+                        Try adjusting your search or add a new parent to the
+                        registry.
+                    </p>
                 </div>
-                <Button variant="outline" class="rounded-xl mt-4" @click="searchQuery = ''">
+                <Button
+                    variant="outline"
+                    class="mt-4 rounded-xl"
+                    @click="searchQuery = ''"
+                >
                     Reset Search
                 </Button>
             </div>
 
             <!-- Pagination -->
-            <div v-if="parents.last_page > 1" class="flex items-center justify-between border-t border-border pt-8">
-                <p class="text-xs font-semibold text-muted-foreground italic">
-                    Showing {{ parents.from }} to {{ parents.to }} of {{ parents.total }} results
+            <div
+                v-if="parents.last_page > 1"
+                class="flex items-center justify-between border-t border-border pt-8"
+            >
+                <p class="text-xs font-semibold text-muted-foreground">
+                    Showing {{ parents.from }} to {{ parents.to }} of
+                    {{ parents.total }} results
                 </p>
                 <div class="flex items-center gap-2">
-                    <Button variant="outline" class="h-9 px-4 rounded-xl text-xs font-bold" :disabled="parents.current_page <= 1" @click="router.get(parents.prev_page_url || '')">
+                    <Button
+                        variant="outline"
+                        class="h-9 rounded-xl px-4 text-xs font-bold"
+                        :disabled="parents.current_page <= 1"
+                        @click="router.get(parents.prev_page_url || '')"
+                    >
                         Previous
                     </Button>
-                    <div class="h-9 min-w-[36px] flex items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-xs shadow-sm shadow-blue-200">
+                    <div
+                        class="flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-blue-600 text-xs font-bold text-white shadow-sm shadow-blue-200"
+                    >
                         {{ parents.current_page }}
                     </div>
-                    <Button variant="outline" class="h-9 px-4 rounded-xl text-xs font-bold" :disabled="parents.current_page >= parents.last_page" @click="router.get(parents.next_page_url || '')">
+                    <Button
+                        variant="outline"
+                        class="h-9 rounded-xl px-4 text-xs font-bold"
+                        :disabled="parents.current_page >= parents.last_page"
+                        @click="router.get(parents.next_page_url || '')"
+                    >
                         Next
                     </Button>
                 </div>

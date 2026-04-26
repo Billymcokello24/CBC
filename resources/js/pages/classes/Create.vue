@@ -43,17 +43,24 @@ const submit = () => {
 
 import { watch } from 'vue';
 
-watch([() => form.grade_level_id, () => form.stream_id], ([gradeId, streamId]) => {
-    if (!gradeId) return;
-    
-    const grade = props.grades.find(g => String(g.id) === String(gradeId));
-    const stream = props.streams.find(s => String(s.id) === String(streamId));
-    
-    if (grade) {
-        form.name = grade.name + (stream ? ' ' + stream.name : '');
-        form.code = grade.code + (stream ? stream.code : '');
-    }
-});
+watch(
+    [() => form.grade_level_id, () => form.stream_id],
+    ([gradeId, streamId]) => {
+        if (!gradeId) return;
+
+        const grade = props.grades.find(
+            (g) => String(g.id) === String(gradeId),
+        );
+        const stream = props.streams.find(
+            (s) => String(s.id) === String(streamId),
+        );
+
+        if (grade) {
+            form.name = grade.name + (stream ? ' ' + stream.name : '');
+            form.code = grade.code + (stream ? stream.code : '');
+        }
+    },
+);
 </script>
 
 <template>
@@ -67,54 +74,107 @@ watch([() => form.grade_level_id, () => form.stream_id], ([gradeId, streamId]) =
                 </Button>
                 <div>
                     <h1 class="text-2xl font-bold tracking-tight">Add Class</h1>
-                    <p class="text-muted-foreground">Create a new class and connect it to grade, stream, and academic year</p>
+                    <p class="text-muted-foreground">
+                        Create a new class and connect it to grade, stream, and
+                        academic year
+                    </p>
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6 rounded-xl border bg-card p-6">
+            <form
+                @submit.prevent="submit"
+                class="space-y-6 rounded-xl border bg-card p-6"
+            >
                 <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     <div class="space-y-2">
                         <Label for="name">Class Name</Label>
-                        <Input id="name" v-model="form.name" placeholder="Grade 9 West" />
+                        <Input
+                            id="name"
+                            v-model="form.name"
+                            placeholder="Grade 9 West"
+                        />
                         <InputError :message="form.errors.name" />
                     </div>
                     <div class="space-y-2">
                         <Label for="code">Class Code</Label>
-                        <Input id="code" v-model="form.code" placeholder="G9W" />
+                        <Input
+                            id="code"
+                            v-model="form.code"
+                            placeholder="G9W"
+                        />
                         <InputError :message="form.errors.code" />
                     </div>
                     <div class="space-y-2">
                         <Label for="capacity">Capacity</Label>
-                        <Input id="capacity" v-model="form.capacity" type="number" min="1" />
+                        <Input
+                            id="capacity"
+                            v-model="form.capacity"
+                            type="number"
+                            min="1"
+                        />
                         <InputError :message="form.errors.capacity" />
                     </div>
                     <div class="space-y-2">
                         <Label for="grade_level_id">Grade</Label>
-                        <select id="grade_level_id" v-model="form.grade_level_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <select
+                            id="grade_level_id"
+                            v-model="form.grade_level_id"
+                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
                             <option value="">Select grade</option>
-                            <option v-for="grade in grades" :key="grade.id" :value="String(grade.id)">{{ grade.name }}</option>
+                            <option
+                                v-for="grade in grades"
+                                :key="grade.id"
+                                :value="String(grade.id)"
+                            >
+                                {{ grade.name }}
+                            </option>
                         </select>
                         <InputError :message="form.errors.grade_level_id" />
                     </div>
                     <div class="space-y-2">
                         <Label for="stream_id">Stream</Label>
-                        <select id="stream_id" v-model="form.stream_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <select
+                            id="stream_id"
+                            v-model="form.stream_id"
+                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
                             <option value="">No stream</option>
-                            <option v-for="stream in streams" :key="stream.id" :value="String(stream.id)">{{ stream.name }}</option>
+                            <option
+                                v-for="stream in streams"
+                                :key="stream.id"
+                                :value="String(stream.id)"
+                            >
+                                {{ stream.name }}
+                            </option>
                         </select>
                         <InputError :message="form.errors.stream_id" />
                     </div>
                     <div class="space-y-2">
                         <Label for="academic_year_id">Academic Year</Label>
-                        <select id="academic_year_id" v-model="form.academic_year_id" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <select
+                            id="academic_year_id"
+                            v-model="form.academic_year_id"
+                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
                             <option value="">Select academic year</option>
-                            <option v-for="year in academicYears" :key="year.id" :value="String(year.id)">{{ year.name }}</option>
+                            <option
+                                v-for="year in academicYears"
+                                :key="year.id"
+                                :value="String(year.id)"
+                            >
+                                {{ year.name }}
+                            </option>
                         </select>
                         <InputError :message="form.errors.academic_year_id" />
                     </div>
                     <div class="space-y-2">
                         <Label for="is_active">Status</Label>
-                        <select id="is_active" v-model="form.is_active" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                        <select
+                            id="is_active"
+                            v-model="form.is_active"
+                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                        >
                             <option :value="true">Active</option>
                             <option :value="false">Inactive</option>
                         </select>
@@ -123,9 +183,14 @@ watch([() => form.grade_level_id, () => form.stream_id], ([gradeId, streamId]) =
                 </div>
 
                 <div class="flex justify-end gap-3">
-                    <Button type="button" variant="outline" as-child><Link href="/classes">Cancel</Link></Button>
+                    <Button type="button" variant="outline" as-child
+                        ><Link href="/classes">Cancel</Link></Button
+                    >
                     <Button type="submit" :disabled="form.processing">
-                        <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2
+                            v-if="form.processing"
+                            class="mr-2 h-4 w-4 animate-spin"
+                        />
                         <PlusSquare v-else class="mr-2 h-4 w-4" />
                         Save Class
                     </Button>

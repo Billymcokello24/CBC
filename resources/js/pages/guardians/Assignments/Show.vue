@@ -6,8 +6,20 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 import { ref } from 'vue';
 import {
-    ArrowLeft, Paperclip, Download, Upload, Send, Clock,
-    User, BookOpen, FileText, Loader2, X, CheckCircle2, AlertCircle, Eye
+    ArrowLeft,
+    Paperclip,
+    Download,
+    Upload,
+    Send,
+    Clock,
+    User,
+    BookOpen,
+    FileText,
+    Loader2,
+    X,
+    CheckCircle2,
+    AlertCircle,
+    Eye,
 } from 'lucide-vue-next';
 import MarkingTool from '@/components/curriculum/assignments/MarkingTool.vue';
 import { route } from 'ziggy-js';
@@ -20,7 +32,11 @@ const props = defineProps<{
         instructions: string | null;
         assignment_type: string;
         subject: string | null;
-        teacher: { name: string; phone: string | null; email: string | null } | null;
+        teacher: {
+            name: string;
+            phone: string | null;
+            email: string | null;
+        } | null;
         strand: string | null;
         sub_strand: string | null;
         assigned_date: string | null;
@@ -117,11 +133,15 @@ const canSubmit = () => {
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'graded': return 'bg-emerald-500 text-white';
+        case 'graded':
+            return 'bg-emerald-500 text-white';
         case 'submitted':
-        case 'resubmitted': return 'bg-blue-500 text-white';
-        case 'returned': return 'bg-amber-500 text-white';
-        default: return 'bg-slate-400 text-white';
+        case 'resubmitted':
+            return 'bg-blue-500 text-white';
+        case 'returned':
+            return 'bg-amber-500 text-white';
+        default:
+            return 'bg-slate-400 text-white';
     }
 };
 </script>
@@ -130,30 +150,65 @@ const getStatusColor = (status: string) => {
     <Head :title="`Assignment: ${assignment.title}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="max-w-[1200px] mx-auto p-6 md:p-8 space-y-8 animate-in fade-in duration-500 pb-20">
+        <div
+            class="mx-auto max-w-[1200px] animate-in space-y-8 p-6 pb-20 duration-500 fade-in md:p-8"
+        >
             <!-- Header -->
             <div class="flex items-start gap-4">
-                <Button variant="ghost" size="icon" as-child class="h-10 w-10 rounded-xl hover:bg-blue-50 mt-1">
-                    <Link :href="`/guardian/children/${student.id}`"><ArrowLeft class="h-5 w-5" /></Link>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    as-child
+                    class="mt-1 h-10 w-10 rounded-xl hover:bg-blue-50"
+                >
+                    <Link :href="`/guardian/children/${student.id}`"
+                        ><ArrowLeft class="h-5 w-5"
+                    /></Link>
                 </Button>
                 <div class="flex-1">
                     <div class="flex items-start justify-between">
                         <div>
-                            <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">{{ assignment.subject }}</p>
-                            <h1 class="text-2xl font-bold tracking-tight text-foreground">{{ assignment.title }}</h1>
-                            <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                                <Badge variant="outline" class="rounded-lg text-[9px] font-bold uppercase px-2 py-0.5">{{ assignment.assignment_type }}</Badge>
-                                <span v-if="assignment.strand">{{ assignment.strand }}</span>
+                            <p
+                                class="mb-1 text-xs font-bold tracking-tight text-blue-600 uppercase"
+                            >
+                                {{ assignment.subject }}
+                            </p>
+                            <h1
+                                class="text-2xl font-bold tracking-tight text-foreground"
+                            >
+                                {{ assignment.title }}
+                            </h1>
+                            <div
+                                class="mt-2 flex items-center gap-3 text-sm text-muted-foreground"
+                            >
+                                <Badge
+                                    variant="outline"
+                                    class="rounded-lg px-2 py-0.5 text-xs font-bold uppercase"
+                                    >{{ assignment.assignment_type }}</Badge
+                                >
+                                <span v-if="assignment.strand">{{
+                                    assignment.strand
+                                }}</span>
                             </div>
                         </div>
-                        <div class="text-right flex-shrink-0">
-                            <Badge v-if="submission" :class="getStatusColor(submission.status)" class="rounded-lg px-3 py-1 text-[10px] font-bold uppercase border-0">
+                        <div class="flex-shrink-0 text-right">
+                            <Badge
+                                v-if="submission"
+                                :class="getStatusColor(submission.status)"
+                                class="rounded-lg border-0 px-3 py-1 text-xs font-bold uppercase"
+                            >
                                 {{ submission.status }}
                             </Badge>
-                            <Badge v-else-if="assignment.is_overdue" class="bg-rose-500 text-white rounded-lg px-3 py-1 text-[10px] font-bold uppercase border-0">
+                            <Badge
+                                v-else-if="assignment.is_overdue"
+                                class="rounded-lg border-0 bg-rose-500 px-3 py-1 text-xs font-bold text-white uppercase"
+                            >
                                 Overdue
                             </Badge>
-                            <Badge v-else class="bg-amber-500 text-white rounded-lg px-3 py-1 text-[10px] font-bold uppercase border-0">
+                            <Badge
+                                v-else
+                                class="rounded-lg border-0 bg-amber-500 px-3 py-1 text-xs font-bold text-white uppercase"
+                            >
                                 Pending
                             </Badge>
                         </div>
@@ -161,167 +216,369 @@ const getStatusColor = (status: string) => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <!-- Main Content Area -->
-                <div class="lg:col-span-2 space-y-6">
+                <div class="space-y-6 lg:col-span-2">
                     <!-- Assignment Details -->
                     <div class="rounded-2xl border bg-card p-7 shadow-sm">
-                        <h3 class="text-sm font-bold text-foreground mb-4 uppercase tracking-wider">Description</h3>
-                        <div v-if="assignment.description" class="prose prose-sm max-w-none text-muted-foreground leading-relaxed">
+                        <h3
+                            class="mb-4 text-sm font-bold tracking-wider text-foreground uppercase"
+                        >
+                            Description
+                        </h3>
+                        <div
+                            v-if="assignment.description"
+                            class="prose prose-sm max-w-none leading-relaxed text-muted-foreground"
+                        >
                             {{ assignment.description }}
                         </div>
-                        <p v-else class="text-sm text-muted-foreground italic">No description provided.</p>
+                        <p v-else class="text-sm text-muted-foreground">
+                            No description provided.
+                        </p>
 
-                        <div v-if="assignment.instructions" class="mt-6 bg-blue-50 border border-blue-100 rounded-xl p-5">
-                            <h4 class="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2">Instructions</h4>
-                            <p class="text-sm text-blue-700 leading-relaxed">{{ assignment.instructions }}</p>
+                        <div
+                            v-if="assignment.instructions"
+                            class="mt-6 rounded-xl border border-blue-100 bg-blue-50 p-5"
+                        >
+                            <h4
+                                class="mb-2 text-xs font-bold tracking-tight text-blue-800 uppercase"
+                            >
+                                Instructions
+                            </h4>
+                            <p class="text-sm leading-relaxed text-blue-700">
+                                {{ assignment.instructions }}
+                            </p>
                         </div>
                     </div>
 
                     <!-- Attachments -->
-                    <div v-if="assignment.attachments.length > 0" class="rounded-2xl border bg-card p-7 shadow-sm">
-                        <h3 class="text-sm font-bold text-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <div
+                        v-if="assignment.attachments.length > 0"
+                        class="rounded-2xl border bg-card p-7 shadow-sm"
+                    >
+                        <h3
+                            class="mb-4 flex items-center gap-2 text-sm font-bold tracking-wider text-foreground uppercase"
+                        >
                             <Paperclip class="h-4 w-4 text-muted-foreground" />
                             Attachments ({{ assignment.attachments.length }})
                         </h3>
                         <div class="space-y-2">
-                            <a v-for="att in assignment.attachments" :key="att.id" :href="att.download_url" target="_blank"
-                                class="flex items-center gap-3 rounded-xl border p-3.5 hover:bg-muted/30 transition-colors group">
-                                <div class="h-10 w-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                            <a
+                                v-for="att in assignment.attachments"
+                                :key="att.id"
+                                :href="att.download_url"
+                                target="_blank"
+                                class="group flex items-center gap-3 rounded-xl border p-3.5 transition-colors hover:bg-muted/30"
+                            >
+                                <div
+                                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600"
+                                >
                                     <FileText class="h-5 w-5" />
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold text-foreground truncate">{{ att.file_name }}</p>
-                                    <p class="text-xs text-muted-foreground">{{ formatFileSize(att.file_size) }}</p>
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="truncate text-sm font-bold text-foreground"
+                                    >
+                                        {{ att.file_name }}
+                                    </p>
+                                    <p class="text-xs text-muted-foreground">
+                                        {{ formatFileSize(att.file_size) }}
+                                    </p>
                                 </div>
-                                <Download class="h-4 w-4 text-muted-foreground group-hover:text-blue-600 transition-colors" />
+                                <Download
+                                    class="h-4 w-4 text-muted-foreground transition-colors group-hover:text-blue-600"
+                                />
                             </a>
                         </div>
                     </div>
 
                     <!-- Submission / Feedback -->
-                    <div v-if="submission" class="rounded-2xl border bg-card p-7 shadow-sm">
-                        <div class="flex items-center gap-3 mb-5">
+                    <div
+                        v-if="submission"
+                        class="rounded-2xl border bg-card p-7 shadow-sm"
+                    >
+                        <div class="mb-5 flex items-center gap-3">
                             <CheckCircle2 class="h-5 w-5 text-emerald-500" />
-                            <h3 class="text-sm font-bold text-foreground uppercase tracking-wider">Your Submission</h3>
+                            <h3
+                                class="text-sm font-bold tracking-wider text-foreground uppercase"
+                            >
+                                Your Submission
+                            </h3>
                         </div>
 
-                        <div v-if="submission.content" class="rounded-xl bg-muted/30 border p-5 mb-4">
-                            <p class="text-sm text-foreground whitespace-pre-line">{{ submission.content }}</p>
+                        <div
+                            v-if="submission.content"
+                            class="mb-4 rounded-xl border bg-muted/30 p-5"
+                        >
+                            <p
+                                class="text-sm whitespace-pre-line text-foreground"
+                            >
+                                {{ submission.content }}
+                            </p>
                         </div>
 
-                        <div v-if="submission.attachments?.length" class="space-y-2 mb-4">
-                            <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">Uploaded Files</p>
-                            <div v-for="att in submission.attachments" :key="att.id" class="flex items-center gap-3 rounded-xl border p-3 bg-muted/20">
-                                <FileText class="h-4 w-4 text-muted-foreground" />
-                                <span class="text-sm font-medium text-foreground truncate">{{ att.file_name }}</span>
-                                <span class="text-xs text-muted-foreground ml-auto">{{ formatFileSize(att.file_size) }}</span>
+                        <div
+                            v-if="submission.attachments?.length"
+                            class="mb-4 space-y-2"
+                        >
+                            <p
+                                class="mb-2 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Uploaded Files
+                            </p>
+                            <div
+                                v-for="att in submission.attachments"
+                                :key="att.id"
+                                class="flex items-center gap-3 rounded-xl border bg-muted/20 p-3"
+                            >
+                                <FileText
+                                    class="h-4 w-4 text-muted-foreground"
+                                />
+                                <span
+                                    class="truncate text-sm font-medium text-foreground"
+                                    >{{ att.file_name }}</span
+                                >
+                                <span
+                                    class="ml-auto text-xs text-muted-foreground"
+                                    >{{ formatFileSize(att.file_size) }}</span
+                                >
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Submitted At</p>
-                                <p class="font-bold text-foreground">{{ submission.submitted_at || '—' }}</p>
+                                <p
+                                    class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Submitted At
+                                </p>
+                                <p class="font-bold text-foreground">
+                                    {{ submission.submitted_at || '—' }}
+                                </p>
                             </div>
                             <div v-if="submission.grade">
-                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Grade</p>
-                                <p class="font-bold text-emerald-600 text-lg">{{ submission.grade }}</p>
+                                <p
+                                    class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Grade
+                                </p>
+                                <p class="text-lg font-bold text-emerald-600">
+                                    {{ submission.grade }}
+                                </p>
                             </div>
                             <div v-if="submission.final_marks != null">
-                                <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Marks</p>
-                                <p class="font-bold text-foreground">{{ submission.final_marks }} / {{ assignment.total_marks }}</p>
+                                <p
+                                    class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Marks
+                                </p>
+                                <p class="font-bold text-foreground">
+                                    {{ submission.final_marks }} /
+                                    {{ assignment.total_marks }}
+                                </p>
                             </div>
                         </div>
 
-                        <div v-if="submission.feedback" class="mt-5 bg-blue-50 border border-blue-100 rounded-xl p-5">
-                            <h4 class="text-xs font-bold text-blue-800 uppercase tracking-widest mb-2">Teacher Feedback</h4>
-                            <p class="text-sm text-blue-700 leading-relaxed">{{ submission.feedback }}</p>
+                        <div
+                            v-if="submission.feedback"
+                            class="mt-5 rounded-xl border border-blue-100 bg-blue-50 p-5"
+                        >
+                            <h4
+                                class="mb-2 text-xs font-bold tracking-tight text-blue-800 uppercase"
+                            >
+                                Teacher Feedback
+                            </h4>
+                            <p class="text-sm leading-relaxed text-blue-700">
+                                {{ submission.feedback }}
+                            </p>
                         </div>
 
                         <!-- Graded Status & Download for Parents -->
-                        <div v-if="submission.status === 'graded'" class="mt-8 pt-8 border-t">
-                            <div class="bg-white rounded-[2rem] border border-slate-200 p-10 shadow-2xl shadow-blue-500/5 flex flex-col items-center text-center gap-8">
-                                <div class="h-20 w-20 rounded-[1.5rem] bg-emerald-50 text-emerald-600 flex items-center justify-center shadow-inner">
+                        <div
+                            v-if="submission.status === 'graded'"
+                            class="mt-8 border-t pt-8"
+                        >
+                            <div
+                                class="flex flex-col items-center gap-8 rounded-xl border border-slate-200 bg-white p-10 text-center shadow-lg shadow-blue-500/5"
+                            >
+                                <div
+                                    class="flex h-20 w-20 items-center justify-center rounded-[1.5rem] bg-emerald-50 text-emerald-600 shadow-inner"
+                                >
                                     <CheckCircle2 class="h-10 w-10" />
                                 </div>
-                                
+
                                 <div class="space-y-3">
-                                    <h4 class="text-2xl font-black text-slate-900 tracking-tight uppercase">Marked & Graded</h4>
-                                    <p class="text-sm text-slate-500 font-medium max-w-sm mx-auto">
-                                        Your instructor has completed the assessment. You can now download the official marked copy with all corrections and stamps.
+                                    <h4
+                                        class="text-2xl font-bold tracking-tight text-slate-900 uppercase"
+                                    >
+                                        Marked & Graded
+                                    </h4>
+                                    <p
+                                        class="mx-auto max-w-sm text-sm font-medium text-slate-500"
+                                    >
+                                        Your instructor has completed the
+                                        assessment. You can now download the
+                                        official marked copy with all
+                                        corrections and stamps.
                                     </p>
                                 </div>
 
                                 <!-- Primary Download Action -->
-                                <a 
-                                    :href="route('guardian.assignments.submissions.download-marked', { submission: String(submission.id) })" 
-                                    class="h-14 px-10 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-blue-600/30 flex items-center gap-3 transition-all active:scale-95 group"
+                                <a
+                                    :href="
+                                        route(
+                                            'guardian.assignments.submissions.download-marked',
+                                            {
+                                                submission: String(
+                                                    submission.id,
+                                                ),
+                                            },
+                                        )
+                                    "
+                                    class="group flex h-14 items-center gap-3 rounded-2xl bg-blue-600 px-10 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-blue-600/30 transition-all hover:bg-blue-700 active:scale-95"
                                 >
-                                    <Download class="h-5 w-5 group-hover:translate-y-0.5 transition-transform" /> 
+                                    <Download
+                                        class="h-5 w-5 transition-transform group-hover:translate-y-0.5"
+                                    />
                                     Download Marked Assignment
                                 </a>
 
-                                <div class="flex items-center gap-2 mt-4 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                                    <div class="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse"></div>
-                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Digital Official Record</span>
+                                <div
+                                    class="mt-4 flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2"
+                                >
+                                    <div
+                                        class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-600"
+                                    ></div>
+                                    <span
+                                        class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        >Digital Official Record</span
+                                    >
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Submission Form -->
-                    <div v-if="canSubmit()" class="rounded-2xl border-2 border-blue-200 bg-card p-7 shadow-sm">
-                        <div class="flex items-center gap-3 mb-6">
+                    <div
+                        v-if="canSubmit()"
+                        class="rounded-2xl border-2 border-blue-200 bg-card p-7 shadow-sm"
+                    >
+                        <div class="mb-6 flex items-center gap-3">
                             <Upload class="h-5 w-5 text-blue-600" />
-                            <h3 class="text-sm font-bold text-foreground uppercase tracking-wider">
-                                {{ submission ? 'Resubmit Assignment' : 'Submit Assignment' }}
+                            <h3
+                                class="text-sm font-bold tracking-wider text-foreground uppercase"
+                            >
+                                {{
+                                    submission
+                                        ? 'Resubmit Assignment'
+                                        : 'Submit Assignment'
+                                }}
                             </h3>
                         </div>
 
                         <form @submit.prevent="submit" class="space-y-5">
                             <!-- Text Content -->
                             <div>
-                                <label class="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-2">Written Response</label>
-                                <textarea v-model="form.content" rows="6" placeholder="Type your answer here..."
-                                    class="w-full rounded-xl border border-border bg-muted/20 p-4 text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-400 outline-none transition-all resize-y"></textarea>
+                                <label
+                                    class="mb-2 block text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    >Written Response</label
+                                >
+                                <textarea
+                                    v-model="form.content"
+                                    rows="6"
+                                    placeholder="Type your answer here..."
+                                    class="w-full resize-y rounded-xl border border-border bg-muted/20 p-4 text-sm transition-all outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                                ></textarea>
                             </div>
 
                             <!-- File Upload -->
                             <div>
-                                <label class="text-xs font-bold text-muted-foreground uppercase tracking-widest block mb-2">File Attachments</label>
-                                <p class="text-xs text-muted-foreground mb-3">Supported formats: PDF, DOCX, Images (JPG, PNG), Audio (MP3, WAV), Video (MP4, WebM). Max 20MB each.</p>
+                                <label
+                                    class="mb-2 block text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    >File Attachments</label
+                                >
+                                <p class="mb-3 text-xs text-muted-foreground">
+                                    Supported formats: PDF, DOCX, Images (JPG,
+                                    PNG), Audio (MP3, WAV), Video (MP4, WebM).
+                                    Max 20MB each.
+                                </p>
 
-                                <input ref="fileInput" type="file" multiple @change="handleFiles" class="hidden"
-                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.mp3,.wav,.ogg,.mp4,.webm,.mov" />
+                                <input
+                                    ref="fileInput"
+                                    type="file"
+                                    multiple
+                                    @change="handleFiles"
+                                    class="hidden"
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.mp3,.wav,.ogg,.mp4,.webm,.mov"
+                                />
 
-                                <button type="button" @click="triggerFileInput"
-                                    class="w-full rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-8 text-center hover:bg-blue-100/50 hover:border-blue-400 transition-all cursor-pointer group">
-                                    <Upload class="h-8 w-8 mx-auto text-blue-400 group-hover:text-blue-500 mb-2" />
-                                    <p class="text-sm font-bold text-blue-600">Click to upload files</p>
-                                    <p class="text-xs text-blue-400 mt-1">or drag and drop</p>
+                                <button
+                                    type="button"
+                                    @click="triggerFileInput"
+                                    class="group w-full cursor-pointer rounded-xl border-2 border-dashed border-blue-300 bg-blue-50/50 p-8 text-center transition-all hover:border-blue-400 hover:bg-blue-100/50"
+                                >
+                                    <Upload
+                                        class="mx-auto mb-2 h-8 w-8 text-blue-400 group-hover:text-blue-500"
+                                    />
+                                    <p class="text-sm font-bold text-blue-600">
+                                        Click to upload files
+                                    </p>
+                                    <p class="mt-1 text-xs text-blue-400">
+                                        or drag and drop
+                                    </p>
                                 </button>
 
                                 <!-- Selected Files Preview -->
-                                <div v-if="selectedFiles.length > 0" class="mt-4 space-y-2">
-                                    <div v-for="(file, index) in selectedFiles" :key="index"
-                                        class="flex items-center gap-3 rounded-xl border p-3 bg-card">
-                                        <FileText class="h-4 w-4 text-blue-500 flex-shrink-0" />
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-semibold text-foreground truncate">{{ file.name }}</p>
-                                            <p class="text-[10px] text-muted-foreground">{{ formatFileSize(file.size) }}</p>
+                                <div
+                                    v-if="selectedFiles.length > 0"
+                                    class="mt-4 space-y-2"
+                                >
+                                    <div
+                                        v-for="(file, index) in selectedFiles"
+                                        :key="index"
+                                        class="flex items-center gap-3 rounded-xl border bg-card p-3"
+                                    >
+                                        <FileText
+                                            class="h-4 w-4 flex-shrink-0 text-blue-500"
+                                        />
+                                        <div class="min-w-0 flex-1">
+                                            <p
+                                                class="truncate text-sm font-semibold text-foreground"
+                                            >
+                                                {{ file.name }}
+                                            </p>
+                                            <p
+                                                class="text-xs text-muted-foreground"
+                                            >
+                                                {{ formatFileSize(file.size) }}
+                                            </p>
                                         </div>
-                                        <button type="button" @click="removeFile(index)" class="h-7 w-7 rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-500 flex items-center justify-center transition-colors">
+                                        <button
+                                            type="button"
+                                            @click="removeFile(index)"
+                                            class="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-rose-50 hover:text-rose-500"
+                                        >
                                             <X class="h-4 w-4" />
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            <Button type="submit" :disabled="form.processing" class="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg">
-                                <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                            <Button
+                                type="submit"
+                                :disabled="form.processing"
+                                class="h-12 w-full rounded-xl bg-blue-600 text-sm font-bold text-white shadow-lg hover:bg-blue-700"
+                            >
+                                <Loader2
+                                    v-if="form.processing"
+                                    class="mr-2 h-4 w-4 animate-spin"
+                                />
                                 <Send v-else class="mr-2 h-4 w-4" />
-                                {{ submission ? 'Resubmit Assignment' : 'Submit Assignment' }}
+                                {{
+                                    submission
+                                        ? 'Resubmit Assignment'
+                                        : 'Submit Assignment'
+                                }}
                             </Button>
                         </form>
                     </div>
@@ -331,51 +588,130 @@ const getStatusColor = (status: string) => {
                 <div class="space-y-5">
                     <!-- Student Info -->
                     <div class="rounded-2xl border bg-card p-5 shadow-sm">
-                        <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Submitting For</p>
-                        <p class="text-sm font-bold text-foreground">{{ student.name }}</p>
+                        <p
+                            class="mb-3 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                        >
+                            Submitting For
+                        </p>
+                        <p class="text-sm font-bold text-foreground">
+                            {{ student.name }}
+                        </p>
                     </div>
 
                     <!-- Assignment Details -->
-                    <div class="rounded-2xl border bg-card p-5 shadow-sm space-y-4">
-                        <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Details</p>
+                    <div
+                        class="space-y-4 rounded-2xl border bg-card p-5 shadow-sm"
+                    >
+                        <p
+                            class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                        >
+                            Details
+                        </p>
 
                         <div>
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Subject</p>
-                            <p class="text-sm font-bold text-blue-600">{{ assignment.subject || '—' }}</p>
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Subject
+                            </p>
+                            <p class="text-sm font-bold text-blue-600">
+                                {{ assignment.subject || '—' }}
+                            </p>
                         </div>
                         <div v-if="assignment.teacher">
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Teacher</p>
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Teacher
+                            </p>
                             <div class="flex items-center gap-2">
-                                <div class="h-7 w-7 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><User class="h-3.5 w-3.5" /></div>
+                                <div
+                                    class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-600"
+                                >
+                                    <User class="h-3.5 w-3.5" />
+                                </div>
                                 <div>
-                                    <p class="text-sm font-bold text-foreground">{{ assignment.teacher.name }}</p>
-                                    <p v-if="assignment.teacher.phone" class="text-[10px] text-muted-foreground">{{ assignment.teacher.phone }}</p>
+                                    <p
+                                        class="text-sm font-bold text-foreground"
+                                    >
+                                        {{ assignment.teacher.name }}
+                                    </p>
+                                    <p
+                                        v-if="assignment.teacher.phone"
+                                        class="text-xs text-muted-foreground"
+                                    >
+                                        {{ assignment.teacher.phone }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Assigned</p>
-                            <p class="text-sm font-bold text-foreground">{{ assignment.assigned_date || '—' }}</p>
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Assigned
+                            </p>
+                            <p class="text-sm font-bold text-foreground">
+                                {{ assignment.assigned_date || '—' }}
+                            </p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Due Date</p>
-                            <p class="text-sm font-bold" :class="assignment.is_overdue ? 'text-rose-600' : 'text-foreground'">
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Due Date
+                            </p>
+                            <p
+                                class="text-sm font-bold"
+                                :class="
+                                    assignment.is_overdue
+                                        ? 'text-rose-600'
+                                        : 'text-foreground'
+                                "
+                            >
                                 {{ assignment.due_date || '—' }}
                             </p>
                         </div>
                         <div v-if="assignment.total_marks">
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Total Marks</p>
-                            <p class="text-sm font-bold text-foreground">{{ assignment.total_marks }}</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Late Submission</p>
-                            <p class="text-sm font-bold" :class="assignment.allow_late_submission ? 'text-emerald-600' : 'text-rose-600'">
-                                {{ assignment.allow_late_submission ? 'Allowed' : 'Not Allowed' }}
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Total Marks
+                            </p>
+                            <p class="text-sm font-bold text-foreground">
+                                {{ assignment.total_marks }}
                             </p>
                         </div>
                         <div>
-                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-0.5">Max Attempts</p>
-                            <p class="text-sm font-bold text-foreground">{{ assignment.max_attempts }}</p>
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Late Submission
+                            </p>
+                            <p
+                                class="text-sm font-bold"
+                                :class="
+                                    assignment.allow_late_submission
+                                        ? 'text-emerald-600'
+                                        : 'text-rose-600'
+                                "
+                            >
+                                {{
+                                    assignment.allow_late_submission
+                                        ? 'Allowed'
+                                        : 'Not Allowed'
+                                }}
+                            </p>
+                        </div>
+                        <div>
+                            <p
+                                class="mb-0.5 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                            >
+                                Max Attempts
+                            </p>
+                            <p class="text-sm font-bold text-foreground">
+                                {{ assignment.max_attempts }}
+                            </p>
                         </div>
                     </div>
                 </div>

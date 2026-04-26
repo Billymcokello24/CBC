@@ -20,7 +20,7 @@ import {
     TrendingUp,
     CheckSquare,
     Square,
-    UserPlus
+    UserPlus,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -32,10 +32,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Dialog,
-    DialogContent,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -110,7 +107,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const searchQuery = ref(props.filters.search ?? '');
 const selectedStatus = ref(props.filters.status ?? 'all');
-const selectedClassId = ref<string>(props.filters.class_id ? String(props.filters.class_id) : '');
+const selectedClassId = ref<string>(
+    props.filters.class_id ? String(props.filters.class_id) : '',
+);
 const selectedGender = ref(props.filters.gender ?? 'all');
 const selectedBoardingStatus = ref(props.filters.boarding_status ?? 'all');
 const selectedCounty = ref(props.filters.county ?? '');
@@ -122,7 +121,9 @@ const promotionForm = useForm<{ learner_ids: number[] }>({ learner_ids: [] });
 const selectedLearnerIds = ref<number[]>([]);
 const confirmOpen = ref(false);
 const promoteOpen = ref(false);
-const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'bulkDelete'>('suspend');
+const confirmMode = ref<'suspend' | 'activate' | 'delete' | 'bulkDelete'>(
+    'suspend',
+);
 const selectedLearner = ref<LearnerRow | null>(null);
 const bulkUploadOpen = ref(false);
 const showToast = ref(false);
@@ -135,10 +136,19 @@ const applyFilters = (page = 1) => {
         '/students',
         {
             search: searchQuery.value || undefined,
-            status: selectedStatus.value !== 'all' ? selectedStatus.value : undefined,
+            status:
+                selectedStatus.value !== 'all'
+                    ? selectedStatus.value
+                    : undefined,
             class_id: selectedClassId.value || undefined,
-            gender: selectedGender.value !== 'all' ? selectedGender.value : undefined,
-            boarding_status: selectedBoardingStatus.value !== 'all' ? selectedBoardingStatus.value : undefined,
+            gender:
+                selectedGender.value !== 'all'
+                    ? selectedGender.value
+                    : undefined,
+            boarding_status:
+                selectedBoardingStatus.value !== 'all'
+                    ? selectedBoardingStatus.value
+                    : undefined,
             county: selectedCounty.value || undefined,
             show_filters: showFilters.value,
             per_page: perPage.value,
@@ -148,7 +158,16 @@ const applyFilters = (page = 1) => {
             preserveState: true,
             preserveScroll: true,
             replace: true,
-            only: ['learners', 'stats', 'filters', 'classes', 'counties', 'statusOptions', 'genderOptions', 'boardingOptions'],
+            only: [
+                'learners',
+                'stats',
+                'filters',
+                'classes',
+                'counties',
+                'statusOptions',
+                'genderOptions',
+                'boardingOptions',
+            ],
         },
     );
 };
@@ -158,7 +177,17 @@ watch(searchQuery, () => {
     debounceTimer = setTimeout(() => applyFilters(), 350);
 });
 
-watch([selectedStatus, selectedClassId, selectedGender, selectedBoardingStatus, selectedCounty, perPage], () => applyFilters());
+watch(
+    [
+        selectedStatus,
+        selectedClassId,
+        selectedGender,
+        selectedBoardingStatus,
+        selectedCounty,
+        perPage,
+    ],
+    () => applyFilters(),
+);
 
 const activeRate = computed(() => {
     if (!props.stats.total) return 0;
@@ -168,10 +197,13 @@ const activeRate = computed(() => {
 const exportUrl = computed(() => {
     const params = new URLSearchParams();
     if (searchQuery.value) params.set('search', searchQuery.value);
-    if (selectedStatus.value !== 'all') params.set('status', selectedStatus.value);
+    if (selectedStatus.value !== 'all')
+        params.set('status', selectedStatus.value);
     if (selectedClassId.value) params.set('class_id', selectedClassId.value);
-    if (selectedGender.value !== 'all') params.set('gender', selectedGender.value);
-    if (selectedBoardingStatus.value !== 'all') params.set('boarding_status', selectedBoardingStatus.value);
+    if (selectedGender.value !== 'all')
+        params.set('gender', selectedGender.value);
+    if (selectedBoardingStatus.value !== 'all')
+        params.set('boarding_status', selectedBoardingStatus.value);
     if (selectedCounty.value) params.set('county', selectedCounty.value);
     return `/students?${params.toString()}`;
 });
@@ -179,10 +211,13 @@ const exportUrl = computed(() => {
 const pdfExportUrl = computed(() => {
     const params = new URLSearchParams();
     if (searchQuery.value) params.set('search', searchQuery.value);
-    if (selectedStatus.value !== 'all') params.set('status', selectedStatus.value);
+    if (selectedStatus.value !== 'all')
+        params.set('status', selectedStatus.value);
     if (selectedClassId.value) params.set('class_id', selectedClassId.value);
-    if (selectedGender.value !== 'all') params.set('gender', selectedGender.value);
-    if (selectedBoardingStatus.value !== 'all') params.set('boarding_status', selectedBoardingStatus.value);
+    if (selectedGender.value !== 'all')
+        params.set('gender', selectedGender.value);
+    if (selectedBoardingStatus.value !== 'all')
+        params.set('boarding_status', selectedBoardingStatus.value);
     if (selectedCounty.value) params.set('county', selectedCounty.value);
     return `/students/export-pdf?${params.toString()}`;
 });
@@ -217,7 +252,10 @@ watch(
     { immediate: true },
 );
 
-const openActionModal = (mode: 'suspend' | 'activate' | 'delete' | 'bulkDelete', learner: LearnerRow | null = null) => {
+const openActionModal = (
+    mode: 'suspend' | 'activate' | 'delete' | 'bulkDelete',
+    learner: LearnerRow | null = null,
+) => {
     confirmMode.value = mode;
     selectedLearner.value = learner;
     confirmOpen.value = true;
@@ -230,15 +268,17 @@ const closeActionModal = () => {
 
 const confirmAction = () => {
     if (confirmMode.value === 'bulkDelete') {
-        actionForm.transform(() => ({
-            learner_ids: selectedLearnerIds.value
-        })).post('/students/bulk-delete', {
-            preserveScroll: true,
-            onSuccess: () => {
-                selectedLearnerIds.value = [];
-                closeActionModal();
-            },
-        });
+        actionForm
+            .transform(() => ({
+                learner_ids: selectedLearnerIds.value,
+            }))
+            .post('/students/bulk-delete', {
+                preserveScroll: true,
+                onSuccess: () => {
+                    selectedLearnerIds.value = [];
+                    closeActionModal();
+                },
+            });
         return;
     }
 
@@ -274,10 +314,13 @@ const modalTitle = computed(() => {
 });
 
 const modalMessage = computed(() => {
-    if (confirmMode.value === 'bulkDelete') return `Are you sure you want to delete ${selectedLearnerIds.value.length} selected learners? This action cannot be undone.`;
+    if (confirmMode.value === 'bulkDelete')
+        return `Are you sure you want to delete ${selectedLearnerIds.value.length} selected learners? This action cannot be undone.`;
     if (!selectedLearner.value) return '';
-    if (confirmMode.value === 'activate') return `Activate ${selectedLearner.value.name}?`;
-    if (confirmMode.value === 'delete') return `Delete ${selectedLearner.value.name}? This action will remove the record from the active list.`;
+    if (confirmMode.value === 'activate')
+        return `Activate ${selectedLearner.value.name}?`;
+    if (confirmMode.value === 'delete')
+        return `Delete ${selectedLearner.value.name}? This action will remove the record from the active list.`;
     return `Suspend ${selectedLearner.value.name}?`;
 });
 
@@ -290,17 +333,31 @@ const pageLabel = computed(() => {
 watch(
     () => props.learners.data,
     () => {
-        selectedLearnerIds.value = selectedLearnerIds.value.filter((id) => props.learners.data.some((learner) => learner.id === id));
+        selectedLearnerIds.value = selectedLearnerIds.value.filter((id) =>
+            props.learners.data.some((learner) => learner.id === id),
+        );
     },
     { deep: true },
 );
 
-const allSelectableLearnerIds = computed(() => props.learners.data.filter((learner) => learner.status === 'active').map((learner) => learner.id));
-const allSelected = computed(() => allSelectableLearnerIds.value.length > 0 && allSelectableLearnerIds.value.every((id) => selectedLearnerIds.value.includes(id)));
+const allSelectableLearnerIds = computed(() =>
+    props.learners.data
+        .filter((learner) => learner.status === 'active')
+        .map((learner) => learner.id),
+);
+const allSelected = computed(
+    () =>
+        allSelectableLearnerIds.value.length > 0 &&
+        allSelectableLearnerIds.value.every((id) =>
+            selectedLearnerIds.value.includes(id),
+        ),
+);
 const selectedCount = computed(() => selectedLearnerIds.value.length);
 
 const toggleAllLearners = () => {
-    selectedLearnerIds.value = allSelected.value ? [] : [...allSelectableLearnerIds.value];
+    selectedLearnerIds.value = allSelected.value
+        ? []
+        : [...allSelectableLearnerIds.value];
 };
 
 const toggleLearner = (learnerId: number) => {
@@ -331,7 +388,7 @@ const promoteSelectedLearners = () => {
 };
 
 const openBulkUploadModal = () => {
-  bulkUploadOpen.value = true;
+    bulkUploadOpen.value = true;
 };
 
 const exportToPDF = () => {
@@ -339,7 +396,9 @@ const exportToPDF = () => {
 };
 
 const getStatusColor = (active: boolean) => {
-    return active ? 'bg-emerald-500 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-400 text-white';
+    return active
+        ? 'bg-emerald-500 text-white shadow-sm'
+        : 'bg-slate-400 text-white';
 };
 </script>
 
@@ -347,36 +406,56 @@ const getStatusColor = (active: boolean) => {
     <Head title="Learners" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div v-if="showToast && flashSuccess" class="fixed right-4 top-4 z-50">
-            <div class="flex items-center gap-2 rounded-lg border bg-background px-4 py-3 shadow-lg">
+        <div v-if="showToast && flashSuccess" class="fixed top-4 right-4 z-50">
+            <div
+                class="flex items-center gap-2 rounded-lg border bg-background px-4 py-3 shadow-lg"
+            >
                 <CheckCircle2 class="h-4 w-4 text-green-600" />
                 <span class="text-sm font-medium">{{ flashSuccess }}</span>
             </div>
         </div>
 
-        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-4 sm:p-6 md:p-8">
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 md:p-8"
+        >
             <!-- Page Header -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
+            <div
+                class="flex flex-col gap-4 px-1 md:flex-row md:items-center md:justify-between"
+            >
                 <div class="space-y-1">
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase italic">Learners</h1>
-                    <p class="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-60">
+                    <h1
+                        class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
+                    >
+                        Learners
+                    </h1>
+                    <p
+                        class="text-xs font-bold tracking-tight text-muted-foreground uppercase opacity-80 sm:text-xs"
+                    >
                         Academic Enrollment & Demographic Registry
                     </p>
                 </div>
-                
+
                 <div class="flex items-center gap-2 sm:gap-3">
-                    <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm" @click="exportToPDF">
+                    <Button
+                        variant="outline"
+                        class="hidden h-10 rounded-xl border-slate-200 px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-slate-900 hover:text-white sm:flex"
+                        @click="exportToPDF"
+                    >
                         <Download class="mr-2 h-4 w-4 opacity-70" />
                         Export
                     </Button>
-                    <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm" @click="openBulkUploadModal">
+                    <Button
+                        variant="outline"
+                        class="hidden h-10 rounded-xl border-slate-200 px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white sm:flex"
+                        @click="openBulkUploadModal"
+                    >
                         <Upload class="mr-2 h-4 w-4 opacity-70" />
                         Propagate
                     </Button>
                     <Link
                         v-if="hasPermission('students.create')"
                         href="/students/create"
-                        class="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 h-10 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-blue-500/30 hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all"
+                        class="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-blue-600 px-6 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-95 sm:flex-none"
                     >
                         <Plus class="mr-2 h-4 w-4" />
                         Enroll
@@ -385,223 +464,611 @@ const getStatusColor = (active: boolean) => {
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 px-1">
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-blue-200 transition-all">
+            <div class="grid grid-cols-2 gap-3 px-1 sm:gap-6 lg:grid-cols-4">
+                <div
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-blue-200 sm:flex-row sm:items-center sm:p-6"
+                >
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Registry</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.total.toLocaleString() }}</h3>
+                        <p
+                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            Total Registry
+                        </p>
+                        <h3
+                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                        >
+                            {{ stats.total.toLocaleString() }}
+                        </h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100/50 group-hover:scale-110 transition-transform">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100/50 bg-blue-50 text-blue-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
+                    >
                         <Users class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-200 transition-all">
+                <div
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-emerald-200 sm:flex-row sm:items-center sm:p-6"
+                >
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Status</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.active.toLocaleString() }}</h3>
+                        <p
+                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            Active Status
+                        </p>
+                        <h3
+                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                        >
+                            {{ stats.active.toLocaleString() }}
+                        </h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50 group-hover:scale-110 transition-transform relative">
-                         <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse absolute top-2 right-2" v-if="stats.active > 0"></div>
-                         <CheckCircle2 class="h-5 w-5 sm:h-6 sm:w-6" />
+                    <div
+                        class="relative flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-100/50 bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
+                    >
+                        <div
+                            class="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-emerald-500"
+                            v-if="stats.active > 0"
+                        ></div>
+                        <CheckCircle2 class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-amber-200 transition-all">
+                <div
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-amber-200 sm:flex-row sm:items-center sm:p-6"
+                >
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Withdrawn</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.withdrawn.toLocaleString() }}</h3>
+                        <p
+                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            Withdrawn
+                        </p>
+                        <h3
+                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                        >
+                            {{ stats.withdrawn.toLocaleString() }}
+                        </h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50 group-hover:scale-110 transition-transform">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100/50 bg-amber-50 text-amber-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
+                    >
                         <ShieldAlert class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-sky-200 transition-all">
+                <div
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-sky-200 sm:flex-row sm:items-center sm:p-6"
+                >
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Acquisition</p>
+                        <p
+                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
+                            Acquisition
+                        </p>
                         <div class="flex items-baseline gap-2">
-                             <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.new_this_month }}</h3>
-                             <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1 rounded" v-if="stats.growth > 0">+{{ stats.growth }}%</span>
+                            <h3
+                                class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                            >
+                                {{ stats.new_this_month }}
+                            </h3>
+                            <span
+                                class="rounded bg-emerald-50 px-1 text-xs font-bold text-emerald-600"
+                                v-if="stats.growth > 0"
+                                >+{{ stats.growth }}%</span
+                            >
                         </div>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100/50 group-hover:scale-110 transition-transform">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-100/50 bg-sky-50 text-sky-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
+                    >
                         <TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
             </div>
 
             <!-- Table Card -->
-            <div class="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+            <div
+                class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+            >
                 <!-- Toolbar -->
-                <div class="p-4 sm:p-6 border-b border-slate-50 space-y-4">
-                    <div class="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
-                        <div class="relative w-full lg:max-w-md group">
-                            <Search class="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600" />
-                            <Input v-model="searchQuery" placeholder="SEARCH BY NAME, ID OR UPI..." class="pl-10 h-11 bg-slate-50/50 border-slate-200 rounded-xl focus:bg-white transition-all shadow-none font-black text-[10px] uppercase tracking-widest" />
+                <div class="space-y-4 border-b border-slate-50 p-4 sm:p-6">
+                    <div
+                        class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"
+                    >
+                        <div class="group relative w-full lg:max-w-md">
+                            <Search
+                                class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600"
+                            />
+                            <Input
+                                v-model="searchQuery"
+                                placeholder="SEARCH BY NAME, ID OR UPI..."
+                                class="h-11 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-xs font-bold tracking-tight uppercase shadow-none transition-all focus:bg-white"
+                            />
                         </div>
-                        
-                        <div class="flex items-center gap-2 w-full lg:w-auto">
-                            <Button variant="outline" class="h-11 flex-1 lg:flex-none border-slate-200 font-black text-[10px] uppercase tracking-widest px-4 rounded-xl whitespace-nowrap bg-white hover:bg-slate-50" @click="toggleFilters">
-                                <Filter class="mr-2 h-3.5 w-3.5 opacity-70" /> Logic
+
+                        <div class="flex w-full items-center gap-2 lg:w-auto">
+                            <Button
+                                variant="outline"
+                                class="h-11 flex-1 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight whitespace-nowrap uppercase hover:bg-slate-50 lg:flex-none"
+                                @click="toggleFilters"
+                            >
+                                <Filter class="mr-2 h-3.5 w-3.5 opacity-70" />
+                                Logic
                             </Button>
-                            
+
                             <DropdownMenu v-if="selectedCount > 0">
                                 <DropdownMenuTrigger as-child>
-                                    <Button class="bg-slate-900 text-white hover:bg-slate-800 font-black text-[10px] uppercase tracking-widest h-11 px-6 rounded-xl shadow-lg shadow-slate-900/10">
-                                        BATCH ({{ selectedCount }}) <ChevronDown class="ml-2 h-4 w-4 opacity-70" />
+                                    <Button
+                                        class="h-11 rounded-xl bg-slate-900 px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-slate-900/10 hover:bg-slate-800"
+                                    >
+                                        BATCH ({{ selectedCount }})
+                                        <ChevronDown
+                                            class="ml-2 h-4 w-4 opacity-70"
+                                        />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-slate-100 shadow-xl font-black text-[9px] uppercase tracking-widest">
-                                    <DropdownMenuItem @click="openPromoteModal" class="rounded-lg">
-                                        <ArrowUpCircle class="mr-2 h-4 w-4 text-emerald-500" /> Promote Selection
+                                <DropdownMenuContent
+                                    align="end"
+                                    class="w-56 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                >
+                                    <DropdownMenuItem
+                                        @click="openPromoteModal"
+                                        class="rounded-lg"
+                                    >
+                                        <ArrowUpCircle
+                                            class="mr-2 h-4 w-4 text-emerald-500"
+                                        />
+                                        Promote Selection
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator class="my-1" />
-                                    <DropdownMenuItem class="text-rose-500 rounded-lg group" @click="openActionModal('bulkDelete')">
-                                        <Trash2 class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100" /> Purge Selection
+                                    <DropdownMenuItem
+                                        class="group rounded-lg text-rose-500"
+                                        @click="openActionModal('bulkDelete')"
+                                    >
+                                        <Trash2
+                                            class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100"
+                                        />
+                                        Purge Selection
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="outline" class="h-11 w-11 p-0 rounded-xl border-slate-200 bg-white">
-                                        <MoreHorizontal class="h-5 w-5 text-slate-400" />
+                                    <Button
+                                        variant="outline"
+                                        class="h-11 w-11 rounded-xl border-slate-200 bg-white p-0"
+                                    >
+                                        <MoreHorizontal
+                                            class="h-5 w-5 text-slate-400"
+                                        />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" class="w-48 p-2 rounded-xl border border-slate-100 shadow-xl font-black text-[9px] uppercase tracking-widest">
-                                     <DropdownMenuItem @click="exportToPDF" class="rounded-lg">
-                                        <FileText class="mr-2 h-4 w-4 text-rose-500" /> Export Index
-                                     </DropdownMenuItem>
-                                     <DropdownMenuItem @click="openBulkUploadModal" class="rounded-lg">
-                                        <Download class="mr-2 h-4 w-4 text-blue-500" /> Bulk Ingest
-                                     </DropdownMenuItem>
+                                <DropdownMenuContent
+                                    align="end"
+                                    class="w-48 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                >
+                                    <DropdownMenuItem
+                                        @click="exportToPDF"
+                                        class="rounded-lg"
+                                    >
+                                        <FileText
+                                            class="mr-2 h-4 w-4 text-rose-500"
+                                        />
+                                        Export Index
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        @click="openBulkUploadModal"
+                                        class="rounded-lg"
+                                    >
+                                        <Download
+                                            class="mr-2 h-4 w-4 text-blue-500"
+                                        />
+                                        Bulk Ingest
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
                     </div>
 
                     <!-- Filters Drawer -->
-                    <div v-if="showFilters" class="grid gap-3 sm:gap-4 pt-2 grid-cols-2 lg:grid-cols-4 animate-in slide-in-from-top-2 duration-300">
-                        <div class="relative group">
-                            <select v-model="selectedStatus" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer hover:bg-slate-50/50 transition-all">
-                                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    <div
+                        v-if="showFilters"
+                        class="grid animate-in grid-cols-2 gap-3 pt-2 duration-300 slide-in-from-top-2 sm:gap-4 lg:grid-cols-4"
+                    >
+                        <div class="group relative">
+                            <select
+                                v-model="selectedStatus"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                            >
+                                <option
+                                    v-for="option in statusOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </option>
                             </select>
-                            <ChevronDown class="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
+                            <ChevronDown
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                            />
                         </div>
 
-                        <div class="relative group">
-                            <select v-model="selectedClassId" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer hover:bg-slate-50/50 transition-all">
+                        <div class="group relative">
+                            <select
+                                v-model="selectedClassId"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                            >
                                 <option value="">Every Class</option>
-                                <option v-for="schoolClass in classes" :key="schoolClass.id" :value="String(schoolClass.id)">{{ schoolClass.name }}</option>
+                                <option
+                                    v-for="schoolClass in classes"
+                                    :key="schoolClass.id"
+                                    :value="String(schoolClass.id)"
+                                >
+                                    {{ schoolClass.name }}
+                                </option>
                             </select>
-                            <ChevronDown class="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
+                            <ChevronDown
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                            />
                         </div>
 
-                        <div class="relative group">
-                            <select v-model="selectedGender" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer hover:bg-slate-50/50 transition-all">
-                                <option v-for="option in genderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                        <div class="group relative">
+                            <select
+                                v-model="selectedGender"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                            >
+                                <option
+                                    v-for="option in genderOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </option>
                             </select>
-                            <ChevronDown class="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
+                            <ChevronDown
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                            />
                         </div>
 
-                        <div class="relative group">
-                            <select v-model="selectedBoardingStatus" class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-[9px] font-black uppercase tracking-widest focus:ring-2 focus:ring-blue-600/5 focus:border-blue-300 outline-none appearance-none cursor-pointer hover:bg-slate-50/50 transition-all">
-                                <option v-for="option in boardingOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                        <div class="group relative">
+                            <select
+                                v-model="selectedBoardingStatus"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                            >
+                                <option
+                                    v-for="option in boardingOptions"
+                                    :key="option.value"
+                                    :value="option.value"
+                                >
+                                    {{ option.label }}
+                                </option>
                             </select>
-                            <ChevronDown class="absolute right-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" />
+                            <ChevronDown
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                            />
                         </div>
                     </div>
                 </div>
 
                 <!-- Main Table -->
-                <div class="overflow-x-auto scrollbar-hide">
-                    <table class="w-full text-left min-w-[800px]">
+                <div class="scrollbar-hide overflow-x-auto">
+                    <table class="w-full min-w-[800px] text-left">
                         <thead>
-                            <tr class="bg-slate-50/50 text-slate-500 border-b border-slate-100">
-                                <th class="w-14 h-14 px-6">
-                                     <button @click="toggleAllLearners" class="h-5 w-5 rounded-md border-2 border-slate-200 flex items-center justify-center transition-all bg-white hover:border-blue-400" :class="allSelected ? 'bg-blue-600 border-blue-600 text-white shadow-md' : ''">
-                                          <component :is="allSelected ? CheckSquare : Square" class="h-3.5 w-3.5" />
-                                     </button>
+                            <tr
+                                class="border-b border-slate-100 bg-slate-50/50 text-slate-500"
+                            >
+                                <th class="h-14 w-14 px-6">
+                                    <button
+                                        @click="toggleAllLearners"
+                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-200 bg-white transition-all hover:border-blue-400"
+                                        :class="
+                                            allSelected
+                                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+                                                : ''
+                                        "
+                                    >
+                                        <component
+                                            :is="
+                                                allSelected
+                                                    ? CheckSquare
+                                                    : Square
+                                            "
+                                            class="h-3.5 w-3.5"
+                                        />
+                                    </button>
                                 </th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em]">Learner Profile</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em]">Placement Context</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em]">Live Status</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em]">Entry Date</th>
-                                <th class="px-6 py-4 text-[9px] font-black uppercase tracking-[0.2em] text-right">Operations</th>
+                                <th
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Learner Profile
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Placement Context
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Live Status
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Entry Date
+                                </th>
+                                <th
+                                    class="px-6 py-4 text-right text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                >
+                                    Operations
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50">
-                            <tr 
-                                v-for="learner in learners.data" 
-                                :key="learner.id" 
-                                class="hover:bg-blue-50/30 transition-colors group cursor-pointer"
+                            <tr
+                                v-for="learner in learners.data"
+                                :key="learner.id"
+                                class="group cursor-pointer transition-colors hover:bg-blue-50/30"
                                 @click="router.visit(`/students/${learner.id}`)"
                             >
                                 <td class="px-6 py-4 text-center" @click.stop>
-                                     <button @click="toggleLearner(learner.id)" class="h-5 w-5 rounded-md border-2 border-slate-200 flex items-center justify-center transition-all bg-white hover:border-blue-400" :class="selectedLearnerIds.includes(learner.id) ? 'bg-blue-600 border-blue-600 text-white shadow-md' : ''">
-                                          <component :is="selectedLearnerIds.includes(learner.id) ? CheckSquare : Square" class="h-3.5 w-3.5" />
-                                     </button>
+                                    <button
+                                        @click="toggleLearner(learner.id)"
+                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-200 bg-white transition-all hover:border-blue-400"
+                                        :class="
+                                            selectedLearnerIds.includes(
+                                                learner.id,
+                                            )
+                                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+                                                : ''
+                                        "
+                                    >
+                                        <component
+                                            :is="
+                                                selectedLearnerIds.includes(
+                                                    learner.id,
+                                                )
+                                                    ? CheckSquare
+                                                    : Square
+                                            "
+                                            class="h-3.5 w-3.5"
+                                        />
+                                    </button>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-4">
-                                        <div v-if="learner.photo_url" class="h-11 w-11 flex-shrink-0 rounded-xl overflow-hidden shadow-sm border border-slate-100 group-hover:border-blue-400 transition-all transform group-hover:scale-105 duration-300">
-                                            <img :src="learner.photo_url" class="h-full w-full object-cover" />
+                                        <div
+                                            v-if="learner.photo_url"
+                                            class="h-11 w-11 flex-shrink-0 transform overflow-hidden rounded-xl border border-slate-100 shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:border-blue-400"
+                                        >
+                                            <img
+                                                :src="learner.photo_url"
+                                                class="h-full w-full object-cover"
+                                            />
                                         </div>
-                                        <div v-else class="h-11 w-11 flex-shrink-0 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center font-black text-blue-600 text-[10px] transform group-hover:scale-105 transition-all duration-300 shadow-inner">
-                                             {{ learner.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() }}
+                                        <div
+                                            v-else
+                                            class="flex h-11 w-11 flex-shrink-0 transform items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-xs font-bold text-blue-600 shadow-inner transition-all duration-300 group-hover:scale-105"
+                                        >
+                                            {{
+                                                learner.name
+                                                    .split(' ')
+                                                    .map((n) => n[0])
+                                                    .join('')
+                                                    .substring(0, 2)
+                                                    .toUpperCase()
+                                            }}
                                         </div>
-                                        <div class="flex flex-col min-w-0">
-                                            <span class="font-black text-slate-900 group-hover:text-blue-700 transition-colors uppercase tracking-tight text-xs truncate">{{ learner.name }}</span>
-                                            <span class="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{{ learner.admission_number || 'NO REG ID' }}</span>
+                                        <div class="flex min-w-0 flex-col">
+                                            <span
+                                                class="truncate text-xs font-bold tracking-tight text-slate-900 uppercase transition-colors group-hover:text-blue-700"
+                                                >{{ learner.name }}</span
+                                            >
+                                            <span
+                                                class="mt-0.5 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                                >{{
+                                                    learner.admission_number ||
+                                                    'NO REG ID'
+                                                }}</span
+                                            >
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
-                                        <span class="text-xs font-black text-slate-700 uppercase tracking-tight">{{ learner.class || 'UNASSIGNED' }}</span>
-                                        <span class="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-0.5">{{ learner.gender }}</span>
+                                        <span
+                                            class="text-xs font-bold tracking-tight text-slate-700 uppercase"
+                                            >{{
+                                                learner.class || 'UNASSIGNED'
+                                            }}</span
+                                        >
+                                        <span
+                                            class="mt-0.5 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            >{{ learner.gender }}</span
+                                        >
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                     <Badge :variant="learner.status === 'active' ? 'outline' : 'secondary'" class="rounded-lg px-2.5 py-1 text-[8px] font-black uppercase tracking-widest border-0" :class="learner.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-600'">
-                                         <div v-if="learner.status === 'active'" class="h-1.5 w-1.5 rounded-full bg-emerald-500 mr-1.5 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></div>
-                                         {{ learner.status }}
-                                     </Badge>
+                                    <Badge
+                                        :variant="
+                                            learner.status === 'active'
+                                                ? 'outline'
+                                                : 'secondary'
+                                        "
+                                        class="rounded-lg border-0 px-2.5 py-1 text-xs font-medium tracking-tight uppercase"
+                                        :class="
+                                            learner.status === 'active'
+                                                ? 'bg-emerald-50 text-emerald-600'
+                                                : 'bg-slate-100 text-slate-600'
+                                        "
+                                    >
+                                        <div
+                                            v-if="learner.status === 'active'"
+                                            class="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 shadow-sm"
+                                        ></div>
+                                        {{ learner.status }}
+                                    </Badge>
                                 </td>
-                                <td class="px-6 py-4 text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                                <td
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-slate-500 uppercase"
+                                >
                                     {{ learner.admission_date || 'PENDING' }}
                                 </td>
                                 <td class="px-6 py-4 text-right" @click.stop>
-                                    <div class="flex items-center justify-end gap-1 px-1">
-                                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                                            <Link :href="`/students/${learner.id}`" class="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-all border border-transparent hover:border-blue-100"><Eye class="h-4 w-4" /></Link>
-                                            <Link v-if="hasPermission('students.update')" :href="`/students/${learner.id}/edit`" class="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-all border border-transparent hover:border-amber-100"><Edit class="h-4 w-4" /></Link>
+                                    <div
+                                        class="flex items-center justify-end gap-1 px-1"
+                                    >
+                                        <div
+                                            class="flex translate-x-2 transform items-center gap-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100"
+                                        >
+                                            <Link
+                                                :href="`/students/${learner.id}`"
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600"
+                                                ><Eye class="h-4 w-4"
+                                            /></Link>
+                                            <Link
+                                                v-if="
+                                                    hasPermission(
+                                                        'students.update',
+                                                    )
+                                                "
+                                                :href="`/students/${learner.id}/edit`"
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-slate-400 transition-all hover:border-amber-100 hover:bg-amber-50 hover:text-amber-600"
+                                                ><Edit class="h-4 w-4"
+                                            /></Link>
                                         </div>
-                                        
+
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-slate-50"><MoreHorizontal class="h-4.5 w-4.5 text-slate-400" /></Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    class="h-9 w-9 rounded-xl hover:bg-slate-50"
+                                                    ><MoreHorizontal
+                                                        class="h-4.5 w-4.5 text-slate-400"
+                                                /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-56 p-2 rounded-xl border border-slate-100 shadow-xl font-black text-[9px] uppercase tracking-widest">
-                                                <DropdownMenuItem as-child class="rounded-lg"><Link :href="`/students/${learner.id}`"><Eye class="mr-2 h-3.5 w-3.5" /> View Registry</Link></DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('students.update')" as-child class="rounded-lg">
-                                                    <Link :href="`/students/enrollments/create?student_id=${learner.id}`">
-                                                        <UserPlus class="mr-2 h-3.5 w-3.5 text-blue-500" /> Allocate Context
+                                            <DropdownMenuContent
+                                                align="end"
+                                                class="w-56 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                            >
+                                                <DropdownMenuItem
+                                                    as-child
+                                                    class="rounded-lg"
+                                                    ><Link
+                                                        :href="`/students/${learner.id}`"
+                                                        ><Eye
+                                                            class="mr-2 h-3.5 w-3.5"
+                                                        />
+                                                        View Registry</Link
+                                                    ></DropdownMenuItem
+                                                >
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        hasPermission(
+                                                            'students.update',
+                                                        )
+                                                    "
+                                                    as-child
+                                                    class="rounded-lg"
+                                                >
+                                                    <Link
+                                                        :href="`/students/enrollments/create?student_id=${learner.id}`"
+                                                    >
+                                                        <UserPlus
+                                                            class="mr-2 h-3.5 w-3.5 text-blue-500"
+                                                        />
+                                                        Allocate Context
                                                     </Link>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('students.update')" as-child class="rounded-lg"><Link :href="`/students/${learner.id}/edit`"><Edit class="mr-2 h-3.5 w-3.5" /> Modify Profile</Link></DropdownMenuItem>
-                                                <DropdownMenuSeparator class="my-1" />
-                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openActionModal('suspend', learner)" class="rounded-lg"><ShieldAlert class="mr-2 h-3.5 w-3.5 text-amber-500" /> Terminate Access</DropdownMenuItem>
-                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openActionModal('activate', learner)" class="rounded-lg"><CheckCircle2 class="mr-2 h-3.5 w-3.5 text-emerald-500" /> Restore Access</DropdownMenuItem>
-                                                <DropdownMenuItem v-if="hasPermission('students.delete')" class="text-rose-600 rounded-lg group" @click="openActionModal('delete', learner)"><Trash2 class="mr-2 h-3.5 w-3.5 opacity-70 group-hover:opacity-100" /> Purge Entry</DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        hasPermission(
+                                                            'students.update',
+                                                        )
+                                                    "
+                                                    as-child
+                                                    class="rounded-lg"
+                                                    ><Link
+                                                        :href="`/students/${learner.id}/edit`"
+                                                        ><Edit
+                                                            class="mr-2 h-3.5 w-3.5"
+                                                        />
+                                                        Modify Profile</Link
+                                                    ></DropdownMenuItem
+                                                >
+                                                <DropdownMenuSeparator
+                                                    class="my-1"
+                                                />
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        learner.status !==
+                                                            'suspended' &&
+                                                        hasPermission(
+                                                            'students.update',
+                                                        )
+                                                    "
+                                                    @click="
+                                                        openActionModal(
+                                                            'suspend',
+                                                            learner,
+                                                        )
+                                                    "
+                                                    class="rounded-lg"
+                                                    ><ShieldAlert
+                                                        class="mr-2 h-3.5 w-3.5 text-amber-500"
+                                                    />
+                                                    Terminate
+                                                    Access</DropdownMenuItem
+                                                >
+                                                <DropdownMenuItem
+                                                    v-else-if="
+                                                        hasPermission(
+                                                            'students.update',
+                                                        )
+                                                    "
+                                                    @click="
+                                                        openActionModal(
+                                                            'activate',
+                                                            learner,
+                                                        )
+                                                    "
+                                                    class="rounded-lg"
+                                                    ><CheckCircle2
+                                                        class="mr-2 h-3.5 w-3.5 text-emerald-500"
+                                                    />
+                                                    Restore
+                                                    Access</DropdownMenuItem
+                                                >
+                                                <DropdownMenuItem
+                                                    v-if="
+                                                        hasPermission(
+                                                            'students.delete',
+                                                        )
+                                                    "
+                                                    class="group rounded-lg text-rose-600"
+                                                    @click="
+                                                        openActionModal(
+                                                            'delete',
+                                                            learner,
+                                                        )
+                                                    "
+                                                    ><Trash2
+                                                        class="mr-2 h-3.5 w-3.5 opacity-70 group-hover:opacity-100"
+                                                    />
+                                                    Purge
+                                                    Entry</DropdownMenuItem
+                                                >
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
                                 </td>
                             </tr>
                             <tr v-if="learners.data.length === 0">
-                                <td colspan="6" class="px-6 py-24 text-center text-slate-400 italic font-black uppercase tracking-widest text-[10px]">
+                                <td
+                                    colspan="6"
+                                    class="px-6 py-24 text-center text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                >
                                     No records identified in registry
                                 </td>
                             </tr>
@@ -610,23 +1077,56 @@ const getStatusColor = (active: boolean) => {
                 </div>
 
                 <!-- Pagination -->
-                <div class="px-4 sm:px-6 py-6 border-t border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest order-2 md:order-1">{{ pageLabel }}</p>
-                    <div class="flex items-center justify-between md:justify-end gap-6 order-1 md:order-2">
+                <div
+                    class="flex flex-col gap-6 border-t border-slate-50 bg-slate-50/30 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between"
+                >
+                    <p
+                        class="order-2 text-xs font-bold tracking-tight text-slate-400 uppercase md:order-1"
+                    >
+                        {{ pageLabel }}
+                    </p>
+                    <div
+                        class="order-1 flex items-center justify-between gap-6 md:order-2 md:justify-end"
+                    >
                         <div class="flex items-center gap-3">
-                             <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">Limit</span>
-                             <select v-model="perPage" class="bg-white text-[10px] font-black border border-slate-200 px-3 py-1.5 rounded-xl outline-none focus:ring-2 focus:ring-blue-600/5 cursor-pointer uppercase tracking-widest appearance-none pr-8 relative">
-                                 <option :value="15">15 Units</option>
-                                 <option :value="50">50 Units</option>
-                                 <option :value="100">100 Units</option>
-                             </select>
+                            <span
+                                class="shrink-0 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                >Limit</span
+                            >
+                            <select
+                                v-model="perPage"
+                                class="relative cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-8 text-xs font-bold tracking-tight uppercase outline-none focus:ring-2 focus:ring-blue-600/5"
+                            >
+                                <option :value="15">15 Units</option>
+                                <option :value="50">50 Units</option>
+                                <option :value="100">100 Units</option>
+                            </select>
                         </div>
                         <div class="flex items-center gap-2">
-                            <Button variant="outline" size="sm" class="h-9 px-4 rounded-xl border-slate-200 font-black text-[9px] uppercase tracking-widest bg-white" :disabled="learners.current_page <= 1" @click="applyFilters(learners.current_page - 1)">Prev</Button>
-                            <div class="flex items-center justify-center min-w-[70px] h-9 px-3 rounded-xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-slate-900/20">
-                                {{ learners.current_page }} / {{ learners.last_page }}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="h-9 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight uppercase"
+                                :disabled="learners.current_page <= 1"
+                                @click="applyFilters(learners.current_page - 1)"
+                                >Prev</Button
+                            >
+                            <div
+                                class="flex h-9 min-w-[70px] items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-slate-900/20"
+                            >
+                                {{ learners.current_page }} /
+                                {{ learners.last_page }}
                             </div>
-                            <Button variant="outline" size="sm" class="h-9 px-4 rounded-xl border-slate-200 font-black text-[9px] uppercase tracking-widest bg-white" :disabled="learners.current_page >= learners.last_page" @click="applyFilters(learners.current_page + 1)">Next</Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                class="h-9 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight uppercase"
+                                :disabled="
+                                    learners.current_page >= learners.last_page
+                                "
+                                @click="applyFilters(learners.current_page + 1)"
+                                >Next</Button
+                            >
                         </div>
                     </div>
                 </div>
@@ -635,80 +1135,179 @@ const getStatusColor = (active: boolean) => {
 
         <!-- Action Modals -->
         <Dialog :open="confirmOpen" @update:open="closeActionModal">
-            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-                <div class="p-8 space-y-6 text-center">
-                    <div class="mx-auto h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
-                        <Trash2 v-if="confirmMode === 'delete' || confirmMode === 'bulkDelete'" class="h-10 w-10" />
+            <DialogContent
+                class="animate-in overflow-hidden rounded-xl border-slate-100 p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[440px]"
+            >
+                <div class="space-y-6 p-8 text-center">
+                    <div
+                        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-xl shadow-xl shadow-blue-500/10"
+                        :class="
+                            confirmMode === 'delete' ||
+                            confirmMode === 'bulkDelete'
+                                ? 'bg-red-50 text-red-600'
+                                : 'bg-blue-50 text-blue-600'
+                        "
+                    >
+                        <Trash2
+                            v-if="
+                                confirmMode === 'delete' ||
+                                confirmMode === 'bulkDelete'
+                            "
+                            class="h-10 w-10"
+                        />
                         <ShieldAlert v-else class="h-10 w-10" />
                     </div>
-                    
+
                     <div class="space-y-3">
-                        <h2 class="text-xl font-black text-slate-900 uppercase italic tracking-tight">{{ modalTitle }}</h2>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-relaxed opacity-80 px-6">
+                        <h2
+                            class="text-xl font-bold tracking-tight text-slate-900"
+                        >
+                            {{ modalTitle }}
+                        </h2>
+                        <p
+                            class="px-6 text-xs leading-relaxed font-bold tracking-tight text-slate-400 uppercase opacity-80"
+                        >
                             {{ modalMessage }}
                         </p>
                     </div>
 
                     <div class="flex flex-col gap-3 pt-6">
                         <Button
-                            :variant="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'destructive' : 'default'"
-                            class="h-14 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl transition-all border-0 italic"
-                            :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-600 hover:bg-red-700 shadow-red-500/20' : 'bg-slate-900 hover:bg-slate-800 shadow-slate-900/10'"
+                            :variant="
+                                confirmMode === 'delete' ||
+                                confirmMode === 'bulkDelete'
+                                    ? 'destructive'
+                                    : 'default'
+                            "
+                            class="h-14 rounded-2xl border-0 text-sm font-bold tracking-tight uppercase shadow-xl transition-all"
+                            :class="
+                                confirmMode === 'delete' ||
+                                confirmMode === 'bulkDelete'
+                                    ? 'bg-red-600 shadow-red-500/20 hover:bg-red-700'
+                                    : 'bg-slate-900 shadow-slate-900/10 hover:bg-slate-800'
+                            "
                             :disabled="actionForm.processing"
                             @click="confirmAction"
                         >
-                            {{ actionForm.processing ? 'EXECUTING_PROTOCOL...' : 'CONFIRM_AUTHORIZATION' }}
+                            {{
+                                actionForm.processing
+                                    ? 'Processing...'
+                                    : 'Confirm'
+                            }}
                         </Button>
-                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closeActionModal">ABORT_MISSION</Button>
+                        <Button
+                            variant="ghost"
+                            class="h-12 rounded-2xl text-xs font-bold tracking-tight text-slate-400 uppercase transition-all hover:text-slate-900"
+                            @click="closeActionModal"
+                            >Cancel</Button
+                        >
                     </div>
                 </div>
             </DialogContent>
         </Dialog>
 
         <Dialog :open="promoteOpen" @update:open="closePromoteModal">
-            <DialogContent class="sm:max-w-[500px] rounded-[3rem] border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-                <div class="bg-emerald-600 px-10 py-8 text-white relative overflow-hidden">
-                    <div class="absolute -right-8 -top-8 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
-                    <div class="flex items-center gap-5 relative z-10">
-                        <div class="h-16 w-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
+            <DialogContent
+                class="animate-in overflow-hidden rounded-2xl border-emerald-100 p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[500px]"
+            >
+                <div
+                    class="relative overflow-hidden bg-emerald-600 px-10 py-8 text-white"
+                >
+                    <div
+                        class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-white/10 blur-3xl"
+                    ></div>
+                    <div class="relative z-10 flex items-center gap-5">
+                        <div
+                            class="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/20 shadow-xl backdrop-blur-md"
+                        >
                             <ArrowUpCircle class="h-10 w-10 text-white" />
                         </div>
                         <div>
-                            <h2 class="text-2xl font-black uppercase italic tracking-tight leading-none">Global Promotion</h2>
-                            <p class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 italic opacity-80">Registry Advancement Protocol</p>
+                            <h2
+                                class="text-2xl leading-none font-bold tracking-tight"
+                            >
+                                Global Promotion
+                            </h2>
+                            <p
+                                class="mt-2 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                            >
+                                Registry Advancement Protocol
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="p-10 space-y-8">
-                    <div class="rounded-[2rem] bg-emerald-50/50 p-6 border border-emerald-100 flex items-center justify-between">
+                <div class="space-y-8 p-10">
+                    <div
+                        class="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/50 p-6"
+                    >
                         <div>
-                            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic opacity-70">Batched Units</p>
-                            <p class="text-3xl font-black text-emerald-700 italic tracking-tighter">{{ selectedCount }} <span class="text-xs uppercase tracking-widest opacity-60">Nodes</span></p>
+                            <p
+                                class="text-xs font-bold tracking-tight text-emerald-600 text-muted-foreground uppercase"
+                            >
+                                Batched Units
+                            </p>
+                            <p
+                                class="text-3xl font-bold tracking-tighter text-emerald-700"
+                            >
+                                {{ selectedCount }}
+                                <span
+                                    class="text-xs tracking-tight uppercase opacity-60"
+                                    >Nodes</span
+                                >
+                            </p>
                         </div>
                         <CheckCircle2 class="h-10 w-10 text-emerald-500/30" />
                     </div>
 
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed italic opacity-80 px-2">
-                        SELECTED LEARNERS WILL BE PROPAGATED TO THE NEXT SEQUENTIAL GRADE UPON SYSTEM VALIDATION. THIS ACTION IS IRREVERSIBLE ONCE COMMITTED TO THE CORE REGISTRY.
+                    <p
+                        class="px-2 text-xs leading-relaxed font-bold tracking-tight text-muted-foreground text-slate-500 uppercase"
+                    >
+                        SELECTED LEARNERS WILL BE PROPAGATED TO THE NEXT
+                        SEQUENTIAL GRADE UPON SYSTEM VALIDATION. THIS ACTION IS
+                        IRREVERSIBLE ONCE COMMITTED TO THE CORE REGISTRY.
                     </p>
 
-                    <div class="rounded-2xl border border-blue-100 bg-blue-50/30 p-5 flex items-center gap-4">
-                        <div class="h-10 w-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+                    <div
+                        class="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50/30 p-5"
+                    >
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                        >
                             <ShieldAlert class="h-5 w-5" />
                         </div>
-                        <p class="text-[9px] font-black text-blue-800 uppercase tracking-widest leading-relaxed italic">Example Transformation:<br/><span class="text-slate-500">GRADE 8 WEST</span> → <span class="text-blue-600 font-bold">GRADE 9 WEST</span></p>
+                        <p
+                            class="text-xs leading-relaxed font-bold tracking-tight text-blue-800 uppercase"
+                        >
+                            Example Transformation:<br /><span
+                                class="text-slate-500"
+                                >GRADE 8 WEST</span
+                            >
+                            →
+                            <span class="font-bold text-blue-600"
+                                >GRADE 9 WEST</span
+                            >
+                        </p>
                     </div>
 
                     <div class="flex flex-col gap-3 pt-4">
-                        <Button 
-                            class="h-14 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
-                            :disabled="promotionForm.processing" 
+                        <Button
+                            class="h-14 rounded-[1.5rem] border-0 bg-slate-900 text-sm font-bold tracking-tight text-white uppercase shadow-xl shadow-slate-900/10 transition-all hover:bg-slate-800"
+                            :disabled="promotionForm.processing"
                             @click="promoteSelectedLearners"
                         >
-                            {{ promotionForm.processing ? 'ADVANCING_REGISTRY...' : 'INITIATE_PROMOTION_CYCLE' }}
+                            {{
+                                promotionForm.processing
+                                    ? 'Promoting...'
+                                    : 'Promote Learners'
+                            }}
                         </Button>
-                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
+                        <Button
+                            variant="ghost"
+                            class="h-12 rounded-2xl text-xs font-bold tracking-tight text-slate-400 uppercase transition-all hover:text-slate-900"
+                            @click="closePromoteModal"
+                            >Cancel</Button
+                        >
                     </div>
                 </div>
             </DialogContent>
@@ -727,4 +1326,3 @@ select {
     padding-right: 2.5rem;
 }
 </style>
-

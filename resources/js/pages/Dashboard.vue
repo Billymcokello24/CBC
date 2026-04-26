@@ -28,7 +28,7 @@ import {
     ArrowUpRight,
     MoreHorizontal,
     Plus,
-    Home
+    Home,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import StatCard from '@/components/dashboard/StatCard.vue';
@@ -100,23 +100,25 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-KE', { 
-        style: 'currency', 
+    return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
         currency: 'KES',
-        maximumFractionDigits: 0
+        maximumFractionDigits: 0,
     }).format(amount);
 };
 
 // Derived Top Performing Units from classPerformance
 const topUnits = computed(() => {
     if (!props.classPerformance?.labels?.length) return [];
-    
-    return props.classPerformance.labels.map((name, index) => ({
-        name: name,
-        proficiency: props.classPerformance.datasets[0].data[index],
-        // Randomly assign growth for flavor if not in DB, or just omit
-        growth: 5.2 + (index * 1.2)
-    })).slice(0, 4);
+
+    return props.classPerformance.labels
+        .map((name, index) => ({
+            name: name,
+            proficiency: props.classPerformance.datasets[0].data[index],
+            // Randomly assign growth for flavor if not in DB, or just omit
+            growth: 5.2 + index * 1.2,
+        }))
+        .slice(0, 4);
 });
 </script>
 
@@ -124,42 +126,68 @@ const topUnits = computed(() => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
             <!-- Header Section -->
             <div class="flex flex-col gap-1 px-1">
-                <div class="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground mb-1">
+                <div
+                    class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs"
+                >
                     <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                     <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    <span class="font-medium text-foreground uppercase tracking-widest">Dashboard</span>
+                    <span
+                        class="font-medium tracking-tight text-foreground uppercase"
+                        >Dashboard</span
+                    >
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">Institutional Overview</h1>
-                <p class="text-sm sm:text-[15px] text-muted-foreground">
-                    Aggregated metrics and growth indicators for the current academic year.
+                <h1
+                    class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl"
+                >
+                    Institutional Overview
+                </h1>
+                <p class="text-sm text-muted-foreground sm:text-sm">
+                    Aggregated metrics and growth indicators for the current
+                    academic year.
                 </p>
             </div>
 
             <!-- Stats Grid -->
-            <div class="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
+            <div class="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
                 <StatCard
                     title="Total Collections"
-                    :value="formatCurrency(props.stats.fee_collection).split('.')[0]"
+                    :value="
+                        formatCurrency(props.stats.fee_collection).split('.')[0]
+                    "
                     :icon="DollarSign"
                     variant="success"
-                    :trend="{ value: props.stats.collection_growth, direction: props.stats.collection_growth >= 0 ? 'up' : 'down' }"
+                    :trend="{
+                        value: props.stats.collection_growth,
+                        direction:
+                            props.stats.collection_growth >= 0 ? 'up' : 'down',
+                    }"
                 />
                 <StatCard
                     title="Active Learners"
                     :value="props.stats.total_learners.toLocaleString()"
                     :icon="Users"
                     variant="info"
-                    :trend="{ value: props.stats.learner_growth, direction: props.stats.learner_growth >= 0 ? 'up' : 'down' }"
+                    :trend="{
+                        value: props.stats.learner_growth,
+                        direction:
+                            props.stats.learner_growth >= 0 ? 'up' : 'down',
+                    }"
                 />
                 <StatCard
                     title="Active Units"
                     :value="props.stats.total_classes.toLocaleString()"
                     :icon="LayoutDashboard"
                     variant="danger"
-                    :trend="{ value: props.stats.class_growth, direction: props.stats.class_growth >= 0 ? 'up' : 'down' }"
+                    :trend="{
+                        value: props.stats.class_growth,
+                        direction:
+                            props.stats.class_growth >= 0 ? 'up' : 'down',
+                    }"
                 />
                 <StatCard
                     title="Attendance"
@@ -183,8 +211,8 @@ const topUnits = computed(() => {
                 </div>
 
                 <!-- Secondary Analysis -->
-                <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
-                     <ChartCard
+                <div class="flex flex-col gap-6 lg:col-span-5 xl:col-span-4">
+                    <ChartCard
                         title="Performance Matrix"
                         chart-type="bar"
                         :data="props.classPerformance"
@@ -196,38 +224,77 @@ const topUnits = computed(() => {
             <!-- Bottom Data Matrix -->
             <div class="grid gap-6 lg:grid-cols-12">
                 <!-- Recent Enrollments table -->
-                <div class="lg:col-span-12 xl:col-span-7 rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden flex flex-col">
-                    <div class="px-5 sm:px-6 py-4 border-b border-border/50 flex items-center justify-between bg-muted/5">
-                        <h3 class="font-bold text-sm sm:text-base text-foreground uppercase tracking-tight">Recent Enrollments</h3>
-                        <Link href="/students" class="text-[10px] sm:text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest">View All</Link>
+                <div
+                    class="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:col-span-12 xl:col-span-7 dark:border-white/5"
+                >
+                    <div
+                        class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-5 py-4 sm:px-6"
+                    >
+                        <h3
+                            class="text-sm font-bold tracking-tight text-foreground uppercase sm:text-base"
+                        >
+                            Recent Enrollments
+                        </h3>
+                        <Link
+                            href="/students"
+                            class="text-xs font-bold tracking-tight text-blue-600 uppercase hover:underline sm:text-xs"
+                            >View All</Link
+                        >
                     </div>
-                    
+
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left min-w-[350px]">
+                        <table class="w-full min-w-[350px] text-left">
                             <tbody class="divide-y divide-border/30">
-                                <tr v-for="student in props.recentEnrollments" :key="student.id" class="hover:bg-muted/30 transition-all group">
-                                    <td class="px-5 sm:px-6 py-3.5 sm:py-4">
-                                         <div class="flex items-center gap-3">
-                                            <div class="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-[10px] font-black text-blue-600 ring-2 ring-white group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <tr
+                                    v-for="student in props.recentEnrollments"
+                                    :key="student.id"
+                                    class="group transition-all hover:bg-muted/30"
+                                >
+                                    <td class="px-5 py-3.5 sm:px-6 sm:py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-600 ring-2 ring-white transition-colors group-hover:bg-blue-600 group-hover:text-white"
+                                            >
                                                 {{ student.initials }}
                                             </div>
                                             <div class="flex flex-col">
-                                                <span class="font-bold text-xs sm:text-sm text-foreground tracking-tight leading-none mb-1">{{ student.name }}</span>
-                                                <span class="text-[10px] text-muted-foreground font-semibold uppercase tracking-tighter">{{ student.class_name }}</span>
+                                                <span
+                                                    class="mb-1 text-xs leading-none font-bold tracking-tight text-foreground sm:text-sm"
+                                                    >{{ student.name }}</span
+                                                >
+                                                <span
+                                                    class="text-xs font-semibold tracking-tighter text-muted-foreground uppercase"
+                                                    >{{
+                                                        student.class_name
+                                                    }}</span
+                                                >
                                             </div>
-                                         </div>
+                                        </div>
                                     </td>
-                                    <td class="px-5 sm:px-6 py-3.5 sm:py-4 text-right">
-                                        <div class="flex flex-col items-end gap-1">
-                                            <span class="font-bold text-xs sm:text-sm text-foreground tabular-nums">{{ student.date }}</span>
-                                            <Badge variant="outline" class="rounded-md border-emerald-100 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-tighter px-2 py-0">
+                                    <td
+                                        class="px-5 py-3.5 text-right sm:px-6 sm:py-4"
+                                    >
+                                        <div
+                                            class="flex flex-col items-end gap-1"
+                                        >
+                                            <span
+                                                class="text-xs font-bold text-foreground tabular-nums sm:text-sm"
+                                                >{{ student.date }}</span
+                                            >
+                                            <Badge
+                                                variant="outline"
+                                                class="rounded-md border-emerald-100 bg-emerald-50 px-2 py-0 text-xs font-bold tracking-tighter text-emerald-600 uppercase"
+                                            >
                                                 {{ student.status }}
                                             </Badge>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr v-if="!props.recentEnrollments?.length">
-                                    <td colspan="2" class="px-6 py-12 text-center text-xs text-muted-foreground italic font-medium uppercase">
+                                    <td
+                                        colspan="2"
+                                        class="px-6 py-12 text-center text-xs font-medium text-muted-foreground uppercase"
+                                    >
                                         No recent synchronizations recorded.
                                     </td>
                                 </tr>
@@ -237,27 +304,49 @@ const topUnits = computed(() => {
                 </div>
 
                 <!-- Featured Units Area -->
-                <div class="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex flex-col h-full">
+                <div class="flex flex-col gap-6 lg:col-span-12 xl:col-span-5">
+                    <div
+                        class="flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
+                    >
                         <div class="mb-6">
-                            <h3 class="font-semibold text-base text-foreground">Top Performing Units</h3>
+                            <h3 class="text-base font-semibold text-foreground">
+                                Top Performing Units
+                            </h3>
                         </div>
 
                         <div class="space-y-6">
-                            <div v-for="unit in topUnits" :key="unit.name" class="flex items-center justify-between group">
+                            <div
+                                v-for="unit in topUnits"
+                                :key="unit.name"
+                                class="group flex items-center justify-between"
+                            >
                                 <div class="flex flex-col">
-                                    <span class="font-semibold text-sm text-foreground">{{ unit.name }}</span>
-                                    <span class="text-xs text-muted-foreground italic">Current Proficiency Index</span>
+                                    <span
+                                        class="text-sm font-semibold text-foreground"
+                                        >{{ unit.name }}</span
+                                    >
+                                    <span class="text-xs text-muted-foreground"
+                                        >Current Proficiency Index</span
+                                    >
                                 </div>
                                 <div class="flex flex-col items-end">
-                                    <span class="font-semibold text-sm text-foreground">{{ unit.proficiency }}% Proficiency</span>
-                                    <div class="flex items-center gap-1 text-[10px] font-medium text-emerald-600">
+                                    <span
+                                        class="text-sm font-semibold text-foreground"
+                                        >{{ unit.proficiency }}%
+                                        Proficiency</span
+                                    >
+                                    <div
+                                        class="flex items-center gap-1 text-xs font-medium text-emerald-600"
+                                    >
                                         <TrendingUp class="h-3 w-3" />
                                         {{ unit.growth }}%
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="!topUnits.length" class="py-12 text-center text-sm text-muted-foreground italic">
+                            <div
+                                v-if="!topUnits.length"
+                                class="py-12 text-center text-sm text-muted-foreground"
+                            >
                                 Performance data synchronization required.
                             </div>
                         </div>

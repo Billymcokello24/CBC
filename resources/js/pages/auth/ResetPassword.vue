@@ -38,9 +38,15 @@ const submit = () => {
 
         <form @submit.prevent="submit" class="space-y-5">
             <div class="space-y-2">
-                <Label for="email" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Email address</Label>
+                <Label
+                    for="email"
+                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase"
+                    >Email address</Label
+                >
                 <div class="relative opacity-60">
-                    <Mail class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Mail
+                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    />
                     <Input
                         id="email"
                         type="email"
@@ -52,21 +58,27 @@ const submit = () => {
             </div>
 
             <div class="space-y-2">
-                <Label for="password" class="text-xs font-semibold uppercase tracking-wider text-slate-500">New Password</Label>
+                <Label
+                    for="password"
+                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase"
+                    >New Password</Label
+                >
                 <div class="group relative">
-                    <Lock class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500" />
+                    <Lock
+                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500"
+                    />
                     <Input
                         id="password"
                         v-model="form.password"
                         :type="showPassword ? 'text' : 'password'"
                         placeholder="••••••••"
-                        class="h-11 border-slate-200 pl-10 pr-10 transition-all focus:border-purple-500 focus:ring-purple-500/20 dark:border-slate-800"
+                        class="h-11 border-slate-200 pr-10 pl-10 transition-all focus:border-purple-500 focus:ring-purple-500/20 dark:border-slate-800"
                         required
                         autofocus
                     />
-                    <button 
+                    <button
                         type="button"
-                        class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        class="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                         @click="showPassword = !showPassword"
                     >
                         <Eye v-if="!showPassword" class="h-4 w-4" />
@@ -77,9 +89,15 @@ const submit = () => {
             </div>
 
             <div class="space-y-2">
-                <Label for="password_confirmation" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Confirm Password</Label>
+                <Label
+                    for="password_confirmation"
+                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase"
+                    >Confirm Password</Label
+                >
                 <div class="group relative">
-                    <Lock class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500" />
+                    <Lock
+                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500"
+                    />
                     <Input
                         id="password_confirmation"
                         v-model="form.password_confirmation"
@@ -97,7 +115,10 @@ const submit = () => {
                 class="h-11 w-full bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700 hover:shadow-purple-600/30 dark:bg-purple-600 dark:hover:bg-purple-500"
                 :disabled="form.processing"
             >
-                <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                <Loader2
+                    v-if="form.processing"
+                    class="mr-2 h-4 w-4 animate-spin"
+                />
                 Reset Password
             </Button>
         </form>

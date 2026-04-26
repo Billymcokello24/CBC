@@ -24,8 +24,14 @@ watchEffect(() => {
     if (themeColor) {
         document.documentElement.style.setProperty('--primary', themeColor);
         document.documentElement.style.setProperty('--ring', themeColor);
-        document.documentElement.style.setProperty('--sidebar-primary', themeColor);
-        document.documentElement.style.setProperty('--sidebar-ring', themeColor);
+        document.documentElement.style.setProperty(
+            '--sidebar-primary',
+            themeColor,
+        );
+        document.documentElement.style.setProperty(
+            '--sidebar-ring',
+            themeColor,
+        );
     }
 });
 </script>
@@ -33,15 +39,29 @@ watchEffect(() => {
 <template>
     <AppShell variant="sidebar">
         <AppSidebar />
-        <AppContent variant="sidebar" class="bg-background min-h-screen flex flex-col">
+        <AppContent
+            variant="sidebar"
+            class="flex min-h-screen flex-col bg-background"
+        >
             <TailPanelHeader />
             <main class="flex-1 p-2 sm:p-4 md:p-8 lg:p-10">
                 <!-- Breadcrumbs row -->
-                <div v-if="breadcrumbs && breadcrumbs.length > 0" class="mb-3 sm:mb-6 flex items-center gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                     <template v-for="(item, index) in breadcrumbs" :key="index">
-                          <Link :href="item.href" class="hover:text-primary transition-colors">{{ item.title }}</Link>
-                          <span v-if="index < breadcrumbs.length - 1" class="text-slate-300">/</span>
-                     </template>
+                <div
+                    v-if="breadcrumbs && breadcrumbs.length > 0"
+                    class="mb-3 flex items-center gap-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase sm:mb-6 sm:gap-2 sm:text-xs"
+                >
+                    <template v-for="(item, index) in breadcrumbs" :key="index">
+                        <Link
+                            :href="item.href"
+                            class="transition-colors hover:text-primary"
+                            >{{ item.title }}</Link
+                        >
+                        <span
+                            v-if="index < breadcrumbs.length - 1"
+                            class="text-slate-300"
+                            >/</span
+                        >
+                    </template>
                 </div>
                 <slot />
             </main>

@@ -37,9 +37,15 @@ const submit = () => {
 
         <form @submit.prevent="submit" class="space-y-6">
             <div class="space-y-2">
-                <Label for="email" class="text-xs font-semibold uppercase tracking-wider text-slate-500">Email address</Label>
+                <Label
+                    for="email"
+                    class="text-xs font-semibold tracking-wider text-slate-500 uppercase"
+                    >Email address</Label
+                >
                 <div class="group relative">
-                    <Mail class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500" />
+                    <Mail
+                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-purple-500"
+                    />
                     <Input
                         id="email"
                         v-model="form.email"
@@ -58,11 +64,17 @@ const submit = () => {
                 class="h-11 w-full bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700 hover:shadow-purple-600/30 dark:bg-purple-600 dark:hover:bg-purple-500"
                 :disabled="form.processing"
             >
-                <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                <Loader2
+                    v-if="form.processing"
+                    class="mr-2 h-4 w-4 animate-spin"
+                />
                 Reset Password
             </Button>
 
-            <Link href="/login" class="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-purple-600 dark:text-slate-400">
+            <Link
+                href="/login"
+                class="flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 hover:text-purple-600 dark:text-slate-400"
+            >
                 <ArrowLeft class="h-4 w-4" />
                 Back to sign in
             </Link>

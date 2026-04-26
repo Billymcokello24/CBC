@@ -19,7 +19,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const today = new Date();
-const currentMonth = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+const currentMonth = today.toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
+});
 
 // Generate calendar days
 const calendarDays = computed(() => {
@@ -41,12 +44,12 @@ const calendarDays = computed(() => {
     for (let i = 1; i <= lastDay.getDate(); i++) {
         const date = new Date(year, month, i);
         const dateStr = date.toISOString().split('T')[0];
-        const dayEvents = props.events.filter(e => e.date === dateStr);
+        const dayEvents = props.events.filter((e) => e.date === dateStr);
         days.push({
             date,
             isCurrentMonth: true,
             isToday: date.toDateString() === today.toDateString(),
-            events: dayEvents
+            events: dayEvents,
         });
     }
 
@@ -65,7 +68,7 @@ const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const upcomingEvents = computed(() => {
     const todayStr = today.toISOString().split('T')[0];
     return props.events
-        .filter(e => e.date >= todayStr)
+        .filter((e) => e.date >= todayStr)
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 5);
 });
@@ -80,7 +83,10 @@ const eventTypeColors = {
 
 const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('default', {
+        month: 'short',
+        day: 'numeric',
+    });
 };
 </script>
 
@@ -88,17 +94,19 @@ const formatDate = (dateStr: string) => {
     <div class="rounded-xl border bg-card p-6">
         <div class="mb-4 flex items-center justify-between">
             <h3 class="text-lg font-semibold">Calendar</h3>
-            <span class="text-sm text-muted-foreground">{{ currentMonth }}</span>
+            <span class="text-sm text-muted-foreground">{{
+                currentMonth
+            }}</span>
         </div>
 
         <!-- Mini Calendar -->
         <div class="mb-6">
             <!-- Week days header -->
-            <div class="grid grid-cols-7 gap-1 mb-2">
+            <div class="mb-2 grid grid-cols-7 gap-1">
                 <div
                     v-for="day in weekDays"
                     :key="day"
-                    class="text-center text-xs font-medium text-muted-foreground py-1"
+                    class="py-1 text-center text-xs font-medium text-muted-foreground"
                 >
                     {{ day }}
                 </div>
@@ -111,8 +119,12 @@ const formatDate = (dateStr: string) => {
                     :key="index"
                     :class="[
                         'relative flex h-8 items-center justify-center rounded text-sm transition-colors',
-                        day.isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/50',
-                        day.isToday ? 'bg-primary text-primary-foreground font-semibold' : 'hover:bg-muted',
+                        day.isCurrentMonth
+                            ? 'text-foreground'
+                            : 'text-muted-foreground/50',
+                        day.isToday
+                            ? 'bg-primary font-semibold text-primary-foreground'
+                            : 'hover:bg-muted',
                     ]"
                 >
                     {{ day.date.getDate() }}
@@ -127,13 +139,19 @@ const formatDate = (dateStr: string) => {
 
         <!-- Upcoming Events -->
         <div>
-            <h4 class="mb-3 text-sm font-medium text-muted-foreground">Upcoming Events</h4>
+            <h4 class="mb-3 text-sm font-medium text-muted-foreground">
+                Upcoming Events
+            </h4>
 
             <div v-if="loading" class="space-y-2">
                 <div v-for="i in 3" :key="i" class="flex items-center gap-3">
-                    <div class="h-2 w-2 animate-pulse rounded-full bg-muted"></div>
+                    <div
+                        class="h-2 w-2 animate-pulse rounded-full bg-muted"
+                    ></div>
                     <div class="flex-1">
-                        <div class="h-4 w-3/4 animate-pulse rounded bg-muted"></div>
+                        <div
+                            class="h-4 w-3/4 animate-pulse rounded bg-muted"
+                        ></div>
                     </div>
                 </div>
             </div>
@@ -144,9 +162,16 @@ const formatDate = (dateStr: string) => {
                     :key="event.id"
                     class="flex items-center gap-3 rounded-lg p-2 hover:bg-muted/50"
                 >
-                    <span :class="['h-2 w-2 rounded-full', eventTypeColors[event.type]]"></span>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{{ event.title }}</p>
+                    <span
+                        :class="[
+                            'h-2 w-2 rounded-full',
+                            eventTypeColors[event.type],
+                        ]"
+                    ></span>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium">
+                            {{ event.title }}
+                        </p>
                         <p class="text-xs text-muted-foreground">
                             {{ formatDate(event.date) }}
                             <span v-if="event.time"> • {{ event.time }}</span>
@@ -154,7 +179,10 @@ const formatDate = (dateStr: string) => {
                     </div>
                 </div>
 
-                <div v-if="upcomingEvents.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                <div
+                    v-if="upcomingEvents.length === 0"
+                    class="py-4 text-center text-sm text-muted-foreground"
+                >
                     No upcoming events
                 </div>
             </div>

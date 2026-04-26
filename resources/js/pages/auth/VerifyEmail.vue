@@ -30,13 +30,21 @@ const submit = () => {
         </div>
 
         <div class="flex flex-col gap-6">
-            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
+            <div
+                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400"
+            >
                 <Mail class="h-8 w-8" />
             </div>
 
             <form @submit.prevent="submit" class="space-y-4">
-                <Button :disabled="form.processing" class="h-11 w-full bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700 hover:shadow-purple-600/30 dark:bg-purple-600 dark:hover:bg-purple-500">
-                    <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+                <Button
+                    :disabled="form.processing"
+                    class="h-11 w-full bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-700 hover:shadow-purple-600/30 dark:bg-purple-600 dark:hover:bg-purple-500"
+                >
+                    <Loader2
+                        v-if="form.processing"
+                        class="mr-2 h-4 w-4 animate-spin"
+                    />
                     Resend Verification Email
                 </Button>
 

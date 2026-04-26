@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
-import { 
-    Mail, 
-    Send, 
-    MessageSquare, 
-    Link as LinkIcon, 
-    Users, 
-    ShieldCheck, 
-    Info, 
+import {
+    Mail,
+    Send,
+    MessageSquare,
+    Link as LinkIcon,
+    Users,
+    ShieldCheck,
+    Info,
     Zap,
     ExternalLink,
-    X
+    X,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { 
+import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
-    SelectValue 
-} from "@/components/ui/select";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+    SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -54,39 +54,70 @@ const submit = () => {
     <Head title="System Communications" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div
+            class="animate-in space-y-8 duration-700 fade-in slide-in-from-bottom-4"
+        >
             <!-- Header -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
                 <div>
-                    <h1 class="text-2xl font-black tracking-tight text-foreground">Broadcasts</h1>
-                    <p class="text-sm font-bold text-muted-foreground/60 uppercase tracking-widest">Send system-wide announcements to users.</p>
+                    <h1
+                        class="text-2xl font-bold tracking-tight text-foreground"
+                    >
+                        Broadcasts
+                    </h1>
+                    <p
+                        class="text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
+                    >
+                        Send system-wide announcements to users.
+                    </p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 gap-8 xl:grid-cols-3">
                 <!-- Composer -->
-                <div class="xl:col-span-2 space-y-6">
-                    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5">
+                <div class="space-y-6 xl:col-span-2">
+                    <div
+                        class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
+                    >
                         <form @submit.prevent="submit" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Recipients</Label>
+                                    <Label
+                                        class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                        >Recipients</Label
+                                    >
                                     <Select v-model="form.recipients">
-                                        <SelectTrigger class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary/20 transition-all">
-                                            <SelectValue placeholder="Select Recipient Group" />
+                                        <SelectTrigger
+                                            class="h-11 rounded-xl border-border bg-muted/20 font-bold transition-all focus:ring-primary/20"
+                                        >
+                                            <SelectValue
+                                                placeholder="Select Recipient Group"
+                                            />
                                         </SelectTrigger>
-                                        <SelectContent class="rounded-xl border-border shadow-xl">
-                                            <SelectItem value="all_admins">School Administrators Only</SelectItem>
-                                            <SelectItem value="all_users">All Active Users</SelectItem>
+                                        <SelectContent
+                                            class="rounded-xl border-border shadow-xl"
+                                        >
+                                            <SelectItem value="all_admins"
+                                                >School Administrators
+                                                Only</SelectItem
+                                            >
+                                            <SelectItem value="all_users"
+                                                >All Active Users</SelectItem
+                                            >
                                         </SelectContent>
                                     </Select>
                                 </div>
 
                                 <div class="space-y-2">
-                                    <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Subject</Label>
-                                    <Input 
+                                    <Label
+                                        class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                        >Subject</Label
+                                    >
+                                    <Input
                                         v-model="form.subject"
-                                        placeholder="Enter announcement subject..." 
+                                        placeholder="Enter announcement subject..."
                                         class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary/20"
                                         required
                                     />
@@ -94,53 +125,90 @@ const submit = () => {
                             </div>
 
                             <div class="space-y-2">
-                                <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Greeting</Label>
-                                <Input 
+                                <Label
+                                    class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                    >Greeting</Label
+                                >
+                                <Input
                                     v-model="form.greeting"
-                                    placeholder="e.g. Hello {name}," 
+                                    placeholder="e.g. Hello {name},"
                                     class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary/20"
                                     required
                                 />
-                                <p class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-tight">Use {name} as a dynamic name placeholder.</p>
+                                <p
+                                    class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >
+                                    Use {name} as a dynamic name placeholder.
+                                </p>
                             </div>
 
                             <div class="space-y-2">
-                                <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Message Body</Label>
-                                <Textarea 
+                                <Label
+                                    class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                    >Message Body</Label
+                                >
+                                <Textarea
                                     v-model="form.message"
-                                    placeholder="Describe your announcement..." 
-                                    class="min-h-[250px] rounded-xl border-border bg-muted/20 p-4 font-bold focus:ring-primary/20 transition-all"
+                                    placeholder="Describe your announcement..."
+                                    class="min-h-[250px] rounded-xl border-border bg-muted/20 p-4 font-bold transition-all focus:ring-primary/20"
                                     required
                                 />
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
-                                    <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Button Text (Optional)</Label>
-                                    <Input 
+                                    <Label
+                                        class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                        >Button Text (Optional)</Label
+                                    >
+                                    <Input
                                         v-model="form.action_text"
-                                        placeholder="e.g. View Details" 
+                                        placeholder="e.g. View Details"
                                         class="h-11 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary/20"
                                     />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Button URL (Optional)</Label>
-                                    <div class="relative group">
-                                         <LinkIcon class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
-                                         <Input 
-                                             v-model="form.action_url"
-                                             placeholder="https://..." 
-                                             class="pl-10 h-11 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary/20"
-                                         />
+                                    <Label
+                                        class="ml-1 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                        >Button URL (Optional)</Label
+                                    >
+                                    <div class="group relative">
+                                        <LinkIcon
+                                            class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary"
+                                        />
+                                        <Input
+                                            v-model="form.action_url"
+                                            placeholder="https://..."
+                                            class="h-11 rounded-xl border-border bg-muted/20 pl-10 font-bold focus:ring-primary/20"
+                                        />
                                     </div>
                                 </div>
                             </div>
 
-                            <Button type="submit" class="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-black shadow-lg shadow-primary/20 transition-all" :disabled="form.processing">
-                                <div class="relative flex items-center justify-center gap-2">
-                                     <Zap v-if="!form.processing" class="h-4 w-4" />
-                                     <span class="text-sm font-black uppercase tracking-widest">{{ form.processing ? 'Sending...' : 'Send Broadcast' }}</span>
-                                     <Send v-if="!form.processing" class="h-4 w-4 opacity-50" />
+                            <Button
+                                type="submit"
+                                class="h-12 w-full rounded-xl bg-primary font-bold text-white shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
+                                :disabled="form.processing"
+                            >
+                                <div
+                                    class="relative flex items-center justify-center gap-2"
+                                >
+                                    <Zap
+                                        v-if="!form.processing"
+                                        class="h-4 w-4"
+                                    />
+                                    <span
+                                        class="text-sm font-medium tracking-tight uppercase"
+                                        >{{
+                                            form.processing
+                                                ? 'Sending...'
+                                                : 'Send Broadcast'
+                                        }}</span
+                                    >
+                                    <Send
+                                        v-if="!form.processing"
+                                        class="h-4 w-4 opacity-50"
+                                    />
                                 </div>
                             </Button>
                         </form>
@@ -149,57 +217,136 @@ const submit = () => {
 
                 <!-- Info Pane -->
                 <div class="space-y-6">
-                    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6 dark:border-white/5">
+                    <div
+                        class="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
+                    >
                         <div class="flex items-center gap-3">
-                             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/10">
-                                  <Info class="h-5 w-5" />
-                             </div>
-                             <h3 class="text-lg font-black text-foreground tracking-tight">Information</h3>
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-primary"
+                            >
+                                <Info class="h-5 w-5" />
+                            </div>
+                            <h3
+                                class="text-lg font-bold tracking-tight text-foreground"
+                            >
+                                Information
+                            </h3>
                         </div>
 
                         <div class="space-y-4">
                             <div class="flex gap-4">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground/40 font-black text-[10px] border border-border">01</div>
-                                <p class="text-[11px] font-bold text-muted-foreground leading-relaxed">Broadcasts are sent in the background via <span class="text-primary">queues</span> for maximum performance.</p>
+                                <div
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-xs font-bold text-muted-foreground/40"
+                                >
+                                    01
+                                </div>
+                                <p
+                                    class="text-sm leading-relaxed font-bold text-muted-foreground"
+                                >
+                                    Broadcasts are sent in the background via
+                                    <span class="text-primary">queues</span> for
+                                    maximum performance.
+                                </p>
                             </div>
                             <div class="flex gap-4">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground/40 font-black text-[10px] border border-border">02</div>
-                                <p class="text-[11px] font-bold text-muted-foreground leading-relaxed">All sent messages are recorded in the <span class="text-primary font-black uppercase tracking-tighter">audit trail</span> for accountability.</p>
+                                <div
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-xs font-bold text-muted-foreground/40"
+                                >
+                                    02
+                                </div>
+                                <p
+                                    class="text-sm leading-relaxed font-bold text-muted-foreground"
+                                >
+                                    All sent messages are recorded in the
+                                    <span
+                                        class="font-bold tracking-tighter text-primary uppercase"
+                                        >audit trail</span
+                                    >
+                                    for accountability.
+                                </p>
                             </div>
                             <div class="flex gap-4">
-                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground/40 font-black text-[10px] border border-border">03</div>
-                                <p class="text-[11px] font-bold text-muted-foreground leading-relaxed">Personalization tags like <b>{name}</b> are automatically replaced with actual user data.</p>
+                                <div
+                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-xs font-bold text-muted-foreground/40"
+                                >
+                                    03
+                                </div>
+                                <p
+                                    class="text-sm leading-relaxed font-bold text-muted-foreground"
+                                >
+                                    Personalization tags like <b>{name}</b> are
+                                    automatically replaced with actual user
+                                    data.
+                                </p>
                             </div>
                         </div>
 
-                        <Alert class="bg-rose-500/5 border-rose-500/20 rounded-xl p-4">
-                            <ShieldCheck class="h-5 w-5 text-rose-600 dark:text-rose-400" />
-                            <AlertTitle class="ml-3 text-[11px] font-black text-rose-900 dark:text-rose-400 uppercase tracking-widest">Important</AlertTitle>
-                            <AlertDescription class="ml-3 text-[10px] font-bold text-rose-600/80 dark:text-rose-400/80 mt-1">
-                                Broadcasting to "All Active Users" will send a large number of emails. Please verify your message carefully.
+                        <Alert
+                            class="rounded-xl border-rose-500/20 bg-rose-500/5 p-4"
+                        >
+                            <ShieldCheck
+                                class="h-5 w-5 text-rose-600 dark:text-rose-400"
+                            />
+                            <AlertTitle
+                                class="ml-3 text-sm font-bold tracking-tight text-rose-900 uppercase dark:text-rose-400"
+                                >Important</AlertTitle
+                            >
+                            <AlertDescription
+                                class="mt-1 ml-3 text-xs font-bold text-rose-600/80 dark:text-rose-400/80"
+                            >
+                                Broadcasting to "All Active Users" will send a
+                                large number of emails. Please verify your
+                                message carefully.
                             </AlertDescription>
                         </Alert>
                     </div>
 
                     <!-- Stats Card -->
-                    <div class="rounded-2xl bg-card border border-border p-6 shadow-sm space-y-6 relative overflow-hidden group dark:border-white/5">
-                         <div class="relative flex items-center justify-between">
-                              <h3 class="text-foreground font-black text-base tracking-tight uppercase">Recent Impact</h3>
-                              <MessageSquare class="h-6 w-6 text-primary opacity-20" />
-                         </div>
-                         <div class="relative grid grid-cols-2 gap-4">
-                              <div class="bg-muted/30 rounded-xl p-4 border border-border/50">
-                                   <div class="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">Open Rate</div>
-                                   <div class="text-xl font-black text-foreground">92.4%</div>
-                              </div>
-                              <div class="bg-muted/30 rounded-xl p-4 border border-border/50">
-                                   <div class="text-[8px] font-black text-muted-foreground/40 uppercase tracking-widest">Engaged</div>
-                                   <div class="text-xl font-black text-foreground">14.8k</div>
-                              </div>
-                         </div>
-                         <button class="w-full h-10 rounded-lg bg-muted/50 border border-border text-[9px] font-black text-muted-foreground/60 uppercase tracking-widest hover:bg-primary hover:text-white hover:border-primary transition-all flex items-center justify-center gap-2">
-                               View Analytics <ExternalLink class="h-3 w-3 opacity-40 " />
-                         </button>
+                    <div
+                        class="group relative space-y-6 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
+                    >
+                        <div class="relative flex items-center justify-between">
+                            <h3
+                                class="text-base font-bold tracking-tight text-foreground uppercase"
+                            >
+                                Recent Impact
+                            </h3>
+                            <MessageSquare
+                                class="h-6 w-6 text-primary opacity-20"
+                            />
+                        </div>
+                        <div class="relative grid grid-cols-2 gap-4">
+                            <div
+                                class="rounded-xl border border-border/50 bg-muted/30 p-4"
+                            >
+                                <div
+                                    class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >
+                                    Open Rate
+                                </div>
+                                <div class="text-xl font-bold text-foreground">
+                                    92.4%
+                                </div>
+                            </div>
+                            <div
+                                class="rounded-xl border border-border/50 bg-muted/30 p-4"
+                            >
+                                <div
+                                    class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >
+                                    Engaged
+                                </div>
+                                <div class="text-xl font-bold text-foreground">
+                                    14.8k
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            class="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase transition-all hover:border-primary hover:bg-primary hover:text-white"
+                        >
+                            View Analytics
+                            <ExternalLink class="h-3 w-3 opacity-40" />
+                        </button>
                     </div>
                 </div>
             </div>

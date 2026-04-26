@@ -1,6 +1,22 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { DollarSign, Plus, Search, Filter, MoreHorizontal, Eye, Printer, FileText, CheckCircle2, List, ChevronRight, ChevronLeft, Wallet, Landmark, History } from 'lucide-vue-next';
+import {
+    DollarSign,
+    Plus,
+    Search,
+    Filter,
+    MoreHorizontal,
+    Eye,
+    Printer,
+    FileText,
+    CheckCircle2,
+    List,
+    ChevronRight,
+    ChevronLeft,
+    Wallet,
+    Landmark,
+    History,
+} from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -27,40 +43,53 @@ const breadcrumbs: BreadcrumbItem[] = [
 const searchQuery = ref('');
 const formatCurrency = (amount: number | string) => {
     const value = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('en-KE', { 
-        style: 'currency', 
-        currency: 'KES', 
-        minimumFractionDigits: 0 
+    return new Intl.NumberFormat('en-KE', {
+        style: 'currency',
+        currency: 'KES',
+        minimumFractionDigits: 0,
     }).format(value || 0);
 };
 
 const getMethodColor = (method: string) => {
     switch (method.toLowerCase()) {
-        case 'm-pesa': return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50';
-        case 'bank transfer': return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50';
-        case 'cash': return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50';
-        default: return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-950/30 dark:text-slate-400 dark:border-slate-900/50';
+        case 'm-pesa':
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50';
+        case 'bank transfer':
+            return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50';
+        case 'cash':
+            return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50';
+        default:
+            return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-950/30 dark:text-slate-400 dark:border-slate-900/50';
     }
 };
-
 </script>
 
 <template>
     <Head title="Payments" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 max-w-[1600px] mx-auto pb-20 p-6">
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-12 p-6 pb-20 duration-1000 fade-in slide-in-from-bottom-4"
+        >
             <!-- Simple Header -->
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div
+                class="flex flex-col justify-between gap-6 md:flex-row md:items-end"
+            >
                 <div class="space-y-1">
-                    <h1 class="text-3xl font-black tracking-tight text-foreground uppercase italic underline decoration-emerald-600 decoration-4 underline-offset-8">Liquidity Flow</h1>
-                    <p class="text-[11px] font-black text-muted-foreground/60 uppercase tracking-widest pt-2">
+                    <h1
+                        class="text-3xl font-bold tracking-tight text-foreground underline decoration-emerald-600 decoration-4 underline-offset-8"
+                    >
+                        Liquidity Flow
+                    </h1>
+                    <p
+                        class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
+                    >
                         Real-time transaction matrix and capital injection logs.
                     </p>
                 </div>
-                
+
                 <Link
                     href="/finance/payments/create"
-                    class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-8 h-11 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] italic"
+                    class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     <Plus class="mr-2 h-4 w-4" />
                     Inject Capital
@@ -68,85 +97,190 @@ const getMethodColor = (method: string) => {
             </div>
 
             <!-- Precision Toolbar -->
-            <div class="flex flex-col md:flex-row items-center gap-4 bg-card p-4 rounded-[2rem] border border-border shadow-sm dark:bg-card/50 backdrop-blur-md">
-                <div class="relative flex-1 w-full group">
-                    <Search class="absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 group-focus-within:text-emerald-600 transition-colors" />
-                    <Input 
-                        v-model="searchQuery" 
-                        placeholder="SCAN FLOW..." 
-                        class="pl-14 h-14 bg-muted/20 border-transparent focus:border-emerald-600/20 rounded-2xl font-black text-[10px] uppercase tracking-widest italic transition-all"
+            <div
+                class="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm backdrop-blur-md md:flex-row dark:bg-card/50"
+            >
+                <div class="group relative w-full flex-1">
+                    <Search
+                        class="absolute top-1/2 left-6 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-emerald-600"
+                    />
+                    <Input
+                        v-model="searchQuery"
+                        placeholder="SCAN FLOW..."
+                        class="h-14 rounded-2xl border-transparent bg-muted/20 pl-14 text-xs font-bold tracking-tight uppercase transition-all focus:border-emerald-600/20"
                     />
                 </div>
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <Button variant="outline" class="h-14 px-8 rounded-2xl border-border font-black text-[10px] uppercase tracking-widest italic hover:bg-muted flex-1 md:flex-none">
+                <div class="flex w-full items-center gap-3 md:w-auto">
+                    <Button
+                        variant="outline"
+                        class="h-14 flex-1 rounded-2xl border-border px-8 text-xs font-bold tracking-tight uppercase hover:bg-muted md:flex-none"
+                    >
                         <Filter class="mr-3 h-4 w-4 opacity-40" /> Method
                     </Button>
-                    <Button variant="outline" class="h-14 px-8 rounded-2xl border-border font-black text-[10px] uppercase tracking-widest italic hover:bg-muted flex-1 md:flex-none">
+                    <Button
+                        variant="outline"
+                        class="h-14 flex-1 rounded-2xl border-border px-8 text-xs font-bold tracking-tight uppercase hover:bg-muted md:flex-none"
+                    >
                         Flow Cycle
                     </Button>
                 </div>
             </div>
 
             <!-- Transaction Table -->
-            <div class="rounded-[2.5rem] border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden">
+            <div
+                class="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-white/5"
+            >
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full border-collapse text-left">
                         <thead>
-                            <tr class="bg-muted/5 border-b border-border/50">
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Log ID</th>
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Entity</th>
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Reference</th>
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Magnitude</th>
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Channel</th>
-                                <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Timestamp</th>
-                                <th class="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 italic">Action</th>
+                            <tr class="border-b border-border/50 bg-muted/5">
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Log ID
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Entity
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Reference
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Magnitude
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Channel
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Timestamp
+                                </th>
+                                <th
+                                    class="px-8 py-6 text-right text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
+                                >
+                                    Action
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/30">
-                            <tr v-for="payment in payments.data" :key="payment.id" class="group hover:bg-muted/30 transition-all duration-300">
+                            <tr
+                                v-for="payment in payments.data"
+                                :key="payment.id"
+                                class="group transition-all duration-300 hover:bg-muted/30"
+                            >
                                 <td class="px-8 py-6">
-                                    <span class="font-black text-[10px] text-foreground uppercase tracking-widest italic group-hover:text-emerald-600 transition-colors">
-                                        {{ payment.transaction_id || 'LOG-' + payment.id }}
+                                    <span
+                                        class="text-xs font-bold tracking-tight text-foreground uppercase transition-colors group-hover:text-emerald-600"
+                                    >
+                                        {{
+                                            payment.transaction_id ||
+                                            'LOG-' + payment.id
+                                        }}
                                     </span>
                                 </td>
                                 <td class="px-8 py-6">
-                                    <div class="font-black text-sm text-foreground uppercase italic tracking-tight group-hover:text-emerald-600 transition-colors">{{ payment.student?.first_name }} {{ payment.student?.last_name }}</div>
+                                    <div
+                                        class="text-sm font-bold tracking-tight text-foreground transition-colors group-hover:text-emerald-600"
+                                    >
+                                        {{ payment.student?.first_name }}
+                                        {{ payment.student?.last_name }}
+                                    </div>
                                 </td>
-                                <td class="px-8 py-6 font-black text-[10px] text-muted-foreground/40 uppercase tracking-widest italic">
-                                    {{ payment.invoice?.invoice_number || 'Direct' }}
+                                <td
+                                    class="px-8 py-6 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >
+                                    {{
+                                        payment.invoice?.invoice_number ||
+                                        'Direct'
+                                    }}
                                 </td>
-                                <td class="px-8 py-6 font-black text-sm text-foreground uppercase italic tracking-tighter">
-                                    {{ formatCurrency(payment.amount).split('.')[0] }}
+                                <td
+                                    class="px-8 py-6 text-sm font-bold tracking-tighter text-foreground"
+                                >
+                                    {{
+                                        formatCurrency(payment.amount).split(
+                                            '.',
+                                        )[0]
+                                    }}
                                 </td>
                                 <td class="px-8 py-6">
-                                    <Badge 
+                                    <Badge
                                         variant="outline"
-                                        class="rounded-lg px-4 py-1.5 border-border font-black text-[9px] uppercase tracking-widest italic gap-2 shadow-sm group-hover:border-emerald-600/20 transition-all"
-                                        :class="getMethodColor(payment.payment_method)"
+                                        class="gap-2 rounded-lg border-border px-4 py-1.5 text-xs font-bold tracking-tight uppercase shadow-sm transition-all group-hover:border-emerald-600/20"
+                                        :class="
+                                            getMethodColor(
+                                                payment.payment_method,
+                                            )
+                                        "
                                     >
-                                        <div class="h-1.5 w-1.5 rounded-full bg-current animate-pulse"></div>
+                                        <div
+                                            class="h-1.5 w-1.5 animate-pulse rounded-full bg-current"
+                                        ></div>
                                         {{ payment.payment_method }}
                                     </Badge>
                                 </td>
-                                <td class="px-8 py-6 text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest italic">
-                                    {{ new Date(payment.payment_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase() }}
+                                <td
+                                    class="px-8 py-6 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >
+                                    {{
+                                        new Date(payment.payment_date)
+                                            .toLocaleDateString('en-GB', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric',
+                                            })
+                                            .toUpperCase()
+                                    }}
                                 </td>
                                 <td class="px-8 py-6 text-right">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger as-child>
-                                            <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl hover:bg-muted group/btn">
-                                                <MoreHorizontal class="h-4 w-4 text-muted-foreground/40 group-hover/btn:text-foreground transition-colors" />
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="group/btn h-10 w-10 rounded-xl hover:bg-muted"
+                                            >
+                                                <MoreHorizontal
+                                                    class="h-4 w-4 text-muted-foreground/40 transition-colors group-hover/btn:text-foreground"
+                                                />
                                             </Button>
                                         </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" class="w-56 p-2 rounded-2xl border-border bg-card shadow-2xl">
-                                            <DropdownMenuItem class="rounded-xl h-11 px-4 font-black text-[10px] uppercase tracking-widest italic cursor-pointer">
-                                                <Eye class="mr-3 h-4 w-4 text-emerald-600" /> Pulse Log
+                                        <DropdownMenuContent
+                                            align="end"
+                                            class="w-56 rounded-2xl border-border bg-card p-2 shadow-lg"
+                                        >
+                                            <DropdownMenuItem
+                                                class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight uppercase"
+                                            >
+                                                <Eye
+                                                    class="mr-3 h-4 w-4 text-emerald-600"
+                                                />
+                                                Pulse Log
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem class="rounded-xl h-11 px-4 font-black text-[10px] uppercase tracking-widest italic cursor-pointer">
-                                                <Printer class="mr-3 h-4 w-4 text-blue-600" /> Print Receipt
+                                            <DropdownMenuItem
+                                                class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight uppercase"
+                                            >
+                                                <Printer
+                                                    class="mr-3 h-4 w-4 text-blue-600"
+                                                />
+                                                Print Receipt
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem class="rounded-xl h-11 px-4 font-black text-[10px] uppercase tracking-widest italic cursor-pointer">
-                                                <FileText class="mr-3 h-4 w-4 text-amber-600" /> Email Asset
+                                            <DropdownMenuItem
+                                                class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight uppercase"
+                                            >
+                                                <FileText
+                                                    class="mr-3 h-4 w-4 text-amber-600"
+                                                />
+                                                Email Asset
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -156,35 +290,66 @@ const getMethodColor = (method: string) => {
                     </table>
                 </div>
 
-                <div v-if="payments.data.length === 0" class="flex flex-col items-center justify-center py-40 bg-muted/5 italic">
-                    <History class="h-16 w-16 text-muted-foreground/10 mb-6" />
-                    <p class="text-[10px] font-black text-muted-foreground/30 uppercase tracking-[0.3em]">No Liquidity Logs found</p>
+                <div
+                    v-if="payments.data.length === 0"
+                    class="flex flex-col items-center justify-center bg-muted/5 py-40"
+                >
+                    <History class="mb-6 h-16 w-16 text-muted-foreground/10" />
+                    <p
+                        class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
+                    >
+                        No Liquidity Logs found
+                    </p>
                 </div>
 
                 <!-- Pulse Footer -->
-                <div class="px-10 py-8 bg-muted/5 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div
+                    class="flex flex-col items-center justify-between gap-6 border-t border-border/50 bg-muted/5 px-10 py-8 md:flex-row"
+                >
                     <div class="flex items-center gap-4">
-                        <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
-                        <span class="text-[9px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] italic">Flow Sync: Optimized</span>
+                        <div
+                            class="h-2 w-2 animate-pulse rounded-full bg-emerald-500 shadow-sm"
+                        ></div>
+                        <span
+                            class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                            >Flow Sync: Optimized</span
+                        >
                     </div>
-                    
+
                     <!-- Matrix Pagination -->
-                    <div v-if="payments.links.length > 3" class="flex items-center gap-2">
+                    <div
+                        v-if="payments.links.length > 3"
+                        class="flex items-center gap-2"
+                    >
                         <template v-for="(link, i) in payments.links" :key="i">
-                            <Button 
+                            <Button
                                 v-if="link.url || link.label.includes('...')"
-                                variant="outline" 
-                                size="sm" 
+                                variant="outline"
+                                size="sm"
                                 :disabled="!link.url"
                                 :class="[
-                                    'h-12 min-w-[3rem] px-4 rounded-2xl border-border font-black text-[11px] transition-all duration-300 uppercase italic tracking-tighter shadow-sm',
-                                    link.active ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-600/20 scale-105 shadow-inner' : 'text-foreground hover:bg-muted'
+                                    'h-12 min-w-[3rem] rounded-2xl border-border px-4 text-sm font-bold tracking-tighter shadow-sm transition-all duration-300',
+                                    link.active
+                                        ? 'scale-105 border-emerald-600 bg-emerald-600 text-white shadow-inner shadow-emerald-600/20'
+                                        : 'text-foreground hover:bg-muted',
                                 ]"
                                 @click="link.url && router.get(link.url)"
                             >
-                                <span v-html="link.label.replace('Previous', '').replace('Next', '')"></span>
-                                <ChevronLeft v-if="link.label.includes('Previous')" class="h-4 w-4" />
-                                <ChevronRight v-if="link.label.includes('Next')" class="h-4 w-4" />
+                                <span
+                                    v-html="
+                                        link.label
+                                            .replace('Previous', '')
+                                            .replace('Next', '')
+                                    "
+                                ></span>
+                                <ChevronLeft
+                                    v-if="link.label.includes('Previous')"
+                                    class="h-4 w-4"
+                                />
+                                <ChevronRight
+                                    v-if="link.label.includes('Next')"
+                                    class="h-4 w-4"
+                                />
                             </Button>
                         </template>
                     </div>

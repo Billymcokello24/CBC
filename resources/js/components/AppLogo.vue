@@ -9,7 +9,11 @@ import { GraduationCap } from 'lucide-vue-next';
         <GraduationCap class="size-5" />
     </div>
     <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold">CBC Platform</span>
-        <span class="truncate text-xs text-muted-foreground">by Doitix Tech</span>
+        <span class="mb-0.5 truncate leading-tight font-semibold"
+            >CBC Platform</span
+        >
+        <span class="truncate text-xs text-muted-foreground"
+            >by Doitix Tech</span
+        >
     </div>
 </template>

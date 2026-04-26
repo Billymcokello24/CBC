@@ -49,12 +49,16 @@ const classForm = useForm({
     assignment_role: 'primary',
 });
 
-watch(() => props.staff, (newStaff) => {
-    if (newStaff) {
-        roleForm.role = newStaff.user?.roles?.[0]?.name || '';
-        hodForm.department_id = newStaff.department_id?.toString() || '';
-    }
-}, { immediate: true });
+watch(
+    () => props.staff,
+    (newStaff) => {
+        if (newStaff) {
+            roleForm.role = newStaff.user?.roles?.[0]?.name || '';
+            hodForm.department_id = newStaff.department_id?.toString() || '';
+        }
+    },
+    { immediate: true },
+);
 
 const submitRole = () => {
     roleForm.post(route('staffs.change-role', props.staff.id), {
@@ -67,7 +71,7 @@ const submitRole = () => {
 const submitHOD = () => {
     hodForm.post(route('staffs.assign-hod', props.staff.id), {
         onSuccess: () => {
-             emit('update:open', false);
+            emit('update:open', false);
         },
     });
 };
@@ -75,7 +79,7 @@ const submitHOD = () => {
 const submitClass = () => {
     classForm.post(route('staffs.assign-class-teacher', props.staff.id), {
         onSuccess: () => {
-             emit('update:open', false);
+            emit('update:open', false);
         },
     });
 };
@@ -83,119 +87,213 @@ const submitClass = () => {
 const handleClose = (value: boolean) => {
     emit('update:open', value);
 };
-
 </script>
 
 <template>
     <Dialog :open="open" @update:open="handleClose">
-        <DialogContent class="sm:max-w-[500px] p-0 overflow-hidden border-0 rounded-3xl shadow-2xl">
-            <DialogHeader class="p-8 bg-slate-900 text-white relative">
-                <div class="absolute -right-6 -top-6 opacity-10 font-black uppercase text-6xl select-none pointer-events-none tracking-tighter">
-                     ROLES
+        <DialogContent
+            class="overflow-hidden rounded-3xl border-0 p-0 shadow-lg sm:max-w-[500px]"
+        >
+            <DialogHeader class="relative bg-slate-900 p-8 text-white">
+                <div
+                    class="pointer-events-none absolute -top-6 -right-6 text-6xl font-bold tracking-tighter uppercase opacity-10 select-none"
+                >
+                    ROLES
                 </div>
-                <div class="flex items-center gap-4 relative z-10">
-                    <div class="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10">
+                <div class="relative z-10 flex items-center gap-4">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10"
+                    >
                         <ShieldCheck class="h-6 w-6 text-indigo-400" />
                     </div>
                     <div>
-                        <DialogTitle class="text-2xl font-bold tracking-tight">Manage Staff Roles</DialogTitle>
-                        <DialogDescription class="text-slate-400 mt-1 font-medium">
-                            {{ staff?.first_name }} {{ staff?.last_name }} - {{ staff?.staff_number }}
+                        <DialogTitle class="text-2xl font-bold tracking-tight"
+                            >Manage Staff Roles</DialogTitle
+                        >
+                        <DialogDescription
+                            class="mt-1 font-medium text-slate-400"
+                        >
+                            {{ staff?.first_name }} {{ staff?.last_name }} -
+                            {{ staff?.staff_number }}
                         </DialogDescription>
                     </div>
                 </div>
             </DialogHeader>
 
-            <div class="p-0 border-b border-border bg-muted/30">
+            <div class="border-b border-border bg-muted/30 p-0">
                 <div class="flex">
-                    <button 
+                    <button
                         @click="activeTab = 'system'"
-                        class="flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2"
-                        :class="activeTab === 'system' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-muted-foreground hover:text-foreground'"
+                        class="flex-1 border-b-2 py-4 text-xs font-bold tracking-wider uppercase transition-all"
+                        :class="
+                            activeTab === 'system'
+                                ? 'border-indigo-600 bg-white text-indigo-600'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        "
                     >
                         Access Role
                     </button>
-                    <button 
+                    <button
                         @click="activeTab = 'hod'"
-                        class="flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2"
-                        :class="activeTab === 'hod' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-muted-foreground hover:text-foreground'"
+                        class="flex-1 border-b-2 py-4 text-xs font-bold tracking-wider uppercase transition-all"
+                        :class="
+                            activeTab === 'hod'
+                                ? 'border-indigo-600 bg-white text-indigo-600'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        "
                     >
                         HOD Assignment
                     </button>
-                    <button 
+                    <button
                         @click="activeTab = 'class'"
-                        class="flex-1 py-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2"
-                        :class="activeTab === 'class' ? 'border-indigo-600 text-indigo-600 bg-white' : 'border-transparent text-muted-foreground hover:text-foreground'"
+                        class="flex-1 border-b-2 py-4 text-xs font-bold tracking-wider uppercase transition-all"
+                        :class="
+                            activeTab === 'class'
+                                ? 'border-indigo-600 bg-white text-indigo-600'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
+                        "
                     >
                         Class Teacher
                     </button>
                 </div>
             </div>
 
-            <div class="p-8 space-y-6">
+            <div class="space-y-6 p-8">
                 <!-- System Role Section -->
-                <div v-if="activeTab === 'system'" class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-                        <div class="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-indigo-600">
+                <div
+                    v-if="activeTab === 'system'"
+                    class="animate-in space-y-6 duration-300 fade-in slide-in-from-bottom-2"
+                >
+                    <div
+                        class="flex items-start gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-4"
+                    >
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm"
+                        >
                             <UserCog class="h-5 w-5" />
                         </div>
                         <div>
-                            <h4 class="font-bold text-slate-900 text-sm tracking-tight">System Account Role</h4>
-                            <p class="text-[11px] text-indigo-600/70 font-bold uppercase tracking-wider mt-1">Global Permissions</p>
+                            <h4
+                                class="text-sm font-bold tracking-tight text-slate-900"
+                            >
+                                System Account Role
+                            </h4>
+                            <p
+                                class="mt-1 text-sm font-bold tracking-wider text-indigo-600/70 uppercase"
+                            >
+                                Global Permissions
+                            </p>
                         </div>
                     </div>
 
                     <div class="space-y-2.5">
-                        <Label class="text-xs font-bold uppercase tracking-widest text-muted-foreground/70">Select System Role</Label>
+                        <Label
+                            class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
+                            >Select System Role</Label
+                        >
                         <Select v-model="roleForm.role">
-                            <SelectTrigger class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm ring-offset-background focus:ring-2 focus:ring-indigo-600/10 transition-all">
-                                <SelectValue placeholder="Choose a system role..." />
+                            <SelectTrigger
+                                class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm ring-offset-background transition-all focus:ring-2 focus:ring-indigo-600/10"
+                            >
+                                <SelectValue
+                                    placeholder="Choose a system role..."
+                                />
                             </SelectTrigger>
-                            <SelectContent class="rounded-xl border border-border shadow-xl">
-                                <SelectItem v-for="role in roles" :key="role.id" :value="role.name" class="rounded-lg py-2.5 px-3 mb-1 last:mb-0 transition-colors cursor-pointer capitalize font-semibold italic text-indigo-600">
+                            <SelectContent
+                                class="rounded-xl border border-border shadow-xl"
+                            >
+                                <SelectItem
+                                    v-for="role in roles"
+                                    :key="role.id"
+                                    :value="role.name"
+                                    class="mb-1 cursor-pointer rounded-lg px-3 py-2.5 font-semibold text-indigo-600 capitalize transition-colors last:mb-0"
+                                >
                                     {{ role.name.replace('_', ' ') }}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
                         <InputError :message="roleForm.errors.role" />
-                        <p class="text-[11px] text-muted-foreground/60 leading-relaxed font-medium mt-2 italic px-1">
-                            Note: Changing the system role will immediately update the staff member's administrative permissions across the platform.
+                        <p
+                            class="mt-2 px-1 text-sm leading-relaxed font-medium text-muted-foreground/60"
+                        >
+                            Note: Changing the system role will immediately
+                            update the staff member's administrative permissions
+                            across the platform.
                         </p>
                     </div>
 
-                    <DialogFooter class="pt-4 mt-8 border-t border-border gap-3">
-                        <Button variant="ghost" class="rounded-xl font-bold h-11" @click="handleClose(false)">Cancel</Button>
-                        <Button 
-                            class="rounded-xl bg-indigo-600 h-11 px-8 font-bold shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95" 
+                    <DialogFooter
+                        class="mt-8 gap-3 border-t border-border pt-4"
+                    >
+                        <Button
+                            variant="ghost"
+                            class="h-11 rounded-xl font-bold"
+                            @click="handleClose(false)"
+                            >Cancel</Button
+                        >
+                        <Button
+                            class="h-11 rounded-xl bg-indigo-600 px-8 font-bold shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
                             :disabled="roleForm.processing"
                             @click="submitRole"
                         >
-                            <span v-if="roleForm.processing" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></span>
+                            <span
+                                v-if="roleForm.processing"
+                                class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"
+                            ></span>
                             Update System Role
                         </Button>
                     </DialogFooter>
                 </div>
 
                 <!-- HOD Section -->
-                <div v-if="activeTab === 'hod'" class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
-                        <div class="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-emerald-600">
+                <div
+                    v-if="activeTab === 'hod'"
+                    class="animate-in space-y-6 duration-300 fade-in slide-in-from-bottom-2"
+                >
+                    <div
+                        class="flex items-start gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4"
+                    >
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm"
+                        >
                             <Building2 class="h-5 w-5" />
                         </div>
                         <div>
-                            <h4 class="font-bold text-slate-900 text-sm tracking-tight">HOD Assignment</h4>
-                            <p class="text-[11px] text-emerald-600/70 font-bold uppercase tracking-wider mt-1">Department Leadership</p>
+                            <h4
+                                class="text-sm font-bold tracking-tight text-slate-900"
+                            >
+                                HOD Assignment
+                            </h4>
+                            <p
+                                class="mt-1 text-sm font-bold tracking-wider text-emerald-600/70 uppercase"
+                            >
+                                Department Leadership
+                            </p>
                         </div>
                     </div>
 
                     <div class="space-y-2.5">
-                        <Label class="text-xs font-bold uppercase tracking-widest text-muted-foreground/70 text-[10px]">Select Department to Lead</Label>
+                        <Label
+                            class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
+                            >Select Department to Lead</Label
+                        >
                         <Select v-model="hodForm.department_id">
-                            <SelectTrigger class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm transition-all">
-                                <SelectValue placeholder="Choose a department..." />
+                            <SelectTrigger
+                                class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm transition-all"
+                            >
+                                <SelectValue
+                                    placeholder="Choose a department..."
+                                />
                             </SelectTrigger>
-                            <SelectContent class="rounded-xl border border-border shadow-xl">
-                                <SelectItem v-for="dept in departments" :key="dept.id" :value="dept.id.toString()" class="rounded-lg py-2.5 px-3 mb-1 transition-colors cursor-pointer font-bold text-emerald-600">
+                            <SelectContent
+                                class="rounded-xl border border-border shadow-xl"
+                            >
+                                <SelectItem
+                                    v-for="dept in departments"
+                                    :key="dept.id"
+                                    :value="dept.id.toString()"
+                                    class="mb-1 cursor-pointer rounded-lg px-3 py-2.5 font-bold text-emerald-600 transition-colors"
+                                >
                                     Head of {{ dept.name }}
                                 </SelectItem>
                             </SelectContent>
@@ -203,68 +301,128 @@ const handleClose = (value: boolean) => {
                         <InputError :message="hodForm.errors.department_id" />
                     </div>
 
-                    <DialogFooter class="pt-4 mt-8 border-t border-border gap-3">
-                        <Button variant="ghost" class="rounded-xl font-bold h-11" @click="handleClose(false)">Cancel</Button>
-                        <Button 
-                            class="rounded-xl bg-emerald-600 h-11 px-8 font-bold shadow-lg shadow-emerald-100 transition-all hover:bg-emerald-700 active:scale-95" 
+                    <DialogFooter
+                        class="mt-8 gap-3 border-t border-border pt-4"
+                    >
+                        <Button
+                            variant="ghost"
+                            class="h-11 rounded-xl font-bold"
+                            @click="handleClose(false)"
+                            >Cancel</Button
+                        >
+                        <Button
+                            class="h-11 rounded-xl bg-emerald-600 px-8 font-bold shadow-lg shadow-emerald-100 transition-all hover:bg-emerald-700 active:scale-95"
                             :disabled="hodForm.processing"
                             @click="submitHOD"
                         >
-                            <span v-if="hodForm.processing" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></span>
+                            <span
+                                v-if="hodForm.processing"
+                                class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"
+                            ></span>
                             Appoint as HOD
                         </Button>
                     </DialogFooter>
                 </div>
 
                 <!-- Class Teacher Section -->
-                <div v-if="activeTab === 'class'" class="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div class="flex items-start gap-4 p-4 rounded-2xl bg-amber-50/50 border border-amber-100">
-                        <div class="h-10 w-10 rounded-xl bg-white flex items-center justify-center shadow-sm text-amber-600">
+                <div
+                    v-if="activeTab === 'class'"
+                    class="animate-in space-y-6 duration-300 fade-in slide-in-from-bottom-2"
+                >
+                    <div
+                        class="flex items-start gap-4 rounded-2xl border border-amber-100 bg-amber-50/50 p-4"
+                    >
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm"
+                        >
                             <CheckCircle2 class="h-5 w-5" />
                         </div>
                         <div>
-                            <h4 class="font-bold text-slate-900 text-sm tracking-tight">Class Leadership</h4>
-                            <p class="text-[11px] text-amber-600/70 font-bold uppercase tracking-wider mt-1">Student Management</p>
+                            <h4
+                                class="text-sm font-bold tracking-tight text-slate-900"
+                            >
+                                Class Leadership
+                            </h4>
+                            <p
+                                class="mt-1 text-sm font-bold tracking-wider text-amber-600/70 uppercase"
+                            >
+                                Student Management
+                            </p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="space-y-2.5">
-                            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Select Class</Label>
+                            <Label
+                                class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
+                                >Select Class</Label
+                            >
                             <Select v-model="classForm.class_id">
-                                <SelectTrigger class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm">
-                                    <SelectValue placeholder="Assign class..." />
+                                <SelectTrigger
+                                    class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm"
+                                >
+                                    <SelectValue
+                                        placeholder="Assign class..."
+                                    />
                                 </SelectTrigger>
-                                <SelectContent class="rounded-xl border border-border overflow-y-auto max-h-[300px]">
-                                    <SelectItem v-for="cls in availableClasses" :key="cls.id" :value="cls.id.toString()" class="rounded-lg py-2.5 transition-colors cursor-pointer font-bold text-amber-600">
+                                <SelectContent
+                                    class="max-h-[300px] overflow-y-auto rounded-xl border border-border"
+                                >
+                                    <SelectItem
+                                        v-for="cls in availableClasses"
+                                        :key="cls.id"
+                                        :value="cls.id.toString()"
+                                        class="cursor-pointer rounded-lg py-2.5 font-bold text-amber-600 transition-colors"
+                                    >
                                         {{ cls.name }}
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div class="space-y-2.5">
-                            <Label class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Teacher Type</Label>
+                            <Label
+                                class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
+                                >Teacher Type</Label
+                            >
                             <Select v-model="classForm.assignment_role">
-                                <SelectTrigger class="h-12 rounded-xl border-border bg-background px-4 font-medium shadow-sm tracking-tight">
+                                <SelectTrigger
+                                    class="h-12 rounded-xl border-border bg-background px-4 font-medium tracking-tight shadow-sm"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent class="rounded-xl border border-border font-bold">
-                                    <SelectItem value="primary">Primary Teacher</SelectItem>
-                                    <SelectItem value="assistant">Assistant Teacher</SelectItem>
+                                <SelectContent
+                                    class="rounded-xl border border-border font-bold"
+                                >
+                                    <SelectItem value="primary"
+                                        >Primary Teacher</SelectItem
+                                    >
+                                    <SelectItem value="assistant"
+                                        >Assistant Teacher</SelectItem
+                                    >
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <InputError :message="classForm.errors.class_id" />
 
-                    <DialogFooter class="pt-4 mt-8 border-t border-border gap-3">
-                        <Button variant="ghost" class="rounded-xl font-bold h-11" @click="handleClose(false)">Cancel</Button>
-                        <Button 
-                            class="rounded-xl bg-amber-600 h-11 px-8 font-bold shadow-lg shadow-amber-100 transition-all hover:bg-amber-700 active:scale-95" 
+                    <DialogFooter
+                        class="mt-8 gap-3 border-t border-border pt-4"
+                    >
+                        <Button
+                            variant="ghost"
+                            class="h-11 rounded-xl font-bold"
+                            @click="handleClose(false)"
+                            >Cancel</Button
+                        >
+                        <Button
+                            class="h-11 rounded-xl bg-amber-600 px-8 font-bold shadow-lg shadow-amber-100 transition-all hover:bg-amber-700 active:scale-95"
                             :disabled="classForm.processing"
                             @click="submitClass"
                         >
-                            <span v-if="classForm.processing" class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></span>
+                            <span
+                                v-if="classForm.processing"
+                                class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"
+                            ></span>
                             Assign Class Role
                         </Button>
                     </DialogFooter>

@@ -1,10 +1,20 @@
 <script setup lang="ts">
 /* global route */
 import { Head, Link } from '@inertiajs/vue3';
-import { 
-    BookOpen, Layers, ArrowRight, Activity, Zap, 
-    ShieldCheck, Plus, Settings, Network, Calendar,
-    BookOpenCheck, Target, Sparkles
+import {
+    BookOpen,
+    Layers,
+    ArrowRight,
+    Activity,
+    Zap,
+    ShieldCheck,
+    Plus,
+    Settings,
+    Network,
+    Calendar,
+    BookOpenCheck,
+    Target,
+    Sparkles,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -43,66 +53,126 @@ const mainModules = [
         description: 'Subjects, topics, and learning goals.',
         href: '/curriculum/syllabus',
         icon: BookOpenCheck,
-        color: 'blue'
+        color: 'blue',
     },
     {
         title: 'Academic Planner',
         description: 'Schemes of work and lesson plans.',
         href: '/curriculum/planner/schemes',
         icon: Calendar,
-        color: 'indigo'
+        color: 'indigo',
     },
     {
         title: 'Assignment Center',
         description: 'Give tasks and grade student work.',
         href: '/curriculum/assignments',
         icon: Target,
-        color: 'emerald'
+        color: 'emerald',
     },
     {
         title: 'Resource Vault',
         description: 'Teaching notes, videos, and PDFs.',
         href: '/curriculum/resources',
         icon: Sparkles,
-        color: 'amber'
-    }
+        color: 'amber',
+    },
 ];
 
 const colors = {
     blue: 'bg-blue-50 text-blue-600',
     indigo: 'bg-indigo-50 text-indigo-600',
     emerald: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600'
+    amber: 'bg-amber-50 text-amber-600',
 };
 
 const summary = [
-    { label: 'Learning Areas', value: props.stats.learning_areas, icon: Layers, trend: '+2' },
-    { label: 'Subjects', value: props.stats.subjects, icon: BookOpen, trend: '+5' },
-    { label: 'Topics', value: props.stats.strands, icon: Network, trend: '+12' },
-    { label: 'Competencies', value: props.stats.competencies, icon: Zap, trend: '+8' }
+    {
+        label: 'Learning Areas',
+        value: props.stats.learning_areas,
+        icon: Layers,
+        trend: '+2',
+    },
+    {
+        label: 'Subjects',
+        value: props.stats.subjects,
+        icon: BookOpen,
+        trend: '+5',
+    },
+    {
+        label: 'Topics',
+        value: props.stats.strands,
+        icon: Network,
+        trend: '+12',
+    },
+    {
+        label: 'Competencies',
+        value: props.stats.competencies,
+        icon: Zap,
+        trend: '+8',
+    },
 ];
 
 const curriculumModules = [
-    { title: 'Syllabus Mapping', description: 'Subjects, topics, and learning goals.', href: '/curriculum/syllabus', icon: BookOpenCheck, color: 'blue' },
-    { title: 'Academic Planner', description: 'Schemes of work and lesson plans.', href: '/curriculum/planner/schemes', icon: Calendar, color: 'indigo' },
-    { title: 'Assignment Center', description: 'Give tasks and grade student work.', href: '/curriculum/assignments', icon: Target, color: 'emerald' },
-    { title: 'Resource Vault', description: 'Teaching notes, videos, and PDFs.', href: '/curriculum/resources', icon: Sparkles, color: 'amber' }
+    {
+        title: 'Syllabus Mapping',
+        description: 'Subjects, topics, and learning goals.',
+        href: '/curriculum/syllabus',
+        icon: BookOpenCheck,
+        color: 'blue',
+    },
+    {
+        title: 'Academic Planner',
+        description: 'Schemes of work and lesson plans.',
+        href: '/curriculum/planner/schemes',
+        icon: Calendar,
+        color: 'indigo',
+    },
+    {
+        title: 'Assignment Center',
+        description: 'Give tasks and grade student work.',
+        href: '/curriculum/assignments',
+        icon: Target,
+        color: 'emerald',
+    },
+    {
+        title: 'Resource Vault',
+        description: 'Teaching notes, videos, and PDFs.',
+        href: '/curriculum/resources',
+        icon: Sparkles,
+        color: 'amber',
+    },
 ];
 </script>
 
 <template>
     <Head title="Curriculum" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
             <!-- Page Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+            <div
+                class="flex flex-col justify-between gap-4 px-1 md:flex-row md:items-center"
+            >
                 <div class="space-y-1">
-                    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Curriculum Engine</h1>
-                    <p class="text-sm sm:text-[15px] text-muted-foreground font-medium">Design, monitor, and scale academic standards across the institution.</p>
+                    <h1
+                        class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
+                    >
+                        Curriculum Engine
+                    </h1>
+                    <p
+                        class="text-sm font-medium text-muted-foreground sm:text-sm"
+                    >
+                        Design, monitor, and scale academic standards across the
+                        institution.
+                    </p>
                 </div>
-                
+
                 <div class="flex items-center gap-3">
-                    <Button variant="outline" class="h-10 px-4 rounded-xl border-border font-bold text-xs uppercase tracking-widest hover:bg-muted transition-all">
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase transition-all hover:bg-muted"
+                    >
                         <Activity class="mr-2 h-4 w-4 opacity-70" />
                         Live Audit
                     </Button>
@@ -110,91 +180,178 @@ const curriculumModules = [
             </div>
 
             <!-- Curriculum Summary Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                <div v-for="item in summary" :key="item.label" 
-                     class="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm dark:border-white/5 group hover:border-blue-500/50 transition-all duration-300">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                        <p class="text-[10px] sm:text-xs font-black text-muted-foreground uppercase tracking-widest">{{ item.label }}</p>
-                        <div class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                            <component :is="item.icon" class="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <div class="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
+                <div
+                    v-for="item in summary"
+                    :key="item.label"
+                    class="group rounded-2xl border border-border bg-card p-4 shadow-sm transition-all duration-300 hover:border-blue-500/50 sm:p-6 dark:border-white/5"
+                >
+                    <div
+                        class="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-center"
+                    >
+                        <p
+                            class="text-xs font-bold tracking-tight text-muted-foreground uppercase sm:text-xs"
+                        >
+                            {{ item.label }}
+                        </p>
+                        <div
+                            class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white sm:h-8 sm:w-8"
+                        >
+                            <component
+                                :is="item.icon"
+                                class="h-3.5 w-3.5 sm:h-4 sm:w-4"
+                            />
                         </div>
                     </div>
                     <div class="flex items-baseline gap-1.5">
-                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums">{{ item.value }}</h3>
-                        <span class="text-[9px] sm:text-xs font-bold text-emerald-600" v-if="item.trend">{{ item.trend }}</span>
+                        <h3
+                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
+                        >
+                            {{ item.value }}
+                        </h3>
+                        <span
+                            class="text-xs font-bold text-emerald-600 sm:text-xs"
+                            v-if="item.trend"
+                            >{{ item.trend }}</span
+                        >
                     </div>
                 </div>
             </div>
 
             <!-- Management Grid -->
             <div class="grid gap-4 sm:gap-6 md:grid-cols-2">
-                <Link v-for="mod in curriculumModules" :key="mod.title" :href="mod.href" class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
+                <Link
+                    v-for="mod in curriculumModules"
+                    :key="mod.title"
+                    :href="mod.href"
+                    class="group flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 sm:rounded-3xl sm:p-8"
+                >
                     <div class="flex items-center gap-4 sm:gap-6">
-                        <div :class="['h-12 w-12 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl flex items-center justify-center transition-colors', colors[mod.color as keyof typeof colors]]">
-                            <component :is="mod.icon" class="h-6 w-6 sm:h-8 sm:w-8" />
+                        <div
+                            :class="[
+                                'flex h-12 w-12 items-center justify-center rounded-xl transition-colors sm:h-16 sm:w-16 sm:rounded-2xl',
+                                colors[mod.color as keyof typeof colors],
+                            ]"
+                        >
+                            <component
+                                :is="mod.icon"
+                                class="h-6 w-6 sm:h-8 sm:w-8"
+                            />
                         </div>
-                        <div class="space-y-0.5 sm:space-y-1 min-w-0">
-                            <h4 class="text-base sm:text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{{ mod.title }}</h4>
-                            <p class="text-xs sm:text-sm text-slate-500 line-clamp-1">{{ mod.description }}</p>
+                        <div class="min-w-0 space-y-0.5 sm:space-y-1">
+                            <h4
+                                class="truncate text-base font-bold text-slate-900 transition-colors group-hover:text-blue-600 sm:text-xl"
+                            >
+                                {{ mod.title }}
+                            </h4>
+                            <p
+                                class="line-clamp-1 text-xs text-slate-500 sm:text-sm"
+                            >
+                                {{ mod.description }}
+                            </p>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" class="h-9 w-9 sm:h-10 sm:w-10 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 ml-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        class="ml-2 h-9 w-9 rounded-xl group-hover:bg-blue-50 group-hover:text-blue-600 sm:h-10 sm:w-10"
+                    >
                         <ArrowRight class="h-5 w-5" />
                     </Button>
                 </Link>
             </div>
 
             <!-- Overview Section -->
-            <div class="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm">
-                <div class="flex items-center justify-between mb-10">
+            <div
+                class="rounded-xl border border-slate-100 bg-white p-10 shadow-sm"
+            >
+                <div class="mb-10 flex items-center justify-between">
                     <div class="space-y-1">
-                        <h3 class="text-xl font-bold tracking-tight text-slate-900 uppercase">School Overview</h3>
-                        <p class="text-xs font-medium text-slate-400">Teaching and learning activities across the school.</p>
+                        <h3
+                            class="text-xl font-bold tracking-tight text-slate-900 uppercase"
+                        >
+                            School Overview
+                        </h3>
+                        <p class="text-xs font-medium text-slate-400">
+                            Teaching and learning activities across the school.
+                        </p>
                     </div>
                 </div>
 
-                <div class="grid md:grid-cols-4 gap-8">
+                <div class="grid gap-8 md:grid-cols-4">
                     <!-- Coverage -->
-                    <div class="p-8 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col items-center text-center space-y-4">
-                        <div class="h-20 w-20 rounded-full border-8 border-blue-50 flex items-center justify-center font-bold text-xl text-blue-600 bg-white">
+                    <div
+                        class="flex flex-col items-center space-y-4 rounded-3xl border border-slate-100 bg-slate-50 p-8 text-center"
+                    >
+                        <div
+                            class="flex h-20 w-20 items-center justify-center rounded-full border-8 border-blue-50 bg-white text-xl font-bold text-blue-600"
+                        >
                             {{ insights.syllabus_coverage }}%
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-slate-900">Topics Covered</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">Completion of syllabus</p>
+                            <h4 class="text-sm font-bold text-slate-900">
+                                Topics Covered
+                            </h4>
+                            <p class="text-xs font-medium text-slate-400">
+                                Completion of syllabus
+                            </p>
                         </div>
                     </div>
 
                     <!-- Pending -->
-                    <div class="p-8 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col items-center text-center space-y-4">
-                        <div class="h-20 w-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <div
+                        class="flex flex-col items-center space-y-4 rounded-3xl border border-slate-100 bg-slate-50 p-8 text-center"
+                    >
+                        <div
+                            class="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50 text-indigo-600"
+                        >
                             <ShieldCheck class="h-10 w-10" />
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-slate-900">{{ insights.pending_approvals }} Waiting</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">Plans needing review</p>
+                            <h4 class="text-sm font-bold text-slate-900">
+                                {{ insights.pending_approvals }} Waiting
+                            </h4>
+                            <p class="text-xs font-medium text-slate-400">
+                                Plans needing review
+                            </p>
                         </div>
                     </div>
 
                     <!-- Activity -->
-                    <div class="p-8 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col items-center text-center space-y-4">
-                         <div class="h-20 w-20 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <div
+                        class="flex flex-col items-center space-y-4 rounded-3xl border border-slate-100 bg-slate-50 p-8 text-center"
+                    >
+                        <div
+                            class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"
+                        >
                             <Activity class="h-10 w-10" />
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-slate-900">{{ insights.avg_submission_rate }}% Activity</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">Student task completion</p>
+                            <h4 class="text-sm font-bold text-slate-900">
+                                {{ insights.avg_submission_rate }}% Activity
+                            </h4>
+                            <p class="text-xs font-medium text-slate-400">
+                                Student task completion
+                            </p>
                         </div>
                     </div>
 
                     <!-- Empty -->
-                    <div class="p-8 rounded-3xl bg-slate-50 border border-slate-100 flex flex-col items-center text-center space-y-4">
-                         <div class="h-20 w-20 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                    <div
+                        class="flex flex-col items-center space-y-4 rounded-3xl border border-slate-100 bg-slate-50 p-8 text-center"
+                    >
+                        <div
+                            class="flex h-20 w-20 items-center justify-center rounded-full bg-amber-50 text-amber-500"
+                        >
                             <Zap class="h-10 w-10" />
                         </div>
                         <div>
-                            <h4 class="text-sm font-bold text-slate-900">{{ insights.unassigned_subjects }} Empty</h4>
-                            <p class="text-[10px] text-slate-400 font-medium">Unassigned subjects</p>
+                            <h4 class="text-sm font-bold text-slate-900">
+                                {{ insights.unassigned_subjects }} Empty
+                            </h4>
+                            <p class="text-xs font-medium text-slate-400">
+                                Unassigned subjects
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -27,14 +27,14 @@ export function usePermissions() {
      * Check if the user has ANY of the given permissions.
      */
     const canAny = (...permissions: string[]): boolean => {
-        return permissions.some(p => auth.value.permissions.includes(p));
+        return permissions.some((p) => auth.value.permissions.includes(p));
     };
 
     /**
      * Check if the user has ALL of the given permissions.
      */
     const canAll = (...permissions: string[]): boolean => {
-        return permissions.every(p => auth.value.permissions.includes(p));
+        return permissions.every((p) => auth.value.permissions.includes(p));
     };
 
     /**
@@ -48,18 +48,27 @@ export function usePermissions() {
      * Check if the user has ANY of the given roles.
      */
     const hasAnyRole = (...roles: string[]): boolean => {
-        return roles.some(r => auth.value.roles.includes(r));
+        return roles.some((r) => auth.value.roles.includes(r));
     };
 
     /**
      * Check if the user is an admin-level user (super_admin, school_admin, principal, deputy_principal).
      */
-    const isAdmin = computed(() => hasAnyRole('super_admin', 'school_admin', 'principal', 'deputy_principal'));
+    const isAdmin = computed(() =>
+        hasAnyRole(
+            'super_admin',
+            'school_admin',
+            'principal',
+            'deputy_principal',
+        ),
+    );
 
     /**
      * Check if the user is a teacher-type user (teacher, class_teacher, hod).
      */
-    const isTeacher = computed(() => hasAnyRole('teacher', 'class_teacher', 'hod'));
+    const isTeacher = computed(() =>
+        hasAnyRole('teacher', 'class_teacher', 'hod'),
+    );
 
     /**
      * Check if the user is a parent/guardian.

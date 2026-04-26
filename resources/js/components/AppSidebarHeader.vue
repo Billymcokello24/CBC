@@ -21,8 +21,13 @@ const props = withDefaults(
         class="flex w-full items-center justify-between bg-violet-600 px-6 py-2 text-xs font-bold text-white shadow-sm"
     >
         <div class="flex items-center gap-2">
-            <span class="flex h-2 w-2 rounded-full bg-white animate-pulse"></span>
-            <span>Viewing as: {{ $page.props.auth.impersonating.school_name }}</span>
+            <span
+                class="flex h-2 w-2 animate-pulse rounded-full bg-white"
+            ></span>
+            <span
+                >Viewing as:
+                {{ $page.props.auth.impersonating.school_name }}</span
+            >
         </div>
         <Link
             :href="stopImpersonating().url"

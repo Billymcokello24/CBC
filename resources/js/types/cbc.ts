@@ -99,7 +99,13 @@ export interface Student {
     blood_group?: string;
     has_special_needs: boolean;
     boarding_status: 'day' | 'boarding';
-    status: 'active' | 'inactive' | 'transferred' | 'graduated' | 'expelled' | 'dropped_out';
+    status:
+        | 'active'
+        | 'inactive'
+        | 'transferred'
+        | 'graduated'
+        | 'expelled'
+        | 'dropped_out';
     school?: School;
     current_class?: SchoolClass;
     guardians?: Guardian[];
@@ -159,7 +165,13 @@ export interface Teacher {
     date_joined: string;
     contract_type?: string;
     employment_type?: 'full_time' | 'part_time';
-    status: 'active' | 'inactive' | 'on_leave' | 'terminated' | 'resigned' | 'retired';
+    status:
+        | 'active'
+        | 'inactive'
+        | 'on_leave'
+        | 'terminated'
+        | 'resigned'
+        | 'retired';
     school?: School;
     department?: Department;
     qualifications?: TeacherQualification[];
@@ -633,7 +645,17 @@ export interface SelectOption {
 export interface FormField {
     name: string;
     label: string;
-    type: 'text' | 'email' | 'password' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'file';
+    type:
+        | 'text'
+        | 'email'
+        | 'password'
+        | 'number'
+        | 'date'
+        | 'select'
+        | 'textarea'
+        | 'checkbox'
+        | 'radio'
+        | 'file';
     placeholder?: string;
     required?: boolean;
     options?: SelectOption[];
