@@ -35,7 +35,14 @@ watchEffect(() => {
         <AppSidebar />
         <AppContent variant="sidebar" class="bg-background min-h-screen flex flex-col">
             <TailPanelHeader />
-            <main class="flex-1 p-4 sm:p-6 md:p-8 lg:p-10 max-w-[1600px] mx-auto w-full">
+            <main class="flex-1 p-2 sm:p-4 md:p-8 lg:p-10">
+                <!-- Breadcrumbs row -->
+                <div v-if="breadcrumbs && breadcrumbs.length > 0" class="mb-3 sm:mb-6 flex items-center gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                     <template v-for="(item, index) in breadcrumbs" :key="index">
+                          <Link :href="item.href" class="hover:text-primary transition-colors">{{ item.title }}</Link>
+                          <span v-if="index < breadcrumbs.length - 1" class="text-slate-300">/</span>
+                     </template>
+                </div>
                 <slot />
             </main>
         </AppContent>

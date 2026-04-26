@@ -6,19 +6,21 @@ import {
     Edit,
     Eye,
     Filter,
+    GraduationCap,
+    MoreHorizontal,
     Plus,
     Search,
     ShieldAlert,
     Trash2,
     ChevronDown,
+    ChevronUp,
     ArrowUpCircle,
     FileText,
     Users,
     TrendingUp,
     CheckSquare,
     Square,
-    UserPlus,
-    Upload
+    UserPlus
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +38,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
-import PageHeader from '@/components/ui/PageHeader.vue';
 import type { BreadcrumbItem } from '@/types';
 import BulkUploadModal from './partials/BulkUploadModal.vue';
 
@@ -354,12 +355,16 @@ const getStatusColor = (active: boolean) => {
         </div>
 
         <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-4 sm:p-6 md:p-8">
-            <PageHeader 
-                title="Learners Registry" 
-                description="Comprehensive student enrollment and demographic management console."
-                :breadcrumbs="breadcrumbs"
-            >
-                <template #actions>
+            <!-- Page Header -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
+                <div class="space-y-1">
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase italic">Learners</h1>
+                    <p class="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-60">
+                        Academic Enrollment & Demographic Registry
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-3">
                     <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm" @click="exportToPDF">
                         <Download class="mr-2 h-4 w-4 opacity-70" />
                         Export
@@ -376,58 +381,58 @@ const getStatusColor = (active: boolean) => {
                         <Plus class="mr-2 h-4 w-4" />
                         Enroll
                     </Link>
-                </template>
-            </PageHeader>
+                </div>
+            </div>
 
-            <!-- Status Metrics -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-blue-200">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 px-1">
+                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-blue-200 transition-all">
                     <div>
-                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Registry</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.total.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Registry</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.total.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100/50 group-hover:scale-110 transition-transform">
                         <Users class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-200">
+                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-200 transition-all">
                     <div>
-                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Learners</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.active.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Status</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.active.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50 group-hover:scale-110 transition-transform relative">
-                         <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse absolute top-2 right-2" v-if="props.stats.active > 0"></div>
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50 group-hover:scale-110 transition-transform relative">
+                         <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse absolute top-2 right-2" v-if="stats.active > 0"></div>
                          <CheckCircle2 class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-amber-200">
+                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-amber-200 transition-all">
                     <div>
-                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Withdrawn</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.withdrawn.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Withdrawn</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.withdrawn.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50 group-hover:scale-110 transition-transform">
                         <ShieldAlert class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-sky-200">
+                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-sky-200 transition-all">
                     <div>
-                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">New Acquisition</p>
-                        <div class="flex items-baseline gap-2 leading-none">
-                             <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums">{{ props.stats.new_this_month }}</h3>
-                             <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" v-if="props.stats.growth > 0">+{{ props.stats.growth }}%</span>
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Acquisition</p>
+                        <div class="flex items-baseline gap-2">
+                             <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.new_this_month }}</h3>
+                             <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1 rounded" v-if="stats.growth > 0">+{{ stats.growth }}%</span>
                         </div>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100/50 group-hover:scale-110 transition-transform">
                         <TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
             </div>
 
             <!-- Table Card -->
-            <div class="card-premium overflow-hidden">
+            <div class="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
                 <!-- Toolbar -->
                 <div class="p-4 sm:p-6 border-b border-slate-50 space-y-4">
                     <div class="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
@@ -630,9 +635,9 @@ const getStatusColor = (active: boolean) => {
 
         <!-- Action Modals -->
         <Dialog :open="confirmOpen" @update:open="closeActionModal">
-            <DialogContent class="sm:max-w-[440px] rounded-xl border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                 <div class="p-8 space-y-6 text-center">
-                    <div class="mx-auto h-20 w-20 rounded-2xl flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
+                    <div class="mx-auto h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
                         <Trash2 v-if="confirmMode === 'delete' || confirmMode === 'bulkDelete'" class="h-10 w-10" />
                         <ShieldAlert v-else class="h-10 w-10" />
                     </div>
@@ -661,11 +666,11 @@ const getStatusColor = (active: boolean) => {
         </Dialog>
 
         <Dialog :open="promoteOpen" @update:open="closePromoteModal">
-            <DialogContent class="sm:max-w-[500px] rounded-xl border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <DialogContent class="sm:max-w-[500px] rounded-[3rem] border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                 <div class="bg-emerald-600 px-10 py-8 text-white relative overflow-hidden">
                     <div class="absolute -right-8 -top-8 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
                     <div class="flex items-center gap-5 relative z-10">
-                        <div class="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
+                        <div class="h-16 w-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
                             <ArrowUpCircle class="h-10 w-10 text-white" />
                         </div>
                         <div>
@@ -697,13 +702,13 @@ const getStatusColor = (active: boolean) => {
 
                     <div class="flex flex-col gap-3 pt-4">
                         <Button 
-                            class="h-14 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
+                            class="h-14 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
                             :disabled="promotionForm.processing" 
                             @click="promoteSelectedLearners"
                         >
                             {{ promotionForm.processing ? 'ADVANCING_REGISTRY...' : 'INITIATE_PROMOTION_CYCLE' }}
                         </Button>
-                        <Button variant="ghost" class="h-12 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
+                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
                     </div>
                 </div>
             </DialogContent>
