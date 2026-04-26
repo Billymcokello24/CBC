@@ -18,6 +18,12 @@ import {
     ChevronDown,
     Check,
     Minus,
+    Home,
+    Users,
+    School,
+    LayoutGrid,
+    MoreHorizontal,
+    BookOpen,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +33,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -62,7 +69,7 @@ const props = defineProps<{
     statusOptions: Array<{ value: string; label: string }>;
 }>();
 
-const page = usePage<{ flash?: { success?: string } }>();
+const page = usePage<any>();
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Grades', href: '/grades' },
@@ -70,36 +77,43 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const searchQuery = ref(props.filters.search ?? '');
 const selectedStatus = ref(props.filters.status ?? 'all');
-const selectedView = ref<'grid' | 'list'>('list');
+const selectedView = ref<'grid' | 'list'>(props.filters.view ?? 'list');
 const selectedGradeIds = ref<number[]>([]);
 const perPage = ref(20);
 const currentPage = ref(1);
+
 const bulkForm = useForm<{
     grade_ids: number[];
     action: 'activate' | 'deactivate' | 'delete' | '';
 }>({ grade_ids: [], action: '' });
 const actionForm = useForm({});
-const showFilters = ref(true);
+
+const showFilters = ref(false);
 const showToast = ref(false);
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const hasPermission = (permission: string) => {
+    const permissions = page.props.auth?.user?.permissions;
+    if (Array.isArray(permissions)) {
+        return permissions.includes(permission);
+    }
+    return true; // Fallback to true if permissions not found/not array (simple RBAC)
+};
 
 const applyFilters = () => {
     router.get(
         '/grades',
         {
             search: searchQuery.value || undefined,
-            status:
-                selectedStatus.value !== 'all'
-                    ? selectedStatus.value
-                    : undefined,
+            status: selectedStatus.value !== 'all' ? selectedStatus.value : undefined,
             view: selectedView.value,
         },
         {
             preserveState: true,
             preserveScroll: true,
             replace: true,
-        },
+        }
     );
 };
 
@@ -107,69 +121,43 @@ watch(searchQuery, () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => applyFilters(), 300);
 });
-watch([selectedStatus, selectedView], () => applyFilters());
-watch(
-    () => props.grades,
-    () => {
-        selectedGradeIds.value = selectedGradeIds.value.filter((id) =>
-            props.grades.some((grade) => grade.id === id),
-        );
-    },
-    { deep: true },
-);
 
-const clearFilters = () => {
-    searchQuery.value = '';
-    selectedStatus.value = 'all';
-    applyFilters();
-};
+watch([selectedStatus, selectedView], () => applyFilters());
 
 const filteredGrades = computed(() => {
     return props.grades.filter((grade) => {
         const matchesSearch =
             !searchQuery.value ||
-            grade.name
-                .toLowerCase()
-                .includes(searchQuery.value.toLowerCase()) ||
+            grade.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
             grade.code.toLowerCase().includes(searchQuery.value.toLowerCase());
         const matchesStatus =
             selectedStatus.value === 'all' ||
-            (selectedStatus.value === 'active'
-                ? grade.is_active
-                : !grade.is_active);
+            (selectedStatus.value === 'active' ? grade.is_active : !grade.is_active);
         return matchesSearch && matchesStatus;
     });
 });
 
-const totalPages = computed(() =>
-    Math.max(1, Math.ceil(filteredGrades.value.length / perPage.value)),
-);
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredGrades.value.length / perPage.value)));
 const paginatedGrades = computed(() => {
     const start = (currentPage.value - 1) * perPage.value;
     return filteredGrades.value.slice(start, start + perPage.value);
 });
 
-const allSelectableGradeIds = computed(() =>
-    paginatedGrades.value.map((grade) => grade.id),
-);
-const allSelected = computed(
-    () =>
-        allSelectableGradeIds.value.length > 0 &&
-        allSelectableGradeIds.value.every((id) =>
-            selectedGradeIds.value.includes(id),
-        ),
-);
-
-const toggleAllGrades = () => {
-    selectedGradeIds.value = allSelected.value
-        ? []
-        : [...allSelectableGradeIds.value];
+const toggleSelectAll = () => {
+    if (selectedGradeIds.value.length === paginatedGrades.value.length) {
+        selectedGradeIds.value = [];
+    } else {
+        selectedGradeIds.value = paginatedGrades.value.map(g => g.id);
+    }
 };
 
-const toggleGrade = (gradeId: number) => {
-    selectedGradeIds.value = selectedGradeIds.value.includes(gradeId)
-        ? selectedGradeIds.value.filter((id) => id !== gradeId)
-        : [...selectedGradeIds.value, gradeId];
+const toggleSelectGrade = (id: number) => {
+    const index = selectedGradeIds.value.indexOf(id);
+    if (index === -1) {
+        selectedGradeIds.value.push(id);
+    } else {
+        selectedGradeIds.value.splice(index, 1);
+    }
 };
 
 const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
@@ -185,943 +173,448 @@ const runBulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
 };
 
 const toggleGradeStatus = (grade: GradeRow) => {
-    actionForm.patch(
-        `/grades/${grade.id}/${grade.is_active ? 'deactivate' : 'activate'}`,
-        { preserveScroll: true },
-    );
+    actionForm.patch(`/grades/${grade.id}/${grade.is_active ? 'deactivate' : 'activate'}`, {
+        preserveScroll: true,
+    });
 };
 
 const deleteGrade = (grade: GradeRow) => {
-    actionForm.delete(`/grades/${grade.id}`, { preserveScroll: true });
+    if (confirm('Are you sure you want to delete this grade level? This action cannot be undone.')) {
+        actionForm.delete(`/grades/${grade.id}`, {
+            preserveScroll: true,
+        });
+    }
 };
 
 const flashSuccess = computed(() => page.props.flash?.success ?? '');
-watch(
-    flashSuccess,
-    (value) => {
-        if (!value) return;
+watch(flashSuccess, (value) => {
+    if (value) {
         showToast.value = true;
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(() => (showToast.value = false), 3000);
-    },
-    { immediate: true },
-);
+    }
+}, { immediate: true });
 </script>
 
 <template>
-    <Head title="Grades" />
+    <Head title="Grade Structure" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div v-if="showToast && flashSuccess" class="fixed top-4 right-4 z-50">
-            <div
-                class="flex items-center gap-2 rounded-lg border bg-background px-4 py-3 shadow-lg"
-            >
-                <CheckCircle2 class="h-4 w-4 text-green-600" />
-                <span class="text-sm font-medium">{{ flashSuccess }}</span>
+        <!-- Toast Notification -->
+        <div
+            v-if="showToast && flashSuccess"
+            class="fixed top-8 right-8 z-50 animate-in duration-500 fade-in slide-in-from-top-4"
+        >
+            <div class="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-6 py-4 shadow-xl dark:bg-slate-900 dark:border-emerald-500/20">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                    <CheckCircle2 class="h-4 w-4" />
+                </div>
+                <span class="text-xs font-bold text-slate-900 dark:text-white">{{ flashSuccess }}</span>
             </div>
         </div>
 
-        <div
-            class="mx-auto max-w-[1600px] animate-in space-y-12 p-6 pb-20 duration-1000 fade-in slide-in-from-bottom-4"
-        >
-            <!-- Simple Header -->
-            <div
-                class="flex flex-col justify-between gap-6 md:flex-row md:items-end"
-            >
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-bold tracking-tight text-foreground underline decoration-green-600 decoration-4 underline-offset-8"
-                    >
-                        Academic Levels
-                    </h1>
-                    <p
-                        class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Manage grade structures, linked classes, and learner
-                        progression.
-                    </p>
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+            <!-- Header Section -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
+                        <Home class="h-3 w-3" />
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span>Academic</span>
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span class="text-foreground">Grade Structure</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">Institutional Grades</h1>
+                    <p class="text-sm text-muted-foreground">Configure and manage academic levels and institutional milestones.</p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Button
                         variant="outline"
-                        class="h-11 rounded-xl border-border px-6 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        @click="selectedView = selectedView === 'grid' ? 'list' : 'grid'"
                     >
-                        <List class="mr-2 h-4 w-4 opacity-40" />
-                        Hierarchy View
+                        <component :is="selectedView === 'grid' ? List : LayoutGrid" class="mr-2 h-4 w-4 opacity-70" />
+                        {{ selectedView === 'grid' ? 'Table View' : 'Grid View' }}
                     </Button>
                     <Link
-                        v-if="true"
+                        v-if="hasPermission('grades.create')"
                         href="/grades/create"
-                        class="inline-flex h-11 items-center justify-center rounded-xl bg-green-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-green-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Define Level
+                        Add New Grade
                     </Link>
                 </div>
             </div>
 
-            <!-- TailPanel Stats -->
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-green-600/20 dark:border-white/5"
-                >
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 gap-4 px-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
                     <div class="mb-4 flex items-center justify-between">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600/5 text-green-600 transition-all duration-500 group-hover:bg-green-600 group-hover:text-white"
-                        >
-                            <GraduationCap
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
-                            />
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all">
+                            <School class="h-5 w-5" />
                         </div>
-                        <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Levels</span
-                        >
+                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Institutional</span>
                     </div>
-                    <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Total Grades
-                    </p>
-                    <h3 class="text-2xl font-bold text-foreground">
-                        {{ stats.total_grades }} Units
-                    </h3>
+                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total_grades }}</h3>
+                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Total Grade Levels</p>
                 </div>
 
-                <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-emerald-500/20 dark:border-white/5"
-                >
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-emerald-500/20">
                     <div class="mb-4 flex items-center justify-between">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/5 text-emerald-500 transition-all duration-500 group-hover:bg-emerald-500 group-hover:text-white"
-                        >
-                            <CheckCircle2
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
-                            />
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                            <CheckCircle2 class="h-5 w-5" />
                         </div>
-                        <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Active</span
-                        >
+                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Active</span>
                     </div>
-                    <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Live Structure
-                    </p>
-                    <h3 class="text-2xl font-bold text-foreground">
-                        {{ stats.active_grades }} Nodes
-                    </h3>
+                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.active_grades }}</h3>
+                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Operational Nodes</p>
                 </div>
 
-                <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-blue-600/20 dark:border-white/5"
-                >
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-blue-500/20">
                     <div class="mb-4 flex items-center justify-between">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/5 text-blue-600 transition-all duration-500 group-hover:bg-blue-600 group-hover:text-white"
-                        >
-                            <Grid2x2
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
-                            />
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
+                            <Grid2x2 class="h-5 w-5" />
                         </div>
-                        <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Clusters</span
-                        >
+                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Subdivisions</span>
                     </div>
-                    <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Live Classes
-                    </p>
-                    <h3 class="text-2xl font-bold text-foreground">
-                        {{ stats.total_classes }} Cells
-                    </h3>
+                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total_classes }}</h3>
+                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Active Classes</p>
                 </div>
 
-                <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-indigo-600/20 dark:border-white/5"
-                >
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-indigo-500/20">
                     <div class="mb-4 flex items-center justify-between">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600/5 text-indigo-600 transition-all duration-500 group-hover:bg-indigo-600 group-hover:text-white"
-                        >
-                            <Users
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
-                            />
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
+                            <Users class="h-5 w-5" />
                         </div>
-                        <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Census</span
-                        >
+                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Learners</span>
                     </div>
-                    <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Active Learners
-                    </p>
-                    <h3 class="text-2xl font-bold text-foreground">
-                        {{ stats.total_learners }} Souls
-                    </h3>
+                    <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total_learners }}</h3>
+                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Enrolled Students</p>
                 </div>
             </div>
 
             <!-- Toolbar Section -->
-            <div
-                class="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
-            >
-                <div
-                    class="flex flex-col items-center justify-between gap-4 md:flex-row"
-                >
-                    <div
-                        class="flex w-full flex-1 items-center gap-4 md:max-w-4xl"
-                    >
-                        <div class="relative flex-1">
-                            <Search
-                                class="-translate-y-1-2 absolute top-1/2 left-4 h-4 w-4 text-muted-foreground/60"
-                            />
-                            <Input
-                                v-model="searchQuery"
-                                placeholder="Filter by name or code..."
-                                class="h-12 rounded-xl border-border bg-muted/20 pl-12 text-xs font-bold transition-all placeholder:text-xs placeholder:tracking-widest placeholder:uppercase focus:bg-background"
-                            />
-                        </div>
-
-                        <div
-                            class="flex items-center rounded-xl border border-border bg-muted/20 p-1"
-                        >
-                            <Button
-                                variant="ghost"
-                                :class="[
-                                    'h-10 w-10 rounded-lg p-0 transition-all',
-                                    selectedView === 'grid'
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : 'text-muted-foreground/40 hover:text-foreground',
-                                ]"
-                                @click="selectedView = 'grid'"
-                                ><Grid2x2 class="h-4 w-4"
-                            /></Button>
-                            <Button
-                                variant="ghost"
-                                :class="[
-                                    'h-10 w-10 rounded-lg p-0 transition-all',
-                                    selectedView === 'list'
-                                        ? 'bg-background text-foreground shadow-sm'
-                                        : 'text-muted-foreground/40 hover:text-foreground',
-                                ]"
-                                @click="selectedView = 'list'"
-                                ><List class="h-4 w-4"
-                            /></Button>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            class="h-12 rounded-xl border-border px-6 text-xs font-bold tracking-tight whitespace-nowrap uppercase"
-                            @click="showFilters = !showFilters"
-                        >
-                            <Filter class="mr-2 h-4 w-4 opacity-40" />
-                            {{ showFilters ? 'DENSE' : 'REFINE' }}
-                        </Button>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <div
-                            v-if="selectedGradeIds.length > 0"
-                            class="animate-in duration-300 slide-in-from-right-4"
-                        >
-                            <DropdownMenu>
-                                <DropdownMenuTrigger as-child>
-                                    <Button
-                                        class="h-12 rounded-xl border-0 bg-foreground px-8 text-xs font-bold tracking-tight text-background uppercase shadow-xl transition-all hover:bg-foreground/90 active:scale-95"
-                                    >
-                                        Batch Control ({{
-                                            selectedGradeIds.length
-                                        }}) <ChevronDown class="ml-2 h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    class="w-64 rounded-xl border border-border p-2 shadow-lg"
-                                >
-                                    <DropdownMenuItem
-                                        class="rounded-lg py-2.5 text-xs font-bold"
-                                        @click="runBulkAction('activate')"
-                                        ><CheckCircle2
-                                            class="mr-3 h-4 w-4 text-emerald-500 opacity-60"
-                                        />
-                                        Activate Units</DropdownMenuItem
-                                    >
-                                    <DropdownMenuItem
-                                        class="rounded-lg py-2.5 text-xs font-bold"
-                                        @click="runBulkAction('deactivate')"
-                                        ><ShieldOff
-                                            class="mr-3 h-4 w-4 text-amber-500 opacity-60"
-                                        />
-                                        Suspend Units</DropdownMenuItem
-                                    >
-                                    <DropdownMenuSeparator
-                                        class="my-1 bg-border/50"
-                                    />
-                                    <DropdownMenuItem
-                                        class="group rounded-lg py-2.5 text-xs font-bold text-rose-500"
-                                        @click="runBulkAction('delete')"
-                                        ><Trash2
-                                            class="mr-3 h-4 w-4 opacity-60 group-hover:opacity-100"
-                                        />
-                                        Purge Records</DropdownMenuItem
-                                    >
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
+            <div class="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:flex-row md:items-center">
+                <div class="group relative flex-1">
+                    <Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
+                    <Input
+                        v-model="searchQuery"
+                        placeholder="Search grades by name or code..."
+                        class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-bold tracking-tight uppercase transition-all focus:bg-background"
+                    />
                 </div>
 
-                <div
-                    v-if="showFilters"
-                    class="grid animate-in gap-6 border-t border-border/50 pt-4 duration-500 fade-in slide-in-from-top-2 md:grid-cols-4"
-                >
-                    <div class="space-y-3">
-                        <label
-                            class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >Metric Filter</label
-                        >
-                        <select
-                            v-model="selectedStatus"
-                            class="h-12 w-full rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold tracking-tight uppercase transition-all outline-none focus:bg-background"
-                        >
-                            <option
-                                v-for="option in statusOptions"
-                                :key="option.value"
-                                :value="option.value"
-                            >
-                                {{ option.label }}
-                            </option>
-                        </select>
+                <div class="flex items-center gap-3">
+                    <div v-if="selectedGradeIds.length > 0" class="flex items-center gap-2 pr-2 border-r border-border mr-2">
+                         <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button class="h-10 rounded-xl bg-foreground text-background px-6 text-[10px] font-bold tracking-tight uppercase">
+                                    Bulk actions ({{ selectedGradeIds.length }}) <ChevronDown class="ml-2 h-3 w-3" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-56 rounded-xl border-border p-2 shadow-xl">
+                                <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold" @click="runBulkAction('activate')">
+                                    <ShieldCheck class="mr-3 h-4 w-4 text-emerald-500" /> Activate Selected
+                                </DropdownMenuItem>
+                                <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold" @click="runBulkAction('deactivate')">
+                                    <ShieldOff class="mr-3 h-4 w-4 text-amber-500" /> Suspend Selected
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator class="my-1" />
+                                <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold text-rose-500" @click="runBulkAction('delete')">
+                                    <Trash2 class="mr-3 h-4 w-4" /> Delete Selected
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
+
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        @click="showFilters = !showFilters"
+                    >
+                        <Filter class="mr-2 h-3.5 w-3.5 opacity-70" />
+                        {{ showFilters ? 'Hide Filters' : 'Refine view' }}
+                    </Button>
                 </div>
             </div>
 
-            <!-- Grid View -->
-            <div
-                v-if="selectedView === 'grid'"
-                class="animate-in space-y-8 duration-700 fade-in slide-in-from-bottom-4"
-            >
-                <div class="flex items-center gap-3">
-                    <button
-                        @click="toggleAllGrades"
-                        class="flex h-6 w-6 items-center justify-center rounded-lg border-2 bg-card transition-all dark:border-white/10"
-                        :class="
-                            allSelected
-                                ? 'border-green-600 bg-green-600 text-white'
-                                : selectedGradeIds.length > 0
-                                  ? 'border-green-600 bg-green-500/10 text-green-600'
-                                  : 'border-border'
-                        "
+            <!-- Extended Filters -->
+            <div v-if="showFilters" class="grid grid-cols-1 gap-6 rounded-2xl border border-border bg-muted/10 p-6 animate-in slide-in-from-top-2 md:grid-cols-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-bold text-muted-foreground uppercase">Operational Status</label>
+                    <select
+                        v-model="selectedStatus"
+                        class="h-11 w-full rounded-xl border border-border bg-background px-4 text-xs font-bold uppercase transition-all focus:ring-2 focus:ring-primary/20"
                     >
-                        <Check
-                            v-if="allSelected"
-                            class="h-4 w-4 stroke-[3px]"
-                        />
-                        <Minus
-                            v-else-if="selectedGradeIds.length > 0"
-                            class="h-4 w-4 stroke-[3px]"
-                        />
-                    </button>
-                    <span
-                        class="cursor-pointer text-xs font-bold tracking-tight text-muted-foreground/50 uppercase select-none"
-                        @click="toggleAllGrades"
-                        >Global Grid Sync</span
-                    >
+                        <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    </select>
                 </div>
+            </div>
 
-                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <!-- Page Content -->
+            <div v-if="paginatedGrades.length > 0">
+                <!-- Grid View -->
+                <div v-if="selectedView === 'grid'" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-1">
                     <div
                         v-for="grade in paginatedGrades"
                         :key="grade.id"
-                        class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card p-8 transition-all duration-500 hover:scale-[1.02] hover:shadow-lg dark:border-white/5"
+                        class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/20 hover:shadow-xl"
                     >
-                        <div
-                            class="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-green-600/5 blur-3xl transition-all duration-700 group-hover:bg-green-600/15"
-                        ></div>
-
-                        <div
-                            class="relative z-10 mb-8 flex items-start justify-between"
-                        >
-                            <div class="flex items-start gap-5">
-                                <button
-                                    @click="toggleGrade(grade.id)"
-                                    class="mt-1 flex h-6 w-6 items-center justify-center rounded-lg border-2 bg-background shadow-inner transition-all dark:border-white/10"
-                                    :class="
-                                        selectedGradeIds.includes(grade.id)
-                                            ? 'border-green-600 bg-green-600 text-white shadow-green-600/30'
-                                            : 'border-border'
-                                    "
+                        <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-all group-hover:bg-primary/10"></div>
+                        
+                        <div class="relative z-10 flex items-start justify-between mb-6">
+                            <div class="flex items-center gap-4">
+                                <div 
+                                    @click="toggleSelectGrade(grade.id)"
+                                    class="flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all"
+                                    :class="selectedGradeIds.includes(grade.id) ? 'bg-primary border-primary text-white' : 'border-border bg-background'"
                                 >
-                                    <Check
-                                        v-if="
-                                            selectedGradeIds.includes(grade.id)
-                                        "
-                                        class="h-4 w-4 stroke-[3px]"
-                                    />
-                                </button>
-                                <div>
-                                    <h2
-                                        class="max-w-[200px] truncate text-2xl leading-tight font-bold tracking-tighter text-foreground transition-colors group-hover:text-green-600"
-                                    >
-                                        {{ grade.name }}
-                                    </h2>
-                                    <p
-                                        class="mt-2 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                    >
-                                        {{ grade.code }} •
-                                        {{ grade.category.toUpperCase() }} UNIT
-                                    </p>
-                                    <p
-                                        class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                                    >
-                                        {{
-                                            grade.lead_name ||
-                                            'NO LEAD ASSIGNED'
-                                        }}
-                                    </p>
+                                    <Check v-if="selectedGradeIds.includes(grade.id)" class="h-3 w-3 stroke-[3px]" />
+                                </div>
+                                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                                    <span class="text-xl font-black">{{ grade.code[0] }}</span>
                                 </div>
                             </div>
+
                             <DropdownMenu>
-                                <DropdownMenuTrigger as-child
-                                    ><Button
-                                        variant="ghost"
-                                        size="icon"
-                                        class="h-10 w-10 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground"
-                                        ><MoreHorizontal
-                                            class="h-5 w-5" /></Button
-                                ></DropdownMenuTrigger>
-                                <DropdownMenuContent
-                                    align="end"
-                                    class="w-64 rounded-xl border border-border p-2 shadow-lg"
-                                >
-                                    <DropdownMenuItem
-                                        class="rounded-lg py-2.5 text-xs font-bold"
-                                        as-child
-                                        ><Link :href="`/grades/${grade.id}`"
-                                            ><Eye
-                                                class="mr-3 h-4 w-4 text-green-500 opacity-60"
-                                            />
-                                            Core Intel</Link
-                                        ></DropdownMenuItem
-                                    >
-                                    <DropdownMenuItem
-                                        class="rounded-lg py-2.5 text-xs font-bold"
-                                        as-child
-                                        ><Link
-                                            :href="`/grades/${grade.id}/edit`"
-                                            ><Edit
-                                                class="mr-3 h-4 w-4 text-amber-500 opacity-60"
-                                            />
-                                            Modify Structure</Link
-                                        ></DropdownMenuItem
-                                    >
-                                    <DropdownMenuItem
-                                        class="rounded-lg py-2.5 text-xs font-bold"
-                                        @click="toggleGradeStatus(grade)"
-                                    >
-                                        <component
-                                            :is="
-                                                grade.is_active
-                                                    ? ShieldOff
-                                                    : ShieldCheck
-                                            "
-                                            class="mr-3 h-4 w-4"
-                                            :class="
-                                                grade.is_active
-                                                    ? 'text-amber-500'
-                                                    : 'text-emerald-500'
-                                            "
-                                        />
-                                        {{
-                                            grade.is_active
-                                                ? 'Suspend Node'
-                                                : 'Initialize Node'
-                                        }}
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl opacity-40 hover:opacity-100">
+                                        <MoreHorizontal class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-52 rounded-xl border-border p-2 shadow-xl">
+                                    <DropdownMenuItem as-child class="rounded-lg py-2.5 text-xs font-bold">
+                                        <Link :href="`/grades/${grade.id}`">
+                                            <Eye class="mr-3 h-4 w-4 opacity-60" /> View Statistics
+                                        </Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator
-                                        class="my-1 bg-border/50"
-                                    />
-                                    <DropdownMenuItem
-                                        class="group rounded-lg py-2.5 text-xs font-bold text-rose-500"
-                                        @click="deleteGrade(grade)"
-                                        ><Trash2
-                                            class="mr-3 h-4 w-4 opacity-60 group-hover:opacity-100"
-                                        />
-                                        Purge Unit</DropdownMenuItem
-                                    >
+                                    <DropdownMenuItem as-child class="rounded-lg py-2.5 text-xs font-bold text-primary">
+                                        <Link :href="`/grades/${grade.id}/edit`">
+                                            <Edit class="mr-3 h-4 w-4 opacity-60" /> Edit level
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator class="my-1" />
+                                    <DropdownMenuItem @click="toggleGradeStatus(grade)" class="rounded-lg py-2.5 text-xs font-bold">
+                                        <component :is="grade.is_active ? ShieldOff : ShieldCheck" class="mr-3 h-4 w-4 opacity-60" />
+                                        {{ grade.is_active ? 'Suspend node' : 'Activate node' }}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem @click="deleteGrade(grade)" class="rounded-lg py-2.5 text-xs font-bold text-rose-500">
+                                        <Trash2 class="mr-3 h-4 w-4 opacity-60" /> Delete grade
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
 
-                        <div class="relative z-10 mt-auto space-y-6">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div
-                                    class="rounded-2xl border border-border bg-muted/20 p-4 shadow-inner transition-all group-hover:bg-background dark:border-white/5"
-                                >
-                                    <p
-                                        class="mb-2 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                    >
-                                        Class Cells
-                                    </p>
-                                    <p
-                                        class="text-xl font-bold text-foreground"
-                                    >
-                                        {{ grade.classes_count }}
-                                    </p>
+                        <div class="relative z-10 space-y-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                                    {{ grade.name }}
+                                </h3>
+                                <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">
+                                    {{ grade.code }} • {{ grade.category.toUpperCase() }} UNIT
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-bold text-muted-foreground/30 uppercase">Classes</span>
+                                    <span class="text-base font-bold text-foreground tabular-nums">{{ grade.classes_count }}</span>
                                 </div>
-                                <div
-                                    class="rounded-2xl border border-border bg-muted/20 p-4 shadow-inner transition-all group-hover:bg-background dark:border-white/5"
-                                >
-                                    <p
-                                        class="mb-2 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                    >
-                                        Learner Souls
-                                    </p>
-                                    <p class="text-xl font-bold text-green-600">
-                                        {{ grade.learners_count }}
-                                    </p>
+                                <div class="flex flex-col border-l border-border/50 pl-4">
+                                    <span class="text-[9px] font-bold text-muted-foreground/30 uppercase">Learners</span>
+                                    <span class="text-base font-bold text-primary tabular-nums">{{ grade.learners_count }}</span>
                                 </div>
                             </div>
 
-                            <div class="flex h-12 gap-3">
-                                <Button
-                                    variant="outline"
-                                    class="h-full flex-1 rounded-xl border-border text-xs font-bold tracking-tight uppercase transition-all hover:border-green-600 hover:bg-green-600 hover:text-white"
-                                    as-child
+                            <div class="flex items-center justify-between pt-2">
+                                <Badge
+                                    variant="secondary"
+                                    class="rounded-lg border-none bg-emerald-500/10 text-[10px] font-bold text-emerald-600 uppercase tracking-tighter"
+                                    v-if="grade.is_active"
                                 >
-                                    <Link :href="`/grades/${grade.id}`"
-                                        >Sync</Link
-                                    >
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    class="h-full flex-1 rounded-xl border-border text-xs font-bold tracking-tight uppercase transition-all hover:border-amber-500 hover:bg-amber-500 hover:text-white"
-                                    as-child
+                                    Operational
+                                </Badge>
+                                <Badge
+                                    variant="secondary"
+                                    class="rounded-lg border-none bg-rose-500/10 text-[10px] font-bold text-rose-600 uppercase tracking-tighter"
+                                    v-else
                                 >
-                                    <Link :href="`/grades/${grade.id}/edit`"
-                                        >Mod</Link
-                                    >
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    class="flex w-12 items-center justify-center rounded-xl border-border p-0 transition-all hover:bg-muted"
-                                    :class="
-                                        grade.is_active
-                                            ? 'text-amber-600 hover:bg-amber-50'
-                                            : 'text-emerald-600 hover:bg-emerald-50'
-                                    "
-                                    @click="toggleGradeStatus(grade)"
-                                >
-                                    <component
-                                        :is="
-                                            grade.is_active
-                                                ? ShieldOff
-                                                : ShieldCheck
-                                        "
-                                        class="h-4 w-4"
-                                    />
-                                </Button>
+                                    Suspended
+                                </Badge>
+                                
+                                <p class="text-[10px] font-bold text-muted-foreground opacity-40 uppercase truncate max-w-[100px]">
+                                    {{ grade.lead_name || 'No Lead' }}
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- List View -->
-            <div
-                v-else-1
-                class="animate-in overflow-hidden rounded-xl border border-border bg-card shadow-lg duration-700 fade-in slide-in-from-bottom-4 dark:border-white/5"
-            >
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse text-left">
-                        <thead>
-                            <tr
-                                class="border-b border-foreground/10 bg-foreground text-background"
-                            >
-                                <th
-                                    class="w-20 border-r border-background/10 px-8 py-6 text-center"
-                                >
-                                    <button
-                                        @click="toggleAllGrades"
-                                        class="mx-auto flex h-6 w-6 items-center justify-center rounded-lg border-2 bg-background shadow-inner transition-all"
-                                        :class="
-                                            allSelected
-                                                ? 'border-green-600 bg-green-600 text-white shadow-green-600/30'
-                                                : selectedGradeIds.length > 0
-                                                  ? 'border-green-600 bg-green-500/10 text-green-600'
-                                                  : 'border-background/20'
-                                        "
-                                    >
-                                        <Check
-                                            v-if="allSelected"
-                                            class="h-4 w-4 stroke-[3px]"
-                                        />
-                                        <Minus
-                                            v-else-if="
-                                                selectedGradeIds.length > 0
-                                            "
-                                            class="h-4 w-4 stroke-[3px]"
-                                        />
-                                    </button>
-                                </th>
-                                <th
-                                    class="border-r border-background/10 px-8 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Level Intel
-                                </th>
-                                <th
-                                    class="border-r border-background/10 px-8 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Guardian Intel
-                                </th>
-                                <th
-                                    class="border-r border-background/10 px-8 py-6 text-center text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Cells
-                                </th>
-                                <th
-                                    class="border-r border-background/10 px-8 py-6 text-center text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Souls
-                                </th>
-                                <th
-                                    class="border-r border-background/10 px-8 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Node Status
-                                </th>
-                                <th
-                                    class="px-8 py-6 text-right text-xs font-medium tracking-tight uppercase opacity-80"
-                                >
-                                    Control
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/30">
-                            <tr v-if="paginatedGrades.length === 0">
-                                <td
-                                    colspan="7"
-                                    class="bg-muted/10 px-8 py-32 text-center text-xl font-bold tracking-tight text-muted-foreground/20 uppercase"
-                                >
-                                    No Academic Levels Detected in Matrix
-                                </td>
-                            </tr>
-                            <tr
-                                v-for="grade in paginatedGrades"
-                                :key="grade.id"
-                                class="group transition-all duration-300 hover:bg-muted/30"
-                            >
-                                <td class="px-8 py-5 text-center">
-                                    <button
-                                        @click="toggleGrade(grade.id)"
-                                        class="mx-auto flex h-6 w-6 items-center justify-center rounded-lg border-2 bg-background shadow-inner transition-all dark:border-white/10"
-                                        :class="
-                                            selectedGradeIds.includes(grade.id)
-                                                ? 'border-green-600 bg-green-600 text-white shadow-green-600/30'
-                                                : 'border-border'
-                                        "
-                                    >
-                                        <Check
-                                            v-if="
-                                                selectedGradeIds.includes(
-                                                    grade.id,
-                                                )
-                                            "
-                                            class="h-4 w-4 stroke-[3px]"
-                                        />
-                                    </button>
-                                </td>
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-5">
-                                        <div
-                                            class="flex h-12 w-12 items-center justify-center rounded-2xl border border-border/50 bg-muted text-sm font-bold text-foreground shadow-inner transition-all duration-500 group-hover:bg-foreground group-hover:text-background"
+                <!-- List View -->
+                <div v-else class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm mx-1">
+                    <div class="scrollbar-hide overflow-x-auto">
+                        <table class="w-full min-w-[1000px] text-left">
+                            <thead class="bg-muted/30">
+                                <tr class="text-muted-foreground">
+                                    <th class="px-6 py-5 text-center w-16">
+                                        <div 
+                                            @click="toggleSelectAll"
+                                            class="mx-auto flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all"
+                                            :class="selectedGradeIds.length === paginatedGrades.length && paginatedGrades.length > 0 ? 'bg-primary border-primary text-white' : 'border-border bg-background'"
                                         >
-                                            {{ grade.name.charAt(0) }}
+                                            <Check v-if="selectedGradeIds.length === paginatedGrades.length && paginatedGrades.length > 0" class="h-3 w-3 stroke-[3px]" />
+                                            <Minus v-else-if="selectedGradeIds.length > 0" class="h-3 w-3 stroke-[3px]" />
                                         </div>
-                                        <div class="min-w-0">
-                                            <p
-                                                class="mb-1 max-w-[180px] truncate text-sm leading-tight font-bold tracking-tight text-foreground transition-colors group-hover:text-green-600"
-                                            >
-                                                {{ grade.name }}
-                                            </p>
-                                            <p
-                                                class="text-xs leading-none font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                            >
-                                                {{ grade.code }} •
-                                                {{
-                                                    grade.category.toUpperCase()
-                                                }}
-                                                UNIT
-                                            </p>
+                                    </th>
+                                    <th class="px-6 py-5 text-[10px] font-bold tracking-tight uppercase">Grade identity</th>
+                                    <th class="px-6 py-5 text-[10px] font-bold tracking-tight uppercase">Level Lead</th>
+                                    <th class="px-6 py-5 text-center text-[10px] font-bold tracking-tight uppercase">Composition</th>
+                                    <th class="px-6 py-5 text-center text-[10px] font-bold tracking-tight uppercase">Status</th>
+                                    <th class="px-8 py-5 text-right text-[10px] font-bold tracking-tight uppercase">Control</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border/30">
+                                <tr v-for="grade in paginatedGrades" :key="grade.id" class="group transition-all hover:bg-muted/30">
+                                    <td class="px-6 py-4 text-center">
+                                        <div 
+                                            @click="toggleSelectGrade(grade.id)"
+                                            class="mx-auto flex h-5 w-5 cursor-pointer items-center justify-center rounded-md border-2 transition-all"
+                                            :class="selectedGradeIds.includes(grade.id) ? 'bg-primary border-primary text-white' : 'border-border bg-background'"
+                                        >
+                                            <Check v-if="selectedGradeIds.includes(grade.id)" class="h-3 w-3 stroke-[3px]" />
                                         </div>
-                                    </div>
-                                </td>
-                                <td class="px-8 py-5">
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="max-w-[150px] truncate text-xs font-bold text-foreground transition-colors group-hover:text-green-600"
-                                            >{{
-                                                grade.lead_name || 'NULL NODE'
-                                            }}</span
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/5 text-primary font-black group-hover:scale-110 transition-all">
+                                                {{ grade.code[0] }}
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <span class="text-sm font-bold text-foreground">{{ grade.name }}</span>
+                                                <span class="text-[10px] font-bold text-muted-foreground/40 uppercase">{{ grade.code }} • {{ grade.category }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-col">
+                                            <span class="text-xs font-bold text-foreground opacity-80">{{ grade.lead_name || 'Unassigned' }}</span>
+                                            <span class="text-[9px] font-bold text-muted-foreground/40 uppercase">Assigned Lead</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center justify-center gap-8">
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-[9px] font-bold text-muted-foreground/30 uppercase">Classes</span>
+                                                <span class="text-xs font-bold tabular-nums">{{ grade.classes_count }}</span>
+                                            </div>
+                                            <div class="flex flex-col items-center">
+                                                <span class="text-[9px] font-bold text-muted-foreground/30 uppercase">Learners</span>
+                                                <span class="text-xs font-bold text-primary tabular-nums">{{ grade.learners_count }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <Badge
+                                            variant="secondary"
+                                            class="px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-tight"
+                                            :class="grade.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'"
                                         >
-                                        <span
-                                            class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/30"
-                                            >Level Lead</span
-                                        >
-                                    </div>
-                                </td>
-                                <td class="px-8 py-5 text-center">
-                                    <Badge
-                                        variant="outline"
-                                        class="h-7 rounded-lg border-border bg-muted/30 px-4 text-xs font-bold tracking-tight text-foreground transition-all group-hover:bg-foreground group-hover:text-background"
-                                        >{{ grade.classes_count }} Cells</Badge
-                                    >
-                                </td>
-                                <td
-                                    class="px-8 py-5 text-center text-sm font-bold text-green-600 tabular-nums"
-                                >
-                                    {{ grade.learners_count }}
-                                </td>
-                                <td class="px-8 py-5">
-                                    <div class="flex items-center gap-3">
-                                        <div
-                                            class="h-2 w-2 rounded-full shadow-sm"
-                                            :class="
-                                                grade.is_active
-                                                    ? 'animate-pulse bg-emerald-500'
-                                                    : 'bg-muted-foreground/20'
-                                            "
-                                        ></div>
-                                        <span
-                                            class="text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                            :class="
-                                                grade.is_active
-                                                    ? 'text-emerald-500'
-                                                    : 'text-muted-foreground/30'
-                                            "
-                                            >{{
-                                                grade.is_active
-                                                    ? 'INITIALIZED'
-                                                    : 'OFFLINE'
-                                            }}</span
-                                        >
-                                    </div>
-                                </td>
-                                <td class="px-8 py-5 text-right">
-                                    <div
-                                        class="flex items-center justify-end gap-2 outline-none"
-                                    >
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            class="h-10 w-10 rounded-xl border border-transparent p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-green-600/20 hover:bg-green-600/10 hover:text-green-600"
-                                            as-child
-                                            title="Sync Level"
-                                        >
-                                            <Link :href="`/grades/${grade.id}`"
-                                                ><Eye class="h-4.5 w-4.5"
-                                            /></Link>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            class="h-10 w-10 rounded-xl border border-transparent p-0 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-500"
-                                            as-child
-                                            title="Mod Structure"
-                                        >
-                                            <Link
-                                                :href="`/grades/${grade.id}/edit`"
-                                                ><Edit class="h-4.5 w-4.5"
-                                            /></Link>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            class="h-10 w-10 rounded-xl border border-transparent p-0 opacity-0 transition-all group-hover:opacity-100"
-                                            :class="
-                                                grade.is_active
-                                                    ? 'border-amber-500/10 text-amber-500 hover:bg-amber-50'
-                                                    : 'border-emerald-500/10 text-emerald-500 hover:bg-emerald-50'
-                                            "
-                                            @click="toggleGradeStatus(grade)"
-                                            :title="
-                                                grade.is_active
-                                                    ? 'Suspend Node'
-                                                    : 'Initialize Node'
-                                            "
-                                        >
-                                            <component
-                                                :is="
-                                                    grade.is_active
-                                                        ? ShieldOff
-                                                        : ShieldCheck
-                                                "
-                                                class="h-4.5 w-4.5"
-                                            />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            class="h-10 w-10 rounded-xl border border-transparent p-0 text-rose-500 opacity-0 transition-all group-hover:opacity-100 hover:border-rose-500/20 hover:bg-rose-500/10"
-                                            @click="deleteGrade(grade)"
-                                            title="Purge Level"
-                                        >
-                                            <Trash2 class="h-4.5 w-4.5" />
-                                        </Button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Pagination Footer -->
-            <div
-                class="group/footer relative flex flex-col gap-6 overflow-hidden rounded-xl border-t border-border/30 bg-muted/10 px-10 py-10 shadow-sm md:flex-row md:items-center md:justify-between dark:border-white/5"
-            >
-                <div
-                    class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-green-600/5 blur-3xl transition-all duration-1000 group-hover/footer:bg-green-600/10"
-                ></div>
-
-                <div class="relative z-10 flex items-center gap-6">
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Segments</span
-                        >
-                        <select
-                            v-model="perPage"
-                            @change="currentPage = 1"
-                            class="h-10 rounded-xl border border-border bg-background px-4 text-sm font-bold text-foreground transition-all outline-none focus:ring-2 focus:ring-green-600"
-                        >
-                            <option
-                                v-for="n in [10, 20, 50, 100, 500]"
-                                :key="n"
-                                :value="n"
-                            >
-                                {{ n }} CELLS
-                            </option>
-                        </select>
+                                            {{ grade.is_active ? 'Operational' : 'Suspended' }}
+                                        </Badge>
+                                    </td>
+                                    <td class="px-8 py-4 text-right">
+                                        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                            <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary" as-child>
+                                                <Link :href="`/grades/${grade.id}`"><Eye class="h-4 w-4" /></Link>
+                                            </Button>
+                                            <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary" as-child>
+                                                <Link :href="`/grades/${grade.id}/edit`"><Edit class="h-4 w-4" /></Link>
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl">
+                                                        <MoreHorizontal class="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" class="w-56 rounded-xl border-border p-2 shadow-xl">
+                                                    <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold" @click="toggleGradeStatus(grade)">
+                                                        <component :is="grade.is_active ? ShieldOff : ShieldCheck" class="mr-3 h-4 w-4 opacity-70" />
+                                                        Update Status
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator class="my-1" />
+                                                    <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold text-rose-500" @click="deleteGrade(grade)">
+                                                        <Trash2 class="mr-3 h-4 w-4" /> Purge node
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="h-10 w-px bg-border/50"></div>
-                    <p
-                        class="text-xs font-bold tracking-[0.15em] text-muted-foreground/40 uppercase"
-                    >
-                        {{ filteredGrades.length }} Units active in matrix
+                </div>
+
+                <!-- Overdue/Pagination Progress -->
+                <div v-if="totalPages > 1" class="flex flex-col items-center justify-between gap-4 border-t border-border/50 bg-muted/5 px-6 py-6 md:flex-row shadow-sm rounded-2xl mx-1 mt-6">
+                    <p class="text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                        Node {{ (currentPage - 1) * perPage + 1 }} - {{ Math.min(currentPage * perPage, filteredGrades.length) }} of {{ filteredGrades.length }} Institutional Levels
                     </p>
-                </div>
-
-                <div
-                    v-if="totalPages > 1"
-                    class="relative z-10 flex items-center gap-2"
-                >
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        class="h-12 w-12 rounded-2xl border-border p-0 text-muted-foreground transition-all hover:bg-muted disabled:opacity-20"
-                        :disabled="currentPage === 1"
-                        @click="currentPage = Math.max(1, currentPage - 1)"
-                    >
-                        <ChevronLeft class="h-5 w-5" />
-                    </Button>
-
-                    <div class="mx-2 flex items-center gap-2">
-                        <template v-for="p in totalPages" :key="p">
-                            <Button
-                                v-if="
-                                    Math.abs(p - currentPage) <= 2 ||
-                                    p === 1 ||
-                                    p === totalPages
-                                "
-                                variant="outline"
-                                class="h-12 min-w-[3rem] rounded-2xl border-border px-4 text-sm font-bold tracking-tighter shadow-sm transition-all duration-300"
-                                :class="
-                                    currentPage === p
-                                        ? 'border-green-600 bg-green-600 text-white shadow-green-600/20'
-                                        : 'text-foreground hover:bg-muted'
-                                "
-                                @click="
-                                    currentPage = p;
-                                    selectedGradeIds = [];
-                                "
-                            >
-                                {{ p }}
-                            </Button>
-                            <span
-                                v-else-if="Math.abs(p - currentPage) === 3"
-                                class="px-1 font-bold text-muted-foreground/30 opacity-50"
-                                >...</span
-                            >
-                        </template>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            class="h-10 rounded-xl border-border bg-background px-5 text-xs font-bold tracking-tight uppercase"
+                            :disabled="currentPage === 1"
+                            @click="currentPage--"
+                        >
+                            Back
+                        </Button>
+                        <div class="flex h-10 min-w-[40px] items-center justify-center rounded-xl bg-primary text-xs font-black text-white shadow-lg shadow-primary/20 p-2">
+                            {{ currentPage }} / {{ totalPages }}
+                        </div>
+                        <Button
+                            variant="outline"
+                            class="h-10 rounded-xl border-border bg-background px-5 text-xs font-bold tracking-tight uppercase"
+                            :disabled="currentPage === totalPages"
+                            @click="currentPage++"
+                        >
+                            Next
+                        </Button>
                     </div>
-
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        class="h-12 w-12 rounded-2xl border-border p-0 text-muted-foreground transition-all hover:bg-muted disabled:opacity-20"
-                        :disabled="currentPage === totalPages"
-                        @click="
-                            currentPage = Math.min(totalPages, currentPage + 1)
-                        "
-                    >
-                        <ChevronRight class="h-5 w-5" />
-                    </Button>
                 </div>
             </div>
 
-            <!-- Global Matrix Pulse -->
-            <div
-                class="group relative flex flex-col items-center justify-between gap-10 overflow-hidden rounded-2xl bg-slate-900 p-10 text-white shadow-[0_0_60px_rgba(0,0,0,0.3)] md:flex-row dark:bg-black"
-            >
-                <div
-                    class="pointer-events-none absolute -right-24 -bottom-24 text-[12rem] font-bold text-white uppercase opacity-5 transition-all duration-[2000ms] select-none group-hover:scale-125"
-                >
-                    MATRX
+            <!-- Empty State -->
+            <div v-else class="flex flex-col items-center justify-center space-y-6 rounded-3xl border border-dashed border-border/80 bg-muted/5 py-40 mx-1">
+                <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/20 text-muted-foreground/20">
+                    <School class="h-10 w-10" />
                 </div>
-                <div class="relative z-10 flex items-center gap-8">
-                    <div
-                        class="flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 shadow-lg transition-all duration-700 group-hover:border-green-600 group-hover:bg-green-600"
-                    >
-                        <ShieldCheck
-                            class="h-10 w-10 text-white/30 transition-all duration-500 group-hover:scale-110 group-hover:text-white"
-                        />
-                    </div>
-                    <div>
-                        <h3
-                            class="text-2xl font-bold tracking-tighter transition-colors duration-500 group-hover:text-green-400"
-                        >
-                            Structural Synchronization Pulse
-                        </h3>
-                        <p
-                            class="mt-2 text-xs leading-relaxed font-bold tracking-[0.1em] text-muted-foreground text-white/40 uppercase underline decoration-green-500/30 underline-offset-4"
-                        >
-                            Maintaining active academic clusters for the
-                            {{
-                                $page.props.auth.school?.name || 'Campus'
-                            }}
-                            Academic Grid.
-                        </p>
-                    </div>
+                <div class="space-y-2 text-center">
+                    <h3 class="text-xl font-bold text-foreground">No Grade Structures Found</h3>
+                    <p class="max-w-xs text-sm font-medium text-muted-foreground/60 mx-auto">We couldn't find any levels matching your criteria. Reset filters or add a new grade level.</p>
                 </div>
-                <div class="relative z-10 flex gap-8">
-                    <div class="flex flex-col items-end">
-                        <span
-                            class="mb-2 text-xs font-bold tracking-tight text-white/30 uppercase opacity-60"
-                            >Matrix Status</span
-                        >
-                        <span
-                            class="animate-pulse rounded-full border border-green-400/20 bg-green-600/20 px-8 py-3 text-sm font-bold tracking-[0.25em] text-green-400 uppercase shadow-[0_0_30px_rgba(34,197,94,0.3)]"
-                            >Structure Locked</span
-                        >
+                <Button variant="outline" class="h-11 rounded-xl px-8 text-xs font-bold uppercase tracking-tight" @click="searchQuery = ''; selectedStatus = 'all'">Reset Grid</Button>
+            </div>
+
+            <!-- Footer Message -->
+            <div class="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-black p-8 text-white shadow-2xl">
+                 <div class="absolute -right-16 -bottom-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl opacity-20"></div>
+                 <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex items-center gap-6">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 border border-white/5 shadow-2xl transition-all hover:bg-primary hover:scale-110">
+                            <ShieldCheck class="h-8 w-8 text-white" />
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold tracking-tight">Institutional Architecture Pulse</h4>
+                            <p class="text-xs text-white/50 font-medium max-w-md mt-1">Maintaining synchronization across the academic hierarchy. All changes here reflect across the institution dynamically.</p>
+                        </div>
                     </div>
-                </div>
+                    <div class="flex items-center gap-2">
+                        <Badge variant="outline" class="border-white/20 text-white/40 text-[9px] font-black uppercase tracking-widest px-3 py-1">Structure Locked</Badge>
+                    </div>
+                 </div>
             </div>
         </div>
     </AppLayout>

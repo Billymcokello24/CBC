@@ -6,12 +6,17 @@ import {
     Users,
     Settings,
     Plus,
-    ArrowRight,
+    ArrowUpRight,
     Navigation,
+    Home,
+    ChevronRight,
+    ShieldCheck,
+    Wrench,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
 
 const props = defineProps<{
@@ -30,190 +35,210 @@ const breadcrumbs: BreadcrumbItem[] = [
 </script>
 
 <template>
-    <Head title="Transport Dashboard" />
+    <Head title="Transport Intelligence" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10"
-                    >
-                        <Bus class="h-6 w-6 text-orange-600" />
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
+            <!-- Page Header -->
+            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
+                        <Home class="h-3 w-3" />
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span>Logistics</span>
+                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
+                        <span class="text-foreground">Fleet Management</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Transport Management
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Manage school fleet, routes and student
-                            transportation
-                        </p>
-                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Logistics Overview
+                    </h1>
+                    <p class="text-sm text-muted-foreground">
+                        Manage institutional mobility, route synchronization, and fleet status.
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    <Button variant="outline" as-child
-                        ><Link href="/transport/routes"
-                            ><Navigation class="mr-2 h-4 w-4" />View
-                            Routes</Link
-                        ></Button
-                    >
-                    <Button
-                        as-child
-                        class="font-pulsar bg-orange-600 hover:bg-orange-700"
-                        ><Link href="/transport/vehicles/create"
-                            ><Plus class="mr-2 h-4 w-4" />Add Vehicle</Link
-                        ></Button
-                    >
+
+                <div class="flex items-center gap-3">
+                    <Button variant="outline" as-child class="h-11 rounded-xl border-border bg-background px-6 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted">
+                        <Link href="/transport/routes">
+                            <Navigation class="mr-2 h-4 w-4 opacity-40" />Active Routes
+                        </Link>
+                    </Button>
+                    <Button as-child class="h-11 rounded-xl bg-orange-600 px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-orange-500/30 transition-all hover:scale-[1.02] hover:bg-orange-700 active:scale-95 text-white">
+                        <Link href="/transport/vehicles/create">
+                            <Plus class="mr-2 h-4 w-4" />Register Vehicle
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="rounded-xl border bg-card p-6 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-blue-500/10 p-2">
-                            <Bus class="h-5 w-5 text-blue-600" />
+            <!-- Intelligence Cards -->
+            <div class="grid grid-cols-1 gap-4 px-1 sm:grid-cols-2 lg:grid-cols-4">
+                <!-- Total Fleet -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-blue-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-blue-500/5 blur-2xl transition-all group-hover:bg-blue-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
+                                <Bus class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-blue-600/40 uppercase">Fleet</span>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Total Vehicles
-                        </p>
-                        <p class="text-2xl font-bold">
-                            {{ stats.total_vehicles }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total_vehicles }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Operational Asset Units</p>
+                        </div>
                     </div>
                 </div>
-                <div
-                    class="rounded-xl border border-l-4 border-l-orange-500 bg-card p-6 shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-orange-500/10 p-2">
-                            <MapPin class="h-5 w-5 text-orange-600" />
+
+                <!-- Active Routes -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-orange-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-orange-500/5 blur-2xl transition-all group-hover:bg-orange-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 shadow-sm transition-all group-hover:bg-orange-600 group-hover:text-white">
+                                <MapPin class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-orange-600/40 uppercase">Topology</span>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Active Routes
-                        </p>
-                        <p class="text-2xl font-bold text-orange-600">
-                            {{ stats.active_routes }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.active_routes }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Synchronized Delivery Routes</p>
+                        </div>
                     </div>
                 </div>
-                <div class="rounded-xl border bg-card p-6 shadow-sm">
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-emerald-500/10 p-2">
-                            <Users class="h-5 w-5 text-emerald-600" />
+
+                <!-- Allocated Students -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/5 blur-2xl transition-all group-hover:bg-emerald-500/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-sm transition-all group-hover:bg-emerald-600 group-hover:text-white">
+                                <Users class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-emerald-600/40 uppercase">Manifest</span>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Allocated Students
-                        </p>
-                        <p class="text-2xl font-bold text-emerald-600">
-                            {{ stats.total_allocated_students }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.total_allocated_students }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Learners Bound to Logistics</p>
+                        </div>
                     </div>
                 </div>
-                <div
-                    class="rounded-xl border border-l-4 border-l-blue-500 bg-card p-6 shadow-sm"
-                >
-                    <div class="flex items-center justify-between">
-                        <div class="rounded-lg bg-blue-500/10 p-2">
-                            <Settings class="h-5 w-5 text-blue-600" />
+
+                <!-- Available Capacity -->
+                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20">
+                    <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-all group-hover:bg-primary/10"></div>
+                    <div class="relative z-10 flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm transition-all group-hover:bg-primary group-hover:text-white">
+                                <Settings class="h-5 w-5" />
+                            </div>
+                            <span class="text-[10px] font-bold tracking-tight text-primary/40 uppercase">Utilization</span>
                         </div>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-muted-foreground">
-                            Remaining Capacity
-                        </p>
-                        <p class="text-2xl font-bold text-blue-600">
-                            {{ stats.available_capacity }}
-                        </p>
+                        <div>
+                            <h3 class="text-2xl font-bold text-foreground tabular-nums">{{ stats.available_capacity }}</h3>
+                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-1">Residual System Capacity</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-2">
-                <div class="rounded-xl border bg-card p-6 shadow-sm">
-                    <h2 class="mb-4 text-lg font-bold">Quick Actions</h2>
-                    <div class="grid gap-3">
+            <!-- Content Split -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 px-1">
+                <!-- Strategic Actions -->
+                <div class="rounded-3xl border border-border bg-card shadow-sm overflow-hidden flex flex-col">
+                    <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
+                                <Navigation class="h-5 w-5" />
+                            </div>
+                            <h3 class="text-sm font-bold tracking-tight text-foreground uppercase">Logistics Matrix</h3>
+                        </div>
+                        <span class="text-[10px] font-bold text-muted-foreground/40 uppercase">Control Panel</span>
+                    </div>
+
+                    <div class="p-8 space-y-4">
                         <Link
                             href="/transport/routes/create"
-                            class="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50"
+                            class="group block p-6 rounded-2xl border border-border bg-muted/20 transition-all hover:bg-background hover:border-orange-500/20 hover:shadow-lg"
                         >
-                            <div class="flex items-center gap-3">
-                                <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm"
-                                >
-                                    <MapPin class="h-5 w-5 text-orange-500" />
-                                </div>
-                                <div>
-                                    <div class="font-bold text-slate-900">
-                                        Create New Route
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-5">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm border border-border/50 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                                        <MapPin class="h-6 w-6" />
                                     </div>
-                                    <div class="text-xs text-muted-foreground">
-                                        Define zones and stops for student
-                                        pickup
+                                    <div>
+                                        <h4 class="text-sm font-bold text-foreground uppercase">Topology Definition</h4>
+                                        <p class="text-[10px] font-bold text-muted-foreground/40 uppercase mt-1">Designate terminal zones and pickup clusters</p>
                                     </div>
                                 </div>
+                                <ArrowUpRight class="h-5 w-5 text-muted-foreground/20 group-hover:text-orange-500 transition-all" />
                             </div>
-                            <ArrowRight
-                                class="h-4 w-4 text-slate-300 transition-colors group-hover:text-orange-500"
-                            />
                         </Link>
+
                         <Link
                             href="/transport/vehicles"
-                            class="group flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-4 transition-colors hover:bg-slate-50"
+                            class="group block p-6 rounded-2xl border border-border bg-muted/20 transition-all hover:bg-background hover:border-blue-500/20 hover:shadow-lg"
                         >
-                            <div class="flex items-center gap-3">
-                                <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm"
-                                >
-                                    <Bus class="h-5 w-5 text-blue-500" />
-                                </div>
-                                <div>
-                                    <div class="font-bold text-slate-900">
-                                        Vehicle Inventory
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-5">
+                                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-sm border border-border/50 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                        <Bus class="h-6 w-6" />
                                     </div>
-                                    <div class="text-xs text-muted-foreground">
-                                        View status and maintenance for school
-                                        fleet
+                                    <div>
+                                        <h4 class="text-sm font-bold text-foreground uppercase">Fleet Registry</h4>
+                                        <p class="text-[10px] font-bold text-muted-foreground/40 uppercase mt-1">Monitor asset health and maintenance cycles</p>
                                     </div>
                                 </div>
+                                <ArrowUpRight class="h-5 w-5 text-muted-foreground/20 group-hover:text-blue-500 transition-all" />
                             </div>
-                            <ArrowRight
-                                class="h-4 w-4 text-slate-300 transition-colors group-hover:text-blue-500"
-                            />
                         </Link>
                     </div>
                 </div>
 
-                <div
-                    class="rounded-xl border bg-gradient-to-br from-orange-500 to-orange-600 p-8 text-white shadow-lg"
-                >
-                    <h2 class="mb-2 text-2xl font-bold">
-                        Transport Optimization
-                    </h2>
-                    <p class="mb-6 text-orange-50/80">
-                        Allocate students to routes, track vehicle capacity and
-                        optimize school arrivals.
-                    </p>
-                    <div class="flex gap-4">
-                        <Button
-                            variant="secondary"
-                            as-child
-                            class="border-0 bg-white font-bold text-orange-600 shadow-md hover:bg-orange-50"
-                        >
-                            <Link href="/transport/allocations"
-                                >Manage Allocations</Link
-                            >
-                        </Button>
+                <!-- Strategic Intelligence Area -->
+                <div class="relative overflow-hidden rounded-3xl bg-slate-900 dark:bg-black p-10 text-white shadow-2xl flex flex-col justify-between">
+                    <div class="absolute inset-0 opacity-[0.03] grayscale pointer-events-none">
+                        <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+                            <defs><pattern id="grid-transport" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/></pattern></defs>
+                            <rect width="100%" height="100%" fill="url(#grid-transport)" />
+                        </svg>
+                    </div>
+                    
+                    <div class="relative z-10 space-y-8">
+                        <div class="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/5 border border-white/10 shadow-2xl transition-all hover:bg-orange-500/20 hover:scale-110">
+                            <Navigation class="h-10 w-10 text-orange-500" />
+                        </div>
+                        <div class="space-y-3">
+                            <h4 class="text-2xl font-bold tracking-tight">Mobility Optimization</h4>
+                            <p class="text-sm text-white/50 font-medium leading-relaxed max-w-sm">
+                                Synchronize institutional arrivals through advanced route allocation and manifest management. Maintain fleet integrity via real-time capacity audits.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="relative z-10 pt-10">
+                        <div class="flex gap-4">
+                            <Button as-child class="h-12 flex-1 rounded-2xl bg-white font-bold text-[10px] tracking-tight text-slate-900 uppercase hover:bg-orange-50 transition-all active:scale-95">
+                                <Link href="/transport/allocations">Allocate Manifest <ArrowUpRight class="ml-2 h-4 w-4" /></Link>
+                            </Button>
+                            <Button variant="outline" as-child class="h-12 w-12 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 transition-all">
+                                <Link href="/transport/settings"><Wrench class="h-4 w-4" /></Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

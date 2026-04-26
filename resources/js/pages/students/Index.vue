@@ -782,29 +782,29 @@ const getStatusColor = (active: boolean) => {
                                     </button>
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
-                                    Learner Profile
+                                    Student
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
-                                    Placement Context
+                                    Class
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
-                                    Live Status
+                                    Status
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
-                                    Entry Date
+                                    Admission
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-right text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-right text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
-                                    Operations
+                                    Actions
                                 </th>
                             </tr>
                         </thead>
@@ -842,37 +842,30 @@ const getStatusColor = (active: boolean) => {
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-4">
                                         <div
-                                            v-if="learner.photo_url"
-                                            class="h-11 w-11 flex-shrink-0 transform overflow-hidden rounded-xl border border-border shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:border-primary/40"
+                                            class="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-border shadow-sm transition-all duration-300 group-hover:border-primary/40"
                                         >
                                             <img
+                                                v-if="learner.photo_url"
                                                 :src="learner.photo_url"
                                                 class="h-full w-full object-cover"
                                             />
-                                        </div>
-                                        <div
-                                            v-else
-                                            class="flex h-11 w-11 flex-shrink-0 transform items-center justify-center rounded-xl border border-primary/10 bg-primary/5 text-xs font-bold text-primary shadow-inner transition-all duration-300 group-hover:scale-105"
-                                        >
-                                            {{
-                                                learner.name
-                                                    .split(' ')
-                                                    .map((n) => n[0])
-                                                    .join('')
-                                                    .substring(0, 2)
-                                                    .toUpperCase()
-                                            }}
+                                            <div
+                                                v-else
+                                                class="flex h-full w-full items-center justify-center bg-muted text-[10px] font-bold text-muted-foreground uppercase"
+                                            >
+                                                {{ learner.name.charAt(0) }}
+                                            </div>
                                         </div>
                                         <div class="flex min-w-0 flex-col">
                                             <span
-                                                class="truncate text-xs font-bold tracking-tight text-foreground uppercase transition-colors group-hover:text-primary"
+                                                class="truncate text-sm font-bold text-foreground transition-colors group-hover:text-primary"
                                                 >{{ learner.name }}</span
                                             >
                                             <span
-                                                class="mt-0.5 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
+                                                class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase"
                                                 >{{
                                                     learner.admission_number ||
-                                                    'NO ID'
+                                                    'No ID'
                                                 }}</span
                                             >
                                         </div>
@@ -881,35 +874,27 @@ const getStatusColor = (active: boolean) => {
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-xs font-bold tracking-tight text-foreground/80 uppercase"
+                                            class="text-xs font-bold text-foreground"
                                             >{{
-                                                learner.class || 'UNASSIGNED'
+                                                learner.class || 'Unassigned'
                                             }}</span
                                         >
                                         <span
-                                            class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
+                                            class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase"
                                             >{{ learner.gender }}</span
                                         >
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
                                     <Badge
-                                        :variant="
-                                            learner.status === 'active'
-                                                ? 'outline'
-                                                : 'secondary'
-                                        "
-                                        class="rounded-lg border-0 px-2.5 py-1 text-xs font-medium tracking-tight uppercase"
+                                        variant="secondary"
+                                        class="rounded-lg border-none px-3 py-1 text-[10px] font-bold tracking-tight uppercase"
                                         :class="
                                             learner.status === 'active'
-                                                ? 'bg-emerald-50 text-emerald-600'
-                                                : 'bg-slate-100 text-slate-600'
+                                                ? 'bg-emerald-500/10 text-emerald-600'
+                                                : 'bg-amber-500/10 text-amber-600'
                                         "
                                     >
-                                        <div
-                                            v-if="learner.status === 'active'"
-                                            class="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500 shadow-sm"
-                                        ></div>
                                         {{ learner.status }}
                                     </Badge>
                                 </td>
