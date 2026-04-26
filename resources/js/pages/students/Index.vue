@@ -6,21 +6,19 @@ import {
     Edit,
     Eye,
     Filter,
-    GraduationCap,
-    MoreHorizontal,
     Plus,
     Search,
     ShieldAlert,
     Trash2,
     ChevronDown,
-    ChevronUp,
     ArrowUpCircle,
     FileText,
     Users,
     TrendingUp,
     CheckSquare,
     Square,
-    UserPlus
+    UserPlus,
+    Upload
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +36,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import type { BreadcrumbItem } from '@/types';
 import BulkUploadModal from './partials/BulkUploadModal.vue';
 
@@ -355,16 +354,12 @@ const getStatusColor = (active: boolean) => {
         </div>
 
         <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-20 p-4 sm:p-6 md:p-8">
-            <!-- Page Header -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-                <div class="space-y-1">
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 uppercase italic">Learners</h1>
-                    <p class="text-[9px] sm:text-[10px] text-muted-foreground font-bold uppercase tracking-widest italic opacity-60">
-                        Academic Enrollment & Demographic Registry
-                    </p>
-                </div>
-                
-                <div class="flex items-center gap-2 sm:gap-3">
+            <PageHeader 
+                title="Learners Registry" 
+                description="Comprehensive student enrollment and demographic management console."
+                :breadcrumbs="breadcrumbs"
+            >
+                <template #actions>
                     <Button variant="outline" class="hidden sm:flex h-10 px-4 rounded-xl border-slate-200 font-black text-[10px] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm" @click="exportToPDF">
                         <Download class="mr-2 h-4 w-4 opacity-70" />
                         Export
@@ -381,51 +376,51 @@ const getStatusColor = (active: boolean) => {
                         <Plus class="mr-2 h-4 w-4" />
                         Enroll
                     </Link>
-                </div>
-            </div>
+                </template>
+            </PageHeader>
 
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 px-1">
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-blue-200 transition-all">
+            <!-- Status Metrics -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-blue-200">
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Registry</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.total.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Total Registry</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.total.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100/50 group-hover:scale-110 transition-transform">
                         <Users class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-200 transition-all">
+                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-emerald-200">
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Status</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.active.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Active Learners</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.active.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50 group-hover:scale-110 transition-transform relative">
-                         <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse absolute top-2 right-2" v-if="stats.active > 0"></div>
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 border border-emerald-100/50 group-hover:scale-110 transition-transform relative">
+                         <div class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse absolute top-2 right-2" v-if="props.stats.active > 0"></div>
                          <CheckCircle2 class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-amber-200 transition-all">
+                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-amber-200">
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Withdrawn</p>
-                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.withdrawn.toLocaleString() }}</h3>
+                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Withdrawn</p>
+                        <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums leading-none">{{ props.stats.withdrawn.toLocaleString() }}</h3>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100/50 group-hover:scale-110 transition-transform">
                         <ShieldAlert class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-sky-200 transition-all">
+                <div class="card-premium p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group hover:border-sky-200">
                     <div>
-                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Acquisition</p>
-                        <div class="flex items-baseline gap-2">
-                             <h3 class="text-xl sm:text-2xl font-black text-slate-900 tabular-nums">{{ stats.new_this_month }}</h3>
-                             <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1 rounded" v-if="stats.growth > 0">+{{ stats.growth }}%</span>
+                        <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">New Acquisition</p>
+                        <div class="flex items-baseline gap-2 leading-none">
+                             <h3 class="text-xl sm:text-2xl font-black text-foreground tabular-nums">{{ props.stats.new_this_month }}</h3>
+                             <span class="text-[8px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded" v-if="props.stats.growth > 0">+{{ props.stats.growth }}%</span>
                         </div>
                     </div>
-                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100/50 group-hover:scale-110 transition-transform">
+                    <div class="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-sky-50 flex items-center justify-center text-sky-600 border border-sky-100/50 group-hover:scale-110 transition-transform">
                         <TrendingUp class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>

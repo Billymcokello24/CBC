@@ -1,46 +1,19 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { Head, Link } from '@inertiajs/vue3';
 import {
-    School,
-    Users,
     DollarSign,
-    TrendingUp,
-    TrendingDown,
-    Search,
-    Bell,
-    ChevronDown,
+    Users,
     LayoutDashboard,
-    BarChart3,
-    Settings,
-    ArrowRight,
     Activity,
-    Zap,
-    GraduationCap,
-    BookOpen,
-    Calendar,
-    UsersRound,
-    History,
-    ShieldCheck,
-    Clock,
-    AlertCircle,
-    ChevronRight,
-    ArrowUpRight,
-    MoreHorizontal,
-    Plus,
-    Home
+    Home,
+    TrendingUp,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import ChartCard from '@/components/dashboard/ChartCard.vue';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import type { BreadcrumbItem } from '@/types';
 
 interface Props {
@@ -95,7 +68,6 @@ interface Props {
 const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Home', href: '/dashboard', icon: Home },
     { title: 'Dashboard', href: '/dashboard' },
 ];
 
@@ -107,14 +79,12 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-// Derived Top Performing Units from classPerformance
 const topUnits = computed(() => {
     if (!props.classPerformance?.labels?.length) return [];
     
     return props.classPerformance.labels.map((name, index) => ({
         name: name,
         proficiency: props.classPerformance.datasets[0].data[index],
-        // Randomly assign growth for flavor if not in DB, or just omit
         growth: 5.2 + (index * 1.2)
     })).slice(0, 4);
 });
@@ -123,20 +93,13 @@ const topUnits = computed(() => {
 <template>
     <Head title="Dashboard" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-[1600px] mx-auto pb-10 sm:pb-20 p-4 sm:p-6 md:p-8">
-            <!-- Header Section -->
-            <div class="flex flex-col gap-1 px-1">
-                <div class="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground mb-1">
-                    <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                    <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                    <span class="font-medium text-foreground uppercase tracking-widest">Dashboard</span>
-                </div>
-                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-tight">Institutional Overview</h1>
-                <p class="text-sm sm:text-[15px] text-muted-foreground">
-                    Aggregated metrics and growth indicators for the current academic year.
-                </p>
-            </div>
+    <AppLayout>
+        <div class="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-10 sm:pb-20">
+            <PageHeader 
+                title="Institutional Overview" 
+                description="Aggregated metrics and growth indicators for the current academic year."
+                :breadcrumbs="breadcrumbs"
+            />
 
             <!-- Stats Grid -->
             <div class="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
@@ -172,31 +135,30 @@ const topUnits = computed(() => {
 
             <!-- Main Analytical Area -->
             <div class="grid gap-6 lg:grid-cols-12">
-                <!-- Large Flow Chart -->
-                <div class="lg:col-span-7 xl:col-span-8">
+                <div class="lg:col-span-12 xl:col-span-8">
                     <ChartCard
                         title="Enrollment Trends"
                         chart-type="area"
                         :data="props.enrollmentTrends"
                         :height="300"
+                        class="card-premium"
                     />
                 </div>
 
-                <!-- Secondary Analysis -->
-                <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
+                <div class="lg:col-span-12 xl:col-span-4 flex flex-col gap-6">
                      <ChartCard
                         title="Performance Matrix"
                         chart-type="bar"
                         :data="props.classPerformance"
                         :height="300"
+                        class="card-premium"
                     />
                 </div>
             </div>
 
             <!-- Bottom Data Matrix -->
             <div class="grid gap-6 lg:grid-cols-12">
-                <!-- Recent Enrollments table -->
-                <div class="lg:col-span-12 xl:col-span-7 rounded-2xl border border-border bg-card shadow-sm dark:border-white/5 overflow-hidden flex flex-col">
+                <div class="lg:col-span-12 xl:col-span-7 card-premium overflow-hidden flex flex-col">
                     <div class="px-5 sm:px-6 py-4 border-b border-border/50 flex items-center justify-between bg-muted/5">
                         <h3 class="font-bold text-sm sm:text-base text-foreground uppercase tracking-tight">Recent Enrollments</h3>
                         <Link href="/students" class="text-[10px] sm:text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest">View All</Link>
@@ -236,9 +198,8 @@ const topUnits = computed(() => {
                     </div>
                 </div>
 
-                <!-- Featured Units Area -->
                 <div class="lg:col-span-12 xl:col-span-5 flex flex-col gap-6">
-                    <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5 flex flex-col h-full">
+                    <div class="card-premium p-6 flex flex-col h-full">
                         <div class="mb-6">
                             <h3 class="font-semibold text-base text-foreground">Top Performing Units</h3>
                         </div>
