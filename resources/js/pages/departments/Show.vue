@@ -24,8 +24,6 @@ import {
     Search,
     MoreHorizontal,
     Check,
-    Home,
-    ChevronRight,
 } from 'lucide-vue-next';
 import {
     DropdownMenu,
@@ -168,36 +166,66 @@ const breadcrumbs = [
 <template>
     <Head :title="dept.name" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
-            <!-- Header Section -->
-            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-center md:justify-between px-1">
-                <div class="flex items-start gap-4">
-                    <Button variant="outline" size="icon" class="mt-1 hidden md:flex h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" as-child>
-                        <Link href="/departments"><ArrowLeft class="h-4 w-4 md:h-5 md:w-5" /></Link>
+        <div
+            class="w-full animate-in space-y-8 px-4 py-8 duration-500 fade-in sm:space-y-12 sm:px-6 sm:py-12 lg:px-8"
+        >
+            <!-- Header -->
+            <div
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
+                <div class="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        as-child
+                        class="h-10 w-10 rounded-xl text-slate-400 transition-all hover:bg-slate-50 hover:text-blue-600"
+                    >
+                        <Link href="/departments">
+                            <ArrowLeft class="h-5 w-5" />
+                        </Link>
                     </Button>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold tracking-tighter text-white uppercase shadow-lg shadow-blue-100 z-10 shrink-0">
-                        {{ dept.code?.substring(0, 2) || dept.name?.substring(0, 2).toUpperCase() }}
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-bold tracking-tighter text-white uppercase shadow-lg shadow-blue-100"
+                    >
+                        {{
+                            dept.code?.substring(0, 2) ||
+                            dept.name?.substring(0, 2).toUpperCase()
+                        }}
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                            <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">Departments</span>
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">{{ dept.name }}</span>
-                        </div>
-                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                            <h1 class="max-w-[400px] truncate text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl uppercase">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1
+                                class="max-w-[400px] truncate text-2xl font-bold tracking-tight text-slate-900 uppercase"
+                            >
                                 {{ dept.name }}
                             </h1>
-                            <Badge variant="secondary" class="h-6 w-fit rounded-xl border-none px-3 py-1 text-xs font-bold uppercase transition-all" :class="dept.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'">
-                                <div class="mr-2 h-1.5 w-1.5 rounded-full" :class="dept.is_active ? 'animate-pulse bg-emerald-500' : 'bg-slate-300'"></div>
+                            <div
+                                class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-bold tracking-tight uppercase transition-all"
+                                :class="
+                                    dept.is_active
+                                        ? 'border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm'
+                                        : 'border-slate-100 bg-slate-50 text-slate-400'
+                                "
+                            >
+                                <div
+                                    class="h-1 w-1 rounded-full"
+                                    :class="
+                                        dept.is_active
+                                            ? 'animate-pulse bg-emerald-500'
+                                            : 'bg-slate-300'
+                                    "
+                                ></div>
                                 {{ dept.is_active ? 'Active' : 'Inactive' }}
-                            </Badge>
+                            </div>
                         </div>
-                        <p class="mt-2 text-sm text-muted-foreground sm:text-sm uppercase font-bold tracking-tight">
+                        <p
+                            class="mt-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        >
                             {{ dept.code }} •
-                            <span class="font-medium normal-case">{{ dept.description || 'Academic Excellence Department' }}</span>
+                            <span class="font-medium normal-case">{{
+                                dept.description ||
+                                'Academic Excellence Department'
+                            }}</span>
                         </p>
                     </div>
                 </div>
@@ -926,11 +954,11 @@ const breadcrumbs = [
             <!-- Add Subject Modal -->
             <div
                 v-if="showAddSubjectModal"
-                class="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6 duration-300 fade-in"
+                class="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/60 backdrop-blur-sm duration-300 fade-in"
                 @click.self="showAddSubjectModal = false"
             >
                 <div
-                    class="mx-4 w-full max-w-md animate-in rounded-xl border border-border bg-background p-8 shadow-xl duration-200 zoom-in-95"
+                    class="mx-4 w-full max-w-md animate-in rounded-3xl border border-slate-100 bg-white p-8 shadow-lg duration-200 zoom-in-95"
                 >
                     <div class="mb-8 flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -1013,11 +1041,11 @@ const breadcrumbs = [
             <!-- Assign HOD Modal -->
             <div
                 v-if="showAssignHeadModal"
-                class="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6 duration-300 fade-in"
+                class="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/60 backdrop-blur-sm duration-300 fade-in"
                 @click.self="showAssignHeadModal = false"
             >
                 <div
-                    class="mx-4 w-full max-w-md animate-in rounded-xl border border-border bg-background p-8 shadow-xl duration-200 zoom-in-95"
+                    class="mx-4 w-full max-w-md animate-in rounded-3xl border border-slate-100 bg-white p-8 shadow-lg duration-200 zoom-in-95"
                 >
                     <div class="mb-8 flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -1082,11 +1110,11 @@ const breadcrumbs = [
             <!-- Add Teacher Modal -->
             <div
                 v-if="showAddTeacherModal"
-                class="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6 duration-300 fade-in"
+                class="fixed inset-0 z-50 flex animate-in items-center justify-center bg-slate-900/60 backdrop-blur-sm duration-300 fade-in"
                 @click.self="showAddTeacherModal = false"
             >
                 <div
-                    class="mx-4 w-full max-w-md animate-in rounded-xl border border-border bg-background p-8 shadow-xl duration-200 zoom-in-95"
+                    class="mx-4 w-full max-w-md animate-in rounded-3xl border border-slate-100 bg-white p-8 shadow-lg duration-200 zoom-in-95"
                 >
                     <div class="mb-8 flex items-center justify-between">
                         <div class="flex items-center gap-3">

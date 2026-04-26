@@ -14,6 +14,7 @@ import {
     Trash2,
     ChevronDown,
     ChevronUp,
+    ChevronRight,
     ArrowUpCircle,
     FileText,
     Users,
@@ -21,6 +22,8 @@ import {
     CheckSquare,
     Square,
     UserPlus,
+    Home,
+    Upload,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -101,7 +104,7 @@ const props = defineProps<Props>();
 const page = usePage<{ flash?: { success?: string; error?: string } }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Home', href: '/dashboard', icon: Home },
     { title: 'Learners', href: '/students' },
 ];
 
@@ -416,29 +419,30 @@ const getStatusColor = (active: boolean) => {
         </div>
 
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 md:p-8"
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
         >
             <!-- Page Header -->
             <div
-                class="flex flex-col gap-4 px-1 md:flex-row md:items-center md:justify-between"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="space-y-1">
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl"
-                    >
-                        Learners
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Academic Registry</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Learner Registry
                     </h1>
-                    <p
-                        class="text-xs font-bold tracking-tight text-muted-foreground uppercase opacity-80 sm:text-xs"
-                    >
-                        Academic Enrollment & Demographic Registry
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        View and manage student enrollment and profile data.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-2 sm:gap-3">
                     <Button
                         variant="outline"
-                        class="hidden h-10 rounded-xl border-slate-200 px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-slate-900 hover:text-white sm:flex"
+                        class="hidden h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted/50 sm:flex"
                         @click="exportToPDF"
                     >
                         <Download class="mr-2 h-4 w-4 opacity-70" />
@@ -446,19 +450,19 @@ const getStatusColor = (active: boolean) => {
                     </Button>
                     <Button
                         variant="outline"
-                        class="hidden h-10 rounded-xl border-slate-200 px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white sm:flex"
+                        class="hidden h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted/50 sm:flex"
                         @click="openBulkUploadModal"
                     >
                         <Upload class="mr-2 h-4 w-4 opacity-70" />
-                        Propagate
+                        Upload
                     </Button>
                     <Link
                         v-if="hasPermission('students.create')"
                         href="/students/create"
-                        class="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-blue-600 px-6 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] hover:bg-blue-700 active:scale-95 sm:flex-none"
+                        class="inline-flex h-10 flex-1 items-center justify-center rounded-xl bg-primary px-6 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95 sm:flex-none"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Enroll
+                        Enroll Student
                     </Link>
                 </div>
             </div>
@@ -466,38 +470,38 @@ const getStatusColor = (active: boolean) => {
             <!-- Stats Grid -->
             <div class="grid grid-cols-2 gap-3 px-1 sm:gap-6 lg:grid-cols-4">
                 <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-blue-200 sm:flex-row sm:items-center sm:p-6"
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/20 sm:flex-row sm:items-center sm:p-6"
                 >
                     <div>
                         <p
-                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                         >
-                            Total Registry
+                            Total Learners
                         </p>
                         <h3
-                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
                         >
                             {{ stats.total.toLocaleString() }}
                         </h3>
                     </div>
                     <div
-                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-100/50 bg-blue-50 text-blue-600 transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
+                        class="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/10 bg-primary/10 text-primary transition-transform group-hover:scale-110 sm:h-12 sm:w-12"
                     >
                         <Users class="h-5 w-5 sm:h-6 sm:w-6" />
                     </div>
                 </div>
 
                 <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-emerald-200 sm:flex-row sm:items-center sm:p-6"
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-emerald-200 sm:flex-row sm:items-center sm:p-6"
                 >
                     <div>
                         <p
-                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                         >
                             Active Status
                         </p>
                         <h3
-                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
                         >
                             {{ stats.active.toLocaleString() }}
                         </h3>
@@ -514,16 +518,16 @@ const getStatusColor = (active: boolean) => {
                 </div>
 
                 <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-amber-200 sm:flex-row sm:items-center sm:p-6"
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-amber-200 sm:flex-row sm:items-center sm:p-6"
                 >
                     <div>
                         <p
-                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                         >
                             Withdrawn
                         </p>
                         <h3
-                            class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                            class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
                         >
                             {{ stats.withdrawn.toLocaleString() }}
                         </h3>
@@ -536,17 +540,17 @@ const getStatusColor = (active: boolean) => {
                 </div>
 
                 <div
-                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:border-sky-200 sm:flex-row sm:items-center sm:p-6"
+                    class="group flex flex-col justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-sky-200 sm:flex-row sm:items-center sm:p-6"
                 >
                     <div>
                         <p
-                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                         >
-                            Acquisition
+                            Growth
                         </p>
                         <div class="flex items-baseline gap-2">
                             <h3
-                                class="text-xl font-bold text-slate-900 tabular-nums sm:text-2xl"
+                                class="text-xl font-bold text-foreground tabular-nums sm:text-2xl"
                             >
                                 {{ stats.new_this_month }}
                             </h3>
@@ -567,40 +571,40 @@ const getStatusColor = (active: boolean) => {
 
             <!-- Table Card -->
             <div
-                class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
             >
                 <!-- Toolbar -->
-                <div class="space-y-4 border-b border-slate-50 p-4 sm:p-6">
+                <div class="space-y-4 border-b border-border/50 p-4 sm:p-6">
                     <div
                         class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"
                     >
                         <div class="group relative w-full lg:max-w-md">
                             <Search
-                                class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-blue-600"
+                                class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary"
                             />
                             <Input
                                 v-model="searchQuery"
-                                placeholder="SEARCH BY NAME, ID OR UPI..."
-                                class="h-11 rounded-xl border-slate-200 bg-slate-50/50 pl-10 text-xs font-bold tracking-tight uppercase shadow-none transition-all focus:bg-white"
+                                placeholder="Search by name or number..."
+                                class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-bold tracking-tight uppercase shadow-none transition-all focus:bg-background"
                             />
                         </div>
 
                         <div class="flex w-full items-center gap-2 lg:w-auto">
                             <Button
                                 variant="outline"
-                                class="h-11 flex-1 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight whitespace-nowrap uppercase hover:bg-slate-50 lg:flex-none"
+                                class="h-11 flex-1 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight whitespace-nowrap uppercase hover:bg-muted/50 lg:flex-none"
                                 @click="toggleFilters"
                             >
                                 <Filter class="mr-2 h-3.5 w-3.5 opacity-70" />
-                                Logic
+                                Filters
                             </Button>
 
                             <DropdownMenu v-if="selectedCount > 0">
                                 <DropdownMenuTrigger as-child>
                                     <Button
-                                        class="h-11 rounded-xl bg-slate-900 px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-slate-900/10 hover:bg-slate-800"
+                                        class="h-11 rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/10 hover:bg-primary/90"
                                     >
-                                        BATCH ({{ selectedCount }})
+                                        Actions ({{ selectedCount }})
                                         <ChevronDown
                                             class="ml-2 h-4 w-4 opacity-70"
                                         />
@@ -608,7 +612,7 @@ const getStatusColor = (active: boolean) => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    class="w-56 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                    class="w-56 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
                                 >
                                     <DropdownMenuItem
                                         @click="openPromoteModal"
@@ -617,7 +621,7 @@ const getStatusColor = (active: boolean) => {
                                         <ArrowUpCircle
                                             class="mr-2 h-4 w-4 text-emerald-500"
                                         />
-                                        Promote Selection
+                                        Promote Students
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator class="my-1" />
                                     <DropdownMenuItem
@@ -627,7 +631,7 @@ const getStatusColor = (active: boolean) => {
                                         <Trash2
                                             class="mr-2 h-4 w-4 opacity-70 group-hover:opacity-100"
                                         />
-                                        Purge Selection
+                                        Delete Selected
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -636,16 +640,16 @@ const getStatusColor = (active: boolean) => {
                                 <DropdownMenuTrigger as-child>
                                     <Button
                                         variant="outline"
-                                        class="h-11 w-11 rounded-xl border-slate-200 bg-white p-0"
+                                        class="h-11 w-11 rounded-xl border-border bg-background p-0"
                                     >
                                         <MoreHorizontal
-                                            class="h-5 w-5 text-slate-400"
+                                            class="h-5 w-5 text-muted-foreground/40"
                                         />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    class="w-48 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                    class="w-48 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
                                 >
                                     <DropdownMenuItem
                                         @click="exportToPDF"
@@ -654,16 +658,16 @@ const getStatusColor = (active: boolean) => {
                                         <FileText
                                             class="mr-2 h-4 w-4 text-rose-500"
                                         />
-                                        Export Index
+                                        Export List
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         @click="openBulkUploadModal"
                                         class="rounded-lg"
                                     >
                                         <Download
-                                            class="mr-2 h-4 w-4 text-blue-500"
+                                            class="mr-2 h-4 w-4 text-primary"
                                         />
-                                        Bulk Ingest
+                                        Bulk Upload
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -678,7 +682,7 @@ const getStatusColor = (active: boolean) => {
                         <div class="group relative">
                             <select
                                 v-model="selectedStatus"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
                             >
                                 <option
                                     v-for="option in statusOptions"
@@ -689,14 +693,14 @@ const getStatusColor = (active: boolean) => {
                                 </option>
                             </select>
                             <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
                             />
                         </div>
 
                         <div class="group relative">
                             <select
                                 v-model="selectedClassId"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
                             >
                                 <option value="">Every Class</option>
                                 <option
@@ -708,14 +712,14 @@ const getStatusColor = (active: boolean) => {
                                 </option>
                             </select>
                             <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
                             />
                         </div>
 
                         <div class="group relative">
                             <select
                                 v-model="selectedGender"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
                             >
                                 <option
                                     v-for="option in genderOptions"
@@ -726,14 +730,14 @@ const getStatusColor = (active: boolean) => {
                                 </option>
                             </select>
                             <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
                             />
                         </div>
 
                         <div class="group relative">
                             <select
                                 v-model="selectedBoardingStatus"
-                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border-slate-200 bg-white px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-slate-50/50 focus:border-blue-300 focus:ring-2 focus:ring-blue-600/5"
+                                class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-background px-4 text-xs font-medium tracking-tight uppercase transition-all outline-none hover:bg-muted/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/5"
                             >
                                 <option
                                     v-for="option in boardingOptions"
@@ -744,7 +748,7 @@ const getStatusColor = (active: boolean) => {
                                 </option>
                             </select>
                             <ChevronDown
-                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-slate-600"
+                                class="pointer-events-none absolute top-1/2 right-3.5 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"
                             />
                         </div>
                     </div>
@@ -755,15 +759,15 @@ const getStatusColor = (active: boolean) => {
                     <table class="w-full min-w-[800px] text-left">
                         <thead>
                             <tr
-                                class="border-b border-slate-100 bg-slate-50/50 text-slate-500"
+                                class="border-b border-border/50 bg-muted/5 text-muted-foreground"
                             >
                                 <th class="h-14 w-14 px-6">
                                     <button
                                         @click="toggleAllLearners"
-                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-200 bg-white transition-all hover:border-blue-400"
+                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-border bg-background transition-all hover:border-primary/40"
                                         :class="
                                             allSelected
-                                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+                                                ? 'border-primary bg-primary text-white shadow-md'
                                                 : ''
                                         "
                                     >
@@ -804,22 +808,22 @@ const getStatusColor = (active: boolean) => {
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
+                        <tbody class="divide-y divide-border/30">
                             <tr
                                 v-for="learner in learners.data"
                                 :key="learner.id"
-                                class="group cursor-pointer transition-colors hover:bg-blue-50/30"
+                                class="group cursor-pointer transition-colors hover:bg-muted/30"
                                 @click="router.visit(`/students/${learner.id}`)"
                             >
                                 <td class="px-6 py-4 text-center" @click.stop>
                                     <button
                                         @click="toggleLearner(learner.id)"
-                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-200 bg-white transition-all hover:border-blue-400"
+                                        class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-border bg-background transition-all hover:border-primary/40"
                                         :class="
                                             selectedLearnerIds.includes(
                                                 learner.id,
                                             )
-                                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
+                                                ? 'border-primary bg-primary text-white shadow-md'
                                                 : ''
                                         "
                                     >
@@ -839,7 +843,7 @@ const getStatusColor = (active: boolean) => {
                                     <div class="flex items-center gap-4">
                                         <div
                                             v-if="learner.photo_url"
-                                            class="h-11 w-11 flex-shrink-0 transform overflow-hidden rounded-xl border border-slate-100 shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:border-blue-400"
+                                            class="h-11 w-11 flex-shrink-0 transform overflow-hidden rounded-xl border border-border shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:border-primary/40"
                                         >
                                             <img
                                                 :src="learner.photo_url"
@@ -848,7 +852,7 @@ const getStatusColor = (active: boolean) => {
                                         </div>
                                         <div
                                             v-else
-                                            class="flex h-11 w-11 flex-shrink-0 transform items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-xs font-bold text-blue-600 shadow-inner transition-all duration-300 group-hover:scale-105"
+                                            class="flex h-11 w-11 flex-shrink-0 transform items-center justify-center rounded-xl border border-primary/10 bg-primary/5 text-xs font-bold text-primary shadow-inner transition-all duration-300 group-hover:scale-105"
                                         >
                                             {{
                                                 learner.name
@@ -861,14 +865,14 @@ const getStatusColor = (active: boolean) => {
                                         </div>
                                         <div class="flex min-w-0 flex-col">
                                             <span
-                                                class="truncate text-xs font-bold tracking-tight text-slate-900 uppercase transition-colors group-hover:text-blue-700"
+                                                class="truncate text-xs font-bold tracking-tight text-foreground uppercase transition-colors group-hover:text-primary"
                                                 >{{ learner.name }}</span
                                             >
                                             <span
-                                                class="mt-0.5 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                                class="mt-0.5 text-xs font-medium tracking-tight text-muted-foreground/60 uppercase"
                                                 >{{
                                                     learner.admission_number ||
-                                                    'NO REG ID'
+                                                    'NO ID'
                                                 }}</span
                                             >
                                         </div>
@@ -877,13 +881,13 @@ const getStatusColor = (active: boolean) => {
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
                                         <span
-                                            class="text-xs font-bold tracking-tight text-slate-700 uppercase"
+                                            class="text-xs font-bold tracking-tight text-foreground/80 uppercase"
                                             >{{
                                                 learner.class || 'UNASSIGNED'
                                             }}</span
                                         >
                                         <span
-                                            class="mt-0.5 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                                             >{{ learner.gender }}</span
                                         >
                                     </div>
@@ -910,7 +914,7 @@ const getStatusColor = (active: boolean) => {
                                     </Badge>
                                 </td>
                                 <td
-                                    class="px-6 py-4 text-xs font-medium tracking-tight text-slate-500 uppercase"
+                                    class="px-6 py-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
                                 >
                                     {{ learner.admission_date || 'PENDING' }}
                                 </td>
@@ -923,7 +927,7 @@ const getStatusColor = (active: boolean) => {
                                         >
                                             <Link
                                                 :href="`/students/${learner.id}`"
-                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600"
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-muted-foreground transition-all hover:border-primary/20 hover:bg-primary/5 hover:text-primary"
                                                 ><Eye class="h-4 w-4"
                                             /></Link>
                                             <Link
@@ -933,7 +937,7 @@ const getStatusColor = (active: boolean) => {
                                                     )
                                                 "
                                                 :href="`/students/${learner.id}/edit`"
-                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-slate-400 transition-all hover:border-amber-100 hover:bg-amber-50 hover:text-amber-600"
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-muted-foreground transition-all hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600"
                                                 ><Edit class="h-4 w-4"
                                             /></Link>
                                         </div>
@@ -943,14 +947,14 @@ const getStatusColor = (active: boolean) => {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    class="h-9 w-9 rounded-xl hover:bg-slate-50"
+                                                    class="h-9 w-9 rounded-xl hover:bg-muted/50"
                                                     ><MoreHorizontal
-                                                        class="h-4.5 w-4.5 text-slate-400"
+                                                        class="h-4.5 w-4.5 text-muted-foreground/40"
                                                 /></Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-56 rounded-xl border border-slate-100 p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
+                                                class="w-56 rounded-xl border border-border p-2 text-xs font-bold tracking-tight uppercase shadow-xl"
                                             >
                                                 <DropdownMenuItem
                                                     as-child
@@ -1078,10 +1082,10 @@ const getStatusColor = (active: boolean) => {
 
                 <!-- Pagination -->
                 <div
-                    class="flex flex-col gap-6 border-t border-slate-50 bg-slate-50/30 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between"
+                    class="flex flex-col gap-6 border-t border-border/50 bg-muted/5 px-4 py-6 sm:px-6 md:flex-row md:items-center md:justify-between"
                 >
                     <p
-                        class="order-2 text-xs font-bold tracking-tight text-slate-400 uppercase md:order-1"
+                        class="order-2 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase md:order-1"
                     >
                         {{ pageLabel }}
                     </p>
@@ -1090,29 +1094,29 @@ const getStatusColor = (active: boolean) => {
                     >
                         <div class="flex items-center gap-3">
                             <span
-                                class="shrink-0 text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                >Limit</span
+                                class="shrink-0 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                >Page Size</span
                             >
                             <select
                                 v-model="perPage"
-                                class="relative cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 py-1.5 pr-8 text-xs font-bold tracking-tight uppercase outline-none focus:ring-2 focus:ring-blue-600/5"
+                                class="relative cursor-pointer appearance-none rounded-xl border border-border bg-background px-3 py-1.5 pr-8 text-xs font-bold tracking-tight uppercase outline-none focus:ring-2 focus:ring-primary/5"
                             >
-                                <option :value="15">15 Units</option>
-                                <option :value="50">50 Units</option>
-                                <option :value="100">100 Units</option>
+                                <option :value="15">15 Per Page</option>
+                                <option :value="50">50 Per Page</option>
+                                <option :value="100">100 Per Page</option>
                             </select>
                         </div>
                         <div class="flex items-center gap-2">
-                            <Button
+                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-9 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight uppercase"
+                                class="h-9 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase"
                                 :disabled="learners.current_page <= 1"
                                 @click="applyFilters(learners.current_page - 1)"
                                 >Prev</Button
                             >
                             <div
-                                class="flex h-9 min-w-[70px] items-center justify-center rounded-xl bg-slate-900 px-3 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-slate-900/20"
+                                class="flex h-9 min-w-[70px] items-center justify-center rounded-xl bg-primary px-3 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/20"
                             >
                                 {{ learners.current_page }} /
                                 {{ learners.last_page }}
@@ -1120,7 +1124,7 @@ const getStatusColor = (active: boolean) => {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                class="h-9 rounded-xl border-slate-200 bg-white px-4 text-xs font-bold tracking-tight uppercase"
+                                class="h-9 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase"
                                 :disabled="
                                     learners.current_page >= learners.last_page
                                 "
@@ -1136,16 +1140,16 @@ const getStatusColor = (active: boolean) => {
         <!-- Action Modals -->
         <Dialog :open="confirmOpen" @update:open="closeActionModal">
             <DialogContent
-                class="animate-in overflow-hidden rounded-xl border-slate-100 p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[440px]"
+                class="animate-in overflow-hidden rounded-2xl border-border p-0 shadow-lg duration-300 zoom-in-95 sm:max-w-[440px]"
             >
-                <div class="space-y-6 p-8 text-center">
+                <div class="space-y-6 p-8 text-center bg-card">
                     <div
-                        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-xl shadow-xl shadow-blue-500/10"
+                        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl shadow-xl"
                         :class="
                             confirmMode === 'delete' ||
                             confirmMode === 'bulkDelete'
-                                ? 'bg-red-50 text-red-600'
-                                : 'bg-blue-50 text-blue-600'
+                                ? 'bg-rose-50 text-rose-600'
+                                : 'bg-primary/10 text-primary'
                         "
                     >
                         <Trash2
@@ -1160,12 +1164,12 @@ const getStatusColor = (active: boolean) => {
 
                     <div class="space-y-3">
                         <h2
-                            class="text-xl font-bold tracking-tight text-slate-900"
+                            class="text-xl font-bold tracking-tight text-foreground"
                         >
                             {{ modalTitle }}
                         </h2>
                         <p
-                            class="px-6 text-xs leading-relaxed font-bold tracking-tight text-slate-400 uppercase opacity-80"
+                            class="px-6 text-sm leading-relaxed font-medium text-muted-foreground"
                         >
                             {{ modalMessage }}
                         </p>
@@ -1179,12 +1183,12 @@ const getStatusColor = (active: boolean) => {
                                     ? 'destructive'
                                     : 'default'
                             "
-                            class="h-14 rounded-2xl border-0 text-sm font-bold tracking-tight uppercase shadow-xl transition-all"
+                            class="h-12 rounded-xl text-sm font-bold tracking-tight uppercase shadow-xl transition-all"
                             :class="
                                 confirmMode === 'delete' ||
                                 confirmMode === 'bulkDelete'
-                                    ? 'bg-red-600 shadow-red-500/20 hover:bg-red-700'
-                                    : 'bg-slate-900 shadow-slate-900/10 hover:bg-slate-800'
+                                    ? 'bg-rose-600 shadow-rose-500/20 hover:bg-rose-700'
+                                    : 'bg-primary shadow-primary/20 hover:bg-primary/90'
                             "
                             :disabled="actionForm.processing"
                             @click="confirmAction"
@@ -1197,7 +1201,7 @@ const getStatusColor = (active: boolean) => {
                         </Button>
                         <Button
                             variant="ghost"
-                            class="h-12 rounded-2xl text-xs font-bold tracking-tight text-slate-400 uppercase transition-all hover:text-slate-900"
+                            class="h-11 rounded-xl text-xs font-bold tracking-tight text-muted-foreground/60 uppercase transition-all hover:text-foreground"
                             @click="closeActionModal"
                             >Cancel</Button
                         >

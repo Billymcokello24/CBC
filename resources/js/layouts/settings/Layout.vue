@@ -49,24 +49,24 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
 
 <template>
-    <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+    <div class="flex h-full flex-col bg-slate-50/30 dark:bg-zinc-950/30">
         <header
-            class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-end md:justify-between px-1"
+            class="border-b border-slate-100 bg-white/50 px-8 py-10 backdrop-blur-sm dark:border-zinc-900 dark:bg-zinc-950/50"
         >
             <div class="mb-2 flex items-center gap-4">
                 <div
-                    class="rounded-2xl border border-indigo-100 bg-indigo-50 p-3 shadow-lg shadow-indigo-600/5 dark:border-indigo-900/50 dark:bg-indigo-900/30"
+                    class="rounded-2xl bg-indigo-600 p-3 shadow-lg shadow-indigo-600/20"
                 >
-                    <SettingsIcon class="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    <SettingsIcon class="h-6 w-6 text-white" />
                 </div>
-                <div class="flex flex-col gap-1">
+                <div>
                     <h1
-                        class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl"
+                        class="text-3xl font-bold tracking-tight text-slate-900 dark:text-zinc-100"
                     >
                         Profile Settings
                     </h1>
                     <p
-                        class="text-sm text-muted-foreground sm:text-sm"
+                        class="text-sm font-medium text-slate-500 dark:text-zinc-400"
                     >
                         Personalize your experience and secure your account.
                     </p>
@@ -74,9 +74,9 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
             </div>
         </header>
 
-        <main class="flex-1">
+        <main class="flex-1 p-8">
             <div
-                class="mx-auto flex flex-col gap-12 lg:flex-row px-1"
+                class="mx-auto flex max-w-[1200px] flex-col gap-12 lg:flex-row"
             >
                 <!-- Navigation Sidebar -->
                 <aside class="shrink-0 lg:w-72">

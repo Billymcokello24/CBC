@@ -64,8 +64,7 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Academic Planner', href: '/curriculum/planner/schemes' },
+    { title: 'Home', href: '/dashboard', icon: Home },
     { title: 'Lesson Plans', href: '/curriculum/planner/lesson-plans' },
 ];
 
@@ -209,6 +208,8 @@ const handleDrop = (event: DragEvent) => {
 const removeFile = () => {
     bulkForm.file = null;
 };
+
+import { Home, Archive } from 'lucide-vue-next';
 </script>
 
 <template>
@@ -216,81 +217,80 @@ const removeFile = () => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-8 p-6 pb-20 duration-700 fade-in slide-in-from-bottom-4 md:p-8"
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
         >
             <!-- Page Header -->
             <div
-                class="flex flex-col justify-between gap-6 border-b border-border/40 pb-6 md:flex-row md:items-center"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="space-y-1">
-                    <h1
-                        class="flex items-center gap-3 text-3xl font-bold tracking-tight text-foreground"
-                    >
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Academic Planner</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Lesson Plans</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Lesson Plans
-                        <span class="text-xl font-thin text-muted-foreground/30"
-                            >Overview</span
-                        >
                     </h1>
-                    <p class="text-[14px] font-medium text-muted-foreground">
-                        Strategic overview of instructional planning across all
-                        grade levels.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Overview of lesson planning across all grades.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Button
                         @click="openModal()"
-                        class="inline-flex h-11 items-center justify-center rounded-2xl border-0 bg-indigo-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-xl shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-95"
+                        class="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98]"
                     >
-                        <Plus class="mr-2.5 h-4 w-4" /> New Lesson
+                        <Plus class="mr-2 h-4 w-4" /> Create New Plan
                     </Button>
                 </div>
             </div>
 
             <!-- Bulk Hub -->
             <div
-                class="group relative overflow-hidden rounded-xl border border-slate-100 bg-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl"
+                class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-lg dark:border-white/5"
             >
                 <div
-                    class="absolute -right-10 -bottom-10 text-indigo-600 opacity-[0.03] transition-transform duration-1000 group-hover:scale-110"
+                    class="absolute -right-10 -bottom-10 text-primary opacity-[0.03] transition-transform duration-1000 group-hover:scale-110"
                 >
                     <BookCopy class="h-64 w-64" />
                 </div>
                 <div
-                    class="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between"
+                    class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"
                 >
                     <div class="flex items-center gap-6">
                         <div
-                            class="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-indigo-100/50 bg-indigo-50 text-indigo-600 shadow-sm transition-transform group-hover:rotate-6"
+                            class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-primary/10 bg-primary/5 text-primary shadow-sm transition-transform group-hover:rotate-6"
                         >
-                            <Upload class="h-10 w-10" />
+                            <Upload class="h-8 w-8" />
                         </div>
                         <div>
                             <div class="flex items-center gap-3">
                                 <h2
-                                    class="text-2xl font-bold tracking-tight text-slate-900"
+                                    class="text-xl font-bold tracking-tight text-foreground"
                                 >
-                                    Bulk Planning Hub
+                                    Bulk Upload
                                 </h2>
                                 <Badge
                                     variant="secondary"
-                                    class="border-emerald-100/50 bg-emerald-50 px-2 py-0.5 text-xs font-medium tracking-tight text-emerald-600 uppercase"
-                                    >Automated</Badge
+                                    class="border-none bg-primary/10 px-2 py-0.5 text-[10px] font-bold tracking-tight text-primary uppercase"
+                                    >Import Tool</Badge
                                 >
                             </div>
                             <p
-                                class="mt-1 max-w-md text-sm font-medium text-slate-500"
+                                class="mt-1 max-w-md text-xs font-medium text-muted-foreground leading-relaxed"
                             >
-                                Import seasonal lesson plans in batch. Select
-                                your target class and subject, then upload your
-                                dataset.
+                                Batch upload lesson plans using a CSV file. Select class and subject, then choose your file.
                             </p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
                         <Button
                             variant="outline"
-                            class="h-12 rounded-2xl border-slate-200 bg-white px-8 text-sm font-bold tracking-tight uppercase transition-all hover:bg-slate-50"
+                            class="h-10 rounded-xl border-border bg-background px-6 text-xs font-bold tracking-tight uppercase transition-all hover:bg-muted"
                             as-child
                         >
                             <a
@@ -302,17 +302,17 @@ const removeFile = () => {
                                 download
                             >
                                 <Download
-                                    class="mr-2 h-4 w-4 text-emerald-600"
+                                    class="mr-2 h-4 w-4 text-primary"
                                 />
-                                Download Template
+                                Template
                             </a>
                         </Button>
                         <Button
                             @click="showBulkModal = true"
-                            class="h-13 rounded-2xl border-0 bg-slate-900 px-10 text-sm font-bold tracking-tight text-white uppercase shadow-lg shadow-slate-200 transition-all hover:bg-slate-800"
+                            class="h-10 rounded-xl border-0 bg-foreground px-8 text-xs font-bold tracking-tight text-background uppercase shadow-lg transition-all hover:bg-foreground/90"
                         >
                             <BookCopy class="mr-2 h-4 w-4" />
-                            Ingest Plans CSV
+                            Upload CSV
                         </Button>
                     </div>
                 </div>
@@ -321,83 +321,71 @@ const removeFile = () => {
             <!-- Stats Grid -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
-                    <div>
-                        <p
-                            class="mb-1 text-sm font-medium text-muted-foreground"
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all"
                         >
-                            Total Lessons
-                        </p>
-                        <h3 class="text-2xl font-bold text-foreground">
-                            {{ stats.total_plans.toLocaleString() }}
-                        </h3>
+                            <FileText class="h-5 w-5" />
+                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Total</span>
                     </div>
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600 shadow-sm"
-                    >
-                        <FileText class="h-6 w-6" />
-                    </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">All Lessons</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        {{ stats.total_plans.toLocaleString() }}
+                    </h3>
                 </div>
 
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-200 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20 dark:border-white/5"
                 >
-                    <div>
-                        <p
-                            class="mb-1 text-sm font-medium text-muted-foreground"
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all"
                         >
-                            Approved
-                        </p>
-                        <h3 class="text-2xl font-bold text-foreground">
-                            {{ stats.approved_plans.toLocaleString() }}
-                        </h3>
+                            <CheckCircle2 class="h-5 w-5" />
+                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Approved</span>
                     </div>
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm"
-                    >
-                        <CheckCircle2 class="h-6 w-6" />
-                    </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Finalized</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        {{ stats.approved_plans.toLocaleString() }}
+                    </h3>
                 </div>
 
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-200 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20 dark:border-white/5"
                 >
-                    <div>
-                        <p
-                            class="mb-1 text-sm font-medium text-muted-foreground"
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all"
                         >
-                            Pending Review
-                        </p>
-                        <h3 class="text-2xl font-bold text-foreground">
-                            {{ stats.pending_plans.toLocaleString() }}
-                        </h3>
+                            <Clock class="h-5 w-5" />
+                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Review</span>
                     </div>
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-amber-100 bg-amber-50 text-amber-600 shadow-sm"
-                    >
-                        <Clock class="h-6 w-6" />
-                    </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Pending</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        {{ stats.pending_plans.toLocaleString() }}
+                    </h3>
                 </div>
 
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-slate-300 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-muted-foreground/20 dark:border-white/5"
                 >
-                    <div>
-                        <p
-                            class="mb-1 text-sm font-medium text-muted-foreground"
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-muted text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-all"
                         >
-                            In Draft
-                        </p>
-                        <h3 class="text-2xl font-bold text-foreground">
-                            {{ stats.draft_plans.toLocaleString() }}
-                        </h3>
+                            <Edit2 class="h-5 w-5" />
+                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">In Progress</span>
                     </div>
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-600 shadow-sm"
-                    >
-                        <Edit2 class="h-6 w-6" />
-                    </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Saved Drafts</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        {{ stats.draft_plans.toLocaleString() }}
+                    </h3>
                 </div>
             </div>
 
@@ -510,7 +498,7 @@ const removeFile = () => {
                     class="max-w-5xl overflow-hidden rounded-3xl border-none bg-card p-0 shadow-lg"
                 >
                     <DialogHeader
-                        class="relative overflow-hidden bg-primary px-8 py-6 text-primary-foreground"
+                        class="relative overflow-hidden bg-primary px-8 py-8 text-primary-foreground"
                     >
                         <div
                             class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.15),transparent)]"
@@ -518,25 +506,23 @@ const removeFile = () => {
                         <div
                             class="relative z-10 flex items-center justify-between"
                         >
-                            <div>
+                            <div class="space-y-1">
                                 <DialogTitle
                                     class="text-2xl font-bold tracking-tight uppercase"
-                                    >Instructional Blueprint</DialogTitle
+                                    >Create Lesson Plan</DialogTitle
                                 >
                                 <DialogDescription
-                                    class="mt-1 text-sm font-bold tracking-tight text-primary-foreground/70 uppercase"
+                                    class="text-xs font-bold tracking-tight text-white/60 uppercase"
                                 >
-                                    {{
-                                        'Strategic Lesson Configuration Engine'
-                                    }}
+                                    Setup your lesson details and objectives
                                 </DialogDescription>
                             </div>
                             <div class="flex items-center gap-3">
                                 <Badge
                                     variant="outline"
-                                    class="rounded-full border-white/20 bg-white/10 px-4 py-1 text-xs font-bold tracking-tight text-white uppercase"
+                                    class="rounded-full border-white/20 bg-white/10 px-4 py-1 text-[10px] font-bold tracking-tight text-white uppercase"
                                 >
-                                    STEP: {{ currentStepIndex }} OF 4
+                                    STEP {{ currentStepIndex }} OF 4
                                 </Badge>
                             </div>
                         </div>
@@ -569,26 +555,26 @@ const removeFile = () => {
                                     >
                                         <div class="col-span-full space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Lesson Directive (Title)</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Lesson Title</Label
                                             >
                                             <Input
                                                 v-model="form.title"
-                                                placeholder="e.g., Exploration of Photosynthesis Dynamics"
-                                                class="h-12 rounded-2xl border-border/60 font-bold shadow-sm focus:ring-4 focus:ring-primary/10"
+                                                placeholder="e.g., Introduction to Photosynthesis"
+                                                class="h-12 rounded-xl border-border bg-muted/20 font-bold transition-all focus:bg-background focus:ring-2 focus:ring-primary/10"
                                             />
                                         </div>
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Execution Class</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Class</Label
                                             >
                                             <select
                                                 v-model="form.class_id"
-                                                class="flex h-12 w-full rounded-2xl border border-border/60 bg-background px-4 py-2 text-sm font-bold shadow-sm focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:outline-none"
+                                                class="flex h-12 w-full rounded-xl border border-border bg-muted/20 px-4 py-2 text-sm font-bold transition-all focus:bg-background focus-visible:ring-2 focus-visible:ring-primary/10 focus-visible:outline-none"
                                             >
                                                 <option value="">
-                                                    Select Class Context
+                                                    Select Class
                                                 </option>
                                                 <option
                                                     v-for="c in classes"
@@ -601,15 +587,15 @@ const removeFile = () => {
                                         </div>
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Subject Discipline</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Subject</Label
                                             >
                                             <select
                                                 v-model="form.subject_id"
-                                                class="flex h-12 w-full rounded-2xl border border-border/60 bg-background px-4 py-2 text-sm font-bold shadow-sm focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:outline-none"
+                                                class="flex h-12 w-full rounded-xl border border-border bg-muted/20 px-4 py-2 text-sm font-bold transition-all focus:bg-background focus-visible:ring-2 focus-visible:ring-primary/10 focus-visible:outline-none"
                                             >
                                                 <option value="">
-                                                    Select Discipline
+                                                    Select Subject
                                                 </option>
                                                 <option
                                                     v-for="s in subjects"
@@ -622,23 +608,23 @@ const removeFile = () => {
                                         </div>
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Deployment Date</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Lesson Date</Label
                                             >
                                             <Input
                                                 type="date"
                                                 v-model="form.lesson_date"
-                                                class="h-12 rounded-2xl border-border/60 font-bold shadow-sm"
+                                                class="h-12 rounded-xl border-border bg-muted/20 font-bold transition-all focus:bg-background"
                                             />
                                         </div>
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Academic Term</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Term</Label
                                             >
                                             <select
                                                 v-model="form.academic_term_id"
-                                                class="flex h-12 w-full rounded-2xl border border-border/60 bg-background px-4 py-2 text-sm font-bold shadow-sm"
+                                                class="flex h-12 w-full rounded-xl border border-border bg-muted/20 px-4 py-2 text-sm font-bold transition-all focus:bg-background"
                                             >
                                                 <option
                                                     v-for="term in terms"
@@ -654,9 +640,8 @@ const removeFile = () => {
                                         >
                                             <div class="space-y-2">
                                                 <Label
-                                                    class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                    >Temporal Scope
-                                                    (Duration)</Label
+                                                    class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                    >Duration</Label
                                                 >
                                                 <div class="relative">
                                                     <Input
@@ -664,21 +649,21 @@ const removeFile = () => {
                                                         v-model="
                                                             form.duration_minutes
                                                         "
-                                                        class="h-12 rounded-2xl border-border/60 pl-11 font-bold shadow-sm"
+                                                        class="h-12 rounded-xl border-border bg-muted/20 pl-11 font-bold transition-all focus:bg-background"
                                                     />
                                                     <Clock
                                                         class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                                                     />
                                                     <span
-                                                        class="absolute top-1/2 right-4 -translate-y-1/2 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                        class="absolute top-1/2 right-4 -translate-y-1/2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase"
                                                         >MINS</span
                                                     >
                                                 </div>
                                             </div>
                                             <div class="space-y-2">
                                                 <Label
-                                                    class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                    >Learner Population</Label
+                                                    class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                    >No. of Students</Label
                                                 >
                                                 <div class="relative">
                                                     <Input
@@ -686,7 +671,7 @@ const removeFile = () => {
                                                         v-model="
                                                             form.number_of_learners
                                                         "
-                                                        class="h-12 rounded-2xl border-border/60 pl-11 font-bold shadow-sm"
+                                                        class="h-12 rounded-xl border-border bg-muted/20 pl-11 font-bold transition-all focus:bg-background"
                                                     />
                                                     <Users
                                                         class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -706,12 +691,12 @@ const removeFile = () => {
                                     >
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Syllabus Strand</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Strand</Label
                                             >
                                             <select
                                                 v-model="form.strand_id"
-                                                class="flex h-12 w-full rounded-2xl border border-border/60 bg-background px-4 py-2 text-sm font-bold shadow-sm transition-all focus:ring-4 focus:ring-primary/10"
+                                                class="flex h-12 w-full rounded-xl border border-border bg-muted/20 px-4 py-2 text-sm font-bold transition-all focus:bg-background focus:ring-2 focus:ring-primary/10"
                                             >
                                                 <option value="">
                                                     Select Strand
@@ -727,12 +712,12 @@ const removeFile = () => {
                                         </div>
                                         <div class="space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Sub-Strand Protocol</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Sub-Strand</Label
                                             >
                                             <select
                                                 v-model="form.sub_strand_id"
-                                                class="flex h-12 w-full rounded-2xl border border-border/60 bg-background px-4 py-2 text-sm font-bold shadow-sm transition-all focus:ring-4 focus:ring-primary/10"
+                                                class="flex h-12 w-full rounded-xl border border-border bg-muted/20 px-4 py-2 text-sm font-bold transition-all focus:bg-background focus:ring-2 focus:ring-primary/10"
                                             >
                                                 <option value="">
                                                     Select Sub-Strand
@@ -748,23 +733,23 @@ const removeFile = () => {
                                         </div>
                                         <div class="col-span-full space-y-2">
                                             <Label
-                                                class="ml-1 text-xs font-medium tracking-tight text-muted-foreground uppercase"
-                                                >Learning Outcomes (KPIs)</Label
+                                                class="ml-1 text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                                >Learning Objectives</Label
                                             >
                                             <Textarea
                                                 v-model="form.learning_outcomes"
-                                                placeholder="Define measurable terminal outcomes..."
-                                                class="min-h-[120px] rounded-2xl border-border/60 p-4 text-sm leading-relaxed font-medium shadow-sm"
+                                                placeholder="What should students achieve by the end of the lesson?"
+                                                class="min-h-[120px] rounded-xl border-border bg-muted/20 p-4 text-sm leading-relaxed font-bold transition-all focus:bg-background"
                                             />
                                         </div>
                                         <div class="col-span-full space-y-4">
                                             <Label
-                                                class="ml-1 flex items-center gap-2 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                                class="ml-1 flex items-center gap-2 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                             >
                                                 <Sparkles
-                                                    class="h-3.5 w-3.5 text-amber-500"
+                                                    class="h-3.5 w-3.5 text-primary"
                                                 />
-                                                CBC Strategic Pillars
+                                                CBC Competencies & Values
                                             </Label>
                                             <div
                                                 class="grid grid-cols-1 gap-4 md:grid-cols-3"

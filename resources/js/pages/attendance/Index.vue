@@ -42,233 +42,248 @@ const getAttendanceRate = (present: number, total: number) =>
 <template>
     <Head title="Attendance" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+        <div
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+        >
+            <!-- Page Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10"
-                    >
-                        <CalendarCheck class="h-6 w-6 text-cyan-600" />
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Register</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Attendance</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Attendance
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Track and manage daily attendance
-                        </p>
-                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Attendance Logs
+                    </h1>
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Track and manage daily student attendance.
+                    </p>
                 </div>
-                <div class="flex gap-2">
-                    <input
-                        type="date"
-                        v-model="selectedDate"
-                        class="rounded-md border bg-background px-3 py-2 text-sm"
-                    />
-                    <Button as-child
-                        ><Link href="/attendance/mark"
-                            ><Check class="mr-2 h-4 w-4" />Mark Attendance</Link
-                        ></Button
-                    >
+
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <input
+                            type="date"
+                            v-model="selectedDate"
+                            class="h-11 rounded-xl border border-border bg-background px-4 py-2 text-sm font-bold shadow-sm focus:ring-2 focus:ring-primary/10 transition-all"
+                        />
+                    </div>
+                    <Button as-child class="h-11 rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        <Link href="/attendance/mark">
+                            <Check class="mr-2 h-4 w-4" />Mark Attendance
+                        </Link>
+                    </Button>
                 </div>
             </div>
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            <!-- Stats Grid -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="rounded-xl border bg-gradient-to-br from-green-50 to-green-100/50 p-6 dark:from-green-950/50 dark:to-green-900/30"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20 dark:border-white/5"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-lg bg-green-500/10 p-2">
-                            <CheckCircle2 class="h-5 w-5 text-green-600" />
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm"
+                        >
+                            <CheckCircle2 class="h-5 w-5" />
                         </div>
-                        <div>
-                            <p class="text-sm text-muted-foreground">
-                                Present Today
-                            </p>
-                            <p class="text-2xl font-bold text-green-600">
-                                1,172
-                            </p>
-                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Today</span>
                     </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Present</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        1,172
+                    </h3>
                 </div>
+
                 <div
-                    class="rounded-xl border bg-gradient-to-br from-red-50 to-red-100/50 p-6 dark:from-red-950/50 dark:to-red-900/30"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-rose-500/20 dark:border-white/5"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-lg bg-red-500/10 p-2">
-                            <XCircle class="h-5 w-5 text-red-600" />
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm"
+                        >
+                            <XCircle class="h-5 w-5" />
                         </div>
-                        <div>
-                            <p class="text-sm text-muted-foreground">
-                                Absent Today
-                            </p>
-                            <p class="text-2xl font-bold text-red-600">48</p>
-                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Missing</span>
                     </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Absent</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        48
+                    </h3>
                 </div>
+
                 <div
-                    class="rounded-xl border bg-gradient-to-br from-amber-50 to-amber-100/50 p-6 dark:from-amber-950/50 dark:to-amber-900/30"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20 dark:border-white/5"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-lg bg-amber-500/10 p-2">
-                            <Clock class="h-5 w-5 text-amber-600" />
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all shadow-sm"
+                        >
+                            <Clock class="h-5 w-5" />
                         </div>
-                        <div>
-                            <p class="text-sm text-muted-foreground">
-                                Late Arrivals
-                            </p>
-                            <p class="text-2xl font-bold text-amber-600">15</p>
-                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Punctuality</span>
                     </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Late Arrivals</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        15
+                    </h3>
                 </div>
+
                 <div
-                    class="rounded-xl border bg-gradient-to-br from-blue-50 to-blue-100/50 p-6 dark:from-blue-950/50 dark:to-blue-900/30"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-lg bg-blue-500/10 p-2">
-                            <Users class="h-5 w-5 text-blue-600" />
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm"
+                        >
+                            <Users class="h-5 w-5" />
                         </div>
-                        <div>
-                            <p class="text-sm text-muted-foreground">
-                                Attendance Rate
-                            </p>
-                            <p class="text-2xl font-bold text-blue-600">
-                                94.5%
-                            </p>
-                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Rate</span>
                     </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Consistency</p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        94.5%
+                    </h3>
                 </div>
             </div>
-            <div class="rounded-xl border bg-card">
-                <div class="flex items-center justify-between border-b p-4">
-                    <h3 class="font-semibold">Class Attendance Summary</h3>
-                    <Select v-model="selectedClass">
-                        <SelectTrigger class="w-[180px]"
-                            ><SelectValue placeholder="All Classes"
-                        /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Classes</SelectItem>
-                            <SelectItem
-                                v-for="cls in classes"
-                                :key="cls.id"
-                                :value="String(cls.id)"
-                                >{{ cls.name }}</SelectItem
-                            >
-                        </SelectContent>
-                    </Select>
+
+            <!-- Table Section -->
+            <div
+                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
+            >
+                <div
+                    class="flex flex-col border-b border-border/50 bg-muted/5 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <h3
+                        class="text-xs font-bold tracking-tight text-foreground uppercase"
+                    >
+                        Class Attendance Summary
+                    </h3>
+                    <div class="mt-4 sm:mt-0">
+                        <Select v-model="selectedClass">
+                            <SelectTrigger class="w-full h-9 rounded-xl border-border bg-background px-4 text-xs font-bold sm:w-[200px]">
+                                <SelectValue placeholder="All Classes" />
+                            </SelectTrigger>
+                            <SelectContent class="rounded-xl border-border">
+                                <SelectItem value="all" class="text-xs font-bold uppercase">All Classes</SelectItem>
+                                <SelectItem
+                                    v-for="cls in classes"
+                                    :key="cls.id"
+                                    :value="String(cls.id)"
+                                    class="text-xs font-bold uppercase"
+                                >
+                                    {{ cls.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
+
                 <div class="overflow-x-auto">
-                    <table class="w-full">
+                    <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="border-b bg-muted/50">
+                            <tr class="border-b border-border/50 bg-muted/20">
                                 <th
-                                    class="px-4 py-3 text-left text-sm font-medium text-muted-foreground"
+                                    class="px-6 py-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Class
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Total
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Present
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Absent
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Late
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase min-w-[120px]"
                                 >
                                     Rate
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-center text-sm font-medium text-muted-foreground"
+                                    class="px-4 py-4 text-center text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Status
                                 </th>
                                 <th
-                                    class="px-4 py-3 text-right text-sm font-medium text-muted-foreground"
+                                    class="px-6 py-4 text-right text-xs font-bold tracking-tight text-muted-foreground uppercase"
                                 >
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-border/30">
                             <tr
                                 v-for="cls in classes"
                                 :key="cls.id"
-                                class="border-b transition-colors hover:bg-muted/50"
+                                class="group transition-colors hover:bg-muted/30"
                             >
-                                <td class="px-4 py-3 font-medium">
-                                    {{ cls.name }}
+                                <td class="px-6 py-4">
+                                    <span class="text-sm font-bold text-foreground">{{ cls.name }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    {{ cls.total }}
+                                <td class="px-4 py-4 text-center">
+                                    <span class="text-sm font-bold text-muted-foreground">{{ cls.total }}</span>
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-center font-medium text-green-600"
-                                >
-                                    {{ cls.present }}
+                                <td class="px-4 py-4 text-center">
+                                    <span class="text-sm font-bold text-emerald-600">{{ cls.present }}</span>
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-center font-medium text-red-600"
-                                >
-                                    {{ cls.absent }}
+                                <td class="px-4 py-4 text-center">
+                                    <span class="text-sm font-bold text-rose-600">{{ cls.absent }}</span>
                                 </td>
-                                <td
-                                    class="px-4 py-3 text-center font-medium text-amber-600"
-                                >
-                                    {{ cls.late }}
+                                <td class="px-4 py-4 text-center">
+                                    <span class="text-sm font-bold text-amber-600">{{ cls.late }}</span>
                                 </td>
-                                <td class="px-4 py-3 text-center">
-                                    <div
-                                        class="flex items-center justify-center gap-2"
-                                    >
-                                        <div
-                                            class="h-2 w-16 rounded-full bg-muted"
-                                        >
+                                <td class="px-4 py-4">
+                                    <div class="flex flex-col gap-1.5 px-4">
+                                        <div class="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase">
+                                            <span>Accuracy</span>
+                                            <span>{{ getAttendanceRate(cls.present, cls.total) }}%</span>
+                                        </div>
+                                        <div class="h-1.5 w-full rounded-full bg-muted/50 overflow-hidden">
                                             <div
-                                                class="h-full rounded-full bg-green-500"
-                                                :style="{
-                                                    width: `${getAttendanceRate(cls.present, cls.total)}%`,
-                                                }"
+                                                class="h-full bg-primary transition-all duration-500"
+                                                :style="{ width: `${getAttendanceRate(cls.present, cls.total)}%` }"
                                             ></div>
                                         </div>
-                                        <span class="text-sm font-medium"
-                                            >{{
-                                                getAttendanceRate(
-                                                    cls.present,
-                                                    cls.total,
-                                                )
-                                            }}%</span
-                                        >
                                     </div>
                                 </td>
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-4 py-4 text-center">
                                     <Badge
-                                        variant="default"
-                                        class="bg-green-500"
-                                        >Marked</Badge
+                                        variant="secondary"
+                                        class="border-none bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-tight text-emerald-600 uppercase"
                                     >
+                                        Marked
+                                    </Badge>
                                 </td>
-                                <td class="px-4 py-3 text-right">
-                                    <Button variant="ghost" size="sm" as-child
-                                        ><Link
-                                            :href="`/attendance/class/${cls.id}`"
-                                            >View Details</Link
-                                        ></Button
+                                <td class="px-6 py-4 text-right">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        as-child
+                                        class="h-8 w-8 rounded-lg text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                     >
+                                        <Link :href="`/attendance/class/${cls.id}`">
+                                            <ChevronRight class="h-4 w-4" />
+                                        </Link>
+                                    </Button>
                                 </td>
                             </tr>
                         </tbody>
@@ -278,3 +293,12 @@ const getAttendanceRate = (present: number, total: number) =>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+/* Mobile adjustments for table if needed */
+@media (max-width: 640px) {
+    .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+</style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, Rows3, School, Home, ChevronRight } from 'lucide-vue-next';
+import { Rows3, School } from 'lucide-vue-next';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -37,38 +37,46 @@ const breadcrumbs: BreadcrumbItem[] = [
 <template>
     <Head :title="stream.name" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+        <div
+            class="w-full animate-in space-y-12 px-4 py-12 duration-500 fade-in sm:px-6 lg:px-8"
+        >
             <!-- Header Section -->
-            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-center md:justify-between px-1">
-                <div class="flex items-start gap-4">
-                    <Button variant="outline" size="icon" class="mt-1 hidden md:flex h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" as-child>
-                        <Link href="/streams"><ArrowLeft class="h-4 w-4 md:h-5 md:w-5" /></Link>
-                    </Button>
-                    <div class="flex flex-col gap-1">
-                        <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                            <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">Streams</span>
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">{{ stream.name }}</span>
-                        </div>
-                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                            <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+            <div
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg"
+                    >
+                        <Rows3 class="h-6 w-6" />
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1
+                                class="text-2xl font-bold tracking-tight text-slate-900"
+                            >
                                 {{ stream.name }}
                             </h1>
-                            <Badge variant="secondary" class="h-6 w-fit rounded-xl border-none bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600 uppercase">
-                                {{ stream.code }}
-                            </Badge>
+                            <Badge
+                                variant="secondary"
+                                class="h-5 rounded-full border-none bg-blue-50 px-3 py-0.5 text-xs font-bold text-blue-600 uppercase"
+                                >{{ stream.code }}</Badge
+                            >
                         </div>
-                        <p class="mt-2 text-sm text-muted-foreground sm:text-sm">
+                        <p class="mt-1 text-sm text-muted-foreground">
                             Management overview for academic stream.
                         </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Button variant="outline" class="h-11 rounded-xl px-6 text-xs font-bold tracking-wider uppercase shadow-sm transition-all hover:bg-slate-50" as-child>
-                        <Link :href="`/streams/${stream.id}/edit`">Stream Settings</Link>
-                    </Button>
+                    <Button
+                        variant="outline"
+                        class="h-11 rounded-xl border-slate-200 px-6 text-xs font-bold tracking-wider uppercase shadow-sm transition-all hover:bg-slate-50"
+                        as-child
+                        ><Link :href="`/streams/${stream.id}/edit`"
+                            >Stream Settings</Link
+                        ></Button
+                    >
                     <Button
                         variant="ghost"
                         class="h-11 rounded-xl px-4 text-xs font-bold tracking-wider text-slate-500 uppercase hover:text-slate-700"

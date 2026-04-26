@@ -18,8 +18,6 @@ import {
     UserCheck,
     ArrowUpCircle,
     Users,
-    Home,
-    ChevronRight,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -352,40 +350,45 @@ const confirmSubjectAction = () => {
             </div>
         </div>
 
-        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+        <div
+            class="mt-2 flex h-full w-full flex-1 animate-in flex-col gap-8 p-8 duration-500 fade-in"
+        >
             <!-- Header Section -->
-            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-center md:justify-between px-1">
-                <div class="flex items-start gap-4">
-                    <Button variant="outline" size="icon" class="mt-1 hidden md:flex h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" as-child>
-                        <Link href="/classes"><ArrowLeft class="h-4 w-4 md:h-5 md:w-5" /></Link>
-                    </Button>
-                    <div class="flex flex-col gap-1">
-                        <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                            <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">Classes</span>
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">{{ classroom.name }}</span>
-                        </div>
-                        <div class="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                            <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+            <div
+                class="flex flex-col gap-6 border-b border-slate-100 pb-8 md:flex-row md:items-center md:justify-between"
+            >
+                <div class="flex items-center gap-5">
+                    <div
+                        class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md transition-transform duration-300 hover:scale-105"
+                    >
+                        <School class="h-7 w-7" />
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1
+                                class="text-3xl leading-none font-bold tracking-tight text-slate-900"
+                            >
                                 {{ classroom.name }}
                             </h1>
-                            <Badge variant="outline" class="h-6 w-fit rounded-xl border-blue-200 bg-blue-50/50 px-3 py-1 text-xs font-bold tracking-tight text-blue-600 uppercase">
-                                {{ classroom.code }}
-                            </Badge>
+                            <Badge
+                                variant="outline"
+                                class="h-6 rounded-xl border-blue-200 bg-blue-50/50 px-3 py-1 text-xs font-bold tracking-tight text-blue-600 uppercase"
+                                >{{ classroom.code }}</Badge
+                            >
                         </div>
-                        <p class="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                            <School class="h-4 w-4 text-blue-500" />
+                        <p
+                            class="mt-2 flex items-center gap-2 text-sm text-muted-foreground"
+                        >
+                            <Layers class="h-4 w-4 text-blue-500" />
                             {{ classroom.grade || 'No Grade' }} •
-                            <span class="rounded-lg border border-blue-100/50 bg-blue-50 px-2 py-0.5 text-blue-600">
-                                {{ classroom.stream || 'General' }}
-                            </span>
+                            <span
+                                class="rounded-lg border border-blue-100/50 bg-blue-50 px-2 py-0.5 text-blue-600"
+                                >{{ classroom.stream || 'General' }}</span
+                            >
                             • Year: {{ classroom.academic_year || 'N/A' }}
                         </p>
                     </div>
                 </div>
-
                 <div class="flex items-center gap-3">
                     <Button
                         variant="outline"
@@ -1155,7 +1158,7 @@ const confirmSubjectAction = () => {
                     @click.self="closeActionModal"
                 >
                     <div
-                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
+                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-3xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
                     >
                         <div class="relative z-10">
                             <div
@@ -1297,7 +1300,7 @@ const confirmSubjectAction = () => {
                     @click.self="closeSubjectActionModal"
                 >
                     <div
-                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
+                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-3xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
                     >
                         <div class="relative z-10">
                             <div

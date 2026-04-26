@@ -13,8 +13,6 @@ import {
     ShieldOff,
     Trash2,
     UserCheck,
-    Home,
-    ChevronRight,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -229,41 +227,48 @@ const confirmTitle = computed(() => {
             </div>
         </div>
 
-        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
-            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-center md:justify-between px-1">
+        <div class="flex h-full flex-1 flex-col gap-6 p-6">
+            <div
+                class="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"
+            >
                 <div class="flex items-start gap-4">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg transition-transform duration-300 hover:scale-105 md:h-14 md:w-14 overflow-hidden md:rounded-2xl">
-                        <BookCopy class="h-6 w-6 md:h-7 md:w-7" />
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/10"
+                    >
+                        <BookCopy class="h-6 w-6 text-indigo-600" />
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                            <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">Classes</span>
-                            <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                            <span class="font-medium tracking-tight text-foreground uppercase">Subjects</span>
-                        </div>
-                        <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">
                             {{ classroom.name }} Subjects
                         </h1>
-                        <p class="mt-2 text-sm text-muted-foreground">
+                        <p class="text-muted-foreground">
                             {{ classroom.grade || 'Unknown grade' }}
-                            <span v-if="classroom.stream"> • {{ classroom.stream }}</span>
-                            <span v-if="classroom.academic_year"> • {{ classroom.academic_year }}</span>
+                            <span v-if="classroom.stream">
+                                • {{ classroom.stream }}</span
+                            >
+                            <span v-if="classroom.academic_year">
+                                • {{ classroom.academic_year }}</span
+                            >
                         </p>
                         <p class="mt-1 text-sm text-muted-foreground">
-                            Manage all subjects allocated to this class, including teacher assignment and allocation status.
+                            Manage all subjects allocated to this class,
+                            including teacher assignment and allocation status.
                         </p>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
-                    <Button variant="outline" class="h-11 rounded-xl px-6" as-child>
-                        <Link :href="`/classes/${classroom.id}`">Back to Class</Link>
+                    <Button variant="outline" as-child>
+                        <Link :href="`/classes/${classroom.id}`"
+                            >Back to Class</Link
+                        >
                     </Button>
-                    <Button variant="outline" class="h-11 rounded-xl px-6" as-child>
-                        <Link :href="`/classes/allocations?class_id=${classroom.id}`">Manage Allocations</Link>
+                    <Button variant="outline" as-child>
+                        <Link
+                            :href="`/classes/allocations?class_id=${classroom.id}`"
+                            >Manage Allocations</Link
+                        >
                     </Button>
-                    <Button variant="outline" class="h-11 rounded-xl px-6" as-child>
+                    <Button variant="outline" as-child>
                         <Link href="/curriculum/subjects">All Subjects</Link>
                     </Button>
                 </div>
@@ -302,19 +307,36 @@ const confirmTitle = computed(() => {
                 </div>
             </div>
 
-            <div class="rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5">
-                <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="rounded-xl border bg-card p-6">
+                <div
+                    class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                >
                     <div>
-                        <h2 class="text-lg font-bold tracking-tight">Allocated Subjects</h2>
+                        <h2 class="text-lg font-semibold">
+                            Allocated Subjects
+                        </h2>
                         <p class="text-sm text-muted-foreground">
-                            Open a subject, reassign its teacher, manage allocation state, or jump to grade allocation.
+                            Open a subject, reassign its teacher, manage
+                            allocation state, or jump to grade allocation.
                         </p>
                     </div>
                     <div class="flex items-center gap-2">
-                        <Button :variant="viewMode === 'grid' ? 'default' : 'outline'" size="sm" class="h-9 rounded-xl px-4" @click="viewMode = 'grid'">
+                        <Button
+                            :variant="
+                                viewMode === 'grid' ? 'default' : 'outline'
+                            "
+                            size="sm"
+                            @click="viewMode = 'grid'"
+                        >
                             <GraduationCap class="mr-2 h-4 w-4" />Grid View
                         </Button>
-                        <Button :variant="viewMode === 'list' ? 'default' : 'outline'" size="sm" class="h-9 rounded-xl px-4" @click="viewMode = 'list'">
+                        <Button
+                            :variant="
+                                viewMode === 'list' ? 'default' : 'outline'
+                            "
+                            size="sm"
+                            @click="viewMode = 'list'"
+                        >
                             <List class="mr-2 h-4 w-4" />List View
                         </Button>
                     </div>

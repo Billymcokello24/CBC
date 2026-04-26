@@ -36,9 +36,11 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Pulse', href: '/dashboard' },
-    { title: 'Capital Center', href: '/finance' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Finance', href: '/finance' },
 ];
+
+import { Home } from 'lucide-vue-next';
 
 const formatCurrency = (amount: number | string) => {
     const value = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -55,38 +57,37 @@ const formatCurrency = (amount: number | string) => {
         <div
             class="mx-auto max-w-[1600px] animate-in space-y-12 p-6 pb-20 duration-1000 fade-in slide-in-from-bottom-4"
         >
-            <!-- Simple Header -->
+            <!-- Page Header -->
             <div
-                class="flex flex-col justify-between gap-6 md:flex-row md:items-end"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-bold tracking-tight text-foreground underline decoration-green-600 decoration-4 underline-offset-8"
-                    >
-                        Capital Center
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Finance</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Finance Overview
                     </h1>
-                    <p
-                        class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
-                    >
-                        Command center for fee logistics and institutional
-                        liquidity.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Manage fee collections, invoices, and payments.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Button
                         variant="outline"
-                        class="h-11 rounded-xl border-border px-6 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        class="h-11 rounded-xl border-border bg-background px-6 text-xs font-bold tracking-tight uppercase hover:bg-muted"
                         as-child
                     >
                         <Link href="/finance/invoices/create"
-                            ><Receipt class="mr-2 h-4 w-4 opacity-40" /> Gen
-                            Invoice</Link
+                            ><Receipt class="mr-2 h-4 w-4 opacity-40" /> New Invoice</Link
                         >
                     </Button>
                     <Link
                         href="/finance/payments/create"
-                        class="inline-flex h-11 items-center justify-center rounded-xl bg-green-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-green-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        class="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus class="mr-2 h-4 w-4" />
                         Log Payment
@@ -97,21 +98,22 @@ const formatCurrency = (amount: number | string) => {
             <!-- TailPanel Stats -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-green-600/20 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-green-600/5 text-green-600 shadow-inner transition-all duration-500 group-hover:bg-green-600 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm"
                         >
                             <TrendingUp
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Inflow</span
+                            >Total Collections</span
                         >
                     </div>
+
                     <p
                         class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
                     >
@@ -129,19 +131,19 @@ const formatCurrency = (amount: number | string) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-amber-500/20 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20 dark:border-white/5"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/5 text-amber-500 shadow-inner transition-all duration-500 group-hover:bg-amber-500 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all shadow-sm"
                         >
                             <PiggyBank
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Reserves</span
+                            >Pending Fees</span
                         >
                     </div>
                     <p
@@ -157,19 +159,19 @@ const formatCurrency = (amount: number | string) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-blue-600/20 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600/5 text-blue-600 shadow-inner transition-all duration-500 group-hover:bg-blue-600 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm"
                         >
                             <CreditCard
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Cycle</span
+                            >Today</span
                         >
                     </div>
                     <p
@@ -187,14 +189,14 @@ const formatCurrency = (amount: number | string) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-rose-600/20 dark:border-white/5"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-rose-500/20 dark:border-white/5"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-600/5 text-rose-600 shadow-inner transition-all duration-500 group-hover:bg-rose-600 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-sm"
                         >
                             <TrendingDown
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
@@ -223,21 +225,21 @@ const formatCurrency = (amount: number | string) => {
                         class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-8 py-6"
                     >
                         <div class="flex items-center gap-3">
-                            <History class="h-5 w-5 text-blue-600 opacity-60" />
+                            <History class="h-5 w-5 text-primary/60" />
                             <h3
-                                class="text-sm font-bold tracking-tight text-foreground"
+                                class="text-sm font-bold tracking-tight text-foreground uppercase"
                             >
-                                Transaction Logs
+                                Recent Payments
                             </h3>
                         </div>
                         <Button
                             variant="ghost"
                             size="sm"
-                            class="text-xs font-bold tracking-tight text-muted-foreground/60 uppercase hover:text-blue-600"
+                            class="text-xs font-bold tracking-tight text-muted-foreground/60 uppercase hover:text-primary"
                             as-child
                         >
                             <Link href="/finance/payments"
-                                >Full Matrix <ChevronRight class="ml-1 h-3 w-3"
+                                >View All <ChevronRight class="ml-1 h-3 w-3"
                             /></Link>
                         </Button>
                     </div>

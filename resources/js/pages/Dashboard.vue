@@ -237,8 +237,8 @@ const topUnits = computed(() => {
                         </h3>
                         <Link
                             href="/students"
-                            class="text-xs font-bold tracking-tight text-blue-600 uppercase hover:underline sm:text-xs"
-                            >View All</Link
+                            class="text-xs font-bold tracking-tight text-primary uppercase hover:underline sm:text-xs"
+                            >View Register</Link
                         >
                     </div>
 
@@ -253,7 +253,7 @@ const topUnits = computed(() => {
                                     <td class="px-5 py-3.5 sm:px-6 sm:py-4">
                                         <div class="flex items-center gap-3">
                                             <div
-                                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-xs font-bold text-blue-600 ring-2 ring-white transition-colors group-hover:bg-blue-600 group-hover:text-white"
+                                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary ring-2 ring-background transition-colors group-hover:bg-primary group-hover:text-white"
                                             >
                                                 {{ student.initials }}
                                             </div>

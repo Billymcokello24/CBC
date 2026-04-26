@@ -15,11 +15,13 @@ import {
     Clock,
     CheckCircle2,
     AlertCircle,
+    Home,
     ChevronRight,
     FileText,
     TrendingUp,
     Users,
     MoreHorizontal,
+    Archive,
 } from 'lucide-vue-next';
 import { route } from 'ziggy-js';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -43,8 +45,8 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Assignments', href: '#' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Assignments', href: '/curriculum/assignments' },
 ];
 
 const deleteAssignment = (id: number) => {
@@ -62,7 +64,7 @@ const getStatusBadge = (status: string) => {
         case 'closed':
             return 'bg-red-50 text-red-600';
         case 'graded':
-            return 'bg-blue-50 text-blue-600';
+            return 'bg-primary/10 text-primary';
         default:
             return 'bg-slate-50 text-slate-500';
     }
@@ -99,23 +101,26 @@ const gradedSubmissions = computed(
     <Head title="Assignments" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto flex h-full max-w-[1600px] flex-1 flex-col gap-6 bg-[#f9fafb]/30 p-6 font-sans"
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
         >
             <!-- Header -->
             <div
-                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="space-y-1">
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-slate-900"
-                    >
-                        {{ isGuardian ? 'Student Assignments' : 'Assignments' }}
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Assignments</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        {{ isGuardian ? 'Student Assignments' : 'Academic Assignments' }}
                     </h1>
-                    <p class="text-sm text-slate-500">
+                    <p class="text-sm text-muted-foreground sm:text-sm">
                         {{
                             isGuardian
-                                ? "Keep track of your children's academic tasks and progress."
-                                : 'Manage tasks and track student progress.'
+                                ? "Track your children's tasks and academic progress."
+                                : 'Manage assignments and track student performance.'
                         }}
                     </p>
                 </div>
@@ -123,15 +128,15 @@ const gradedSubmissions = computed(
                 <div class="flex items-center gap-3" v-if="!isGuardian">
                     <Link
                         :href="route('curriculum.assignments.vault')"
-                        class="inline-flex h-10 items-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800"
+                        class="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-card px-4 text-xs font-semibold text-foreground shadow-sm transition-all hover:bg-muted"
                     >
-                        <Archive class="h-4 w-4 text-blue-400" /> Academic Vault
+                        <Archive class="h-4 w-4 text-primary" /> View Vault
                     </Link>
                     <Link
                         href="/curriculum/assignments/create"
-                        class="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
+                        class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary/90"
                     >
-                        <Plus class="h-4 w-4" /> New Assignment
+                        <Plus class="h-4 w-4" /> Create New
                     </Link>
                 </div>
             </div>
@@ -139,163 +144,118 @@ const gradedSubmissions = computed(
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
-                    <div class="space-y-0.5">
-                        <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                    <div class="mb-4 flex items-center justify-between">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all"
                         >
-                            {{ isGuardian ? 'Active Tasks' : 'Total' }}
-                        </p>
-                        <h2
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            {{ assignments.length }}
-                        </h2>
+                            <FileText class="h-5 w-5" />
+                        </div>
+                        <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Total</span>
                     </div>
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
-                    >
-                        <FileText class="h-5 w-5" />
-                    </div>
+                    <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">
+                        {{ isGuardian ? 'Active Tasks' : 'All Assignments' }}
+                    </p>
+                    <h3 class="text-2xl font-bold text-foreground">
+                        {{ assignments.length }}
+                    </h3>
                 </div>
 
                 <template v-if="!isGuardian">
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all"
                             >
-                                Published
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ publishedCount }}
-                            </h2>
+                                <CheckCircle2 class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Live</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500"
-                        >
-                            <CheckCircle2 class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Published</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ publishedCount }}</h3>
                     </div>
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-orange-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all"
                             >
-                                Drafts
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ draftCount }}
-                            </h2>
+                                <AlertCircle class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Draft</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500"
-                        >
-                            <AlertCircle class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Saved Drafts</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ draftCount }}</h3>
                     </div>
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-purple-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-all"
                             >
-                                Submissions
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ totalSubmissions }}
-                            </h2>
+                                <Users class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Engagement</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600"
-                        >
-                            <Users class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Submissions</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ totalSubmissions }}</h3>
                     </div>
                 </template>
 
                 <template v-else>
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-orange-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-all"
                             >
-                                Pending
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ pendingSubmissions }}
-                            </h2>
+                                <Clock class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Attention</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500"
-                        >
-                            <Clock class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Pending</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ pendingSubmissions }}</h3>
                     </div>
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all"
                             >
-                                Graded
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ gradedSubmissions }}
-                            </h2>
+                                <TrendingUp class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Results</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500"
-                        >
-                            <TrendingUp class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Graded</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ gradedSubmissions }}</h3>
                     </div>
                     <div
-                        class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                        class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-purple-500/20 dark:border-white/5"
                     >
-                        <div class="space-y-0.5">
-                            <p
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                        <div class="mb-4 flex items-center justify-between">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-all"
                             >
-                                Children
-                            </p>
-                            <h2
-                                class="text-2xl font-bold tracking-tight text-slate-900"
-                            >
-                                {{ children.length }}
-                            </h2>
+                                <Users class="h-5 w-5" />
+                            </div>
+                            <span class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase">Family</span>
                         </div>
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600"
-                        >
-                            <Users class="h-5 w-5" />
-                        </div>
+                        <p class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase">Children</p>
+                        <h3 class="text-2xl font-bold text-foreground">{{ children.length }}</h3>
                     </div>
                 </template>
             </div>
 
             <!-- Main Content -->
             <div
-                class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
             >
                 <!-- Toolbar -->
                 <div
@@ -303,19 +263,19 @@ const gradedSubmissions = computed(
                 >
                     <div class="relative w-full md:max-w-md">
                         <Search
-                            class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-300"
+                            class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground/40"
                         />
                         <Input
-                            placeholder="Search assignments..."
-                            class="h-11 rounded-xl border-slate-100 bg-[#f9fafb]/50 pl-10 text-sm font-medium shadow-none transition-all focus:bg-white"
+                            placeholder="Find assignments..."
+                            class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-sm font-medium transition-all focus:ring-2 focus:ring-primary/10 focus:bg-background"
                         />
                     </div>
                     <div class="flex items-center gap-3">
                         <Button
                             variant="outline"
-                            class="h-11 rounded-xl border-slate-100 bg-[#f9fafb]/50 px-4 text-xs font-bold text-slate-500 shadow-none transition-all hover:bg-slate-50"
+                            class="h-11 rounded-xl border-border bg-muted/20 px-4 text-xs font-bold text-muted-foreground transition-all hover:bg-background hover:text-primary"
                         >
-                            <Filter class="mr-2 h-4 w-4" /> Filters
+                            <Filter class="mr-2 h-4 w-4 opacity-40" /> Filters
                         </Button>
                     </div>
                 </div>
@@ -324,7 +284,7 @@ const gradedSubmissions = computed(
                 <div class="overflow-x-auto" v-if="assignments.length">
                     <table class="w-full border-collapse text-left">
                         <thead>
-                            <tr class="border-b border-slate-50 bg-white">
+                            <tr class="border-b border-border/50 bg-muted/5">
                                 <th class="w-10 py-4 pl-6">
                                     <div
                                         class="h-4 w-4 rounded border border-slate-200"
@@ -367,21 +327,21 @@ const gradedSubmissions = computed(
                                 </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-50">
+                        <tbody class="divide-y divide-border/50">
                             <tr
                                 v-for="assignment in assignments"
                                 :key="assignment.id"
-                                class="group transition-all hover:bg-[#f9fafb]/50"
+                                class="group transition-all hover:bg-muted/30"
                             >
                                 <td class="py-4 pl-6">
                                     <div
-                                        class="h-4 w-4 rounded border border-slate-200 transition-colors group-hover:border-blue-400"
+                                        class="h-4 w-4 rounded border border-border transition-colors group-hover:border-primary/40"
                                     ></div>
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
                                         <div
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white"
+                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all group-hover:bg-primary group-hover:text-white"
                                         >
                                             <FileText class="h-4 w-4" />
                                         </div>
@@ -395,11 +355,11 @@ const gradedSubmissions = computed(
                                             class="flex flex-col"
                                         >
                                             <span
-                                                class="line-clamp-1 text-sm font-bold text-slate-800 transition-colors hover:text-blue-600"
+                                                class="line-clamp-1 text-sm font-bold text-foreground transition-colors group-hover:text-primary"
                                                 >{{ assignment.title }}</span
                                             >
                                             <span
-                                                class="text-xs font-medium text-slate-400 uppercase"
+                                                class="text-xs font-medium text-muted-foreground/40 uppercase"
                                                 >{{
                                                     assignment.assignment_type ||
                                                     'homework'
@@ -409,12 +369,12 @@ const gradedSubmissions = computed(
                                     </div>
                                 </td>
                                 <td
-                                    class="px-4 py-4 text-xs font-semibold text-slate-600"
+                                    class="px-4 py-4 text-xs font-semibold text-muted-foreground"
                                 >
                                     {{ assignment.subject?.name || '—' }}
                                 </td>
                                 <td
-                                    class="px-4 py-4 text-xs font-semibold text-slate-600"
+                                    class="px-4 py-4 text-xs font-semibold text-muted-foreground"
                                 >
                                     {{ assignment.classroom?.name || '—' }}
                                 </td>
@@ -429,7 +389,7 @@ const gradedSubmissions = computed(
                                         "
                                     >
                                         <Badge
-                                            class="cursor-pointer rounded border-0 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-600 hover:text-white"
+                                            class="cursor-pointer rounded border-0 bg-primary/10 px-3 py-1 text-xs font-bold text-primary shadow-sm transition-all hover:bg-primary hover:text-white"
                                         >
                                             {{
                                                 assignment.submissions_count ||
@@ -440,13 +400,13 @@ const gradedSubmissions = computed(
                                     </Link>
                                     <Badge
                                         v-else
-                                        class="rounded border-0 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600"
+                                        class="rounded border-none bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary"
                                     >
                                         {{ assignment.submissions_count || 0 }}
                                     </Badge>
                                 </td>
                                 <td
-                                    class="px-4 py-4 text-xs font-semibold text-slate-600"
+                                    class="px-4 py-4 text-xs font-semibold text-muted-foreground"
                                 >
                                     {{
                                         assignment.due_date
@@ -459,7 +419,7 @@ const gradedSubmissions = computed(
                                 <td class="px-4 py-4">
                                     <Badge
                                         :class="[
-                                            'rounded border-0 px-2 py-0.5 text-xs font-bold uppercase',
+                                            'rounded border-none px-2 py-0.5 text-xs font-bold uppercase',
                                             getStatusBadge(assignment.status),
                                         ]"
                                     >
@@ -473,17 +433,17 @@ const gradedSubmissions = computed(
                                         <Link
                                             :href="`/curriculum/assignments/${assignment.id}/submissions`"
                                             v-if="!isGuardian"
-                                            class="inline-flex h-9 items-center rounded-xl bg-blue-50 px-4 text-xs font-bold text-blue-600 uppercase transition-all hover:bg-blue-600 hover:text-white"
+                                            class="inline-flex h-9 items-center rounded-xl bg-muted/50 px-4 text-xs font-bold text-foreground uppercase border border-border transition-all hover:bg-primary hover:text-white hover:border-primary"
                                         >
                                             Review
                                             <ChevronRight
-                                                class="ml-1 h-3.5 w-3.5"
+                                                class="ml-1 h-3.5 w-3.5 opacity-40"
                                             />
                                         </Link>
                                         <Link
                                             :href="`/curriculum/assignments/${assignment.id}`"
                                             v-else
-                                            class="inline-flex h-9 items-center rounded-xl bg-blue-50 px-4 text-xs font-bold text-blue-600 uppercase transition-all hover:bg-blue-600 hover:text-white"
+                                            class="inline-flex h-9 items-center rounded-xl bg-primary px-4 text-xs font-bold text-white uppercase shadow-sm transition-all hover:bg-primary/90"
                                         >
                                             Open Task
                                             <ChevronRight
@@ -496,7 +456,7 @@ const gradedSubmissions = computed(
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    class="h-9 w-9 rounded-xl text-slate-400 hover:bg-slate-100"
+                                                    class="h-9 w-9 rounded-xl text-muted-foreground/40 hover:bg-muted hover:text-foreground"
                                                 >
                                                     <MoreVertical
                                                         class="h-3.5 w-3.5"
@@ -505,7 +465,7 @@ const gradedSubmissions = computed(
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="min-w-[130px] rounded-xl p-2"
+                                                class="min-w-[130px] rounded-xl border border-border p-2 shadow-lg"
                                             >
                                                 <Link
                                                     :href="`/curriculum/assignments/${assignment.id}`"
@@ -559,18 +519,18 @@ const gradedSubmissions = computed(
                     class="flex flex-col items-center justify-center gap-4 bg-white py-20 text-center"
                 >
                     <div
-                        class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-200"
+                        class="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground/20"
                     >
                         <Target class="h-8 w-8" />
                     </div>
                     <div class="space-y-1">
                         <h3
-                            class="text-xl font-bold tracking-tight text-slate-900"
+                            class="text-xl font-bold tracking-tight text-foreground"
                         >
                             No Assignments
                         </h3>
                         <p
-                            class="mx-auto max-w-xs text-xs font-medium text-slate-400"
+                            class="mx-auto max-w-xs text-xs font-medium text-muted-foreground/60"
                         >
                             Create your first assignment to start tracking
                             student work.
@@ -578,7 +538,7 @@ const gradedSubmissions = computed(
                     </div>
                     <Link
                         href="/curriculum/assignments/create"
-                        class="inline-flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-6 text-xs font-bold tracking-tight text-white uppercase shadow-sm transition-all hover:bg-blue-700"
+                        class="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/20 transition-all hover:bg-primary/90"
                     >
                         <Plus class="h-4 w-4" /> New Assignment
                     </Link>
@@ -586,7 +546,7 @@ const gradedSubmissions = computed(
 
                 <!-- Footer -->
                 <div
-                    class="flex items-center justify-between border-t border-slate-50 bg-white p-6"
+                    class="flex items-center justify-between border-t border-border/50 bg-muted/5 p-6"
                     v-if="assignments.length"
                 >
                     <p class="text-xs font-bold text-slate-400">
@@ -596,19 +556,19 @@ const gradedSubmissions = computed(
                         <Button
                             disabled
                             variant="outline"
-                            class="h-9 rounded-xl border-slate-100 px-3 text-xs font-bold text-slate-300"
+                            class="h-9 rounded-xl border-border px-3 text-xs font-bold text-muted-foreground/30"
                             >Prev</Button
                         >
                         <Button
                             disabled
                             variant="outline"
-                            class="h-9 rounded-xl border-slate-200 px-3 text-xs font-bold text-slate-900"
+                            class="h-9 rounded-xl border-border bg-background px-3 text-xs font-bold text-foreground shadow-sm"
                             >1</Button
                         >
                         <Button
                             disabled
                             variant="outline"
-                            class="h-9 rounded-xl border-slate-100 px-3 text-xs font-bold text-slate-300"
+                            class="h-9 rounded-xl border-border px-3 text-xs font-bold text-muted-foreground/30"
                             >Next</Button
                         >
                     </div>

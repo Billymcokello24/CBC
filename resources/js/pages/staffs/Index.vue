@@ -21,6 +21,8 @@ import {
     ShieldCheck,
     Briefcase,
     UserCheck,
+    ChevronRight,
+    Home,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -53,9 +55,8 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'User Directory', href: '/staffs/directory' },
-    { title: 'Staff Registry', href: '/staffs' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Staff', href: '/staffs' },
 ];
 
 const searchQuery = ref(props.filters.search || '');
@@ -109,31 +110,33 @@ const deleteStaff = (id: number) => {
     <Head title="Staff Registry" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-8 p-6 pb-20 duration-700 fade-in slide-in-from-bottom-4 md:p-8"
+            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
         >
             <!-- Header Section -->
             <div
-                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
             >
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-bold tracking-tight text-foreground"
-                    >
-                        Staff Registry
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Staff Registry</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Staff Members
                     </h1>
-                    <p class="text-sm leading-relaxed text-muted-foreground">
-                        Comprehensive management of all institutional personnel
-                        across departments.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Manage teachers and school staff information.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Link
                         href="/staffs/create"
-                        class="font-inter inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition-all hover:bg-blue-700"
+                        class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-5 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary/90"
                     >
                         <UserPlus class="mr-2 h-4 w-4" />
-                        Add Personnel
+                        Add New Staff
                     </Link>
                 </div>
             </div>
@@ -145,7 +148,7 @@ const deleteStaff = (id: number) => {
                 >
                     <div class="flex items-center gap-4">
                         <div
-                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary"
                         >
                             <Users class="h-6 w-6" />
                         </div>
@@ -237,14 +240,14 @@ const deleteStaff = (id: number) => {
                         />
                         <Input
                             v-model="searchQuery"
-                            placeholder="Search by name, email..."
-                            class="h-10 rounded-xl border-border bg-background pl-10 text-sm shadow-sm transition-all focus:ring-2 focus:ring-indigo-600/10"
+                            placeholder="Search by name or email..."
+                            class="h-10 rounded-xl border-border bg-background pl-10 text-sm shadow-sm transition-all focus:ring-2 focus:ring-primary/10"
                         />
                     </div>
 
                     <Select v-model="roleFilter">
                         <SelectTrigger
-                            class="h-10 w-[180px] rounded-xl border-border bg-background font-medium shadow-sm focus:ring-2 focus:ring-indigo-600/10"
+                            class="h-10 w-[180px] rounded-xl border-border bg-background font-medium shadow-sm focus:ring-2 focus:ring-primary/10"
                         >
                             <SelectValue placeholder="All Roles" />
                         </SelectTrigger>
@@ -264,7 +267,7 @@ const deleteStaff = (id: number) => {
 
                     <Select v-model="departmentFilter">
                         <SelectTrigger
-                            class="h-10 w-[180px] rounded-xl border-border bg-background font-medium shadow-sm focus:ring-2 focus:ring-indigo-600/10"
+                            class="h-10 w-[180px] rounded-xl border-border bg-background font-medium shadow-sm focus:ring-2 focus:ring-primary/10"
                         >
                             <SelectValue placeholder="Departments" />
                         </SelectTrigger>
@@ -323,7 +326,7 @@ const deleteStaff = (id: number) => {
                 <div
                     v-for="teacher in teachers.data"
                     :key="teacher.id"
-                    class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/40 transition-all hover:border-blue-400/30 hover:shadow-lg hover:shadow-indigo-100/50"
+                    class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20 dark:border-white/5"
                 >
                     <Link
                         :href="`/staffs/${teacher.id}`"
@@ -331,7 +334,7 @@ const deleteStaff = (id: number) => {
                     >
                         <div class="relative">
                             <div
-                                class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-slate-50 shadow-inner ring-4 ring-white transition-transform duration-500 group-hover:scale-110"
+                                class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-muted/30 shadow-inner ring-4 ring-background transition-transform duration-500 group-hover:scale-110"
                             >
                                 <img
                                     v-if="teacher.photo_url"
@@ -340,7 +343,7 @@ const deleteStaff = (id: number) => {
                                 />
                                 <div
                                     v-else
-                                    class="text-2xl font-bold text-slate-400"
+                                    class="text-2xl font-bold text-muted-foreground/40"
                                 >
                                     {{ teacher.first_name[0]
                                     }}{{ teacher.last_name[0] }}
@@ -359,14 +362,14 @@ const deleteStaff = (id: number) => {
 
                         <div class="w-full space-y-1">
                             <h4
-                                class="truncate px-2 font-bold text-slate-900 transition-colors group-hover:text-blue-600"
+                                class="truncate px-2 font-bold text-foreground transition-colors group-hover:text-primary"
                             >
                                 {{ teacher.first_name }} {{ teacher.last_name }}
                             </h4>
                             <div class="flex items-center justify-center gap-2">
                                 <Badge
                                     variant="outline"
-                                    class="h-5 rounded-lg border-none border-blue-100 bg-blue-50/50 px-2 text-xs font-medium tracking-tight text-blue-600 uppercase"
+                                    class="h-5 rounded-lg border-none bg-primary/10 px-2 text-xs font-medium tracking-tight text-primary uppercase"
                                 >
                                     {{
                                         teacher.department?.name || 'Unassigned'
@@ -381,13 +384,13 @@ const deleteStaff = (id: number) => {
                     >
                         <Link
                             :href="`/staffs/${teacher.id}`"
-                            class="flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-900 text-xs font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-blue-600"
+                            class="flex h-10 items-center justify-center gap-2 rounded-xl bg-foreground text-xs font-bold text-background shadow-sm transition-all hover:bg-primary"
                         >
                             <Eye class="h-3.5 w-3.5" /> View
                         </Link>
                         <Link
                             :href="`/staffs/${teacher.id}/edit`"
-                            class="flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-600 transition-all hover:bg-white hover:text-blue-600 hover:shadow-lg"
+                            class="flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-muted/30 text-xs font-bold text-muted-foreground transition-all hover:bg-background hover:text-primary hover:shadow-sm"
                         >
                             <Edit class="h-3.5 w-3.5" /> Edit
                         </Link>
@@ -398,13 +401,13 @@ const deleteStaff = (id: number) => {
             <!-- Staff Table (List View) -->
             <div
                 v-else
-                class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40"
+                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
             >
                 <table class="w-full text-left">
                     <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50/50">
+                        <tr class="border-b border-border/50 bg-muted/5">
                             <th
-                                class="p-6 text-xs font-medium tracking-tight text-slate-500 uppercase"
+                                class="p-6 text-xs font-medium tracking-tight text-muted-foreground uppercase"
                             >
                                 Personnel
                             </th>
@@ -440,7 +443,7 @@ const deleteStaff = (id: number) => {
                             <td class="p-6">
                                 <div class="flex items-center gap-4">
                                     <div
-                                        class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 text-sm font-bold text-slate-400 shadow-inner transition-all group-hover:bg-blue-600 group-hover:text-white"
+                                        class="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-muted/30 text-sm font-bold text-muted-foreground/40 shadow-inner transition-all group-hover:bg-primary group-hover:text-white"
                                     >
                                         <img
                                             v-if="teacher.photo_url"
@@ -456,7 +459,7 @@ const deleteStaff = (id: number) => {
                                     </div>
                                     <div class="space-y-1">
                                         <p
-                                            class="leading-none font-bold text-slate-900 transition-colors group-hover:text-blue-600"
+                                            class="leading-none font-bold text-foreground transition-colors group-hover:text-primary"
                                         >
                                             {{ teacher.first_name }}
                                             {{ teacher.last_name }}
@@ -492,7 +495,7 @@ const deleteStaff = (id: number) => {
                                         v-for="role in teacher.user?.roles"
                                         :key="role.id"
                                         variant="secondary"
-                                        class="rounded border-none bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 uppercase"
+                                        class="rounded border-none bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary uppercase"
                                     >
                                         {{ role.name.replace('_', ' ') }}
                                     </Badge>
@@ -570,16 +573,16 @@ const deleteStaff = (id: number) => {
             <!-- Empty State -->
             <div
                 v-if="teachers.data.length === 0"
-                class="flex flex-col items-center justify-center space-y-4 rounded-2xl border-4 border-dashed border-border/60 bg-muted/10 py-32"
+                class="flex flex-col items-center justify-center space-y-4 rounded-2xl border-2 border-dashed border-border/60 bg-muted/10 py-32"
             >
                 <div
-                    class="flex h-24 w-24 -rotate-6 transform items-center justify-center rounded-xl border-8 border-white bg-muted/50 font-bold text-slate-300 shadow-xl"
+                    class="flex h-24 w-24 -rotate-6 transform items-center justify-center rounded-xl border-8 border-background bg-muted/50 font-bold text-muted-foreground/20 shadow-xl"
                 >
                     ?
                 </div>
                 <div class="space-y-2 text-center">
-                    <p class="text-xl font-bold text-slate-900">
-                        No personnel found
+                    <p class="text-xl font-bold text-foreground">
+                        No members found
                     </p>
                     <p class="text-sm font-medium text-muted-foreground">
                         Try adjusting your filters or search keywords.
@@ -587,7 +590,7 @@ const deleteStaff = (id: number) => {
                 </div>
                 <Button
                     variant="outline"
-                    class="mt-6 h-12 rounded-2xl px-8 font-medium tracking-tight uppercase"
+                    class="mt-6 h-12 rounded-xl px-8 font-medium tracking-tight uppercase"
                     @click="
                         searchQuery = '';
                         statusFilter = 'all';
@@ -595,7 +598,7 @@ const deleteStaff = (id: number) => {
                         roleFilter = 'all';
                     "
                 >
-                    Clear All Filters
+                    Clear Filters
                 </Button>
             </div>
 

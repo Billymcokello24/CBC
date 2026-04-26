@@ -12,8 +12,6 @@ import {
     Shield,
     ShieldCheck,
     Mail,
-    Home,
-    ChevronRight,
 } from 'lucide-vue-next';
 import { ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -79,22 +77,25 @@ const getRoleColor = (role: string) => {
 <template>
     <Head title="Users & Permissions" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
-            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-end md:justify-between px-1">
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Settings</span>
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Users</span>
+        <div class="font-pulsar flex h-full flex-1 flex-col gap-6 p-6">
+            <div
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+            >
+                <div class="flex items-center gap-4">
+                    <div
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10"
+                    >
+                        <Users class="h-6 w-6 text-violet-600" />
                     </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        Users & Roles
-                    </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        Manage school staff accounts, permissions and system access levels
-                    </p>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight">
+                            Users & Roles
+                        </h1>
+                        <p class="text-muted-foreground">
+                            Manage school staff accounts, permissions and system
+                            access levels
+                        </p>
+                    </div>
                 </div>
                 <div class="flex gap-2">
                     <Button variant="outline" class="font-pulsar"
