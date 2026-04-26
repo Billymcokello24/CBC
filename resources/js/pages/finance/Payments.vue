@@ -16,6 +16,7 @@ import {
     Wallet,
     Landmark,
     History,
+    Home,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -35,9 +36,9 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Pulse', href: '/dashboard' },
-    { title: 'Capital Center', href: '/finance' },
-    { title: 'Liquidity Flow', href: '/finance/payments' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Finance', href: '/finance' },
+    { title: 'Payments', href: '/finance/payments' },
 ];
 
 const searchQuery = ref('');
@@ -78,12 +79,12 @@ const getMethodColor = (method: string) => {
                     <h1
                         class="text-3xl font-bold tracking-tight text-foreground underline decoration-emerald-600 decoration-4 underline-offset-8"
                     >
-                        Liquidity Flow
+                        Payments
                     </h1>
                     <p
                         class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
                     >
-                        Real-time transaction matrix and capital injection logs.
+                        View all fee payments and transaction records.
                     </p>
                 </div>
 
@@ -92,7 +93,7 @@ const getMethodColor = (method: string) => {
                     class="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-emerald-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     <Plus class="mr-2 h-4 w-4" />
-                    Inject Capital
+                    Log New Payment
                 </Link>
             </div>
 
@@ -106,7 +107,7 @@ const getMethodColor = (method: string) => {
                     />
                     <Input
                         v-model="searchQuery"
-                        placeholder="SCAN FLOW..."
+                        placeholder="SEARCH PAYMENTS..."
                         class="h-14 rounded-2xl border-transparent bg-muted/20 pl-14 text-xs font-bold tracking-tight uppercase transition-all focus:border-emerald-600/20"
                     />
                 </div>
@@ -137,12 +138,12 @@ const getMethodColor = (method: string) => {
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Log ID
+                                    Payment ID
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Entity
+                                    Student
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
@@ -152,17 +153,17 @@ const getMethodColor = (method: string) => {
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Magnitude
+                                    Amount
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Channel
+                                    Method
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Timestamp
+                                    Date
                                 </th>
                                 <th
                                     class="px-8 py-6 text-right text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
@@ -264,7 +265,7 @@ const getMethodColor = (method: string) => {
                                                 <Eye
                                                     class="mr-3 h-4 w-4 text-emerald-600"
                                                 />
-                                                Pulse Log
+                                                View Details
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight uppercase"
@@ -280,7 +281,7 @@ const getMethodColor = (method: string) => {
                                                 <FileText
                                                     class="mr-3 h-4 w-4 text-amber-600"
                                                 />
-                                                Email Asset
+                                                Email Receipt
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -298,7 +299,7 @@ const getMethodColor = (method: string) => {
                     <p
                         class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
                     >
-                        No Liquidity Logs found
+                        No Payments found
                     </p>
                 </div>
 
@@ -312,7 +313,7 @@ const getMethodColor = (method: string) => {
                         ></div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >Flow Sync: Optimized</span
+                            >System Status: Online</span
                         >
                     </div>
 

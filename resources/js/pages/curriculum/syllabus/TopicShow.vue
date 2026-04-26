@@ -6,25 +6,20 @@ import {
     GraduationCap,
     ChevronRight,
     Plus,
-    Info,
     CheckCircle2,
     MoreVertical,
     ArrowLeft,
-    Eye,
     Edit2,
     Trash2,
-    X,
-    LayoutGrid,
-    List as ListIcon,
     Download,
-    MoreHorizontal,
     Search,
-    Filter,
     BookOpen,
     Target,
     Sparkles,
     Lightbulb,
     ClipboardList,
+    LayoutGrid,
+    List as ListIcon,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -33,16 +28,15 @@ import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
@@ -57,7 +51,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Curriculum', href: '/curriculum' },
-    { title: 'Syllabus', href: '/curriculum/syllabus' },
+    { title: 'Subjects', href: '/curriculum/syllabus' },
     {
         title: props.subject.name,
         href: `/curriculum/syllabus/${props.subject.id}/${props.grade.id}`,
@@ -65,15 +59,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.strand.name, href: '#' },
 ];
 
-// Modals State
+const route = (window as any).route;
+const viewMode = ref<'list' | 'grid'>('list');
+
+// Sub-strand modal
 const showSubStrandModal = ref(false);
-const showOutcomeModal = ref(false);
-const viewMode = ref<'grid' | 'list'>('list');
-
 const editingSubStrand = ref<any>(null);
-const editingOutcome = ref<any>(null);
 
-// Forms
 const subStrandForm = useForm({
     name: '',
     code: '',
@@ -82,14 +74,6 @@ const subStrandForm = useForm({
     display_order: 1,
 });
 
-const outcomeForm = useForm({
-    outcome: '',
-    sub_strand_id: null as number | null,
-    outcome_type: 'Standard',
-    display_order: 1,
-});
-
-// Topic Logic (Sub-Strands)
 const openSubStrandModal = (subStrand: any = null) => {
     editingSubStrand.value = subStrand;
     if (subStrand) {
@@ -100,46 +84,43 @@ const openSubStrandModal = (subStrand: any = null) => {
     } else {
         subStrandForm.reset();
         subStrandForm.strand_id = props.strand.id;
-        subStrandForm.display_order =
-            (props.strand.sub_strands?.length || 0) + 1;
+        subStrandForm.display_order = (props.strand.sub_strands?.length || 0) + 1;
     }
     showSubStrandModal.value = true;
 };
 
 const submitSubStrand = () => {
     if (editingSubStrand.value) {
-        subStrandForm.put(
-            route(
-                'curriculum.syllabus.sub-topics.update',
-                editingSubStrand.value.id,
-            ),
-            {
-                onSuccess: () => {
-                    showSubStrandModal.value = false;
-                    editingSubStrand.value = null;
-                },
-            },
-        );
-    } else {
-        subStrandForm.post(route('curriculum.syllabus.sub-topics.store'), {
+        subStrandForm.put(route('curriculum.syllabus.sub-topics.update', editingSubStrand.value.id), {
             onSuccess: () => {
                 showSubStrandModal.value = false;
+                editingSubStrand.value = null;
             },
+        });
+    } else {
+        subStrandForm.post(route('curriculum.syllabus.sub-topics.store'), {
+            onSuccess: () => { showSubStrandModal.value = false; },
         });
     }
 };
 
 const deleteSubStrand = (id: number) => {
-    if (
-        confirm(
-            'Are you sure you want to remove this sub-strand? This will also remove all its learning goals.',
-        )
-    ) {
+    if (window.confirm('Delete this sub-topic and all its learning goals? This cannot be undone.')) {
         useForm({}).delete(route('curriculum.syllabus.sub-topics.destroy', id));
     }
 };
 
-// Outcome Logic
+// Outcome modal
+const showOutcomeModal = ref(false);
+const editingOutcome = ref<any>(null);
+
+const outcomeForm = useForm({
+    outcome: '',
+    sub_strand_id: null as number | null,
+    outcome_type: 'Standard',
+    display_order: 1,
+});
+
 const openOutcomeModal = (subStrandId: number, outcome: any = null) => {
     editingOutcome.value = outcome;
     outcomeForm.sub_strand_id = subStrandId;
@@ -150,763 +131,473 @@ const openOutcomeModal = (subStrandId: number, outcome: any = null) => {
     } else {
         outcomeForm.outcome = '';
         outcomeForm.outcome_type = 'Standard';
-        const subStrand = props.strand.sub_strands.find(
-            (ss: any) => ss.id === subStrandId,
-        );
-        outcomeForm.display_order =
-            (subStrand?.learning_outcomes?.length || 0) + 1;
+        const ss = props.strand.sub_strands.find((s: any) => s.id === subStrandId);
+        outcomeForm.display_order = (ss?.learning_outcomes?.length || 0) + 1;
     }
     showOutcomeModal.value = true;
 };
 
 const submitOutcome = () => {
     if (editingOutcome.value) {
-        outcomeForm.put(
-            route(
-                'curriculum.syllabus.outcomes.update',
-                editingOutcome.value.id,
-            ),
-            {
-                onSuccess: () => {
-                    showOutcomeModal.value = false;
-                    editingOutcome.value = null;
-                },
-            },
-        );
-    } else {
-        outcomeForm.post(route('curriculum.syllabus.outcomes.store'), {
+        outcomeForm.put(route('curriculum.syllabus.outcomes.update', editingOutcome.value.id), {
             onSuccess: () => {
                 showOutcomeModal.value = false;
+                editingOutcome.value = null;
             },
+        });
+    } else {
+        outcomeForm.post(route('curriculum.syllabus.outcomes.store'), {
+            onSuccess: () => { showOutcomeModal.value = false; },
         });
     }
 };
 
 const deleteOutcome = (id: number) => {
-    if (confirm('Are you sure you want to remove this learning goal?')) {
+    if (window.confirm('Remove this learning goal?')) {
         useForm({}).delete(route('curriculum.syllabus.outcomes.destroy', id));
     }
 };
 
-const printSyllabus = () => {
-    window.print();
-};
+const totalGoals = computed(() =>
+    props.strand.sub_strands?.reduce(
+        (acc: number, ss: any) => acc + (ss.learning_outcomes?.length || 0), 0,
+    ) || 0,
+);
+
+const totalCompetencies = computed(() =>
+    props.strand.sub_strands?.reduce(
+        (acc: number, ss: any) =>
+            acc + (ss.learning_outcomes?.filter((o: any) => o.outcome_type === 'Competency').length || 0),
+        0,
+    ) || 0,
+);
+
+const printSyllabus = () => { window.print(); };
 </script>
 
 <template>
-    <Head :title="`${strand.name} - ${subject.name}`" />
+    <Head :title="`${strand.name} — ${subject.name}`" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="mx-auto flex h-full max-w-[1600px] flex-1 flex-col gap-6 bg-[#f9fafb]/30 p-6 font-sans"
-        >
-            <!-- Header Section -->
-            <div
-                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
-            >
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
+
+            <!-- Header -->
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                 <div class="space-y-1">
                     <Link
                         :href="`/curriculum/syllabus/${subject.id}/${grade.id}`"
-                        class="group mb-1 inline-flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-400 uppercase transition-all hover:text-blue-600"
+                        class="group mb-1 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-all hover:text-primary"
                     >
-                        <ArrowLeft
-                            class="h-3 w-3 transition-transform group-hover:-translate-x-1"
-                        />
-                        Topics
+                        <ArrowLeft class="h-3 w-3 transition-transform group-hover:-translate-x-1" />
+                        Back to Topics
                     </Link>
                     <div class="flex items-center gap-3">
-                        <div
-                            class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white"
-                        >
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-border">
                             <BookOpenCheck class="h-5 w-5" />
                         </div>
                         <div class="space-y-0.5">
-                            <h1
-                                class="text-2xl leading-tight font-bold tracking-tight text-slate-900"
-                            >
+                            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                                 {{ strand.name }}
                             </h1>
                             <div class="flex items-center gap-2">
-                                <Badge
-                                    variant="outline"
-                                    class="border-0 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-600 uppercase shadow-none"
-                                    >{{ subject.name }}</Badge
-                                >
-                                <span class="font-bold text-slate-300">•</span>
-                                <span
-                                    class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                    >{{ grade.name }}</span
-                                >
-                                <span class="font-bold text-slate-300">•</span>
-                                <span
-                                    class="rounded border border-slate-200 px-1.5 py-0.5 text-xs font-bold text-slate-900"
-                                    >{{ strand.code }}</span
-                                >
+                                <Badge variant="outline" class="border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase">
+                                    {{ subject.name }}
+                                </Badge>
+                                <span class="text-muted-foreground/30">•</span>
+                                <span class="text-xs font-semibold text-muted-foreground">{{ grade.name }}</span>
+                                <span v-if="strand.code" class="text-muted-foreground/30">•</span>
+                                <Badge v-if="strand.code" variant="outline" class="border-border px-1.5 py-0.5 text-[10px] font-bold uppercase">
+                                    {{ strand.code }}
+                                </Badge>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="flex items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <Button
-                        @click="printSyllabus"
                         variant="outline"
-                        class="h-10 rounded-xl border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 shadow-sm transition-all hover:bg-slate-50"
+                        @click="printSyllabus"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted print:hidden"
                     >
-                        <Download class="mr-2 h-3.5 w-3.5" /> Export
+                        <Download class="mr-2 h-4 w-4 text-muted-foreground" />
+                        Export
                     </Button>
                     <Button
                         @click="openSubStrandModal()"
-                        class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
+                        class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all"
                     >
-                        <Plus class="mr-2 h-4 w-4" /> Add Sub-topic
+                        <Plus class="mr-2 h-4 w-4" />
+                        Add Sub-topic
                     </Button>
                 </div>
             </div>
 
-            <!-- Stats Analytics -->
-            <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <!-- Stats -->
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+                    v-for="(stat, idx) in [
+                        { label: 'Sub-topics', val: strand.sub_strands?.length || 0, sub: 'Under this topic', icon: Target },
+                        { label: 'Learning Goals', val: totalGoals, sub: 'Total outcomes', icon: Sparkles },
+                        { label: 'Skills', val: totalCompetencies, sub: 'Competencies', icon: Lightbulb },
+                        { label: 'Status', val: strand.sub_strands?.length > 0 ? 'Active' : 'Empty', sub: strand.name, icon: ClipboardList },
+                    ]"
+                    :key="idx"
+                    class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md"
                 >
-                    <div class="space-y-0.5">
-                        <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Sub-topics
-                        </p>
-                        <h2
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            {{ strand.sub_strands?.length || 0 }}
-                        </h2>
+                    <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
+                        <component :is="stat.icon" class="h-24 w-24" />
                     </div>
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
-                    >
-                        <Target class="h-5 w-5" />
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
-                >
-                    <div class="space-y-0.5">
-                        <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Total Goals
-                        </p>
-                        <h2
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            {{
-                                strand.sub_strands?.reduce(
-                                    (acc: number, ss: any) =>
-                                        acc +
-                                        (ss.learning_outcomes?.length || 0),
-                                    0,
-                                ) || 0
-                            }}
-                        </h2>
-                    </div>
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500"
-                    >
-                        <Sparkles class="h-5 w-5" />
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
-                >
-                    <div class="space-y-0.5">
-                        <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Competencies
-                        </p>
-                        <h2
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            {{
-                                strand.sub_strands?.reduce(
-                                    (acc: number, ss: any) =>
-                                        acc +
-                                        (ss.learning_outcomes?.filter(
-                                            (o: any) =>
-                                                o.outcome_type === 'Competency',
-                                        ).length || 0),
-                                    0,
-                                ) || 0
-                            }}
-                        </h2>
-                    </div>
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-500"
-                    >
-                        <Lightbulb class="h-5 w-5" />
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
-                >
-                    <div class="space-y-0.5">
-                        <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Status
-                        </p>
-                        <h2
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            LIVE
-                        </h2>
-                    </div>
-                    <div
-                        class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600"
-                    >
-                        <ClipboardList class="h-5 w-5" />
+                    <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
+                        <span class="text-[10px] font-semibold text-primary">{{ stat.sub }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Sub-strands Display -->
-            <div
-                class="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-            >
+            <!-- Sub-topics Content -->
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <!-- Toolbar -->
-                <div
-                    class="flex flex-col justify-between gap-4 border-b border-slate-50 bg-white p-6 md:flex-row md:items-center"
-                >
-                    <div class="relative w-full md:max-w-md">
-                        <Search
-                            class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-300"
-                        />
+                <div class="flex flex-col justify-between gap-4 border-b border-border/50 bg-muted/5 p-4 md:flex-row md:items-center">
+                    <div class="relative w-full md:max-w-sm">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                         <Input
                             placeholder="Search sub-topics..."
-                            class="h-11 rounded-xl border-slate-100 bg-[#f9fafb]/50 pl-10 text-sm font-medium shadow-none transition-all focus:bg-white"
+                            class="h-10 rounded-lg border-border bg-background pl-10 text-sm focus:bg-background"
                         />
                     </div>
-
-                    <div class="flex items-center gap-3">
-                        <Button
-                            variant="outline"
-                            class="h-11 rounded-xl border-slate-100 bg-[#f9fafb]/50 px-4 text-xs font-bold text-slate-500 shadow-none transition-all hover:bg-slate-50"
-                        >
-                            <Filter class="mr-2 h-4 w-4" /> Filters
-                        </Button>
-                        <div
-                            class="flex items-center rounded-xl border border-slate-200/50 bg-slate-100/50 p-1 print:hidden"
-                        >
+                    <div class="flex items-center gap-2 print:hidden">
+                        <div class="flex items-center rounded-lg border border-border bg-muted/20 p-0.5">
                             <button
                                 @click="viewMode = 'list'"
-                                :class="[
-                                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all',
-                                    viewMode === 'list'
-                                        ? 'bg-white text-blue-600 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600',
-                                ]"
+                                :class="['flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all', viewMode === 'list' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
                             >
-                                <ListIcon class="h-3 w-3" /> List
+                                <ListIcon class="h-3.5 w-3.5" /> List
                             </button>
                             <button
                                 @click="viewMode = 'grid'"
-                                :class="[
-                                    'flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold tracking-wider uppercase transition-all',
-                                    viewMode === 'grid'
-                                        ? 'bg-white text-blue-600 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600',
-                                ]"
+                                :class="['flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all', viewMode === 'grid' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground']"
                             >
-                                <LayoutGrid class="h-3 w-3" /> Grid
+                                <LayoutGrid class="h-3.5 w-3.5" /> Grid
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- List View -->
+                <!-- Empty State -->
                 <div
-                    v-if="viewMode === 'list' && strand.sub_strands?.length"
-                    class="divide-y divide-slate-50"
+                    v-if="!strand.sub_strands?.length"
+                    class="flex flex-col items-center justify-center gap-4 py-24 text-center"
                 >
+                    <GraduationCap class="h-12 w-12 text-muted-foreground/20" />
+                    <div class="space-y-1">
+                        <h3 class="text-lg font-bold text-foreground">No sub-topics yet</h3>
+                        <p class="text-xs text-muted-foreground">Add sub-topics to define the curriculum pathway for {{ strand.name }}</p>
+                    </div>
+                    <Button
+                        @click="openSubStrandModal()"
+                        class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white"
+                    >
+                        <Plus class="mr-2 h-4 w-4" /> Add First Sub-topic
+                    </Button>
+                </div>
+
+                <!-- List View -->
+                <div v-if="viewMode === 'list' && strand.sub_strands?.length" class="divide-y divide-border/50">
                     <div
                         v-for="ss in strand.sub_strands"
                         :key="ss.id"
-                        class="group/ss transition-all hover:bg-[#f9fafb]/50"
+                        class="group/ss"
                     >
-                        <!-- Header Row -->
-                        <div
-                            class="flex flex-col justify-between gap-4 p-6 md:flex-row md:items-center"
-                        >
+                        <!-- Sub-topic Header -->
+                        <div class="flex flex-col justify-between gap-4 p-5 transition-all hover:bg-muted/10 md:flex-row md:items-center">
                             <div class="flex items-center gap-4">
-                                <div
-                                    class="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-100 bg-[#f9fafb] text-sm font-bold text-slate-900 shadow-sm transition-all group-hover/ss:bg-blue-600 group-hover/ss:text-white"
-                                >
+                                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-sm font-bold text-foreground transition-all group-hover/ss:border-primary group-hover/ss:bg-primary group-hover/ss:text-white">
                                     {{ ss.display_order }}
                                 </div>
                                 <div class="space-y-0.5">
                                     <div class="flex items-center gap-2">
-                                        <h3
-                                            class="text-base font-bold text-slate-800"
-                                        >
-                                            {{ ss.name }}
-                                        </h3>
-                                        <Badge
-                                            variant="outline"
-                                            class="border-0 bg-blue-50/50 px-1.5 py-0 text-xs font-bold text-blue-400 uppercase"
-                                            >{{ ss.code }}</Badge
-                                        >
+                                        <h3 class="text-sm font-bold text-foreground">{{ ss.name }}</h3>
+                                        <Badge v-if="ss.code" variant="outline" class="border-border px-1.5 py-0 text-[10px] font-semibold uppercase">{{ ss.code }}</Badge>
                                     </div>
-                                    <p
-                                        class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                    >
-                                        {{
-                                            ss.learning_outcomes?.length || 0
-                                        }}
-                                        Learning Goals
+                                    <p class="text-xs font-medium text-muted-foreground">
+                                        {{ ss.learning_outcomes?.length || 0 }} learning goal{{ ss.learning_outcomes?.length !== 1 ? 's' : '' }}
                                     </p>
                                 </div>
                             </div>
-
                             <div class="flex items-center gap-2">
                                 <Button
                                     @click="openOutcomeModal(ss.id)"
                                     variant="outline"
-                                    class="h-9 rounded-lg border-blue-100 bg-blue-50/30 px-3 text-xs font-bold text-blue-600 uppercase transition-all hover:bg-blue-600 hover:text-white"
+                                    class="h-8 rounded-lg border-border px-3 text-xs font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
                                 >
-                                    <Plus class="mr-1.5 h-3.5 w-3.5" /> Add Goal
+                                    <Plus class="mr-1 h-3 w-3" /> Add Goal
                                 </Button>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-9 w-9 rounded-lg border border-slate-100 text-slate-300 hover:text-slate-600"
-                                        >
-                                            <MoreVertical class="h-4 w-4" />
+                                    <DropdownMenuTrigger as-child>
+                                        <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-muted">
+                                            <MoreVertical class="h-4 w-4 text-muted-foreground" />
                                         </Button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="min-w-[140px] rounded-xl p-2"
-                                    >
-                                        <DropdownMenuItem
-                                            @click="openSubStrandModal(ss)"
-                                            class="rounded-lg text-xs font-bold"
-                                            >Edit</DropdownMenuItem
-                                        >
-                                        <DropdownMenuItem
-                                            @click="deleteSubStrand(ss.id)"
-                                            class="rounded-lg text-xs font-bold text-red-600"
-                                            >Delete</DropdownMenuItem
-                                        >
+                                    <DropdownMenuContent align="end" class="w-40 rounded-xl border-border bg-card p-2 shadow-lg">
+                                        <DropdownMenuItem @click="openSubStrandModal(ss)" class="rounded-lg px-3 py-2 text-xs font-medium cursor-pointer">
+                                            <Edit2 class="mr-2 h-3.5 w-3.5" /> Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem @click="deleteSubStrand(ss.id)" class="rounded-lg px-3 py-2 text-xs font-medium text-rose-600 focus:bg-rose-50 cursor-pointer">
+                                            <Trash2 class="mr-2 h-3.5 w-3.5" /> Delete
+                                        </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
                         </div>
 
-                        <!-- Outcomes Section -->
-                        <div class="flex flex-col gap-2 px-6 pb-6 pl-16">
+                        <!-- Description if available -->
+                        <p v-if="ss.description" class="px-20 pb-2 text-xs text-muted-foreground">{{ ss.description }}</p>
+
+                        <!-- Learning Goals -->
+                        <div class="flex flex-col gap-1.5 px-5 pb-5 pl-[72px]">
                             <div
                                 v-for="outcome in ss.learning_outcomes"
                                 :key="outcome.id"
-                                class="group/outcome relative flex items-center justify-between rounded-xl border border-slate-50 bg-white p-4 transition-all hover:border-blue-100"
+                                class="group/outcome flex items-center justify-between rounded-lg border border-border/50 bg-muted/10 p-3 transition-all hover:border-border hover:bg-card"
                             >
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-600 transition-all group-hover/outcome:bg-blue-600 group-hover/outcome:text-white"
-                                    >
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
                                         {{ outcome.display_order }}
                                     </div>
                                     <div class="space-y-0.5">
-                                        <p
-                                            class="text-sm font-semibold text-slate-600 transition-colors group-hover/outcome:text-slate-900"
-                                        >
-                                            {{ outcome.outcome }}
-                                        </p>
-                                        <Badge
-                                            variant="outline"
-                                            class="border-slate-50 bg-slate-50 text-xs font-bold text-slate-400 uppercase"
-                                            >{{
-                                                outcome.outcome_type ||
-                                                'Standard'
-                                            }}</Badge
-                                        >
+                                        <p class="text-xs font-semibold leading-snug text-foreground">{{ outcome.outcome }}</p>
+                                        <Badge class="border-0 bg-muted px-1.5 py-0 text-[10px] font-semibold text-muted-foreground">
+                                            {{ outcome.outcome_type || 'Standard' }}
+                                        </Badge>
                                     </div>
                                 </div>
-
-                                <div
-                                    class="flex items-center gap-1 opacity-0 transition-all group-hover/outcome:opacity-100"
-                                >
-                                    <Button
-                                        @click="
-                                            openOutcomeModal(ss.id, outcome)
-                                        "
-                                        variant="ghost"
-                                        size="icon"
-                                        class="h-8 w-8 rounded-lg text-slate-400 hover:bg-slate-100"
-                                    >
-                                        <Edit2 class="h-3.5 w-3.5" />
+                                <div class="flex items-center gap-1 opacity-0 transition-all group-hover/outcome:opacity-100">
+                                    <Button @click="openOutcomeModal(ss.id, outcome)" variant="ghost" size="icon" class="h-7 w-7 rounded-lg hover:bg-muted">
+                                        <Edit2 class="h-3 w-3" />
                                     </Button>
-                                    <Button
-                                        @click="deleteOutcome(outcome.id)"
-                                        variant="ghost"
-                                        size="icon"
-                                        class="h-8 w-8 rounded-lg text-slate-300 hover:bg-red-50 hover:text-red-500"
-                                    >
-                                        <Trash2 class="h-3.5 w-3.5" />
+                                    <Button @click="deleteOutcome(outcome.id)" variant="ghost" size="icon" class="h-7 w-7 rounded-lg hover:bg-rose-50 hover:text-rose-600">
+                                        <Trash2 class="h-3 w-3" />
                                     </Button>
                                 </div>
                             </div>
-
+                            <!-- Empty goals prompt -->
                             <div
                                 v-if="!ss.learning_outcomes?.length"
-                                class="cursor-pointer rounded-xl border border-dashed border-slate-100 bg-[#f9fafb]/30 py-4 text-center transition-all hover:border-blue-200"
+                                class="cursor-pointer rounded-lg border border-dashed border-border bg-muted/5 py-3 text-center transition-all hover:border-primary/30"
                                 @click="openOutcomeModal(ss.id)"
                             >
-                                <p
-                                    class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                >
-                                    No outcomes defined. Click to add.
-                                </p>
+                                <p class="text-[10px] font-semibold text-muted-foreground uppercase">No goals yet — click to add</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Grid View -->
-                <div
-                    v-if="viewMode === 'grid' && strand.sub_strands?.length"
-                    class="grid grid-cols-1 gap-6 bg-[#f9fafb]/30 p-6 lg:grid-cols-2"
-                >
+                <div v-if="viewMode === 'grid' && strand.sub_strands?.length" class="grid grid-cols-1 gap-6 bg-muted/5 p-6 lg:grid-cols-2">
                     <div
                         v-for="ss in strand.sub_strands"
                         :key="ss.id"
-                        class="flex flex-col rounded-2xl border border-slate-100 bg-white shadow-sm"
+                        class="flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden"
                     >
-                        <div
-                            class="relative overflow-hidden border-b border-slate-50 p-6"
-                        >
-                            <div
-                                class="relative z-10 mb-2 flex items-start justify-between gap-4"
-                            >
-                                <div class="space-y-1">
-                                    <Badge
-                                        class="rounded border-0 bg-slate-900 px-2 py-0.5 text-xs font-bold text-white uppercase"
-                                        >{{ ss.code }}</Badge
-                                    >
-                                    <h3
-                                        class="text-lg leading-tight font-bold text-slate-900"
-                                    >
-                                        {{ ss.name }}
-                                    </h3>
+                        <div class="flex items-start justify-between gap-4 border-b border-border/50 p-5">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <Badge v-if="ss.code" class="border-0 bg-foreground/5 px-1.5 py-0 text-[10px] font-bold uppercase">{{ ss.code }}</Badge>
                                 </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-8 w-8 rounded-lg text-slate-400"
-                                        >
-                                            <MoreVertical class="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                        align="end"
-                                        class="min-w-[120px] rounded-xl p-2"
-                                    >
-                                        <DropdownMenuItem
-                                            @click="openSubStrandModal(ss)"
-                                            class="text-xs font-bold"
-                                            >Edit</DropdownMenuItem
-                                        >
-                                        <DropdownMenuItem
-                                            @click="deleteSubStrand(ss.id)"
-                                            class="text-xs font-bold text-red-600"
-                                            >Delete</DropdownMenuItem
-                                        >
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                <h3 class="text-sm font-bold text-foreground">{{ ss.name }}</h3>
+                                <p v-if="ss.description" class="text-xs text-muted-foreground line-clamp-1">{{ ss.description }}</p>
                             </div>
-                            <p
-                                class="line-clamp-1 text-xs font-medium text-slate-400"
-                            >
-                                {{
-                                    ss.description || 'No description provided.'
-                                }}
-                            </p>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <Button variant="ghost" size="icon" class="h-7 w-7 rounded-lg hover:bg-muted shrink-0">
+                                        <MoreVertical class="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" class="w-40 rounded-xl border-border bg-card p-2 shadow-lg">
+                                    <DropdownMenuItem @click="openSubStrandModal(ss)" class="rounded-lg px-3 py-2 text-xs font-medium cursor-pointer">
+                                        <Edit2 class="mr-2 h-3.5 w-3.5" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem @click="deleteSubStrand(ss.id)" class="rounded-lg px-3 py-2 text-xs font-medium text-rose-600 focus:bg-rose-50 cursor-pointer">
+                                        <Trash2 class="mr-2 h-3.5 w-3.5" /> Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-
-                        <div
-                            class="scrollbar-hide max-h-[300px] flex-1 space-y-3 overflow-y-auto p-6"
-                        >
+                        <!-- Goals list -->
+                        <div class="max-h-[280px] flex-1 space-y-2 overflow-y-auto p-4">
                             <div
                                 v-for="outcome in ss.learning_outcomes"
                                 :key="outcome.id"
-                                class="flex gap-3 rounded-xl border border-slate-100/50 bg-slate-50/50 p-4"
+                                class="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/10 p-3"
                             >
-                                <div
-                                    class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500"
-                                ></div>
-                                <p
-                                    class="text-xs leading-snug font-semibold text-slate-600"
-                                >
-                                    {{ outcome.outcome }}
-                                </p>
+                                <div class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></div>
+                                <p class="text-xs font-semibold leading-snug text-foreground">{{ outcome.outcome }}</p>
+                            </div>
+                            <div
+                                v-if="!ss.learning_outcomes?.length"
+                                class="cursor-pointer rounded-lg border border-dashed border-border py-4 text-center hover:border-primary/30"
+                                @click="openOutcomeModal(ss.id)"
+                            >
+                                <p class="text-[10px] font-semibold text-muted-foreground uppercase">No goals yet</p>
                             </div>
                         </div>
-
-                        <div
-                            class="flex items-center justify-between rounded-b-2xl border-t border-slate-50 bg-[#f9fafb] p-4"
-                        >
-                            <span
-                                class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                                >{{
-                                    ss.learning_outcomes?.length || 0
-                                }}
-                                OUTCOMES</span
-                            >
-                            <Button
-                                @click="openOutcomeModal(ss.id)"
-                                variant="ghost"
-                                class="rounded-lg p-1.5 text-xs font-bold tracking-wider text-blue-600 uppercase hover:bg-blue-50"
-                                >Add Goal</Button
-                            >
+                        <!-- Card footer -->
+                        <div class="flex items-center justify-between border-t border-border/50 bg-muted/5 px-4 py-3">
+                            <span class="text-[10px] font-semibold text-muted-foreground uppercase">{{ ss.learning_outcomes?.length || 0 }} Goals</span>
+                            <Button @click="openOutcomeModal(ss.id)" variant="ghost" class="h-7 rounded-lg px-2 text-[10px] font-bold text-primary hover:bg-primary/10 uppercase">
+                                Add Goal
+                            </Button>
                         </div>
                     </div>
-                </div>
-
-                <div
-                    v-if="!strand.sub_strands?.length"
-                    class="flex flex-col items-center justify-center gap-6 bg-white py-24 text-center"
-                >
-                    <div
-                        class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-200"
-                    >
-                        <GraduationCap class="h-10 w-10" />
-                    </div>
-                    <div class="space-y-1">
-                        <h3
-                            class="text-xl font-bold tracking-tight text-slate-900 uppercase"
-                        >
-                            Expansion Required
-                        </h3>
-                        <p
-                            class="mx-auto max-w-sm text-xs leading-relaxed font-medium text-slate-400"
-                        >
-                            Add sub-components to start defining the learning
-                            pathway.
-                        </p>
-                    </div>
-                    <Button
-                        @click="openSubStrandModal()"
-                        class="h-11 rounded-xl bg-slate-900 px-8 text-xs font-bold tracking-tight text-white uppercase shadow-sm transition-all hover:bg-black"
-                    >
-                        <Plus class="mr-2 h-4 w-4" /> Add Sub-strand
-                    </Button>
                 </div>
 
                 <!-- Footer -->
-                <div
-                    class="flex items-center justify-between border-t border-slate-50 bg-white p-6"
-                    v-if="strand.sub_strands?.length"
-                >
-                    <p
-                        class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                    >
-                        Found {{ strand.sub_strands?.length }} Sub-strands
+                <div v-if="strand.sub_strands?.length" class="flex h-14 items-center justify-between border-t border-border/50 bg-muted/5 px-6">
+                    <p class="text-xs font-medium text-muted-foreground">
+                        {{ strand.sub_strands.length }} sub-topic{{ strand.sub_strands.length !== 1 ? 's' : '' }} in {{ strand.name }}
                     </p>
-                    <div class="flex items-center gap-2">
-                        <Button
-                            disabled
-                            variant="outline"
-                            class="h-9 rounded-xl border-slate-100 px-4 text-xs font-bold text-slate-300"
-                            >Prev</Button
-                        >
-                        <Button
-                            disabled
-                            class="h-9 w-9 rounded-xl bg-slate-900 text-xs font-bold text-white"
-                            >1</Button
-                        >
-                        <Button
-                            disabled
-                            variant="outline"
-                            class="h-9 rounded-xl border-slate-100 px-4 text-xs font-bold text-slate-300"
-                            >Next</Button
-                        >
-                    </div>
                 </div>
             </div>
 
-            <!-- Modals -->
-
-            <!-- Sub-Strand Modal -->
+            <!-- ============================================================ -->
+            <!-- Add/Edit Sub-topic Modal -->
+            <!-- ============================================================ -->
             <Dialog v-model:open="showSubStrandModal">
-                <DialogContent
-                    class="overflow-hidden rounded-2xl border-slate-100 p-0 shadow-xl sm:max-w-[425px]"
-                >
-                    <DialogHeader class="bg-slate-900 p-6 text-white">
-                        <DialogTitle class="text-xl font-bold tracking-tight"
-                            >{{
-                                editingSubStrand ? 'Edit' : 'Add'
-                            }}
-                            Sub-strand</DialogTitle
-                        >
-                        <DialogDescription class="text-xs text-slate-400">
-                            Update pathway components for
-                            <span class="font-bold text-blue-400"
-                                >"{{ strand.name }}"</span
-                            >.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form
-                        @submit.prevent="submitSubStrand"
-                        class="grid gap-4 bg-white px-6 py-6"
-                    >
-                        <div class="grid gap-1.5">
-                            <Label
-                                class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                >Name</Label
-                            >
+                <DialogContent class="sm:max-w-[440px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                    <div class="flex items-center gap-4 border-b border-border/50 bg-muted/5 p-6">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <BookOpen class="h-6 w-6" />
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-bold tracking-tight text-foreground">
+                                {{ editingSubStrand ? 'Edit Sub-topic' : 'Add Sub-topic' }}
+                            </h3>
+                            <p class="text-xs text-muted-foreground font-medium">Under "{{ strand.name }}"</p>
+                        </div>
+                    </div>
+                    <form @submit.prevent="submitSubStrand" class="p-6 space-y-4">
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Sub-topic Name *</Label>
                             <Input
                                 v-model="subStrandForm.name"
-                                placeholder="Registry name..."
-                                class="h-10 rounded-xl border-slate-100 text-sm font-semibold"
+                                placeholder="e.g. Counting and Place Value"
+                                class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background"
                                 required
                             />
+                            <p v-if="subStrandForm.errors.name" class="text-xs text-rose-500">{{ subStrandForm.errors.name }}</p>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="grid gap-1.5">
-                                <Label
-                                    class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                    >Code</Label
-                                >
+                            <div class="space-y-2">
+                                <Label class="text-xs font-medium text-muted-foreground">Code</Label>
                                 <Input
                                     v-model="subStrandForm.code"
                                     placeholder="SS.01"
-                                    class="h-10 rounded-xl border-slate-100 text-sm font-bold uppercase"
+                                    class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background uppercase"
                                 />
                             </div>
-                            <div class="grid gap-1.5">
-                                <Label
-                                    class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                    >Order</Label
-                                >
+                            <div class="space-y-2">
+                                <Label class="text-xs font-medium text-muted-foreground">Order</Label>
                                 <Input
                                     type="number"
                                     v-model="subStrandForm.display_order"
-                                    class="h-10 rounded-xl border-slate-100 text-sm font-semibold"
+                                    class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background"
                                     required
                                 />
                             </div>
                         </div>
-                        <div class="grid gap-1.5">
-                            <Label
-                                class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                >Description</Label
-                            >
-                            <Textarea
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Description (optional)</Label>
+                            <textarea
                                 v-model="subStrandForm.description"
-                                placeholder="Technical breakdown..."
-                                class="min-h-[100px] rounded-xl border-slate-100 p-4 text-xs leading-relaxed font-medium text-slate-600"
-                            />
+                                placeholder="Brief description..."
+                                rows="3"
+                                class="w-full rounded-lg border border-border bg-muted/10 px-3 py-2 text-sm outline-none resize-none focus:bg-background focus:ring-2 focus:ring-primary/10"
+                            ></textarea>
                         </div>
-                        <DialogFooter class="px-0 pt-2">
+                        <div class="flex items-center justify-end gap-3 pt-2 border-t border-border/50">
+                            <Button type="button" variant="ghost" @click="showSubStrandModal = false" class="h-10 rounded-lg px-4 text-xs font-semibold">
+                                Cancel
+                            </Button>
                             <Button
                                 type="submit"
                                 :disabled="subStrandForm.processing"
-                                class="h-11 w-full rounded-xl bg-blue-600 text-xs font-bold text-white uppercase shadow-sm transition-all hover:bg-blue-700"
+                                class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all"
                             >
-                                {{
-                                    subStrandForm.processing
-                                        ? 'Saving...'
-                                        : editingSubStrand
-                                          ? 'Update'
-                                          : 'Save'
-                                }}
+                                {{ subStrandForm.processing ? 'Saving...' : editingSubStrand ? 'Save Changes' : 'Add Sub-topic' }}
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </DialogContent>
             </Dialog>
 
-            <!-- Outcome Modal -->
+            <!-- ============================================================ -->
+            <!-- Add/Edit Learning Goal Modal -->
+            <!-- ============================================================ -->
             <Dialog v-model:open="showOutcomeModal">
-                <DialogContent
-                    class="overflow-hidden rounded-2xl border-slate-100 p-0 shadow-xl sm:max-w-[425px]"
-                >
-                    <DialogHeader class="bg-blue-600 p-6 text-white">
-                        <DialogTitle class="text-xl font-bold tracking-tight"
-                            >{{
-                                editingOutcome ? 'Edit' : 'Add'
-                            }}
-                            Goal</DialogTitle
-                        >
-                        <DialogDescription class="text-xs text-white/80">
-                            Define mastery level for this component.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <form
-                        @submit.prevent="submitOutcome"
-                        class="grid gap-4 bg-white px-6 py-6"
-                    >
+                <DialogContent class="sm:max-w-[440px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                    <div class="flex items-center gap-4 border-b border-border/50 bg-muted/5 p-6">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Sparkles class="h-6 w-6" />
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-lg font-bold tracking-tight text-foreground">
+                                {{ editingOutcome ? 'Edit Learning Goal' : 'Add Learning Goal' }}
+                            </h3>
+                            <p class="text-xs text-muted-foreground font-medium">What should students learn or achieve?</p>
+                        </div>
+                    </div>
+                    <form @submit.prevent="submitOutcome" class="p-6 space-y-4">
                         <div class="grid grid-cols-2 gap-4">
-                            <div class="grid gap-1.5">
-                                <Label
-                                    class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                    >Goal Type</Label
-                                >
-                                <select
-                                    v-model="outcomeForm.outcome_type"
-                                    class="h-10 w-full rounded-xl border border-slate-100 bg-[#f9fafb]/50 px-3 text-xs font-bold tracking-wider text-slate-700 uppercase outline-none"
-                                >
-                                    <option>Standard</option>
-                                    <option>Competency</option>
-                                    <option>Behavioral</option>
-                                    <option>Skill</option>
-                                </select>
+                            <div class="space-y-2">
+                                <Label class="text-xs font-medium text-muted-foreground">Goal Type</Label>
+                                <div class="relative">
+                                    <select
+                                        v-model="outcomeForm.outcome_type"
+                                        class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
+                                    >
+                                        <option>Standard</option>
+                                        <option>Competency</option>
+                                        <option>Behavioral</option>
+                                        <option>Skill</option>
+                                    </select>
+                                    <ChevronRight class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-muted-foreground/40" />
+                                </div>
                             </div>
-                            <div class="grid gap-1.5">
-                                <Label
-                                    class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                    >Sequence</Label
-                                >
+                            <div class="space-y-2">
+                                <Label class="text-xs font-medium text-muted-foreground">Order</Label>
                                 <Input
                                     type="number"
                                     v-model="outcomeForm.display_order"
-                                    class="h-10 rounded-xl border-slate-100 text-sm font-semibold"
+                                    class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background"
                                     required
                                 />
                             </div>
                         </div>
-                        <div class="grid gap-1.5">
-                            <Label
-                                class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                >Outcome Text</Label
-                            >
-                            <Textarea
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Learning Goal Description *</Label>
+                            <textarea
                                 v-model="outcomeForm.outcome"
-                                placeholder="Describe the expected mastery..."
-                                class="min-h-[120px] rounded-xl border-slate-100 p-4 text-sm leading-relaxed font-medium text-slate-600"
+                                placeholder="What will students know or be able to do?"
+                                rows="4"
+                                class="w-full rounded-lg border border-border bg-muted/10 px-3 py-2 text-sm outline-none resize-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                 required
-                            />
+                            ></textarea>
+                            <p v-if="outcomeForm.errors.outcome" class="text-xs text-rose-500">{{ outcomeForm.errors.outcome }}</p>
                         </div>
-                        <DialogFooter class="px-0 pt-2">
+                        <div class="flex items-center justify-end gap-3 pt-2 border-t border-border/50">
+                            <Button type="button" variant="ghost" @click="showOutcomeModal = false" class="h-10 rounded-lg px-4 text-xs font-semibold">
+                                Cancel
+                            </Button>
                             <Button
                                 type="submit"
                                 :disabled="outcomeForm.processing"
-                                class="h-11 w-full rounded-xl bg-slate-900 text-xs font-bold text-white uppercase shadow-sm transition-all hover:bg-black"
+                                class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all"
                             >
-                                {{
-                                    outcomeForm.processing
-                                        ? 'Saving...'
-                                        : editingOutcome
-                                          ? 'Update'
-                                          : 'Save'
-                                }}
+                                {{ outcomeForm.processing ? 'Saving...' : editingOutcome ? 'Save Changes' : 'Add Goal' }}
                             </Button>
-                        </DialogFooter>
+                        </div>
                     </form>
                 </DialogContent>
             </Dialog>

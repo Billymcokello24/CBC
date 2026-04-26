@@ -17,6 +17,7 @@ import {
     Receipt,
     Landmark,
     History,
+    Home,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -36,9 +37,9 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Pulse', href: '/dashboard' },
-    { title: 'Capital Center', href: '/finance' },
-    { title: 'Ledger Matrix', href: '/finance/invoices' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Finance', href: '/finance' },
+    { title: 'Invoices', href: '/finance/invoices' },
 ];
 
 const searchQuery = ref('');
@@ -111,12 +112,12 @@ const getStatusIcon = (status: string) => {
                     <h1
                         class="text-3xl font-bold tracking-tight text-foreground underline decoration-blue-600 decoration-4 underline-offset-8"
                     >
-                        Ledger Matrix
+                        Invoices
                     </h1>
                     <p
                         class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
                     >
-                        Institutional billing units & liquidity tracking.
+                        Track student fees and manage billing.
                     </p>
                 </div>
 
@@ -127,7 +128,7 @@ const getStatusIcon = (status: string) => {
                         as-child
                     >
                         <Link href="/finance/invoices/bulk-generate"
-                            >Bulk Pulse</Link
+                            >Create Many Invoices</Link
                         >
                     </Button>
                     <Link
@@ -135,7 +136,7 @@ const getStatusIcon = (status: string) => {
                         class="inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Gen Ledger
+                        New Invoice
                     </Link>
                 </div>
             </div>
@@ -150,7 +151,7 @@ const getStatusIcon = (status: string) => {
                     />
                     <Input
                         v-model="searchQuery"
-                        placeholder="SCAN LEDGER..."
+                        placeholder="SEARCH INVOICES..."
                         class="h-14 rounded-2xl border-transparent bg-muted/20 pl-14 text-xs font-bold tracking-tight uppercase transition-all focus:border-blue-600/20"
                     />
                 </div>
@@ -181,22 +182,22 @@ const getStatusIcon = (status: string) => {
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Unit ID
+                                    Invoice No
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Entity
+                                    Student
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Valuation
+                                    Amount
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Deficit
+                                    Balance
                                 </th>
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
@@ -206,7 +207,7 @@ const getStatusIcon = (status: string) => {
                                 <th
                                     class="px-8 py-6 text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
                                 >
-                                    Expiry
+                                    Due Date
                                 </th>
                                 <th
                                     class="px-8 py-6 text-right text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/40 uppercase"
@@ -320,7 +321,7 @@ const getStatusIcon = (status: string) => {
                                                     ><Eye
                                                         class="mr-3 h-4 w-4 text-blue-600"
                                                     />
-                                                    Pulse Unit</Link
+                                                    View Details</Link
                                                 >
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
@@ -329,13 +330,13 @@ const getStatusIcon = (status: string) => {
                                                 <Download
                                                     class="mr-3 h-4 w-4 text-emerald-600"
                                                 />
-                                                Extract PDF
+                                                Download PDF
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight text-rose-600 uppercase"
                                             >
                                                 <Send class="mr-3 h-4 w-4" />
-                                                Dispatch Asset
+                                                Send Invoice
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 as-child
@@ -346,7 +347,7 @@ const getStatusIcon = (status: string) => {
                                                     ><Plus
                                                         class="mr-3 h-4 w-4"
                                                     />
-                                                    Log Liquidity</Link
+                                                    Log Payment</Link
                                                 >
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
@@ -365,7 +366,7 @@ const getStatusIcon = (status: string) => {
                     <p
                         class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
                     >
-                        No Ledger Activity found
+                        No Invoice Activity found
                     </p>
                 </div>
 
@@ -379,7 +380,7 @@ const getStatusIcon = (status: string) => {
                         ></div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >Ledger Sync: Operational</span
+                            >System Status: Online</span
                         >
                     </div>
 
