@@ -16,6 +16,7 @@ import {
     LayoutDashboard,
     History,
     Landmark,
+    Home,
 } from 'lucide-vue-next';
 import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -35,9 +36,9 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Pulse', href: '/dashboard' },
-    { title: 'Capital Center', href: '/finance' },
-    { title: 'Fee Schematic', href: '/finance/fee-structures' },
+    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Finance', href: '/finance' },
+    { title: 'Fees', href: '/finance/fee-structures' },
 ];
 
 const searchQuery = ref('');
@@ -75,12 +76,12 @@ const filteredStructures = computed(() => {
                     <h1
                         class="text-3xl font-bold tracking-tight text-foreground underline decoration-indigo-600 decoration-4 underline-offset-8"
                     >
-                        Fee Schematic
+                        Fee Structures
                     </h1>
                     <p
                         class="pt-2 text-sm font-bold tracking-tight text-muted-foreground/60 uppercase"
                     >
-                        Architectural fee blueprints and allocation structures.
+                        Set up school fees for each class and term.
                     </p>
                 </div>
 
@@ -89,7 +90,7 @@ const filteredStructures = computed(() => {
                     class="inline-flex h-11 items-center justify-center rounded-xl bg-indigo-600 px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                     <Plus class="mr-2 h-4 w-4" />
-                    New Schematic
+                    New Fee Structure
                 </Link>
             </div>
 
@@ -103,7 +104,7 @@ const filteredStructures = computed(() => {
                     />
                     <Input
                         v-model="searchQuery"
-                        placeholder="SCAN SCHEMATICS..."
+                        placeholder="SEARCH FEES..."
                         class="h-14 rounded-2xl border-transparent bg-muted/20 pl-14 text-xs font-bold tracking-tight uppercase transition-all focus:border-indigo-600/20"
                     />
                 </div>
@@ -178,7 +179,7 @@ const filteredStructures = computed(() => {
                                         ><Eye
                                             class="mr-3 h-4 w-4 text-blue-600"
                                         />
-                                        Pulse Unit</Link
+                                        View Details</Link
                                     >
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
@@ -190,13 +191,13 @@ const filteredStructures = computed(() => {
                                         ><Edit
                                             class="mr-3 h-4 w-4 text-emerald-600"
                                         />
-                                        Modify</Link
+                                        Edit</Link
                                     >
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     class="h-11 cursor-pointer rounded-xl px-4 text-xs font-bold tracking-tight text-rose-600 uppercase"
                                 >
-                                    <Trash2 class="mr-3 h-4 w-4" /> Purge
+                                    <Trash2 class="mr-3 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -208,7 +209,7 @@ const filteredStructures = computed(() => {
                         >
                             <span
                                 class="text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >Core Tuition</span
+                                >Tuition Fees</span
                             >
                             <span
                                 class="text-sm font-bold tracking-tighter text-foreground"
@@ -224,7 +225,7 @@ const filteredStructures = computed(() => {
                         >
                             <span
                                 class="text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
-                                >Ancillary Fees</span
+                                >Other Fees</span
                             >
                             <span
                                 class="text-sm font-bold tracking-tighter text-foreground"
@@ -241,7 +242,7 @@ const filteredStructures = computed(() => {
                         >
                             <span
                                 class="text-sm font-bold tracking-tight text-foreground uppercase"
-                                >Aggregate</span
+                                >Total Amount</span
                             >
                             <span
                                 class="text-2xl font-bold tracking-tighter text-indigo-600"
@@ -272,7 +273,7 @@ const filteredStructures = computed(() => {
                                     structure.is_active ? 'animate-pulse' : ''
                                 "
                             ></div>
-                            {{ structure.is_active ? 'Active Flow' : 'Halted' }}
+                            {{ structure.is_active ? 'Active' : 'Inactive' }}
                         </Badge>
 
                         <div

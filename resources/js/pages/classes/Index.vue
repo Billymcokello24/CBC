@@ -89,7 +89,7 @@ const hasPermission = (permission: string) => {
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Home', href: '/dashboard', icon: Home },
+    { title: 'Dashboard', href: '/dashboard', icon: Home },
     { title: 'Classes', href: '/classes' },
 ];
 
@@ -234,62 +234,57 @@ const confirmDeleteClass = (cls: any) => {
         >
             <!-- Page Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1"
             >
                 <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Class Registry</span>
-                    </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                         Classes
                     </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        View and manage classes, students, and class teachers.
+                    <p class="text-sm text-muted-foreground">
+                        View and manage classes, students, and teachers.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Button
                         variant="outline"
-                        class="h-11 rounded-xl border-border px-6 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted"
+                        class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all hover:bg-muted"
                         @click="router.post('/classes/auto-create')"
                     >
                         <Plus class="mr-2 h-4 w-4 opacity-40" />
-                        Auto Create
+                        Generate Classes
                     </Button>
                     <Link
                         v-if="hasPermission('classes.create')"
                         href="/classes/create"
-                        class="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-8 text-xs font-medium tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-[0.98]"
+                        class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-8 text-xs font-bold text-white uppercase shadow-sm transition-all hover:opacity-90"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Add New Class
+                        Create Class
                     </Link>
                 </div>
             </div>
 
-            <!-- TailPanel Stats -->
+            <!-- Stats Grid -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-primary/20 dark:border-white/5"
+                    class="group rounded-xl border border-border bg-card p-6 shadow-sm"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all"
                         >
                             <School
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
-                            >Overview</span
+                            class="text-xs font-bold text-muted-foreground uppercase opacity-40"
+                            >Classes</span
                         >
                     </div>
                     <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
+                        class="mb-1 text-xs font-bold text-muted-foreground uppercase opacity-60"
                     >
                         Total Classes
                     </p>
@@ -299,25 +294,25 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-emerald-500/20 dark:border-white/5"
+                    class="group rounded-xl border border-border bg-card p-6 shadow-sm"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/5 text-emerald-500 transition-all duration-500 group-hover:bg-emerald-500 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 transition-all"
                         >
                             <Users
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
+                            class="text-xs font-bold text-muted-foreground uppercase opacity-40"
                             >Students</span
                         >
                     </div>
                     <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
+                        class="mb-1 text-xs font-bold text-muted-foreground uppercase opacity-60"
                     >
-                        Active Learners
+                        Total Students
                     </p>
                     <h3 class="text-2xl font-bold text-foreground">
                         {{ stats.total_learners.toLocaleString() }}
@@ -325,25 +320,25 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-amber-500/20 dark:border-white/5"
+                    class="group rounded-xl border border-border bg-card p-6 shadow-sm"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/5 text-amber-500 transition-all duration-500 group-hover:bg-amber-500 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 transition-all"
                         >
                             <Layers
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
+                            class="text-xs font-bold text-muted-foreground uppercase opacity-40"
                             >Size</span
                         >
                     </div>
                     <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
+                        class="mb-1 text-xs font-bold text-muted-foreground uppercase opacity-60"
                     >
-                        Avg Class Size
+                        Average Class Size
                     </p>
                     <h3 class="text-2xl font-bold text-foreground">
                         {{ stats.average_class_size }}
@@ -351,35 +346,34 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
 
                 <div
-                    class="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-500 hover:border-violet-500/20 dark:border-white/5"
+                    class="group rounded-xl border border-border bg-card p-6 shadow-sm"
                 >
                     <div class="mb-4 flex items-center justify-between">
                         <div
-                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/5 text-violet-500 transition-all duration-500 group-hover:bg-violet-500 group-hover:text-white"
+                            class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500 transition-all"
                         >
                             <GraduationCap
-                                class="h-5 w-5 opacity-40 group-hover:opacity-100"
+                                class="h-5 w-5"
                             />
                         </div>
                         <span
-                            class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
+                            class="text-xs font-bold text-muted-foreground uppercase opacity-40"
                             >Grades</span
                         >
                     </div>
                     <p
-                        class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/60 uppercase"
+                        class="mb-1 text-xs font-bold text-muted-foreground uppercase opacity-60"
                     >
-                        Grade Strata
+                        Total Grade Levels
                     </p>
                     <h3 class="text-2xl font-bold text-foreground">
-                        {{ stats.grades_count }} Nodes
+                        {{ stats.grades_count }} Grades
                     </h3>
                 </div>
             </div>
 
-            <!-- Toolbar -->
             <div
-                class="flex flex-col gap-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
+                class="flex flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-sm"
             >
                 <div
                     class="flex flex-col items-center justify-between gap-4 md:flex-row"
@@ -389,24 +383,24 @@ const confirmDeleteClass = (cls: any) => {
                     >
                         <div class="relative flex-1">
                             <Search
-                                class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground/60"
+                                class="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                             />
                             <Input
                                 v-model="searchQuery"
                                 placeholder="Search classes..."
-                                class="h-12 rounded-xl border-border bg-muted/20 pl-12 text-sm font-bold transition-all focus:ring-2 focus:ring-primary/10 focus:bg-background"
+                                class="h-10 rounded-lg border-border bg-muted/20 pl-12 text-sm font-semibold transition-all focus:bg-background"
                             />
                         </div>
 
                         <div
-                            class="flex h-12 items-center rounded-xl border border-border bg-muted p-1"
+                            class="flex h-10 items-center rounded-lg border border-border bg-muted p-1"
                         >
                             <Button
                                 variant="ghost"
                                 :class="[
-                                    'h-10 w-10 rounded-lg p-0 transition-all',
+                                    'h-8 w-8 rounded-md p-0 transition-all',
                                     selectedView === 'grid'
-                                        ? 'bg-background text-primary shadow-sm'
+                                        ? 'bg-card text-primary shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground',
                                 ]"
                                 @click="selectedView = 'grid'"
@@ -415,9 +409,9 @@ const confirmDeleteClass = (cls: any) => {
                             <Button
                                 variant="ghost"
                                 :class="[
-                                    'h-10 w-10 rounded-lg p-0 transition-all',
+                                    'h-8 w-8 rounded-md p-0 transition-all',
                                     selectedView === 'list'
-                                        ? 'bg-background text-primary shadow-sm'
+                                        ? 'bg-card text-primary shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground',
                                 ]"
                                 @click="selectedView = 'list'"
@@ -427,7 +421,7 @@ const confirmDeleteClass = (cls: any) => {
 
                         <Button
                             variant="outline"
-                            class="h-12 rounded-xl border-border px-6 text-xs font-bold tracking-tight whitespace-nowrap uppercase"
+                            class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all"
                             @click="showFilters = !showFilters"
                         >
                             <Filter class="mr-2 h-4 w-4 opacity-40" />
@@ -439,21 +433,20 @@ const confirmDeleteClass = (cls: any) => {
                         <Button
                             variant="outline"
                             as-child
-                            class="h-12 rounded-xl border-border px-6 text-xs font-bold tracking-tight uppercase transition-all hover:bg-muted"
+                            class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all"
                         >
                             <Link href="/classes/allocations">Allocations</Link>
                         </Button>
 
                         <div
                             v-if="selectedClassIds.length > 0"
-                            class="animate-in duration-300 slide-in-from-right-4"
                         >
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
                                     <Button
-                                        class="h-12 rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-xl hover:bg-primary/90"
+                                        class="h-10 rounded-lg bg-primary px-6 text-xs font-bold text-white uppercase shadow-sm"
                                     >
-                                        Batch Actions ({{
+                                        Bulk Actions ({{
                                             selectedClassIds.length
                                         }})
                                         <ChevronDown
@@ -468,21 +461,21 @@ const confirmDeleteClass = (cls: any) => {
                                     <DropdownMenuItem
                                         @click="runBulkAction('activate')"
                                         ><CheckCircle2
-                                            class="mr-3 h-4 w-4 text-emerald-500 opacity-60"
+                                            class="mr-3 h-4 w-4 text-emerald-500"
                                         />
-                                        Activate Signal</DropdownMenuItem
+                                        Activate</DropdownMenuItem
                                     >
                                     <DropdownMenuItem
                                         @click="runBulkAction('deactivate')"
                                         ><ShieldOff
-                                            class="mr-3 h-4 w-4 text-amber-500 opacity-60"
+                                            class="mr-3 h-4 w-4 text-amber-500"
                                         />
-                                        Deactivate Node</DropdownMenuItem
+                                        Deactivate</DropdownMenuItem
                                     >
                                     <DropdownMenuItem
                                         @click="runBulkAction('promote')"
                                         ><GraduationCap
-                                            class="mr-3 h-4 w-4 text-primary opacity-60"
+                                            class="mr-3 h-4 w-4 text-primary"
                                         />
                                         Promote Students</DropdownMenuItem
                                     >
@@ -493,7 +486,7 @@ const confirmDeleteClass = (cls: any) => {
                                         class="group rounded-lg py-2.5 text-xs font-bold text-rose-500"
                                         @click="runBulkAction('delete')"
                                         ><Trash2
-                                            class="mr-3 h-4 w-4 opacity-60 group-hover:opacity-100"
+                                            class="mr-3 h-4 w-4"
                                         />
                                         Delete Selected</DropdownMenuItem
                                     >
@@ -509,12 +502,12 @@ const confirmDeleteClass = (cls: any) => {
                 >
                     <div class="space-y-2">
                         <label
-                            class="pl-1 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                            class="pl-1 text-xs font-bold text-muted-foreground uppercase opacity-40"
                             >Grade Level</label
                         >
                         <select
                             v-model="selectedGradeId"
-                            class="h-11 w-full cursor-pointer appearance-none rounded-xl border-border bg-muted/20 px-4 text-sm font-medium tracking-tight transition-all outline-none hover:bg-muted/30 focus:ring-1 focus:ring-primary"
+                            class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm font-semibold transition-all outline-none focus:bg-background"
                         >
                             <option value="">All Grade Levels</option>
                             <option
@@ -528,28 +521,28 @@ const confirmDeleteClass = (cls: any) => {
                     </div>
                     <div class="space-y-2">
                         <label
-                            class="pl-1 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >Condition</label
+                            class="pl-1 text-xs font-bold text-muted-foreground uppercase opacity-40"
+                            >Status</label
                         >
                         <select
                             v-model="selectedStatus"
-                            class="h-11 w-full cursor-pointer appearance-none rounded-xl border-border bg-muted/20 px-4 text-sm font-medium tracking-tight transition-all outline-none hover:bg-muted/30 focus:ring-1 focus:ring-primary"
+                            class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm font-semibold transition-all outline-none focus:bg-background"
                         >
                             <option value="all">All Statuses</option>
-                            <option value="active">Active Units</option>
-                            <option value="inactive">Inactive Units</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
                         </select>
                     </div>
                     <div class="space-y-2">
                         <label
-                            class="pl-1 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                            class="pl-1 text-xs font-bold text-muted-foreground uppercase opacity-40"
                             >Academic Year</label
                         >
                         <select
                             v-model="selectedAcademicYearId"
-                            class="h-11 w-full cursor-pointer appearance-none rounded-xl border-border bg-muted/20 px-4 text-sm font-medium tracking-tight transition-all outline-none hover:bg-muted/30 focus:ring-1 focus:ring-primary"
+                            class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm font-semibold transition-all outline-none focus:bg-background"
                         >
-                            <option value="">All Periods</option>
+                            <option value="">All Years</option>
                             <option
                                 v-for="year in $page.props.academicYears as any"
                                 :key="year.id"
@@ -604,7 +597,7 @@ const confirmDeleteClass = (cls: any) => {
                     <div
                         v-for="cls in classes.data"
                         :key="cls.id"
-                        class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-8 transition-all duration-500 hover:border-primary/20 hover:shadow-lg dark:border-white/5"
+                        class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card p-8 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-lg"
                     >
                         <!-- Holographic Background Effect -->
                         <div
@@ -627,7 +620,7 @@ const confirmDeleteClass = (cls: any) => {
                                     <Check class="h-4 w-4 stroke-[3px]" />
                                 </button>
                                 <div
-                                    class="flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground text-xl font-bold text-background shadow-lg transition-transform duration-500 group-hover:scale-110"
+                                    class="flex h-16 w-16 items-center justify-center rounded-xl bg-slate-900 text-xl font-bold text-white shadow-md transition-transform duration-300 group-hover:scale-105"
                                 >
                                     {{ cls.stream_code || '?' }}
                                 </div>
@@ -663,7 +656,7 @@ const confirmDeleteClass = (cls: any) => {
                                         as-child
                                         ><Link :href="`/classes/${cls.id}`"
                                             ><Eye
-                                                class="mr-3 h-4 w-4 text-primary opacity-60"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
                                             View Details</Link
                                         ></DropdownMenuItem
@@ -673,9 +666,9 @@ const confirmDeleteClass = (cls: any) => {
                                         as-child
                                         ><Link :href="`/classes/${cls.id}/edit`"
                                             ><Edit
-                                                class="mr-3 h-4 w-4 text-amber-500 opacity-60"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
-                                            Edit Settings</Link
+                                            Edit Class</Link
                                         ></DropdownMenuItem
                                     >
                                     <DropdownMenuSeparator
@@ -686,9 +679,9 @@ const confirmDeleteClass = (cls: any) => {
                                         as-child
                                         ><Link href="/students"
                                             ><Users
-                                                class="mr-3 h-4 w-4 text-primary opacity-60"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
-                                            Student List</Link
+                                            Students</Link
                                         ></DropdownMenuItem
                                     >
                                     <DropdownMenuItem
@@ -697,9 +690,9 @@ const confirmDeleteClass = (cls: any) => {
                                         ><Link
                                             :href="`/students/enrollments/groups/${cls.id}`"
                                             ><Layers
-                                                class="mr-3 h-4 w-4 text-emerald-500 opacity-60"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
-                                            Class Enrollment</Link
+                                            Enrolments</Link
                                         ></DropdownMenuItem
                                     >
                                 </DropdownMenuContent>
@@ -711,7 +704,7 @@ const confirmDeleteClass = (cls: any) => {
                                 class="flex items-center gap-4 rounded-2xl border border-border bg-muted/30 p-5 transition-all duration-500 group-hover:border-primary/20 group-hover:bg-primary/5"
                             >
                                 <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background text-foreground/40 shadow-sm transition-colors group-hover:text-primary"
+                                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-primary/40 shadow-sm transition-colors group-hover:text-primary"
                                 >
                                     <Users class="h-5 w-5" />
                                 </div>
@@ -724,7 +717,7 @@ const confirmDeleteClass = (cls: any) => {
                                     <p
                                         class="truncate text-xs font-bold text-foreground"
                                     >
-                                        {{ cls.teacher || 'Assign Teacher' }}
+                                        {{ cls.teacher || 'Unassigned' }}
                                     </p>
                                 </div>
                             </div>
@@ -736,7 +729,7 @@ const confirmDeleteClass = (cls: any) => {
                                 >
                                 <span
                                     class="rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold tracking-wider text-primary uppercase"
-                                    >{{ cls.stream || 'Segment' }}</span
+                                    >{{ cls.stream || 'General' }}</span
                                 >
                             </div>
 
@@ -745,11 +738,11 @@ const confirmDeleteClass = (cls: any) => {
                                     class="mb-3 flex items-center justify-between"
                                 >
                                     <span
-                                        class="text-xs font-bold tracking-tight text-muted-foreground/40"
-                                        >Class Size</span
+                                        class="text-xs font-bold text-muted-foreground uppercase opacity-40"
+                                        >Class Enrollment</span
                                     >
                                     <span
-                                        class="text-xs font-bold tracking-tight text-foreground uppercase"
+                                        class="text-xs font-bold text-foreground uppercase"
                                     >
                                         <span
                                             :class="
@@ -761,7 +754,7 @@ const confirmDeleteClass = (cls: any) => {
                                         >
                                         <span
                                             class="mx-1 text-muted-foreground/30"
-                                            >/</span
+                                            >of</span
                                         >
                                         {{ cls.capacity || '∞' }}
                                     </span>
@@ -789,7 +782,7 @@ const confirmDeleteClass = (cls: any) => {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    class="h-10 flex-1 rounded-xl border-border text-xs font-medium tracking-tight uppercase transition-all hover:bg-foreground hover:text-background"
+                                    class="h-10 flex-1 rounded-lg border-border text-xs font-bold uppercase transition-all hover:bg-slate-900 hover:text-white"
                                     as-child
                                 >
                                     <Link :href="`/classes/${cls.id}`"
@@ -868,34 +861,34 @@ const confirmDeleteClass = (cls: any) => {
                                     </button>
                                 </th>
                                 <th
-                                    class="px-6 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-6 py-6 text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Unit Signal
+                                    Class
                                 </th>
                                 <th
-                                    class="px-6 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-6 py-6 text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Strata
+                                    Grade
                                 </th>
                                 <th
-                                    class="px-6 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-6 py-6 text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Timeline
+                                    Year
                                 </th>
                                 <th
-                                    class="px-6 py-6 text-center text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-6 py-6 text-center text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Population
+                                    Students
                                 </th>
                                 <th
-                                    class="px-6 py-6 text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-6 py-6 text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Density Analysis
+                                    Capacity
                                 </th>
                                 <th
-                                    class="px-8 py-6 text-right text-xs font-medium tracking-tight uppercase opacity-80"
+                                    class="px-8 py-6 text-right text-xs font-semibold uppercase opacity-80"
                                 >
-                                    Control
+                                    Actions
                                 </th>
                             </tr>
                         </thead>
@@ -921,22 +914,22 @@ const confirmDeleteClass = (cls: any) => {
                                 <td class="px-6 py-5">
                                     <div class="flex items-center gap-5">
                                         <div
-                                            class="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted font-bold text-foreground shadow-inner transition-all duration-500 group-hover:bg-foreground group-hover:text-background"
+                                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 font-bold text-white shadow-sm"
                                         >
                                             {{ cls.stream_code || '?' }}
                                         </div>
                                         <div class="min-w-0">
                                             <div
-                                                class="font-bold tracking-tight text-foreground transition-colors group-hover:text-blue-600"
+                                                class="font-bold text-foreground transition-colors group-hover:text-primary"
                                             >
                                                 {{ cls.name }}
                                             </div>
                                             <div
-                                                class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
+                                                class="mt-1 text-xs font-bold text-muted-foreground uppercase opacity-40"
                                             >
                                                 {{
                                                     cls.teacher ||
-                                                    'UNASSIGNED NODE'
+                                                    'Unassigned'
                                                 }}
                                             </div>
                                         </div>
@@ -972,9 +965,8 @@ const confirmDeleteClass = (cls: any) => {
                                             class="flex items-center justify-between"
                                         >
                                             <span
-                                                class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                                >Usage:
-                                                {{ cls.utilization }}%</span
+                                                class="text-[10px] font-bold text-muted-foreground uppercase opacity-40"
+                                                >{{ cls.utilization }}% Full</span
                                             >
                                         </div>
                                         <div
@@ -1002,13 +994,13 @@ const confirmDeleteClass = (cls: any) => {
                                     >
                                         <Link
                                             :href="`/classes/${cls.id}`"
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent bg-muted/20 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-blue-600/20 hover:bg-blue-600/10 hover:text-blue-600"
-                                            ><Eye class="h-4.5 w-4.5"
+                                            class="flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-muted/20 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
+                                            ><Eye class="h-4 w-4"
                                         /></Link>
                                         <Link
                                             :href="`/classes/${cls.id}/edit`"
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl border border-transparent bg-muted/20 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-amber-500"
-                                            ><Edit class="h-4.5 w-4.5"
+                                            class="flex h-10 w-10 items-center justify-center rounded-lg border border-transparent bg-muted/20 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
+                                            ><Edit class="h-4 w-4"
                                         /></Link>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -1032,9 +1024,9 @@ const confirmDeleteClass = (cls: any) => {
                                                     ><Link
                                                         :href="`/classes/${cls.id}`"
                                                         ><Eye
-                                                            class="mr-3 h-4 w-4 text-blue-500 opacity-60"
+                                                            class="mr-3 h-4 w-4 text-primary"
                                                         />
-                                                        Unit Telemetry</Link
+                                                        View Details</Link
                                                     ></DropdownMenuItem
                                                 >
                                                 <DropdownMenuItem
@@ -1043,9 +1035,9 @@ const confirmDeleteClass = (cls: any) => {
                                                     ><Link
                                                         :href="`/classes/${cls.id}/edit`"
                                                         ><Edit
-                                                            class="mr-3 h-4 w-4 text-amber-500 opacity-60"
+                                                            class="mr-3 h-4 w-4 text-primary"
                                                         />
-                                                        Adjust Parameters</Link
+                                                        Edit Class</Link
                                                     ></DropdownMenuItem
                                                 >
                                                 <DropdownMenuSeparator
@@ -1057,10 +1049,9 @@ const confirmDeleteClass = (cls: any) => {
                                                         confirmDeleteClass(cls)
                                                     "
                                                     ><Trash2
-                                                        class="mr-3 h-4 w-4 opacity-60 group-hover:opacity-100"
+                                                        class="mr-3 h-4 w-4"
                                                     />
-                                                    Purge Matrix
-                                                    Node</DropdownMenuItem
+                                                    Delete Class</DropdownMenuItem
                                                 >
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -1072,35 +1063,32 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
             </div>
 
-            <!-- Premium Pagination Footer -->
+            <!-- Pagination Footer -->
             <div
-                class="group/footer relative flex flex-col items-center justify-between gap-8 overflow-hidden rounded-2xl border border-border bg-card px-10 py-8 shadow-lg md:flex-row"
+                class="relative flex flex-col items-center justify-between gap-8 rounded-xl border border-border bg-card px-10 py-8 shadow-sm md:flex-row"
             >
-                <div
-                    class="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-blue-600/5 blur-3xl transition-all duration-1000 group-hover/footer:bg-blue-600/10"
-                ></div>
                 <div class="relative z-10 flex items-center gap-6">
                     <div
-                        class="flex items-center gap-3 rounded-2xl border border-border bg-muted/50 px-5 py-2.5 shadow-inner transition-colors group-hover/footer:border-blue-600/20"
+                        class="flex items-center gap-3 rounded-lg border border-border bg-muted/50 px-5 py-2.5 shadow-sm"
                     >
                         <label
-                            class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                            >Density</label
+                            class="text-xs font-bold text-muted-foreground uppercase opacity-40"
+                            >Rows</label
                         >
                         <select
                             v-model="perPage"
-                            class="cursor-pointer border-none bg-transparent py-0 text-sm font-bold tracking-tight text-foreground uppercase outline-none focus:ring-0"
+                            class="cursor-pointer border-none bg-transparent py-0 text-sm font-bold text-foreground outline-none focus:ring-0"
                         >
-                            <option :value="10">10 PER SEGMENT</option>
-                            <option :value="20">20 PER SEGMENT</option>
-                            <option :value="50">50 PER SEGMENT</option>
-                            <option :value="100">100 PER SEGMENT</option>
+                            <option :value="10">10</option>
+                            <option :value="20">20</option>
+                            <option :value="50">50</option>
+                            <option :value="100">100</option>
                         </select>
                     </div>
                     <p
-                        class="text-xs font-bold tracking-[0.15em] text-muted-foreground/30 uppercase"
+                        class="text-xs font-bold text-muted-foreground uppercase opacity-40"
                     >
-                        Telemetry segment {{ classes.current_page }} /
+                        Page {{ classes.current_page }} of
                         {{ classes.last_page }}
                     </p>
                 </div>
@@ -1117,9 +1105,9 @@ const confirmDeleteClass = (cls: any) => {
                             size="sm"
                             :disabled="!link.url || link.active"
                             :class="[
-                                'h-12 rounded-2xl border-border px-6 text-xs font-bold tracking-tight uppercase shadow-sm transition-all',
+                                'h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all',
                                 link.active
-                                    ? 'border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                    ? 'bg-primary text-white'
                                     : 'text-foreground hover:bg-muted',
                             ]"
                             @click="
@@ -1132,49 +1120,44 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
             </div>
 
-            <!-- Global Matrix Pulse -->
+            <!-- Status Banner -->
             <div
-                class="group relative flex flex-col items-center justify-between gap-10 overflow-hidden rounded-2xl bg-slate-900 p-10 text-white shadow-[0_0_60px_rgba(0,0,0,0.3)] md:flex-row dark:bg-black"
+                class="group relative flex flex-col items-center justify-between gap-10 overflow-hidden rounded-xl bg-slate-900 p-10 text-white shadow-lg md:flex-row"
             >
-                <div
-                    class="pointer-events-none absolute -right-24 -bottom-24 text-[12rem] font-bold text-white uppercase opacity-5 transition-all duration-[2000ms] select-none group-hover:scale-125"
-                >
-                    MATRX
-                </div>
                 <div class="relative z-10 flex items-center gap-8">
                     <div
-                        class="flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 shadow-lg transition-all duration-700 group-hover:border-blue-600 group-hover:bg-blue-600"
+                        class="flex h-16 w-16 items-center justify-center rounded-xl bg-white/5 shadow-lg border border-white/10"
                     >
                         <School
-                            class="h-10 w-10 text-white/30 transition-all duration-500 group-hover:scale-110 group-hover:text-white"
+                            class="h-8 w-8 text-white/30"
                         />
                     </div>
                     <div>
                         <h3
-                            class="text-2xl font-bold tracking-tighter transition-colors duration-500 group-hover:text-blue-400"
+                            class="text-2xl font-bold uppercase"
                         >
-                            Unit Deployment Active
+                            System Status
                         </h3>
                         <p
-                            class="mt-2 text-xs leading-relaxed font-bold tracking-[0.1em] text-muted-foreground text-white/40 uppercase"
+                            class="mt-2 text-xs font-medium text-white/40 uppercase"
                         >
-                            Synchronizing Class Nodes for the
+                            All class records are synchronized and up to date for
                             {{
-                                $page.props.auth.school?.name || 'Campus'
+                                $page.props.auth.school?.name || 'Institutional'
                             }}
-                            Academic Grid.
+                            academic records.
                         </p>
                     </div>
                 </div>
                 <div class="relative z-10 flex gap-8">
                     <div class="flex flex-col items-end">
                         <span
-                            class="mb-2 text-xs font-bold tracking-tight text-white/30 uppercase opacity-60"
-                            >Matrix Status</span
+                            class="mb-2 text-xs font-bold text-white/20 uppercase"
+                            >Database Status</span
                         >
                         <span
-                            class="animate-pulse rounded-full border border-blue-400/20 bg-blue-600/20 px-8 py-3 text-sm font-bold tracking-[0.25em] text-blue-400 uppercase shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-                            >Pulse Locked</span
+                            class="rounded-full border border-emerald-500/20 bg-emerald-500/20 px-8 py-2 text-sm font-bold text-emerald-400 uppercase"
+                            >Connected</span
                         >
                     </div>
                 </div>

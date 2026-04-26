@@ -52,7 +52,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'User Directory', href: '/staffs/directory' },
+    { title: 'Staff Groups', href: '/staffs/directory' },
     {
         title: props.role.display_name,
         href: `/staffs/directory/${props.role.name}`,
@@ -105,39 +105,39 @@ const getStatusColor = (status: string) => {
                     <div class="flex items-center gap-2">
                         <Badge
                             variant="secondary"
-                            class="rounded-lg border-blue-100 bg-blue-50 px-2 text-xs font-bold tracking-wider text-blue-700 uppercase hover:bg-blue-50"
+                            class="rounded-lg bg-primary/10 px-2 text-xs font-bold text-primary uppercase"
                         >
                             {{ role.display_name }}
                         </Badge>
                         <h1
                             class="text-3xl font-bold tracking-tight text-foreground"
                         >
-                            Personnel Registry
+                            Staff Group
                         </h1>
                     </div>
                     <p class="text-sm text-muted-foreground">
-                        Managing {{ staffs.total }} users categorized as
-                        {{ role.display_name }}.
+                        There are {{ staffs.total }} staff members in the
+                        {{ role.display_name }} category.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Link
                         :href="`/staffs/create?role=${role.name}`"
-                        class="font-inter inline-flex h-10 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
+                        class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Add {{ role.display_name }}
+                        Add Staff
                     </Link>
                     <div
-                        class="flex rounded-xl border border-border bg-muted/50 p-1"
+                        class="flex rounded-lg border border-border bg-muted/50 p-1"
                     >
                         <button
                             @click="viewMode = 'grid'"
-                            class="rounded-lg p-2 transition-all"
+                            class="rounded-md p-2 transition-all"
                             :class="
                                 viewMode === 'grid'
-                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    ? 'bg-card text-primary shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
                             "
                         >
@@ -145,10 +145,10 @@ const getStatusColor = (status: string) => {
                         </button>
                         <button
                             @click="viewMode = 'list'"
-                            class="rounded-lg p-2 transition-all"
+                            class="rounded-md p-2 transition-all"
                             :class="
                                 viewMode === 'list'
-                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    ? 'bg-card text-primary shadow-sm'
                                     : 'text-muted-foreground hover:text-foreground'
                             "
                         >
@@ -160,7 +160,7 @@ const getStatusColor = (status: string) => {
 
             <!-- Filters Toolbar - Integrated -->
             <div
-                class="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:flex-row"
+                class="flex flex-col items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm md:flex-row"
             >
                 <div class="relative w-full flex-1 md:max-w-md">
                     <Search
@@ -168,19 +168,19 @@ const getStatusColor = (status: string) => {
                     />
                     <Input
                         v-model="searchQuery"
-                        placeholder="Search by name or number..."
-                        class="h-11 rounded-xl border-none bg-muted/30 pl-11 text-sm focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="Search by name or staff number..."
+                        class="h-10 rounded-lg border-border bg-muted/20 pl-11 text-sm focus:bg-background"
                     />
                 </div>
 
                 <div class="flex w-full items-center gap-3 md:w-auto">
                     <Select v-model="departmentFilter">
                         <SelectTrigger
-                            class="h-11 w-full rounded-xl border-border bg-background px-4 text-sm font-medium md:min-w-[200px]"
+                            class="h-10 w-full rounded-lg border-border bg-background px-4 text-sm font-medium md:min-w-[200px]"
                         >
                             <SelectValue placeholder="All Departments" />
                         </SelectTrigger>
-                        <SelectContent class="rounded-xl">
+                        <SelectContent class="rounded-lg">
                             <SelectItem value="all">All Departments</SelectItem>
                             <SelectItem
                                 v-for="dept in departments"
@@ -202,14 +202,14 @@ const getStatusColor = (status: string) => {
                 <div
                     v-for="item in staffs.data"
                     :key="item.id"
-                    class="group relative flex flex-col rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:border-blue-500/30 hover:shadow-md"
+                    class="group relative flex flex-col rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md"
                 >
                     <div
                         class="flex flex-col items-center space-y-4 text-center"
                     >
                         <div class="relative">
                             <div
-                                class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-muted ring-4 ring-muted"
+                                class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-muted ring-4 ring-muted"
                             >
                                 <img
                                     v-if="item.photo_url"
@@ -218,7 +218,7 @@ const getStatusColor = (status: string) => {
                                 />
                                 <div
                                     v-else
-                                    class="text-2xl font-bold text-blue-600/40 uppercase"
+                                    class="text-2xl font-bold text-primary opacity-40 uppercase"
                                 >
                                     {{ item.first_name[0]
                                     }}{{ item.last_name[0] }}
@@ -240,7 +240,7 @@ const getStatusColor = (status: string) => {
 
                         <div class="space-y-1">
                             <h3
-                                class="line-clamp-1 text-lg font-bold text-foreground transition-colors group-hover:text-blue-600"
+                                class="line-clamp-1 text-lg font-bold text-foreground transition-colors group-hover:text-primary"
                             >
                                 {{ item.first_name }} {{ item.last_name }}
                             </h3>
@@ -290,7 +290,7 @@ const getStatusColor = (status: string) => {
                             <th
                                 class="p-6 text-xs font-bold tracking-tight text-muted-foreground uppercase"
                             >
-                                User Information
+                                Staff Member
                             </th>
                             <th
                                 class="p-6 text-xs font-bold tracking-tight text-muted-foreground uppercase"
@@ -351,10 +351,10 @@ const getStatusColor = (status: string) => {
                             <td class="p-6">
                                 <Badge
                                     variant="outline"
-                                    class="rounded-lg border-blue-100 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 uppercase"
+                                    class="rounded-lg border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary uppercase"
                                 >
                                     {{
-                                        item.department?.name || 'Institutional'
+                                        item.department?.name || 'General'
                                     }}
                                 </Badge>
                             </td>
@@ -389,16 +389,16 @@ const getStatusColor = (status: string) => {
                                                 class="flex items-center gap-2"
                                             >
                                                 <Eye class="h-4 w-4" /> View
-                                                Profile
+                                                Details
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem as-child>
                                             <Link
                                                 :href="`/staffs/${item.id}/edit`"
-                                                class="flex items-center gap-2 text-blue-600"
+                                                class="flex items-center gap-2 text-primary"
                                             >
                                                 <Edit class="h-4 w-4" /> Edit
-                                                User
+                                                Staff
                                             </Link>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
@@ -424,7 +424,7 @@ const getStatusColor = (status: string) => {
                         No Results Found
                     </h3>
                     <p class="mx-auto max-w-xs text-sm text-muted-foreground">
-                        We couldn't find any users in this category matching
+                        We couldn't find any staff members in this category matching
                         your criteria.
                     </p>
                 </div>
@@ -447,7 +447,7 @@ const getStatusColor = (status: string) => {
             >
                 <p class="text-xs font-semibold text-muted-foreground">
                     Showing {{ staffs.from }} to {{ staffs.to }} of
-                    {{ staffs.total }} users
+                    {{ staffs.total }} staff members
                 </p>
                 <div class="flex items-center gap-2">
                     <Button
@@ -459,7 +459,7 @@ const getStatusColor = (status: string) => {
                         Previous
                     </Button>
                     <div
-                        class="flex h-9 items-center justify-center rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm"
+                        class="flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-xs font-bold text-white shadow-sm"
                     >
                         {{ staffs.current_page }}
                     </div>

@@ -322,10 +322,10 @@ const getTeacherForClass = (classId: number) => {
                     <h1
                         class="text-2xl font-bold tracking-tight text-slate-900"
                     >
-                        {{ subject.name }} Strands
+                        {{ subject.name }} Topics
                     </h1>
                     <p class="text-sm text-slate-500">
-                        Curriculum strands for {{ grade.name }}.
+                        Main topics for {{ grade.name }}.
                     </p>
                 </div>
 
@@ -341,7 +341,7 @@ const getTeacherForClass = (classId: number) => {
                         @click="openStrandModal()"
                         class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
                     >
-                        <Plus class="mr-2 h-4 w-4" /> Add Strand
+                        <Plus class="mr-2 h-4 w-4" /> Add Topic
                     </Button>
                 </div>
             </div>
@@ -356,7 +356,7 @@ const getTeacherForClass = (classId: number) => {
                         <p
                             class="text-xs font-bold tracking-tight text-slate-400 uppercase"
                         >
-                            Total Strands
+                            Total Topics
                         </p>
                         <h2
                             class="text-2xl font-bold tracking-tight text-slate-900"
@@ -379,7 +379,7 @@ const getTeacherForClass = (classId: number) => {
                         <p
                             class="text-xs font-bold tracking-tight text-slate-400 uppercase"
                         >
-                            Sub-strands
+                            Sub-topics
                         </p>
                         <h2
                             class="text-2xl font-bold tracking-tight text-slate-900"
@@ -530,12 +530,12 @@ const getTeacherForClass = (classId: number) => {
                                         <th
                                             class="px-4 py-4 text-xs font-bold tracking-wider text-slate-400 uppercase"
                                         >
-                                            Strand
+                                            Strand (Topic)
                                         </th>
                                         <th
                                             class="px-4 py-4 text-center text-xs font-bold tracking-wider text-slate-400 uppercase"
                                         >
-                                            Sub-strands
+                                            Sub-topics
                                         </th>
                                         <th
                                             class="px-4 py-4 text-center text-xs font-bold tracking-wider text-slate-400 uppercase"

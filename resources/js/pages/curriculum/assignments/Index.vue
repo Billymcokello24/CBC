@@ -114,13 +114,13 @@ const gradedSubmissions = computed(
                         <span class="font-medium tracking-tight text-foreground uppercase">Assignments</span>
                     </div>
                     <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        {{ isGuardian ? 'Student Assignments' : 'Academic Assignments' }}
+                        {{ isGuardian ? "Students' Tasks" : 'School Work' }}
                     </h1>
                     <p class="text-sm text-muted-foreground sm:text-sm">
                         {{
                             isGuardian
-                                ? "Track your children's tasks and academic progress."
-                                : 'Manage assignments and track student performance.'
+                                ? "See your children's work and how they are doing."
+                                : 'Give tasks to students and check their progress.'
                         }}
                     </p>
                 </div>

@@ -49,29 +49,29 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const mainModules = [
     {
-        title: 'Syllabus Mapping',
-        description: 'Subjects, topics, and learning goals.',
+        title: 'Subjects & Topics',
+        description: 'Manage what is taught in each subject.',
         href: '/curriculum/syllabus',
         icon: BookOpenCheck,
         color: 'blue',
     },
     {
-        title: 'Academic Planner',
-        description: 'Schemes of work and lesson plans.',
+        title: 'Lesson Planning',
+        description: 'Plan your weekly lessons and schedules.',
         href: '/curriculum/planner/schemes',
         icon: Calendar,
         color: 'indigo',
     },
     {
-        title: 'Assignment Center',
-        description: 'Give tasks and grade student work.',
+        title: 'Student Work',
+        description: 'Give assignments and grade student tasks.',
         href: '/curriculum/assignments',
         icon: Target,
         color: 'emerald',
     },
     {
-        title: 'Resource Vault',
-        description: 'Teaching notes, videos, and PDFs.',
+        title: 'Teaching Files',
+        description: 'Stored notes, videos, and study guides.',
         href: '/curriculum/resources',
         icon: Sparkles,
         color: 'amber',

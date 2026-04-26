@@ -252,7 +252,7 @@ const formatCurrency = (amount: number | string) => {
                             <p
                                 class="text-xs font-bold tracking-tight text-muted-foreground/30 uppercase"
                             >
-                                Zero Activity Detected
+                                No recent payments found
                             </p>
                         </div>
                         <div
@@ -312,12 +312,12 @@ const formatCurrency = (amount: number | string) => {
                             ></div>
                             <span
                                 class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase"
-                                >Network Latency: Active</span
+                                >System Status: Online</span
                             >
                         </div>
                         <span
                             class="text-xs font-bold tracking-tight text-muted-foreground/20 uppercase"
-                            >Verified Ledger</span
+                            >Verified Records</span
                         >
                     </div>
                 </div>
@@ -356,7 +356,7 @@ const formatCurrency = (amount: number | string) => {
                                     </div>
                                     <span
                                         class="text-xs font-medium tracking-tight uppercase group-hover/btn:text-blue-600"
-                                        >Schematics</span
+                                        >Fees</span
                                     >
                                 </Link>
                             </Button>
@@ -373,7 +373,7 @@ const formatCurrency = (amount: number | string) => {
                                     </div>
                                     <span
                                         class="font-pulsar text-xs font-medium tracking-tight uppercase group-hover/btn:text-amber-500"
-                                        >Ledger</span
+                                        >Invoices</span
                                     >
                                 </Link>
                             </Button>
@@ -390,7 +390,7 @@ const formatCurrency = (amount: number | string) => {
                                     </div>
                                     <span
                                         class="text-xs font-medium tracking-tight uppercase group-hover/btn:text-emerald-500"
-                                        >Analytics</span
+                                        >Reports</span
                                     >
                                 </Link>
                             </Button>
@@ -407,7 +407,7 @@ const formatCurrency = (amount: number | string) => {
                                     </div>
                                     <span
                                         class="text-xs font-medium tracking-tight uppercase group-hover/btn:text-rose-500"
-                                        >Outflow</span
+                                        >Expenses</span
                                     >
                                 </Link>
                             </Button>
@@ -432,7 +432,7 @@ const formatCurrency = (amount: number | string) => {
                             <h3
                                 class="text-sm font-bold tracking-tight text-white"
                             >
-                                Source Breakdown
+                                Payment Methods
                             </h3>
                         </div>
 
@@ -441,7 +441,7 @@ const formatCurrency = (amount: number | string) => {
                                 <div
                                     class="flex items-center justify-between text-xs font-medium tracking-tight text-white/40 uppercase"
                                 >
-                                    <span>Mobile Matrix</span>
+                                    <span>Mobile Money</span>
                                     <span class="text-blue-400">65%</span>
                                 </div>
                                 <div
@@ -457,7 +457,7 @@ const formatCurrency = (amount: number | string) => {
                                 <div
                                     class="flex items-center justify-between text-xs font-medium tracking-tight text-white/40 uppercase"
                                 >
-                                    <span>Direct Wire</span>
+                                    <span>Bank Transfer</span>
                                     <span class="text-emerald-400">25%</span>
                                 </div>
                                 <div
@@ -475,7 +475,7 @@ const formatCurrency = (amount: number | string) => {
                                 >
                                     <span>Physical Asset</span>
                                     <span class="font-pulsar text-amber-400"
-                                        >10%</span
+                                        >Cash / Other</span
                                     >
                                 </div>
                                 <div

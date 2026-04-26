@@ -35,7 +35,7 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'User Directory', href: '/staffs/directory' },
+    { title: 'Staff Groups', href: '/staffs/directory' },
 ];
 
 const getRoleIcon = (roleName: string) => {
@@ -109,52 +109,45 @@ const navigateToRole = (role: any) => {
         >
             <!-- Page Header -->
             <div
-                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
+                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1"
             >
                 <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Users</span>
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Staff HUB</span>
-                    </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                         Staff Groups
                     </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        Browse institutional users categorized by their professional roles.
+                    <p class="text-sm text-muted-foreground">
+                        View and manage staff members organized by their roles.
                     </p>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <Link
                         href="/staffs/create"
-                        class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95"
+                        class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary/90"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Add New User
+                        Add Staff
                     </Link>
                 </div>
             </div>
 
-            <!-- Dashboard Overview Stats -->
+            <!-- Header Stats -->
             <div class="grid grid-cols-1 gap-4 px-1 sm:grid-cols-2 lg:grid-cols-4">
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 dark:border-white/5">
+                <div class="group rounded-xl border border-border bg-card p-5 shadow-sm transition-all">
                     <div class="mb-4 flex items-center justify-between">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-sm">
                             <Users class="h-5 w-5" />
                         </div>
-                        <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Total Workforce</span>
+                        <span class="text-[10px] font-bold text-muted-foreground uppercase">Total Staff</span>
                     </div>
                     <h3 class="text-2xl font-bold text-foreground tabular-nums">
                         {{ roles.reduce((acc, r) => acc + r.count, 0).toLocaleString() }}
                     </h3>
-                    <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Active Institutional Users</p>
+                    <p class="mt-1 text-[10px] font-medium text-muted-foreground uppercase opacity-60">Registered staff members</p>
                 </div>
             </div>
 
-            <!-- Role Clusters Grid -->
+            <!-- Role Grid -->
             <div
                 class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-1"
             >
@@ -162,36 +155,31 @@ const navigateToRole = (role: any) => {
                     v-for="role in roles"
                     :key="role.id"
                     @click="navigateToRole(role)"
-                    class="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/20 hover:shadow-xl"
+                    class="group relative flex cursor-pointer flex-col overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-lg"
                 >
-                    <!-- Visual Ornament -->
-                    <div
-                        class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition-all duration-500 group-hover:bg-primary/10"
-                    ></div>
-
                     <div class="relative z-10 flex flex-col gap-5">
                         <div
-                            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/5 text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-white shadow-sm"
+                            class="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/5 text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-white shadow-sm"
                         >
                             <component
                                 :is="getRoleIcon(role.name)"
-                                class="h-7 w-7"
+                                class="h-6 w-6"
                             />
                         </div>
 
-                        <div class="space-y-1.5">
+                        <div class="space-y-1">
                             <h3
-                                class="text-lg font-bold text-foreground transition-colors group-hover:text-primary"
+                                class="text-lg font-bold text-foreground transition-colors group-hover:text-primary uppercase"
                             >
                                 {{ role.display_name }}
                             </h3>
-                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">
-                                {{ role.count }} {{ role.count === 1 ? 'Registered User' : 'Registered Users' }}
+                            <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-40">
+                                {{ role.count }} {{ role.count === 1 ? 'Staff Member' : 'Staff Members' }}
                             </p>
                         </div>
 
                         <div
-                            class="flex items-center gap-2 pt-2 text-[10px] font-bold tracking-tight text-primary uppercase opacity-60 transition-all group-hover:opacity-100"
+                            class="flex items-center gap-2 pt-2 text-[10px] font-bold text-primary uppercase opacity-60 transition-all group-hover:opacity-100"
                         >
                             <span>Open Directory</span>
                             <ArrowRight class="h-3 w-3 transition-transform group-hover:translate-x-1" />
@@ -200,38 +188,25 @@ const navigateToRole = (role: any) => {
                 </div>
             </div>
 
-            <!-- System Information Banner -->
+            <!-- Information Banner -->
             <div
-                class="relative mt-4 overflow-hidden rounded-3xl border border-border bg-muted/30 p-8 dark:bg-slate-900/40"
+                class="relative mt-4 overflow-hidden rounded-xl border border-border bg-muted/30 p-8"
             >
-                 <!-- Decorative mesh -->
-                <div class="absolute inset-0 opacity-[0.03] grayscale pointer-events-none">
-                    <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
-                        <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/></pattern></defs>
-                        <rect width="100%" height="100%" fill="url(#grid)" />
-                    </svg>
-                </div>
-
                 <div class="relative z-10 flex flex-col items-center gap-8 md:flex-row">
                     <div
-                        class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary/10 shadow-sm"
+                        class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 shadow-sm"
                     >
-                        <ShieldCheck class="h-8 w-8 text-primary" />
+                        <ShieldCheck class="h-7 w-7 text-primary" />
                     </div>
-                    <div class="space-y-2">
-                        <h3 class="text-lg font-bold text-foreground">
-                            Role-Based Architecture (RBAC)
+                    <div class="space-y-1">
+                        <h3 class="text-lg font-bold text-foreground uppercase">
+                            Staff Access Control
                         </h3>
                         <p
                             class="max-w-3xl text-sm font-medium leading-relaxed text-muted-foreground/80"
                         >
-                            Our institutional permissions are governed by a robust professional hierarchy. Changes made to professional roles or user statuses are automatically synchronized across all administrative modules.
+                            Access to various parts of the system is managed based on staff roles. Changes to roles are updated automatically.
                         </p>
-                    </div>
-                    <div class="ml-auto flex items-center gap-2">
-                        <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/5 px-3 py-1 text-[10px] font-bold text-primary uppercase tracking-tighter">
-                            Enterprise Security
-                        </Badge>
                     </div>
                 </div>
             </div>

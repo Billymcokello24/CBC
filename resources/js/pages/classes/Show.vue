@@ -274,9 +274,9 @@ const modalTitle = computed(() => {
         case 'demote':
             return 'Demote';
         case 'transfer':
-            return 'Transfer Learners';
+            return 'Transfer Students';
         case 'promote':
-            return 'Promote Learners';
+            return 'Promote Students';
         default:
             return 'Suspend';
     }
@@ -336,15 +336,15 @@ const confirmSubjectAction = () => {
             class="fixed top-8 right-8 z-50 animate-in duration-500 fade-in slide-in-from-top-4"
         >
             <div
-                class="flex items-center gap-3 rounded-2xl border border-blue-100 bg-white px-6 py-4 shadow-lg shadow-blue-900/10"
+                class="flex items-center gap-3 rounded-xl border border-blue-100 bg-white px-6 py-4 shadow-lg shadow-blue-900/10"
             >
                 <div
-                    class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-lg shadow-emerald-100"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm"
                 >
                     <CheckCircle2 class="h-4 w-4" />
                 </div>
                 <span
-                    class="font-pulsar text-sm font-bold tracking-tight text-slate-900 uppercase"
+                    class="text-sm font-bold text-foreground uppercase"
                     >{{ flashSuccess }}</span
                 >
             </div>
@@ -359,30 +359,30 @@ const confirmSubjectAction = () => {
             >
                 <div class="flex items-center gap-5">
                     <div
-                        class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md transition-transform duration-300 hover:scale-105"
+                        class="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-white shadow-sm transition-transform duration-300 hover:scale-[1.02]"
                     >
                         <School class="h-7 w-7" />
                     </div>
                     <div>
-                        <div class="flex items-center gap-3">
+                         <div class="flex items-center gap-3">
                             <h1
-                                class="text-3xl leading-none font-bold tracking-tight text-slate-900"
+                                class="text-3xl font-bold tracking-tight text-foreground"
                             >
                                 {{ classroom.name }}
                             </h1>
                             <Badge
                                 variant="outline"
-                                class="h-6 rounded-xl border-blue-200 bg-blue-50/50 px-3 py-1 text-xs font-bold tracking-tight text-blue-600 uppercase"
+                                class="h-6 rounded-lg border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold text-primary uppercase"
                                 >{{ classroom.code }}</Badge
                             >
                         </div>
                         <p
                             class="mt-2 flex items-center gap-2 text-sm text-muted-foreground"
                         >
-                            <Layers class="h-4 w-4 text-blue-500" />
-                            {{ classroom.grade || 'No Grade' }} •
+                            <Users class="h-4 w-4 text-primary" />
+                            {{ classroom.grade || 'General' }} •
                             <span
-                                class="rounded-lg border border-blue-100/50 bg-blue-50 px-2 py-0.5 text-blue-600"
+                                class="rounded-md border border-primary/10 bg-primary/5 px-2 py-0.5 text-primary text-[10px] font-bold uppercase"
                                 >{{ classroom.stream || 'General' }}</span
                             >
                             • Year: {{ classroom.academic_year || 'N/A' }}
@@ -393,13 +393,13 @@ const confirmSubjectAction = () => {
                     <Button
                         variant="outline"
                         as-child
-                        class="h-11 rounded-xl border-slate-200 px-6 text-xs font-medium transition-all hover:bg-slate-50"
+                        class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all"
                     >
                         <Link href="/classes">Back to Classes</Link>
                     </Button>
                     <Button
                         as-child
-                        class="h-11 transform rounded-xl bg-slate-900 px-8 text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-black"
+                        class="h-10 rounded-lg bg-slate-900 px-8 text-xs font-bold text-white uppercase shadow-sm transition-all hover:bg-slate-800"
                     >
                         <Link :href="`/classes/${classroom.id}/edit`"
                             ><Edit class="mr-2 h-4 w-4" />Edit Class</Link
@@ -414,11 +414,11 @@ const confirmSubjectAction = () => {
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                     <p
-                        class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                     >
-                        Identification
+                        Code
                     </p>
-                    <p class="text-xl leading-none font-bold text-slate-900">
+                    <p class="text-xl font-bold text-foreground">
                         {{ classroom.code }}
                     </p>
                 </div>
@@ -426,14 +426,14 @@ const confirmSubjectAction = () => {
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                     <p
-                        class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                     >
                         Capacity
                     </p>
-                    <p class="text-xl leading-none font-bold text-blue-600">
+                    <p class="text-xl font-bold text-primary">
                         {{ classroom.capacity ?? '—' }}
-                        <span class="ml-1 text-xs text-slate-400"
-                            >LEARNERS</span
+                        <span class="ml-1 text-[10px] text-muted-foreground/60"
+                            >STUDENTS</span
                         >
                     </p>
                 </div>
@@ -441,31 +441,31 @@ const confirmSubjectAction = () => {
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                     <p
-                        class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                     >
-                        Active Learners
+                        Total Students
                     </p>
-                    <p class="text-xl leading-none font-bold text-indigo-600">
+                    <p class="text-xl font-bold text-emerald-600">
                         {{ classroom.learners_count }}
-                        <span class="ml-1 text-xs text-slate-400">ACT</span>
+                        <span class="ml-1 text-[10px] text-muted-foreground/60">STUDENTS</span>
                     </p>
                 </div>
                 <div
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                     <p
-                        class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                     >
                         Class Teacher
                     </p>
                     <div class="flex flex-col gap-1 truncate">
                         <p
-                            class="truncate text-xs leading-none font-bold text-slate-900"
+                            class="truncate text-xs font-bold text-foreground"
                         >
                             {{ classroom.teacher || 'Unassigned' }}
                         </p>
-                        <p class="truncate text-xs font-medium text-slate-400">
-                            {{ classroom.teacher_email || 'No Email' }}
+                        <p class="truncate text-[10px] font-medium text-muted-foreground opacity-60">
+                            {{ classroom.teacher_email || '' }}
                         </p>
                     </div>
                 </div>
@@ -473,7 +473,7 @@ const confirmSubjectAction = () => {
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
                     <p
-                        class="mb-3 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                     >
                         Status
                     </p>
@@ -483,18 +483,18 @@ const confirmSubjectAction = () => {
                             :class="
                                 classroom.is_active
                                     ? 'bg-emerald-500'
-                                    : 'bg-slate-300'
+                                    : 'bg-slate-400'
                             "
                         ></div>
                         <span
-                            class="text-xs font-bold"
+                            class="text-xs font-bold uppercase"
                             :class="
                                 classroom.is_active
                                     ? 'text-emerald-600'
                                     : 'text-slate-400'
                             "
                             >{{
-                                classroom.is_active ? 'Active' : 'Draft'
+                                classroom.is_active ? 'Active' : 'Inactive'
                             }}</span
                         >
                     </div>
@@ -511,26 +511,26 @@ const confirmSubjectAction = () => {
                     <div>
                         <div class="flex items-center gap-3">
                             <div
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md"
+                                class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shadow-sm"
                             >
                                 <Users class="h-5 w-5" />
                             </div>
-                            <h2 class="text-xl font-bold text-slate-900">
-                                Learners
+                            <h2 class="text-xl font-bold text-foreground">
+                                Students
                             </h2>
                         </div>
                         <p class="mt-1.5 text-sm text-muted-foreground">
-                            Manage class learners.
+                            Manage students in this class.
                         </p>
                     </div>
                     <div class="flex flex-col items-end gap-2">
                         <div class="mb-2 flex items-center gap-3">
                             <span
-                                class="text-xs font-bold tracking-wider text-slate-400 uppercase"
-                                >Capacity Usage</span
+                                class="text-[10px] font-bold text-muted-foreground uppercase opacity-40"
+                                >Enrolment Status</span
                             >
-                            <span class="text-sm font-bold text-slate-900"
-                                >{{ classroom.utilization }}%</span
+                            <span class="text-sm font-bold text-foreground"
+                                >{{ classroom.utilization }}% Full</span
                             >
                         </div>
                         <div
@@ -560,27 +560,24 @@ const confirmSubjectAction = () => {
                             />
                             <Input
                                 v-model="searchQuery"
-                                placeholder="Search by name or number..."
-                                class="h-11 rounded-xl border-slate-200 pl-9 text-sm"
+                                placeholder="Search by name or admission number..."
+                                class="h-10 rounded-lg border-border bg-muted/20 pl-9 text-sm focus:bg-background"
                             />
                         </div>
                         <div class="flex items-center gap-2">
                             <Button
                                 variant="outline"
-                                class="h-11 rounded-xl border-slate-200 px-6 text-xs font-medium transition-all hover:bg-slate-50"
+                                class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all"
                                 @click="showFilters = !showFilters"
                             >
-                                <Filter class="mr-2 h-4 w-4" />{{
-                                    showFilters
-                                        ? 'Hide Filters'
-                                        : 'Show Filters'
-                                }}
+                                <Filter class="mr-2 h-4 w-4 opacity-40" />
+                                Filters
                             </Button>
                             <Button
                                 variant="ghost"
-                                class="h-11 px-4 text-xs font-medium text-slate-500 hover:text-blue-600"
+                                class="h-10 px-4 text-xs font-bold text-muted-foreground uppercase hover:text-primary"
                                 @click="clearFilters"
-                                >Reset Filters</Button
+                                >Reset</Button
                             >
                         </div>
                     </div>
@@ -591,12 +588,12 @@ const confirmSubjectAction = () => {
                     >
                         <div class="space-y-2">
                             <label
-                                class="ml-1 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                class="ml-1 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >Status</label
                             >
                             <select
                                 v-model="selectedStatus"
-                                class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-xs font-bold shadow-sm transition-all outline-none focus:ring-blue-600"
+                                class="h-10 w-full rounded-lg border-border bg-white px-4 text-xs font-bold outline-none ring-offset-background focus:ring-1 focus:ring-primary"
                             >
                                 <option
                                     v-for="option in statusOptions"
@@ -609,12 +606,12 @@ const confirmSubjectAction = () => {
                         </div>
                         <div class="space-y-2">
                             <label
-                                class="ml-1 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                class="ml-1 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >Gender</label
                             >
                             <select
                                 v-model="selectedGender"
-                                class="h-11 w-full rounded-xl border-slate-200 bg-white px-4 text-xs font-bold shadow-sm transition-all outline-none focus:ring-blue-600"
+                                class="h-10 w-full rounded-lg border-border bg-white px-4 text-xs font-bold outline-none ring-offset-background focus:ring-1 focus:ring-primary"
                             >
                                 <option
                                     v-for="option in genderOptions"
@@ -641,12 +638,12 @@ const confirmSubjectAction = () => {
                         </div>
                         <div>
                             <p class="text-sm font-bold text-slate-900">
-                                {{ selectedCount }} Learner{{
+                                {{ selectedCount }} Student{{
                                     selectedCount === 1 ? '' : 's'
                                 }}
                                 Selected
                             </p>
-                            <p class="text-xs font-medium text-blue-600">
+                            <p class="text-[10px] font-bold text-primary uppercase">
                                 Bulk Actions
                             </p>
                         </div>
@@ -654,19 +651,19 @@ const confirmSubjectAction = () => {
                     <div class="flex items-center gap-2">
                         <Button
                             variant="ghost"
-                            class="h-10 px-6 text-sm font-medium text-slate-500 hover:text-slate-700"
+                            class="h-10 px-6 text-xs font-bold text-muted-foreground uppercase hover:bg-muted"
                             @click="selectedLearnerIds = []"
                             >Cancel</Button
                         >
                         <Button
                             variant="outline"
-                            class="h-10 rounded-xl border-blue-200 px-6 text-xs font-bold text-blue-600 shadow-sm transition-all hover:bg-blue-600 hover:text-white"
+                            class="h-10 rounded-lg border-primary/20 px-6 text-xs font-bold text-primary shadow-sm hover:bg-primary hover:text-white"
                             @click="openActionModal('transfer')"
                         >
                             <ArrowRightLeft class="mr-2 h-4 w-4" />Transfer
                         </Button>
                         <Button
-                            class="h-10 rounded-xl border-0 bg-slate-900 px-8 text-xs font-medium text-white shadow-sm hover:bg-black"
+                            class="h-10 rounded-lg bg-slate-900 px-8 text-xs font-bold text-white shadow-sm hover:bg-slate-800"
                             @click="openActionModal('promote')"
                         >
                             <ArrowUpCircle class="mr-2 h-4 w-4" />Promote
@@ -690,27 +687,27 @@ const confirmSubjectAction = () => {
                                         />
                                     </th>
                                     <th
-                                        class="px-6 py-5 text-left text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="px-6 py-5 text-left text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                     >
-                                        Full Name
+                                        Student
                                     </th>
                                     <th
-                                        class="px-6 py-5 text-left text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="px-6 py-5 text-left text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                     >
-                                        Admission Number
+                                        Admission No.
                                     </th>
                                     <th
-                                        class="px-6 py-5 text-left text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="px-6 py-5 text-left text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                     >
                                         Gender
                                     </th>
                                     <th
-                                        class="px-6 py-5 text-left text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="px-6 py-5 text-left text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                     >
                                         Status
                                     </th>
                                     <th
-                                        class="px-6 py-5 text-right text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="px-6 py-5 text-right text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                     >
                                         Actions
                                     </th>
@@ -733,9 +730,9 @@ const confirmSubjectAction = () => {
                                                 />
                                             </div>
                                             <p
-                                                class="text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
+                                                class="text-xs font-bold text-muted-foreground uppercase opacity-40"
                                             >
-                                                No learners found in this class.
+                                                No students found in this class.
                                             </p>
                                         </div>
                                     </td>
@@ -761,12 +758,12 @@ const confirmSubjectAction = () => {
                                     <td class="px-6 py-5">
                                         <div class="flex items-center gap-4">
                                             <div
-                                                class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 font-bold text-slate-900 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white"
+                                                class="flex h-11 w-11 items-center justify-center rounded-xl bg-muted font-bold text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all"
                                             >
                                                 {{ learner.name.charAt(0) }}
                                             </div>
                                             <div
-                                                class="max-w-[200px] truncate leading-none font-bold text-slate-900 transition-colors group-hover:text-blue-600"
+                                                class="max-w-[200px] truncate font-bold text-foreground transition-colors group-hover:text-primary"
                                             >
                                                 {{ learner.name }}
                                             </div>
@@ -786,7 +783,7 @@ const confirmSubjectAction = () => {
                                     <td class="px-6 py-5">
                                         <Badge
                                             variant="secondary"
-                                            class="rounded-xl border-none bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-600 uppercase"
+                                            class="rounded-lg border-none bg-muted px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground uppercase"
                                             >{{ learner.status }}</Badge
                                         >
                                     </td>
@@ -802,32 +799,33 @@ const confirmSubjectAction = () => {
                                             ></DropdownMenuTrigger>
                                             <DropdownMenuContent
                                                 align="end"
-                                                class="w-56 rounded-xl border-slate-100 p-2 shadow-xl"
+                                                class="w-56 rounded-xl border-border p-2 shadow-lg"
                                             >
                                                 <DropdownMenuItem
-                                                    class="rounded-lg"
+                                                    class="rounded-lg py-2.5 text-xs font-bold"
                                                     as-child
                                                     ><Link
                                                         :href="`/students/${learner.id}`"
                                                         ><Eye
-                                                            class="mr-2 h-4 w-4 text-blue-500"
+                                                            class="mr-3 h-4 w-4 text-primary"
                                                         />
-                                                        View</Link
+                                                        View Details</Link
                                                     ></DropdownMenuItem
                                                 >
                                                 <DropdownMenuItem
-                                                    class="rounded-lg"
+                                                    class="rounded-lg py-2.5 text-xs font-bold"
                                                     as-child
                                                     ><Link
                                                         :href="`/students/${learner.id}/edit`"
                                                         ><Edit
-                                                            class="mr-2 h-4 w-4 text-amber-500"
+                                                            class="mr-3 h-4 w-4 text-primary"
                                                         />
-                                                        Edit</Link
+                                                        Edit Student</Link
                                                     ></DropdownMenuItem
                                                 >
+                                                <DropdownMenuSeparator class="my-1 bg-border/50" />
                                                 <DropdownMenuItem
-                                                    class="rounded-lg"
+                                                    class="rounded-lg py-2.5 text-xs font-bold"
                                                     v-if="
                                                         learner.status !==
                                                         'suspended'
@@ -839,12 +837,12 @@ const confirmSubjectAction = () => {
                                                         )
                                                     "
                                                     ><ShieldAlert
-                                                        class="mr-2 h-4 w-4 text-rose-500"
+                                                        class="mr-3 h-4 w-4 text-rose-500"
                                                     />
                                                     Suspend</DropdownMenuItem
                                                 >
                                                 <DropdownMenuItem
-                                                    class="rounded-lg"
+                                                    class="rounded-lg py-2.5 text-xs font-bold"
                                                     v-else
                                                     @click="
                                                         openActionModal(
@@ -853,12 +851,12 @@ const confirmSubjectAction = () => {
                                                         )
                                                     "
                                                     ><UserCheck
-                                                        class="mr-2 h-4 w-4 text-emerald-500"
+                                                        class="mr-3 h-4 w-4 text-emerald-500"
                                                     />
                                                     Activate</DropdownMenuItem
                                                 >
                                                 <DropdownMenuItem
-                                                    class="rounded-lg"
+                                                    class="rounded-lg py-2.5 text-xs font-bold"
                                                     @click="
                                                         openActionModal(
                                                             'demote',
@@ -866,12 +864,12 @@ const confirmSubjectAction = () => {
                                                         )
                                                     "
                                                     ><ArrowDownCircle
-                                                        class="mr-2 h-4 w-4 text-amber-600"
+                                                        class="mr-3 h-4 w-4 text-amber-500"
                                                     />
                                                     Demote</DropdownMenuItem
                                                 >
                                                 <DropdownMenuItem
-                                                    class="rounded-lg font-bold text-rose-600"
+                                                    class="group rounded-lg py-2.5 text-xs font-bold text-rose-500"
                                                     @click="
                                                         openActionModal(
                                                             'delete',
@@ -879,9 +877,9 @@ const confirmSubjectAction = () => {
                                                         )
                                                     "
                                                     ><Trash2
-                                                        class="mr-2 h-4 w-4"
+                                                        class="mr-3 h-4 w-4"
                                                     />
-                                                    Delete</DropdownMenuItem
+                                                    Delete Student</DropdownMenuItem
                                                 >
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -889,7 +887,6 @@ const confirmSubjectAction = () => {
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
                 </div>
             </div>
 
@@ -903,12 +900,12 @@ const confirmSubjectAction = () => {
                     <div>
                         <div class="flex items-center gap-3">
                             <div
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-md"
+                                class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 shadow-sm"
                             >
                                 <BookCopy class="h-5 w-5" />
                             </div>
-                            <h2 class="text-xl font-bold text-slate-900">
-                                Subjects & Teachers
+                            <h2 class="text-xl font-bold text-foreground">
+                                Teachers & Subjects
                             </h2>
                         </div>
                         <p class="mt-1.5 text-sm text-muted-foreground">
@@ -919,21 +916,21 @@ const confirmSubjectAction = () => {
                     <div class="flex items-center gap-3">
                         <div class="hidden text-right sm:block">
                             <p
-                                class="text-xs leading-none font-bold tracking-wider text-slate-400 uppercase"
+                                class="text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                             >
-                                Subjects Count
+                                Total Subjects
                             </p>
-                            <p class="mt-1 text-sm font-bold text-slate-900">
-                                {{ subjectAllocations.length }} Total
+                            <p class="mt-1 text-sm font-bold text-foreground">
+                                {{ subjectAllocations.length }}
                             </p>
                         </div>
                         <Button
                             variant="outline"
                             as-child
-                            class="h-11 rounded-xl border-slate-200 px-8 text-xs font-medium transition-all hover:bg-slate-50"
+                            class="h-10 rounded-lg border-border px-8 text-xs font-bold uppercase transition-all"
                         >
                             <Link :href="`/classes/${classroom.id}/subjects`"
-                                >Manage Subjects</Link
+                                >Manage Allocations</Link
                             >
                         </Button>
                     </div>
@@ -941,56 +938,55 @@ const confirmSubjectAction = () => {
 
                 <div
                     v-if="subjectAllocations.length === 0"
-                    class="rounded-2xl border-2 border-dashed border-slate-100 p-16 text-center"
+                    class="rounded-xl border-2 border-dashed border-border p-16 text-center bg-muted/20"
                 >
-                    <p class="text-sm font-medium text-slate-400">
-                        No subjects assigned to this class yet.
+                    <p class="text-sm font-bold text-muted-foreground uppercase opacity-40">
+                        No subjects assigned to this class.
                     </p>
                 </div>
-                <div v-else class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                     <div
                         v-for="allocation in subjectAllocations"
                         :key="allocation.id"
-                        class="group/sub relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 transition-all hover:border-emerald-200 hover:shadow-lg"
+                        class="group/sub relative flex flex-col overflow-hidden rounded-xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20"
                     >
                         <div
                             class="mb-4 flex items-start justify-between gap-4"
                         >
                             <div>
                                 <h3
-                                    class="truncate text-lg leading-tight font-bold text-slate-900 uppercase transition-colors group-hover/sub:text-emerald-600"
+                                    class="truncate text-lg font-bold text-foreground uppercase group-hover/sub:text-primary"
                                 >
                                     {{ allocation.subject }}
                                 </h3>
                                 <p
-                                    class="mt-1 text-xs font-bold tracking-wider text-slate-400 uppercase opacity-80"
+                                    class="mt-1 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >
                                     {{ allocation.code }} •
-                                    {{ allocation.learning_area || 'Core' }}
+                                    {{ allocation.learning_area || 'General' }}
                                 </p>
                             </div>
                             <div
-                                class="rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-xs font-bold text-slate-400 shadow-sm transition-all group-hover/sub:bg-emerald-600 group-hover/sub:text-white"
+                                class="rounded-lg border border-border bg-muted p-2 text-[10px] font-bold text-muted-foreground transition-all group-hover/sub:bg-emerald-500 group-hover/sub:text-white"
                             >
-                                L
+                                {{ allocation.type.charAt(0) }}
                             </div>
                         </div>
                         <div
-                            class="mb-5 flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3 transition-colors group-hover/sub:bg-blue-50/30"
+                            class="mb-5 flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3"
                         >
                             <div
-                                class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-100 bg-white shadow-sm"
+                                class="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background shadow-sm"
                             >
-                                <UserCheck class="h-4 w-4 text-emerald-600" />
+                                <UserCheck class="h-4 w-4 text-emerald-500" />
                             </div>
                             <div>
                                 <p
-                                    class="mb-1 text-xs leading-none font-bold tracking-wider text-slate-400 uppercase"
+                                    class="mb-1 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >
-                                    Subject Teacher
+                                    Teacher
                                 </p>
                                 <p
-                                    class="truncate pt-0.5 text-xs leading-none font-bold text-slate-900 uppercase"
+                                    class="truncate pt-0.5 text-xs font-bold text-foreground uppercase"
                                 >
                                     {{ allocation.teacher }}
                                 </p>
@@ -998,24 +994,24 @@ const confirmSubjectAction = () => {
                         </div>
                         <div class="mb-2 grid grid-cols-2 gap-3">
                             <div
-                                class="rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
+                                class="rounded-lg border border-border bg-background p-3 shadow-sm"
                             >
                                 <p
-                                    class="mb-1.5 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                    class="mb-1.5 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >
                                     Subject Type
                                 </p>
                                 <p
-                                    class="text-xs font-bold text-slate-900 uppercase"
+                                    class="text-xs font-bold text-foreground uppercase"
                                 >
                                     {{ allocation.type }}
                                 </p>
                             </div>
                             <div
-                                class="rounded-xl border border-slate-100 bg-white p-3 shadow-sm"
+                                class="rounded-lg border border-border bg-background p-3 shadow-sm"
                             >
                                 <p
-                                    class="mb-1.5 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                    class="mb-1.5 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                 >
                                     Status
                                 </p>
@@ -1025,78 +1021,79 @@ const confirmSubjectAction = () => {
                                         :class="
                                             allocation.is_active
                                                 ? 'bg-emerald-500'
-                                                : 'bg-slate-300'
+                                                : 'bg-slate-400'
                                         "
                                     ></div>
                                     <p
-                                        class="text-xs font-bold text-slate-900 uppercase"
+                                        class="text-xs font-bold text-foreground uppercase"
                                         :class="
                                             allocation.is_active
                                                 ? ''
-                                                : 'text-slate-400'
+                                                : 'text-muted-foreground opacity-40'
                                         "
                                     >
                                         {{
                                             allocation.is_active
                                                 ? 'Active'
-                                                : 'Halted'
+                                                : 'Inactive'
                                         }}
                                     </p>
                                 </div>
                             </div>
                         </div>
                         <div
-                            class="absolute top-4 right-4 z-10 opacity-0 transition-opacity group-hover/sub:opacity-100"
+                            class="absolute top-4 right-4 z-10"
                         >
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        class="h-8 w-8 rounded-lg border border-slate-100 bg-white/80 shadow-sm backdrop-blur"
+                                        class="h-8 w-8 rounded-lg border border-border bg-background/80 shadow-sm backdrop-blur"
                                     >
                                         <MoreHorizontal
-                                            class="h-4 w-4 text-emerald-600"
+                                            class="h-4 w-4 text-primary"
                                         />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    class="w-56 rounded-xl border-slate-100 p-2 shadow-xl"
+                                    class="w-56 rounded-xl border-border p-2 shadow-lg"
                                 >
                                     <DropdownMenuItem
-                                        class="rounded-lg"
+                                        class="rounded-lg py-2.5 text-xs font-bold"
                                         as-child
                                         ><Link
                                             :href="`/classes/${classroom.id}/subjects`"
                                             ><Eye
-                                                class="mr-2 h-4 w-4 text-blue-500"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
-                                            Manage Allocation</Link
+                                            View Allocation</Link
                                         ></DropdownMenuItem
                                     >
                                     <DropdownMenuItem
-                                        class="rounded-lg"
+                                        class="rounded-lg py-2.5 text-xs font-bold"
                                         as-child
                                         ><Link
                                             :href="`/curriculum/subjects/${allocation.subject_id}`"
                                             ><BookCopy
-                                                class="mr-2 h-4 w-4 text-indigo-500"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
                                             Subject Details</Link
                                         ></DropdownMenuItem
                                     >
                                     <DropdownMenuItem
-                                        class="rounded-lg"
+                                        class="rounded-lg py-2.5 text-xs font-bold"
                                         as-child
                                         ><Link
                                             :href="`/classes/allocations?class_id=${classroom.id}&subject_id=${allocation.subject_id}`"
                                             ><UserCheck
-                                                class="mr-2 h-4 w-4 text-emerald-600"
+                                                class="mr-3 h-4 w-4 text-primary"
                                             />
-                                            Assign Teacher</Link
+                                            Change Teacher</Link
                                         ></DropdownMenuItem
                                     >
+                                    <DropdownMenuSeparator class="my-1 bg-border/50" />
                                     <DropdownMenuItem
                                         class="rounded-lg"
                                         @click="
@@ -1126,21 +1123,20 @@ const confirmSubjectAction = () => {
                                         }}</DropdownMenuItem
                                     >
                                     <DropdownMenuItem
-                                        class="rounded-lg font-bold text-rose-600"
+                                        class="group rounded-lg py-2.5 text-xs font-bold text-rose-500"
                                         @click="
                                             openSubjectActionModal(
                                                 'delete',
                                                 allocation,
                                             )
                                         "
-                                        ><Trash2 class="mr-2 h-4 w-4" /> Remove
+                                        ><Trash2 class="mr-3 h-4 w-4" /> Remove
                                         Assignment</DropdownMenuItem
                                     >
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
                     </div>
-                </div>
             </div>
 
             <!-- Action Modals -->
@@ -1158,11 +1154,11 @@ const confirmSubjectAction = () => {
                     @click.self="closeActionModal"
                 >
                     <div
-                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-3xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
+                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-xl border-0 bg-white p-8 shadow-lg duration-300"
                     >
                         <div class="relative z-10">
                             <div
-                                class="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg"
+                                class="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900 text-white shadow-md"
                             >
                                 <component
                                     :is="
@@ -1178,7 +1174,7 @@ const confirmSubjectAction = () => {
                                 />
                             </div>
                             <h2
-                                class="mb-2 text-2xl leading-none font-bold tracking-tight text-slate-900 uppercase"
+                                class="mb-2 text-2xl font-bold tracking-tight text-foreground"
                             >
                                 {{ modalTitle }}
                             </h2>
@@ -1189,12 +1185,12 @@ const confirmSubjectAction = () => {
                             >
                                 <div class="space-y-1.5">
                                     <label
-                                        class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="ml-1 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
                                         >Target Class</label
                                     >
                                     <select
                                         v-model="transferTargetId"
-                                        class="h-12 w-full rounded-xl border-slate-200 bg-slate-50 px-4 text-xs font-bold shadow-sm transition-all outline-none focus:ring-blue-600"
+                                        class="h-11 w-full rounded-lg border-border bg-muted/20 px-4 text-xs font-bold outline-none focus:bg-background"
                                     >
                                         <option value="">Select a class</option>
                                         <option
@@ -1207,12 +1203,12 @@ const confirmSubjectAction = () => {
                                     </select>
                                 </div>
                                 <div
-                                    class="rounded-xl border border-blue-100 bg-blue-50 p-4"
+                                    class="rounded-lg border border-primary/10 bg-primary/5 p-4"
                                 >
                                     <p
-                                        class="text-xs leading-relaxed font-medium text-blue-700 uppercase"
+                                        class="text-xs leading-relaxed font-bold text-primary uppercase"
                                     >
-                                        Transferring learners will move them to
+                                        Transferring students will move them to
                                         the selected class for the current
                                         academic session.
                                     </p>
@@ -1220,31 +1216,31 @@ const confirmSubjectAction = () => {
                             </div>
                             <div v-else class="mt-4">
                                 <p
-                                    class="mb-4 text-sm leading-relaxed font-medium text-slate-500"
+                                    class="mb-4 text-sm leading-relaxed font-bold text-muted-foreground"
                                 >
                                     <template v-if="confirmMode === 'promote'"
                                         >Are you sure you want to promote the
-                                        selected {{ selectedCount }} learners to
+                                        selected {{ selectedCount }} students to
                                         the next grade level?</template
                                     >
                                     <template v-else-if="selectedLearner">{{
                                         confirmMode === 'activate'
-                                            ? `Are you sure you want to activate learner [${selectedLearner.name}]?`
+                                            ? `Are you sure you want to activate student [${selectedLearner.name}]?`
                                             : confirmMode === 'delete'
-                                              ? `Are you sure you want to permanently delete learner [${selectedLearner.name}]?`
+                                              ? `Are you sure you want to permanently delete student [${selectedLearner.name}]?`
                                               : confirmMode === 'demote'
-                                                ? `Are you sure you want to demote learner [${selectedLearner.name}]?`
-                                                : `Are you sure you want to suspend learner [${selectedLearner.name}]?`
+                                                ? `Are you sure you want to demote student [${selectedLearner.name}]?`
+                                                : `Are you sure you want to suspend student [${selectedLearner.name}]?`
                                     }}</template>
                                 </p>
                                 <div
                                     v-if="confirmMode === 'delete'"
-                                    class="rounded-xl border border-rose-100 bg-rose-50 p-4"
+                                    class="rounded-lg border border-rose-100 bg-rose-50 p-4"
                                 >
                                     <p
-                                        class="text-center text-xs leading-relaxed font-bold text-rose-600 uppercase"
+                                        class="text-center text-xs font-bold text-rose-600 uppercase"
                                     >
-                                        Warning: This action cannot be undone.
+                                        This action cannot be undone.
                                     </p>
                                 </div>
                             </div>
@@ -1252,7 +1248,7 @@ const confirmSubjectAction = () => {
                             <div class="mt-8 flex justify-end gap-3">
                                 <Button
                                     variant="ghost"
-                                    class="h-12 rounded-xl px-8 text-xs font-bold tracking-tight text-slate-400 uppercase hover:text-slate-600"
+                                    class="h-11 rounded-lg px-8 text-xs font-bold text-muted-foreground uppercase"
                                     @click="closeActionModal"
                                     >Cancel</Button
                                 >
@@ -1262,7 +1258,7 @@ const confirmSubjectAction = () => {
                                             ? 'destructive'
                                             : 'default'
                                     "
-                                    class="h-12 min-w-[140px] rounded-xl border-0 text-xs font-bold tracking-tight uppercase shadow-lg transition-all"
+                                    class="h-11 min-w-[140px] rounded-lg text-xs font-bold uppercase shadow-sm transition-all"
                                     :class="
                                         confirmMode === 'delete'
                                             ? 'bg-rose-600'
@@ -1300,11 +1296,11 @@ const confirmSubjectAction = () => {
                     @click.self="closeSubjectActionModal"
                 >
                     <div
-                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-3xl border-0 bg-white p-8 shadow-lg duration-300 zoom-in-95"
+                        class="relative w-full max-w-[440px] animate-in overflow-hidden rounded-xl border-0 bg-white p-8 shadow-lg duration-300"
                     >
                         <div class="relative z-10">
                             <div
-                                class="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg"
+                                class="mb-6 flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-md"
                             >
                                 <CheckCircle2 class="h-6 w-6" />
                             </div>
@@ -1335,7 +1331,7 @@ const confirmSubjectAction = () => {
                             <div class="mt-8 flex justify-end gap-3">
                                 <Button
                                     variant="ghost"
-                                    class="h-12 rounded-xl px-8 text-xs font-bold tracking-tight text-slate-400 uppercase hover:text-slate-600"
+                                    class="h-11 rounded-lg px-8 text-xs font-bold text-muted-foreground uppercase"
                                     @click="closeSubjectActionModal"
                                     >Cancel</Button
                                 >
@@ -1345,7 +1341,7 @@ const confirmSubjectAction = () => {
                                             ? 'destructive'
                                             : 'default'
                                     "
-                                    class="h-12 min-w-[140px] rounded-xl border-0 text-xs font-bold tracking-tight uppercase shadow-lg transition-all"
+                                    class="h-11 min-w-[140px] rounded-lg text-xs font-bold uppercase shadow-sm transition-all"
                                     :class="
                                         subjectConfirmMode === 'delete'
                                             ? 'bg-rose-600'
@@ -1366,5 +1362,6 @@ const confirmSubjectAction = () => {
                 </div>
             </transition>
         </div>
+    </div>
     </AppLayout>
 </template>

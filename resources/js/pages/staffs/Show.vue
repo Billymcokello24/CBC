@@ -123,18 +123,18 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Intelligence Hub', href: '/dashboard' },
-    { title: 'Faculty Registry', href: '/staffs' },
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Staff', href: '/staffs' },
     { title: props.teacher.full_name, href: `/staffs/${props.teacher.id}` },
 ];
 
-const activeTab = ref('intelligence');
+const activeTab = ref('overview');
 
 const tabs = [
-    { id: 'intelligence', label: 'Intelligence', icon: Activity },
-    { id: 'professional', label: 'Professional', icon: Briefcase },
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'professional', label: 'Employment', icon: Briefcase },
     { id: 'academic', label: 'Academic', icon: GraduationCap },
-    { id: 'contact', label: 'Communication', icon: Contact },
+    { id: 'contact', label: 'Contact', icon: Contact },
     { id: 'financial', label: 'Financial', icon: ShieldCheck },
 ];
 
@@ -152,75 +152,75 @@ const getStatusColor = (status: string) => {
 };
 
 const stats = computed(() => [
-    { label: 'Assigned Nodes', val: props.teacher.classes_as_teacher.length, sub: 'Classes', icon: Building2 },
-    { label: 'Subject Loads', val: props.teacher.subject_assignments.length, sub: 'Curriculum', icon: BookOpen },
-    { label: 'Fidelity Score', val: '98%', sub: 'Active sync', icon: ShieldCheck },
+    { label: 'Assigned', val: props.teacher.classes_as_teacher.length, sub: 'Classes', icon: Building2 },
+    { label: 'Teaching', val: props.teacher.subject_assignments.length, sub: 'Subjects', icon: BookOpen },
+    { label: 'Profile', val: '100%', sub: 'Complete', icon: ShieldCheck },
 ]);
 </script>
 
 <template>
-    <Head :title="`FACULTY_${teacher.full_name.toUpperCase()}`" />
+    <Head :title="`Staff Profile: ${teacher.full_name}`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
             class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col gap-12 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
-            <!-- High-Fidelity Profile Header -->
-            <div class="relative overflow-hidden rounded-[3rem] border border-border bg-card p-10 shadow-sm transition-all hover:border-primary/20">
-                <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/5 blur-3xl transition-transform duration-1000 group-hover:scale-110"></div>
+            <!-- Profile Header -->
+            <div class="relative overflow-hidden rounded-xl border border-border bg-card p-10 shadow-sm">
+                <div class="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/5 blur-3xl"></div>
                 <div class="relative flex flex-col gap-10 lg:flex-row lg:items-center">
-                    <!-- Biometric Visual ID -->
+                    <!-- Profile Photo -->
                     <div class="group relative shrink-0">
-                         <div class="relative h-40 w-40 overflow-hidden rounded-[2.5rem] border-4 border-white bg-slate-100 shadow-2xl transition-transform duration-500 hover:scale-105 active:scale-95 shadow-primary/10">
+                         <div class="relative h-40 w-40 overflow-hidden border-2 border-primary/10 rounded-xl bg-slate-50 shadow-lg">
                             <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
                             <div v-else class="flex h-full w-full items-center justify-center bg-primary text-5xl font-black text-white">
                                 {{ teacher.first_name[0] }}{{ teacher.last_name[0] }}
                             </div>
                          </div>
-                         <div class="absolute -bottom-2 -right-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-white p-1 shadow-xl">
-                            <div :class="getStatusColor(teacher.status)" class="h-full w-full rounded-xl flex items-center justify-center">
-                                <Activity class="h-5 w-5 text-white" />
+                         <div class="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1 shadow-md">
+                            <div :class="getStatusColor(teacher.status)" class="h-full w-full rounded-md flex items-center justify-center">
+                                <Activity class="h-4 w-4 text-white" />
                             </div>
                          </div>
                     </div>
 
-                    <!-- Faculty Identification -->
+                    <!-- Staff Details -->
                     <div class="flex-1 space-y-6">
                         <div class="space-y-2">
                              <div class="flex flex-wrap items-center gap-4">
-                                <h1 class="text-4xl font-black tracking-tight text-foreground uppercase">{{ teacher.full_name }}</h1>
-                                <Badge variant="outline" class="rounded-xl border-primary/20 bg-primary/10 px-4 py-1 text-[10px] font-black tracking-[0.2em] text-primary uppercase shadow-sm">
+                                <h1 class="text-4xl font-bold tracking-tight text-foreground">{{ teacher.full_name }}</h1>
+                                <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/10 px-4 py-1 text-xs font-bold text-primary uppercase">
                                     {{ teacher.staff_number }}
                                 </Badge>
                              </div>
-                             <p class="text-[10px] font-bold tracking-[0.3em] text-muted-foreground uppercase opacity-60">
+                             <p class="text-sm font-medium text-muted-foreground uppercase opacity-60">
                                 {{ teacher.staff_designation?.name || 'Unassigned' }} // {{ teacher.department?.name || 'Academic Core' }}
                              </p>
                         </div>
 
-                        <!-- Real-time Metrics -->
+                        <!-- Metrics -->
                         <div class="flex flex-wrap gap-10">
                             <div v-for="(stat, idx) in stats" :key="idx" class="flex items-center gap-4">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/50 text-primary shadow-sm"><component :is="stat.icon" class="h-5 w-5" /></div>
+                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50 text-primary"><component :is="stat.icon" class="h-5 w-5" /></div>
                                 <div class="space-y-0.5">
-                                    <p class="text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-40">{{ stat.label }}</p>
-                                    <p class="text-sm font-bold tracking-tight text-foreground uppercase">{{ stat.val }} <span class="text-[10px] opacity-40">{{ stat.sub }}</span></p>
+                                    <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-40">{{ stat.label }}</p>
+                                    <p class="text-sm font-bold text-foreground uppercase">{{ stat.val }} <span class="text-[10px] opacity-40">{{ stat.sub }}</span></p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Management Actions -->
-                    <div class="flex flex-wrap items-center gap-4">
-                        <Button variant="outline" class="h-14 rounded-2xl border-border bg-card px-8 text-[10px] font-black tracking-[0.2em] uppercase hover:bg-muted" as-child>
+                    <!-- Actions -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Button variant="outline" class="h-10 rounded-lg px-6 text-xs font-semibold uppercase" as-child>
                              <Link :href="`/staffs/${teacher.id}/edit`">
-                                <Edit class="mr-3 h-4 w-4 text-primary" />
-                                Mutate Node
+                                <Edit class="mr-2 h-4 w-4 text-primary" />
+                                Edit Profile
                              </Link>
                         </Button>
-                        <Button class="h-14 rounded-2xl bg-slate-900 px-8 text-[10px] font-black tracking-[0.2em] text-white uppercase shadow-2xl transition-all hover:scale-[1.05]">
-                            <Settings class="mr-3 h-4 w-4" />
-                            Security Keys
+                        <Button class="h-10 rounded-lg bg-slate-900 px-6 text-xs font-semibold text-white uppercase shadow-sm">
+                            <Settings class="mr-2 h-4 w-4" />
+                            Settings
                         </Button>
                     </div>
                 </div>
@@ -228,71 +228,71 @@ const stats = computed(() => [
 
             <!-- Content Matrix -->
             <div class="grid grid-cols-1 items-start gap-12 lg:grid-cols-[320px_1fr]">
-                <!-- Strategic Navigation Matrix -->
-                <aside class="sticky top-28 space-y-3">
+                <!-- Navigation -->
+                <aside class="sticky top-28 space-y-2">
                     <button
                         v-for="tab in tabs"
                         :key="tab.id"
                         @click="activeTab = tab.id"
-                        class="group relative flex w-full items-center gap-4 rounded-3xl p-6 text-sm font-bold transition-all duration-500"
+                        class="group relative flex w-full items-center gap-4 rounded-xl p-4 text-sm font-semibold transition-all duration-300"
                         :class="activeTab === tab.id
-                            ? 'bg-primary text-white shadow-2xl shadow-primary/30 translate-x-3 scale-[1.02]'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
                             : 'bg-card text-muted-foreground border border-border/50 hover:border-primary/20 hover:bg-muted/10'"
                     >
-                        <div class="flex h-10 w-10 items-center justify-center rounded-2xl transition-colors"
+                        <div class="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
                              :class="activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-muted text-muted-foreground group-hover:text-primary'">
-                            <component :is="tab.icon" class="h-5 w-5" />
+                            <component :is="tab.icon" class="h-4 w-4" />
                         </div>
-                        <span class="tracking-widest uppercase text-[10px] font-black">{{ tab.label }}</span>
-                        <ChevronRight v-if="activeTab === tab.id" class="ml-auto h-4 w-4 animate-pulse" />
+                        <span class="text-xs font-bold uppercase">{{ tab.label }}</span>
+                        <ChevronRight v-if="activeTab === tab.id" class="ml-auto h-4 w-4" />
                     </button>
                     
-                    <div class="mt-12 rounded-3xl border border-primary/10 bg-primary/5 p-8 text-center">
-                        <ShieldCheck class="mx-auto mb-4 h-10 w-10 text-primary opacity-40" />
-                        <h4 class="text-[10px] font-black tracking-widest text-primary uppercase mb-2">Vault Fidelity</h4>
-                        <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Full institutional data encryption protocol active</p>
+                    <div class="mt-8 rounded-xl border border-primary/10 bg-primary/5 p-6 text-center">
+                        <ShieldCheck class="mx-auto mb-3 h-8 w-8 text-primary opacity-30" />
+                        <h4 class="text-[10px] font-bold text-primary uppercase mb-1">Status</h4>
+                        <p class="text-[10px] font-medium text-muted-foreground uppercase opacity-60">Verified School Record</p>
                     </div>
                 </aside>
 
                 <!-- Intelligence Display -->
                 <main class="space-y-12">
-                     <!-- Intelligence Tab (Overview) -->
-                    <div v-if="activeTab === 'intelligence'" class="animate-in fade-in slide-in-from-right-8 duration-700">
+                     <!-- Overview Tab -->
+                    <div v-if="activeTab === 'overview'" class="animate-in fade-in slide-in-from-right-4 duration-500">
                          <div class="grid gap-8 md:grid-cols-2">
-                             <div class="group overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
-                                <div class="border-b border-border/50 bg-muted/10 px-8 py-6">
-                                    <h3 class="text-[10px] font-black tracking-widest text-foreground uppercase">Identity synchronization</h3>
+                             <div class="group overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                                <div class="border-b border-border/50 bg-muted/5 px-8 py-5">
+                                    <h3 class="text-xs font-bold text-foreground uppercase">Personal Information</h3>
                                 </div>
-                                <div class="p-8 space-y-6">
+                                <div class="p-8 space-y-5">
                                     <div v-for="(val, label) in {
-                                        'Full Legal Name': teacher.full_name,
-                                        'Biological Mode': teacher.gender,
-                                        'Temporal Identity': teacher.date_of_birth || 'N/A',
+                                        'Full Name': teacher.full_name,
+                                        'Gender': teacher.gender,
+                                        'Date of Birth': teacher.date_of_birth || 'N/A',
                                         'Nationality': teacher.nationality,
-                                        'Marital State': teacher.marital_status || 'Single',
-                                        'State ID Key': teacher.id_number || 'N/A'
+                                        'Marital Status': teacher.marital_status || 'Single',
+                                        'ID Number': teacher.id_number || 'N/A'
                                     }" :key="label" class="flex items-center justify-between">
-                                        <span class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ label }}</span>
-                                        <span class="text-xs font-black text-foreground uppercase">{{ val }}</span>
+                                        <span class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">{{ label }}</span>
+                                        <span class="text-xs font-bold text-foreground uppercase">{{ val }}</span>
                                     </div>
                                 </div>
                              </div>
-
-                             <div class="group overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
-                                <div class="border-b border-border/50 bg-muted/10 px-8 py-6">
-                                    <h3 class="text-[10px] font-black tracking-widest text-foreground uppercase">Institutional telemetry</h3>
+ 
+                             <div class="group overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                                <div class="border-b border-border/50 bg-muted/5 px-8 py-5">
+                                    <h3 class="text-xs font-bold text-foreground uppercase">Employment Information</h3>
                                 </div>
-                                <div class="p-8 space-y-6">
+                                <div class="p-8 space-y-5">
                                     <div v-for="(val, label) in {
-                                        'Operational Key': teacher.staff_number,
-                                        'External TSC Key': teacher.tsc_number || 'NONE',
-                                        'Strategic Dept': teacher.department?.name || 'CORE',
-                                        'Node Category': teacher.staff_category?.name || 'GENERAL',
-                                        'Contract Matrix': teacher.contract_type || 'PERMANENT',
-                                        'Ingression Date': teacher.date_joined || 'N/A'
+                                        'Staff Number': teacher.staff_number,
+                                        'TSC Number': teacher.tsc_number || 'NONE',
+                                        'Department': teacher.department?.name || 'CORE',
+                                        'Category': teacher.staff_category?.name || 'GENERAL',
+                                        'Contract Type': teacher.contract_type || 'PERMANENT',
+                                        'Join Date': teacher.date_joined || 'N/A'
                                     }" :key="label" class="flex items-center justify-between">
-                                        <span class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ label }}</span>
-                                        <span class="text-xs font-black text-primary uppercase">{{ val }}</span>
+                                        <span class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">{{ label }}</span>
+                                        <span class="text-xs font-bold text-primary uppercase">{{ val }}</span>
                                     </div>
                                 </div>
                              </div>
@@ -303,59 +303,59 @@ const stats = computed(() => [
                     <div v-if="activeTab === 'academic'" class="animate-in fade-in slide-in-from-right-8 duration-700">
                         <div class="space-y-12">
                              <!-- Assigned Classes -->
-                             <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
-                                <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-10 py-6">
-                                    <h3 class="text-[10px] font-black tracking-widest text-foreground uppercase">Primary stream assignments</h3>
-                                    <Button variant="ghost" size="sm" class="h-8 rounded-xl text-[9px] font-black uppercase text-primary hover:bg-primary/10">Manage streams</Button>
+                             <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                                <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-8 py-5">
+                                    <h3 class="text-xs font-bold text-foreground uppercase">Assigned Classes</h3>
+                                    <Button variant="ghost" size="sm" class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary">Manage Classes</Button>
                                 </div>
-                                <div class="p-10">
+                                <div class="p-8">
                                     <div v-if="teacher.classes_as_teacher.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                        <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="group flex items-center justify-between rounded-[2rem] border border-border bg-muted/20 p-6 transition-all hover:border-primary/20 hover:bg-card">
+                                        <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="group flex items-center justify-between rounded-xl border border-border bg-muted/10 p-5 transition-all hover:bg-card">
                                             <div class="space-y-1">
-                                                <p class="text-[10px] font-black tracking-widest text-primary uppercase">{{ cls.grade_level?.name }}</p>
-                                                <p class="text-sm font-black text-foreground uppercase">{{ cls.name }}</p>
+                                                <p class="text-[10px] font-bold text-primary uppercase">{{ cls.grade_level?.name }}</p>
+                                                <p class="text-sm font-bold text-foreground uppercase">{{ cls.name }}</p>
                                             </div>
-                                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-border/30"><Building2 class="h-5 w-5 text-muted-foreground" /></div>
+                                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-border/30"><Building2 class="h-5 w-5 text-muted-foreground" /></div>
                                         </div>
                                     </div>
                                     <div v-else class="flex flex-col items-center justify-center py-12 text-center">
-                                        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-[2.5rem] bg-muted/50 text-muted-foreground opacity-30"><AlertCircle class="h-8 w-8" /></div>
-                                        <p class="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-40">No primary stream assignments identified</p>
+                                        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground opacity-30"><AlertCircle class="h-6 w-6" /></div>
+                                        <p class="text-xs font-medium text-muted-foreground opacity-60">No classes assigned yet.</p>
                                     </div>
                                 </div>
                              </div>
 
-                             <!-- Subject Ingestion Matrix -->
-                             <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
-                                <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-10 py-6">
-                                    <h3 class="text-[10px] font-black tracking-widest text-foreground uppercase">Subject Load Matrix</h3>
-                                    <Button variant="ghost" size="sm" class="h-8 rounded-xl text-[9px] font-black uppercase text-primary hover:bg-primary/10">Modify matrix</Button>
+                             <!-- Subject Assignments -->
+                             <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                                <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-8 py-5">
+                                    <h3 class="text-xs font-bold text-foreground uppercase">Subject Assignments</h3>
+                                    <Button variant="ghost" size="sm" class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary">Manage Subjects</Button>
                                 </div>
-                                <div class="p-10">
+                                <div class="p-8">
                                     <div v-if="teacher.subject_assignments.length > 0" class="overflow-x-auto">
                                         <table class="w-full text-left">
                                             <thead>
-                                                <tr class="text-[9px] font-black tracking-[0.2em] text-muted-foreground uppercase">
-                                                    <th class="pb-6">Subject Knowledge Node</th>
-                                                    <th class="pb-6">Temporal Channel</th>
-                                                    <th class="pb-6">Access Protocol</th>
-                                                    <th class="pb-6 text-right">Status</th>
+                                                <tr class="text-[10px] font-bold text-muted-foreground uppercase">
+                                                    <th class="pb-4">Subject</th>
+                                                    <th class="pb-4">Class</th>
+                                                    <th class="pb-4">Role</th>
+                                                    <th class="pb-4 text-right">Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-border/50">
-                                                <tr v-for="sa in teacher.subject_assignments" :key="sa.id" class="group transition-all">
-                                                    <td class="py-5">
-                                                        <div class="flex items-center gap-4">
-                                                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/5 text-primary text-[10px] font-black border border-primary/10">{{ sa.subject.code }}</div>
-                                                            <span class="text-xs font-black text-foreground uppercase">{{ sa.subject.name }}</span>
+                                                <tr v-for="sa in teacher.subject_assignments" :key="sa.id">
+                                                    <td class="py-4">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/5 text-primary text-[10px] font-bold border border-primary/10">{{ sa.subject.code }}</div>
+                                                            <span class="text-xs font-bold text-foreground uppercase">{{ sa.subject.name }}</span>
                                                         </div>
                                                     </td>
-                                                    <td class="py-5 text-xs font-bold text-muted-foreground uppercase">{{ sa.school_class.name }}</td>
-                                                    <td class="py-5 uppercase">
-                                                        <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/5 text-[9px] font-black tracking-widest text-primary">{{ sa.is_primary_teacher ? 'Primary Node' : 'Secondary' }}</Badge>
+                                                    <td class="py-4 text-xs font-semibold text-muted-foreground">{{ sa.school_class.name }}</td>
+                                                    <td class="py-4 uppercase">
+                                                        <Badge variant="outline" class="rounded-md border-primary/20 bg-primary/5 text-[9px] font-bold text-primary">{{ sa.is_primary_teacher ? 'Primary' : 'Secondary' }}</Badge>
                                                     </td>
-                                                    <td class="py-5 text-right">
-                                                         <div class="flex h-2.5 w-2.5 ml-auto rounded-full" :class="sa.is_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'"></div>
+                                                    <td class="py-4 text-right">
+                                                         <div class="flex h-2 w-2 ml-auto rounded-full" :class="sa.is_active ? 'bg-emerald-500' : 'bg-rose-500'"></div>
                                                     </td>
                                                 </tr>
                                             </tbody>
@@ -363,36 +363,36 @@ const stats = computed(() => [
                                     </div>
                                     <div v-else class="flex flex-col items-center justify-center py-12 text-center opacity-30">
                                         <BookOpen class="mb-4 h-10 w-10" />
-                                        <p class="text-[10px] font-black tracking-widest uppercase">Null Subject Matrix</p>
+                                        <p class="text-xs font-bold uppercase">No subjects assigned.</p>
                                     </div>
                                 </div>
                              </div>
                         </div>
                     </div>
                     
-                    <!-- Professional & Financial (Compact) -->
-                     <div v-if="activeTab === 'professional' || activeTab === 'financial'" class="animate-in fade-in slide-in-from-right-8 duration-700">
-                        <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm">
-                            <div class="border-b border-border/50 bg-muted/10 px-10 py-6">
-                                <h3 class="text-[10px] font-black tracking-widest text-foreground uppercase">{{ activeTab }} protocol data</h3>
+                    <!-- Other Tabs -->
+                     <div v-if="activeTab === 'professional' || activeTab === 'financial'" class="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                            <div class="border-b border-border/50 bg-muted/5 px-8 py-5">
+                                <h3 class="text-xs font-bold text-foreground uppercase">{{ activeTab }} Information</h3>
                             </div>
-                            <div class="p-10">
-                                <div class="grid gap-10 md:grid-cols-2">
+                            <div class="p-8">
+                                <div class="grid gap-8 md:grid-cols-2">
                                      <div v-for="(val, label) in (activeTab === 'professional' ? {
                                         'Employment Type': teacher.employment_type || 'Full-time',
-                                        'Strategic Category': teacher.staff_category?.name || 'General',
-                                        'Designation Key': teacher.staff_designation?.name || 'N/A',
-                                        'Persistence Mode': teacher.contract_type || 'Permanent'
+                                        'Staff Category': teacher.staff_category?.name || 'General',
+                                        'Designation': teacher.staff_designation?.name || 'N/A',
+                                        'Contract Type': teacher.contract_type || 'Permanent'
                                     } : {
-                                        'Base Salary Matrix': `KES ${teacher.basic_salary?.toLocaleString() || '0'}`,
-                                        'NHIF Identification': teacher.nhif_number || 'N/A',
-                                        'NSSF Identification': teacher.nssf_number || 'N/A',
-                                        'KRA PIN Key': teacher.kra_pin || 'N/A',
-                                        'Financial Node': teacher.bank_name || 'N/A',
-                                        'Account Protocol': teacher.bank_account_number || 'N/A'
-                                    })" :key="label" class="space-y-2">
-                                        <p class="text-[9px] font-black tracking-[0.2em] text-muted-foreground uppercase opacity-40">{{ label }}</p>
-                                        <p class="text-sm font-black text-foreground uppercase">{{ val }}</p>
+                                        'Base Salary': `KES ${teacher.basic_salary?.toLocaleString() || '0'}`,
+                                        'NHIF Number': teacher.nhif_number || 'N/A',
+                                        'NSSF Number': teacher.nssf_number || 'N/A',
+                                        'KRA PIN': teacher.kra_pin || 'N/A',
+                                        'Bank Name': teacher.bank_name || 'N/A',
+                                        'Account Number': teacher.bank_account_number || 'N/A'
+                                    })" :key="label" class="space-y-1">
+                                        <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-40">{{ label }}</p>
+                                        <p class="text-sm font-bold text-foreground uppercase">{{ val }}</p>
                                     </div>
                                 </div>
                             </div>

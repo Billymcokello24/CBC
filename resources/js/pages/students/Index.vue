@@ -102,8 +102,8 @@ interface Props {
 const props = defineProps<Props>();
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Intelligence Hub', href: '/dashboard' },
-    { title: 'Learner Registry', href: '/students' },
+    { title: 'Dashboard', href: '/dashboard' },
+    { title: 'Students', href: '/students' },
 ];
 
 const searchQuery = ref(props.filters.search ?? '');
@@ -231,7 +231,7 @@ const getStatusColor = (status: string) => {
 </script>
 
 <template>
-    <Head title="Learner Intelligence Registry" />
+    <Head title="Student Registry" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -242,175 +242,180 @@ const getStatusColor = (status: string) => {
                 class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black">Registry Matrix</h1>
-                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Synchronizing {{ stats.total }} Institutional Assets</p>
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Students</h1>
+                    <p class="text-xs text-muted-foreground">Managing all students in the school</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
                     <Button
                         variant="outline"
                         @click="bulkUploadOpen = true"
-                        class="h-12 rounded-2xl border-border bg-card px-6 text-[10px] font-bold tracking-widest uppercase hover:bg-muted"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
                     >
-                        <Upload class="mr-2.5 h-4 w-4 text-primary" />
-                        Bulk Matrix
+                        <Upload class="mr-2 h-4 w-4 text-primary" />
+                        Add Many Students
                     </Button>
-                    <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
                         <Link href="/students/create">
-                            <Plus class="mr-2.5 h-4 w-4" />
-                            Enroll Entity
+                            <Plus class="mr-2 h-4 w-4" />
+                            Add Student
                         </Link>
                     </Button>
                 </div>
             </div>
 
-            <!-- Stats Matrix -->
+            <!-- Stats Grid -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div v-for="(stat, idx) in [
-                    { label: 'Global Registry', val: stats.total, sub: `+${stats.new_this_month} Month`, icon: Users },
-                    { label: 'Active Pipeline', val: stats.active, sub: `${activeRate}% Fidelity`, icon: Activity },
-                    { label: 'Growth Vector', val: `${stats.growth}%`, sub: 'Peak Iteration', icon: TrendingUp },
-                    { label: 'Registry Exit', val: stats.withdrawn, sub: 'Dormant Nodes', icon: ShieldAlert }
-                ]" :key="idx" class="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all hover:border-primary/20">
-                    <div class="absolute -right-4 -top-4 opacity-[0.03] transition-transform duration-700 group-hover:scale-110">
+                    { label: 'Total Students', val: stats.total, sub: `+${stats.new_this_month} this month`, icon: Users },
+                    { label: 'Active Students', val: stats.active, sub: `${activeRate}% of total`, icon: Activity },
+                    { label: 'Recent Growth', val: `${stats.growth}%`, sub: 'Student intake', icon: TrendingUp },
+                    { label: 'Withdrawn', val: stats.withdrawn, sub: 'Inactive records', icon: ShieldAlert }
+                ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                    <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
                         <component :is="stat.icon" class="h-24 w-24" />
                     </div>
-                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ stat.label }}</p>
+                    <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
                     <div class="mt-2 flex items-baseline gap-2">
                         <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
-                        <span class="text-[9px] font-bold text-primary uppercase">{{ stat.sub }}</span>
+                        <span class="text-[10px] font-semibold text-primary">{{ stat.sub }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Intelligence Hub (Filters) -->
-            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-                <div class="flex h-14 items-center justify-between border-b border-border/50 bg-muted/10 px-8">
-                    <div class="flex items-center gap-3">
+            <!-- Filters -->
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                    <div class="flex items-center gap-2">
                         <Search class="h-4 w-4 text-primary" />
-                        <span class="text-[10px] font-bold tracking-widest text-foreground uppercase">Registry Filters</span>
+                        <span class="text-xs font-semibold text-foreground">Filter Students</span>
                     </div>
-                    <Button variant="ghost" size="sm" @click="showFilters = !showFilters" class="h-8 text-[10px] font-bold uppercase transition-all">
-                        {{ showFilters ? 'Hide Parameters' : 'Show Parameters' }}
+                    <Button variant="ghost" size="sm" @click="showFilters = !showFilters" class="h-8 text-xs font-medium">
+                        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
                     </Button>
                 </div>
-                <div v-show="showFilters" class="p-8">
-                     <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Global Search</Label>
+                <div v-show="showFilters" class="p-6">
+                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Search Student</Label>
                             <div class="relative">
-                                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
-                                <Input v-model="searchQuery" placeholder="Name or Identifier..." class="h-12 rounded-xl border-border bg-muted/20 pl-11 pr-4 text-xs font-bold uppercase focus:bg-background" />
+                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                                <Input v-model="searchQuery" placeholder="Name or admission number..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
                             </div>
                         </div>
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Strategic Stream</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Class</Label>
                             <div class="relative">
-                                <select v-model="selectedClassId" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
-                                    <option value="">Aesthetic Channels</option>
+                                <select v-model="selectedClassId" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
+                                    <option value="">All Classes</option>
                                     <option v-for="c in classes" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Registry State</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Status</Label>
                             <div class="relative">
-                                <select v-model="selectedStatus" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
-                                    <option value="all">All States</option>
+                                <select v-model="selectedStatus" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
+                                    <option value="all">All Status</option>
                                     <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Identity Status</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Gender</Label>
                              <div class="relative">
-                                <select v-model="selectedGender" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background focus:ring-4 focus:ring-primary/5">
-                                    <option value="all">Global Matrix</option>
+                                <select v-model="selectedGender" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
+                                    <option value="all">All Gender</option>
                                     <option v-for="opt in genderOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Data Matrix -->
-            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+            <!-- Student Table -->
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/10 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                                <th class="w-12 px-6 py-5">
-                                    <button @click="toggleAllSelection" class="flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background transition-all hover:border-primary">
-                                        <CheckSquare v-if="selectedLearnerIds.length === learners.data.length" class="h-3.5 w-3.5 text-primary" />
-                                        <div v-else-if="selectedLearnerIds.length > 0" class="h-2 w-2 rounded-sm bg-primary"></div>
+                            <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                <th class="w-12 px-6 py-4">
+                                    <button @click="toggleAllSelection" class="flex h-4 w-4 items-center justify-center rounded border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedLearnerIds.length === learners.data.length" class="h-3 w-3 text-primary" />
+                                        <div v-else-if="selectedLearnerIds.length > 0" class="h-1.5 w-1.5 rounded-sm bg-primary"></div>
                                     </button>
                                 </th>
-                                <th class="px-6 py-5">Institutional Identity</th>
-                                <th class="px-6 py-5">Registry Key</th>
-                                <th class="px-6 py-5">Placement Slot</th>
-                                <th class="px-6 py-5">Pulse Status</th>
-                                <th class="px-6 py-5 text-right font-black">Actions</th>
+                                <th class="px-6 py-4">Student Details</th>
+                                <th class="px-6 py-4">Admission No.</th>
+                                <th class="px-6 py-4">Class</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/50">
-                            <tr v-for="learner in learners.data" :key="learner.id" class="group transition-all hover:bg-muted/30">
-                                <td class="px-6 py-5">
-                                    <button @click="toggleSelection(learner.id)" class="flex h-5 w-5 items-center justify-center rounded-md border border-border bg-background transition-all hover:border-primary">
-                                        <CheckSquare v-if="selectedLearnerIds.includes(learner.id)" class="h-3.5 w-3.5 text-primary" />
+                            <tr v-for="learner in learners.data" :key="learner.id" class="group transition-all hover:bg-muted/20">
+                                <td class="px-6 py-4">
+                                    <button @click="toggleSelection(learner.id)" class="flex h-4 w-4 items-center justify-center rounded border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedLearnerIds.includes(learner.id)" class="h-3 w-3 text-primary" />
                                     </button>
                                 </td>
-                                <td class="px-6 py-5">
-                                    <div class="flex items-center gap-4">
-                                        <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
                                             <img v-if="learner.photo_url" :src="learner.photo_url" class="h-full w-full object-cover" />
-                                            <div v-else class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-bold text-primary">{{ learner.name.charAt(0).toUpperCase() }}</div>
+                                            <div v-else class="flex h-full w-full items-center justify-center bg-primary/10 text-xs font-semibold text-primary">{{ learner.name.charAt(0).toUpperCase() }}</div>
                                         </div>
                                         <div class="space-y-0.5">
-                                            <p class="text-xs font-bold tracking-tight text-foreground group-hover:text-primary transition-colors uppercase">{{ learner.name }}</p>
-                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ learner.gender }}</p>
+                                            <p class="text-sm font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">{{ learner.name }}</p>
+                                            <p class="text-[10px] font-medium text-muted-foreground uppercase">{{ learner.gender }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5">
-                                    <Badge variant="outline" class="rounded-lg border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-bold tracking-tight text-primary uppercase">
+                                <td class="px-6 py-4">
+                                    <Badge variant="outline" class="rounded-md border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold text-primary">
                                         {{ learner.admission_number || '--' }}
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-5 text-xs font-bold tracking-tight text-foreground uppercase">{{ learner.class || 'UNASSIGNED' }}</td>
-                                <td class="px-6 py-5">
-                                    <Badge :class="getStatusColor(learner.status)" class="rounded-lg border-0 px-2.5 py-1 text-[9px] font-bold tracking-tight uppercase shadow-sm">
+                                <td class="px-6 py-4 text-xs font-semibold text-foreground">{{ learner.class || 'Unassigned' }}</td>
+                                <td class="px-6 py-4">
+                                    <Badge :class="getStatusColor(learner.status)" class="rounded-md border-0 px-2 py-0.5 text-[10px] font-semibold uppercase shadow-sm">
                                         {{ learner.status }}
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-5 text-right">
+                                <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm">
+                                        <Button variant="ghost" size="icon" as-child class="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary">
                                             <Link :href="`/students/${learner.id}`"><Eye class="h-4 w-4" /></Link>
                                         </Button>
-                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary shadow-sm" v-if="hasPermission('students.update')">
+                                        <Button variant="ghost" size="icon" as-child class="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" v-if="hasPermission('students.update')">
                                             <Link :href="`/students/${learner.id}/edit`"><Edit class="h-4 w-4" /></Link>
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            class="h-8 w-8 rounded-lg hover:bg-rose-50 hover:text-rose-600" 
+                                            v-if="hasPermission('students.delete')"
+                                            @click="openConfirm('delete', learner)"
+                                            title="Delete Student"
+                                        >
+                                            <Trash2 class="h-4 w-4" />
                                         </Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-9 w-9 rounded-xl hover:bg-muted"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
+                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-muted"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-48 rounded-2xl border-border bg-card p-2 shadow-2xl">
-                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openConfirm('suspend', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-rose-500 uppercase focus:bg-rose-50">
-                                                    <ShieldAlert class="mr-3 h-4 w-4" />
-                                                    Suspend Profile
+                                            <DropdownMenuContent align="end" class="w-48 rounded-xl border-border bg-card p-2 shadow-lg">
+                                                <DropdownMenuItem v-if="learner.status !== 'suspended' && hasPermission('students.update')" @click="openConfirm('suspend', learner)" class="rounded-lg px-3 py-2 text-xs font-medium text-rose-500 focus:bg-rose-50 focus:text-rose-600">
+                                                    <ShieldAlert class="mr-2 h-4 w-4" />
+                                                    Suspend Student
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openConfirm('activate', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-emerald-600 uppercase focus:bg-emerald-50">
-                                                    <CheckCircle2 class="mr-3 h-4 w-4" />
-                                                    Restore Access
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator class="my-1 border-border/50" />
-                                                <DropdownMenuItem @click="openConfirm('delete', learner)" class="rounded-xl px-4 py-2.5 text-[10px] font-bold tracking-tight text-rose-600 uppercase focus:bg-rose-50" v-if="hasPermission('students.delete')">
-                                                    <Trash2 class="mr-3 h-4 w-4" />
-                                                    Purge Entity
+                                                <DropdownMenuItem v-else-if="hasPermission('students.update')" @click="openConfirm('activate', learner)" class="rounded-lg px-3 py-2 text-xs font-medium text-emerald-600 focus:bg-emerald-50 focus:text-emerald-700">
+                                                    <CheckCircle2 class="mr-2 h-4 w-4" />
+                                                    Activate Student
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -421,14 +426,14 @@ const getStatusColor = (status: string) => {
                     </table>
                 </div>
 
-                <!-- Strategic Pagination -->
-                <div class="flex h-20 items-center justify-between border-t border-border/50 px-8 bg-muted/5">
-                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Registry Point: {{ learners.from || 0 }} - {{ learners.to || 0 }} of {{ stats.total }}</p>
-                    <div class="flex items-center gap-2">
+                <!-- Pagination -->
+                <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5">
+                    <p class="text-xs text-muted-foreground font-medium">Showing {{ learners.from || 0 }} - {{ learners.to || 0 }} of {{ stats.total }} students</p>
+                    <div class="flex items-center gap-1.5">
                         <template v-for="(link, i) in learners.links" :key="i">
-                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-9 w-9 rounded-xl text-[10px] font-bold tracking-tight transition-all', link.active ? 'border-primary bg-primary text-white shadow-lg shadow-primary/20' : 'border-border bg-card hover:bg-muted text-muted-foreground']" @click="applyFilters(Number(link.label))">{{ link.label }}</Button>
-                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page - 1)">Prev</Button>
-                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-9 rounded-xl px-4 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page + 1)">Next</Button>
+                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-xs font-medium transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" @click="applyFilters(Number(link.label))">{{ link.label }}</Button>
+                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page - 1)">Prev</Button>
+                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="link.url && applyFilters(learners.current_page + 1)">Next</Button>
                         </template>
                     </div>
                 </div>
@@ -437,76 +442,75 @@ const getStatusColor = (status: string) => {
 
         <!-- Floating Selection Action Bar -->
         <div v-if="selectedLearnerIds.length > 0" class="fixed bottom-10 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-10">
-            <div class="flex items-center gap-6 rounded-3xl border border-primary/20 bg-slate-900 px-8 py-5 text-white shadow-2xl shadow-primary/20">
+            <div class="flex items-center gap-6 rounded-2xl border border-primary/20 bg-slate-900 px-6 py-4 text-white shadow-2xl">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/20"><Users class="h-5 w-5 text-primary" /></div>
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20"><Users class="h-5 w-5 text-primary" /></div>
                     <div class="space-y-0.5">
-                        <p class="text-[10px] font-bold tracking-widest uppercase opacity-60">Selection Matrix</p>
-                        <p class="text-sm font-bold tracking-tight">{{ selectedLearnerIds.length }} Nodes Targeted</p>
+                        <p class="text-xs font-semibold tracking-tight">{{ selectedLearnerIds.length }} students selected</p>
+                        <p class="text-[10px] font-medium text-white/50 uppercase">Selection Actions</p>
                     </div>
                 </div>
                 <div class="h-10 w-px bg-white/10 mx-2"></div>
-                <div class="flex items-center gap-3">
-                    <Button @click="promoteOpen = true" class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-lg shadow-primary/20 transition-all hover:scale-[1.05]">Bulk Promote</Button>
-                    <Button variant="ghost" @click="selectedLearnerIds = []" class="h-12 rounded-2xl px-6 text-[10px] font-bold tracking-widest text-slate-400 uppercase hover:text-white">Clear Matrix</Button>
+                <div class="flex items-center gap-2">
+                    <Button @click="promoteOpen = true" class="h-10 rounded-xl bg-primary px-6 text-xs font-semibold text-white shadow-lg hover:bg-primary/90 transition-all">Bulk Promote</Button>
+                    <Button variant="ghost" @click="selectedLearnerIds = []" class="h-10 rounded-xl px-4 text-xs font-medium text-slate-400 hover:text-white">Clear</Button>
                 </div>
             </div>
         </div>
 
-        <!-- Dialogs -->
+        <!-- Confirm Dialog -->
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
-            <DialogContent class="sm:max-w-[480px] rounded-3xl border-border bg-card p-0 shadow-2xl overflow-hidden">
-                <div class="p-8">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl" :class="confirmMode === 'delete' ? 'bg-rose-50 text-rose-500' : 'bg-primary/10 text-primary'">
+            <DialogContent class="sm:max-w-[420px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                <div class="p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl" :class="confirmMode === 'delete' ? 'bg-rose-50 text-rose-500' : 'bg-primary/10 text-primary'">
                             <ShieldAlert class="h-6 w-6" />
                         </div>
                         <div class="space-y-1">
-                            <h3 class="text-lg font-bold tracking-tight text-foreground uppercase">Critical Protocol</h3>
-                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Registry Integrity Guard</p>
+                            <h3 class="text-lg font-bold tracking-tight text-foreground">Confirm Action</h3>
+                            <p class="text-xs text-muted-foreground font-medium">Please review before proceeding</p>
                         </div>
                     </div>
-                    <p class="text-sm font-bold leading-relaxed text-muted-foreground">
-                        Initialize <span class="text-rose-600 underline decoration-2 underline-offset-4">{{ confirmMode }} event</span> for <span class="text-foreground uppercase">{{ selectedLearner?.name }}</span>? Institutional synchronization will be modified.
+                    <p class="text-sm font-medium leading-relaxed text-muted-foreground">
+                        Are you sure you want to <span class="text-rose-600 font-bold">{{ confirmMode }}</span> student <span class="text-foreground font-bold">{{ selectedLearner?.name }}</span>? This action may affect student records.
                     </p>
                 </div>
-                <div class="flex items-center justify-between gap-4 bg-muted/10 p-6 border-t border-border/50">
-                    <Button variant="ghost" @click="confirmOpen = false" class="h-12 rounded-2xl px-8 text-[10px] font-bold tracking-widest uppercase">Abort</Button>
-                    <Button @click="handleAction" :disabled="actionForm.processing" class="h-12 rounded-2xl bg-rose-600 px-10 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl">Execute Protocol</Button>
+                <div class="flex items-center justify-end gap-3 bg-muted/10 p-4 border-t border-border/50">
+                    <Button variant="ghost" @click="confirmOpen = false" class="h-10 rounded-lg px-4 text-xs font-semibold">Cancel</Button>
+                    <Button @click="handleAction" :disabled="actionForm.processing" :class="['h-10 rounded-lg px-6 text-xs font-semibold text-white shadow-sm', confirmMode === 'delete' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-primary hover:bg-primary/90']">Confirm and Continue</Button>
                 </div>
             </DialogContent>
         </Dialog>
 
         <Dialog :open="promoteOpen" @update:open="promoteOpen = $event">
-             <DialogContent class="sm:max-w-[500px] rounded-3xl border-border bg-card p-0 shadow-2xl overflow-hidden">
-                <div class="p-8">
-                    <div class="flex items-center gap-4 mb-8">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-500"><ArrowUpCircle class="h-6 w-6" /></div>
+             <DialogContent class="sm:max-w-[450px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
+                <div class="p-6">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500"><ArrowUpCircle class="h-6 w-6" /></div>
                         <div class="space-y-1">
-                            <h3 class="text-lg font-bold tracking-tight text-foreground uppercase">Promotion Hub</h3>
-                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Academic elevation matrix</p>
+                            <h3 class="text-lg font-bold tracking-tight text-foreground">Promote Students</h3>
+                            <p class="text-xs text-muted-foreground font-medium">Move students to a new class</p>
                         </div>
                     </div>
                     <div class="space-y-6">
-                        <div class="p-5 rounded-2xl border border-primary/10 bg-primary/5">
-                            <p class="text-[10px] font-bold tracking-widest text-primary uppercase opacity-60 mb-1">Target Selection</p>
-                            <p class="text-sm font-black text-foreground">{{ selectedLearnerIds.length }} Nodes identified for elevation.</p>
+                        <div class="p-4 rounded-xl border border-emerald-100 bg-emerald-50/30">
+                            <p class="text-sm font-semibold text-foreground">{{ selectedLearnerIds.length }} students selected for promotion.</p>
                         </div>
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Target Stream Channel</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Target Class</Label>
                             <div class="relative">
-                                <select v-model="promotionTargetClass" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-5 text-sm font-bold uppercase outline-none focus:bg-background">
-                                    <option value="">Select Target Channel</option>
+                                <select v-model="promotionTargetClass" class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/10 px-4 text-sm font-medium outline-none focus:bg-background">
+                                    <option value="">Select target class</option>
                                     <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center justify-between gap-4 bg-muted/10 p-6 border-t border-border/50">
-                    <Button variant="ghost" @click="promoteOpen = false" class="h-12 rounded-2xl px-8 text-[10px] font-bold tracking-widest uppercase">Abort</Button>
-                    <Button @click="handleBulkPromotion" :disabled="promotionForm.processing || !promotionTargetClass" class="h-12 rounded-2xl bg-emerald-600 px-10 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl transition-all hover:scale-[1.02]">Initialize Elevation</Button>
+                <div class="flex items-center justify-end gap-3 bg-muted/10 p-4 border-t border-border/50">
+                    <Button variant="ghost" @click="promoteOpen = false" class="h-10 rounded-lg px-4 text-xs font-semibold">Cancel</Button>
+                    <Button @click="handleBulkPromotion" :disabled="promotionForm.processing || !promotionTargetClass" class="h-10 rounded-lg bg-emerald-600 px-6 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all">Promote Students</Button>
                 </div>
             </DialogContent>
         </Dialog>

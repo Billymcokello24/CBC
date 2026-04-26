@@ -211,7 +211,7 @@ const printSyllabus = () => {
                         <ArrowLeft
                             class="h-3 w-3 transition-transform group-hover:-translate-x-1"
                         />
-                        Strands
+                        Topics
                     </Link>
                     <div class="flex items-center gap-3">
                         <div
@@ -258,7 +258,7 @@ const printSyllabus = () => {
                         @click="openSubStrandModal()"
                         class="h-10 rounded-xl bg-blue-600 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-blue-700"
                     >
-                        <Plus class="mr-2 h-4 w-4" /> Add Sub-strand
+                        <Plus class="mr-2 h-4 w-4" /> Add Sub-topic
                     </Button>
                 </div>
             </div>
@@ -272,7 +272,7 @@ const printSyllabus = () => {
                         <p
                             class="text-xs font-bold tracking-tight text-slate-400 uppercase"
                         >
-                            Sub-strands
+                            Sub-topics
                         </p>
                         <h2
                             class="text-2xl font-bold tracking-tight text-slate-900"
@@ -384,7 +384,7 @@ const printSyllabus = () => {
                             class="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-300"
                         />
                         <Input
-                            placeholder="Search sub-strands..."
+                            placeholder="Search sub-topics..."
                             class="h-11 rounded-xl border-slate-100 bg-[#f9fafb]/50 pl-10 text-sm font-medium shadow-none transition-all focus:bg-white"
                         />
                     </div>

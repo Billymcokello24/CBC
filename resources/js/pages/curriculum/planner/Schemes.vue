@@ -274,10 +274,10 @@ const getStatusIcon = (status: string) => {
                         class="flex items-center gap-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
                     >
                         <Calendar class="h-8 w-8 text-blue-600" />
-                        Schemes of Work
+                        Teaching Plans
                     </h1>
                     <p class="text-xs font-medium text-slate-500 sm:text-sm">
-                        Academic instructional sequences and lesson planning.
+                        Create and manage your weekly work plans for each subject.
                     </p>
                 </div>
 
