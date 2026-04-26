@@ -592,7 +592,7 @@ const confirmDeleteSubject = (id: number) => {
                             </div>
                             <Switch
                                 :checked="assignmentForm.is_primary_teacher"
-                                @update:checked="(v) => assignmentForm.is_primary_teacher = v"
+                                @update:checked="(v: boolean) => (assignmentForm.is_primary_teacher = v)"
                             />
                         </div>
 

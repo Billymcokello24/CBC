@@ -73,9 +73,9 @@ const props = defineProps<Props>();
 const page = usePage<{ flash: { success?: string; error?: string } }>();
 
 const breadcrumbs = [
-    { title: 'Curriculum', href: '#' },
-    { title: 'Academic Planner', href: '#' },
-    { title: 'Schemes of Work', href: '/curriculum/planner/schemes' },
+    { title: 'Curriculum', href: '/curriculum' },
+    { title: 'Lesson Planning', href: '#' },
+    { title: 'Teaching Plans', href: '/curriculum/planner/schemes' },
 ];
 
 const showToast = ref(false);
@@ -266,36 +266,26 @@ const getStatusIcon = (status: string) => {
             class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
         >
             <!-- Page Header -->
-            <div
-                class="flex flex-col justify-between gap-4 px-1 md:flex-row md:items-center"
-            >
+            <div class="flex flex-col justify-between gap-4 px-1 md:flex-row md:items-center">
                 <div class="space-y-1">
-                    <h1
-                        class="flex items-center gap-3 text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
-                    >
-                        <Calendar class="h-8 w-8 text-blue-600" />
-                        Teaching Plans
-                    </h1>
-                    <p class="text-xs font-medium text-slate-500 sm:text-sm">
-                        Create and manage your weekly work plans for each subject.
-                    </p>
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Teaching Plans</h1>
+                    <p class="text-xs text-muted-foreground">Create and manage your weekly lesson plans for each subject and class.</p>
                 </div>
-
-                <div class="flex items-center gap-2 sm:gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <Button
                         variant="outline"
-                        class="h-10 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase transition-all hover:bg-muted"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
                         @click="showFilters = !showFilters"
                     >
-                        <Filter class="mr-2 h-4 w-4 opacity-70" />
-                        Filters
+                        <Filter class="mr-2 h-4 w-4 text-primary" />
+                        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
                     </Button>
                     <Button
                         @click="openCreateModal"
-                        class="h-10 rounded-xl bg-blue-600 px-5 text-xs font-bold tracking-tight text-white uppercase shadow-lg transition-all hover:bg-blue-700 active:scale-95"
+                        class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        New Scheme
+                        New Teaching Plan
                     </Button>
                 </div>
             </div>
@@ -845,17 +835,10 @@ const getStatusIcon = (status: string) => {
                         <div>
                             <DialogTitle
                                 class="text-xl font-bold tracking-tight text-foreground"
-                                >{{
-                                    isEditing
-                                        ? 'Edit Scheme of Work'
-                                        : 'New Scheme of Work'
-                                }}</DialogTitle
+                                >{{ isEditing ? 'Edit Teaching Plan' : 'New Teaching Plan' }}</DialogTitle
                             >
-                            <p
-                                class="mt-0.5 text-sm font-medium text-muted-foreground"
-                            >
-                                Initialize a new instructional sequence for your
-                                classes.
+                            <p class="mt-0.5 text-sm font-medium text-muted-foreground">
+                                Set up a weekly lesson plan for a subject and class.
                             </p>
                         </div>
                     </div>
