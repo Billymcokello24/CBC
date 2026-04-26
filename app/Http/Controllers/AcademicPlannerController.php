@@ -447,98 +447,21 @@ class AcademicPlannerController extends Controller
             'subject_id' => 'required|exists:subjects,id',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-        $header = fgetcsv($handle);
-
-        $teacher = Teacher::where('user_id', Auth::id())->first();
-        $school_id = Auth::user()->school_id;
-        $academic_term_id = AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->first()?->id;
-        $grade_level_id = \App\Models\Academic\SchoolClass::find($request->class_id)?->grade_level_id;
-
-        while (($row = fgetcsv($handle)) !== FALSE) {
-            if (count($header) !== count($row)) continue;
-            $data = array_combine($header, $row);
+        try {
+            $path = $request->file('file')->store('temp/imports');
             
-            $strandId = null;
-            if (!empty($data['strand'])) {
-                $strandName = trim($data['strand']);
-                $strand = Strand::whereRaw('LOWER(name) = ?', [strtolower($strandName)])
-                    ->where('subject_id', $request->subject_id)
-                    ->where('grade_level_id', $grade_level_id)
-                    ->where('school_id', $school_id)
-                    ->first();
+            \App\Jobs\ImportLessonPlansJob::dispatch(
+                $path,
+                (int) $request->class_id,
+                (int) $request->subject_id,
+                (int) auth()->user()->school_id,
+                (int) auth()->id()
+            );
 
-                if (!$strand) {
-                    $strand = Strand::create([
-                        'name' => \Illuminate\Support\Str::title($strandName),
-                        'subject_id' => $request->subject_id,
-                        'grade_level_id' => $grade_level_id,
-                        'school_id' => $school_id,
-                        'is_active' => true,
-                        'code' => strtoupper(\Illuminate\Support\Str::slug($strandName, '_')) . '-' . rand(100, 999),
-                    ]);
-                }
-                $strandId = $strand->id;
-            }
-
-            $subStrandId = null;
-            if ($strandId && !empty($data['sub_strand'])) {
-                $subStrandName = trim($data['sub_strand']);
-                $subStrand = SubStrand::whereRaw('LOWER(name) = ?', [strtolower($subStrandName)])
-                    ->where('strand_id', $strandId)
-                    ->where('school_id', $school_id)
-                    ->first();
-
-                if (!$subStrand) {
-                    $subStrand = SubStrand::create([
-                        'name' => \Illuminate\Support\Str::title($subStrandName),
-                        'strand_id' => $strandId,
-                        'school_id' => $school_id,
-                        'is_active' => true,
-                        'code' => strtoupper(\Illuminate\Support\Str::slug($subStrandName, '_')) . '-' . rand(100, 999),
-                    ]);
-                }
-                $subStrandId = $subStrand->id;
-            }
-
-            LessonPlan::create([
-                'school_id' => $school_id,
-                'class_id' => $request->class_id,
-                'subject_id' => $request->subject_id,
-                'teacher_id' => $teacher?->id,
-                'academic_term_id' => $academic_term_id,
-                'strand_id' => $strandId,
-                'sub_strand_id' => $subStrandId,
-                'title' => $data['title'] ?? 'Untitled Lesson',
-                'lesson_date' => $data['date'] ?? now()->toDateString(),
-                'week_number' => $data['week'] ?? null,
-                'period_number' => $data['lesson'] ?? null,
-                'duration_minutes' => $data['duration'] ?? 35,
-                'number_of_learners' => $data['learners'] ?? null,
-                'learning_outcomes' => $data['outcomes'] ?? null,
-                'key_vocabulary' => $data['vocabulary'] ?? null,
-                'core_competencies' => isset($data['competencies']) ? array_map('trim', explode(',', $data['competencies'])) : [],
-                'values' => isset($data['values']) ? array_map('trim', explode(',', $data['values'])) : [],
-                'life_skills' => isset($data['life_skills']) ? array_map('trim', explode(',', $data['life_skills'])) : [],
-                'teaching_aids' => $data['aids'] ?? null,
-                'references' => $data['references'] ?? null,
-                'introduction' => $data['introduction'] ?? null,
-                'learning_activities' => isset($data['activities']) ? array_map('trim', preg_split('/[;|\n]/', $data['activities'])) : [],
-                'teacher_activities' => $data['teacher_activities'] ?? null,
-                'learner_activities' => $data['learner_activities'] ?? null,
-                'conclusion' => $data['conclusion'] ?? null,
-                'assessment_methods' => $data['assessment'] ?? null,
-                'reflection' => $data['reflection'] ?? null,
-                'homework' => $data['homework'] ?? null,
-                'pci' => isset($data['pci']) ? array_map('trim', explode(',', $data['pci'])) : [],
-                'inquiry_questions' => $data['questions'] ?? null,
-                'status' => 'draft',
-            ]);
+            return back()->with('success', 'Lesson plans are being imported in the background. You will see them in the list shortly.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to start import: ' . $e->getMessage());
         }
-
-        fclose($handle);
-        return back()->with('success', 'Lesson plans imported successfully.');
     }
 
     public function downloadLessonPlanTemplate()
@@ -854,104 +777,16 @@ class AcademicPlannerController extends Controller
         ]);
 
         try {
-            $handle = fopen($request->file('file')->getRealPath(), 'r');
-            $header = fgetcsv($handle);
+            $path = $request->file('file')->store('temp/imports');
             
-            if (!$header) {
-                fclose($handle);
-                return back()->with('error', 'Empty CSV file.');
-            }
+            \App\Jobs\ImportSchemeEntriesJob::dispatch(
+                $path,
+                (int) $scheme->id
+            );
 
-            // Normalize header
-            $header = array_map(fn($v) => trim(strtolower(preg_replace('/^\xEF\xBB\xBF/', '', $v))), $header);
-            
-            $required = ['week_number', 'lesson_number', 'topic'];
-            foreach ($required as $col) {
-                if (!in_array($col, $header)) {
-                    fclose($handle);
-                    return back()->with('error', "Missing required column: {$col}");
-                }
-            }
-
-            $count = 0;
-            DB::transaction(function () use ($handle, $header, $scheme, &$count) {
-                while (($data = fgetcsv($handle)) !== false) {
-                    $row = array_combine($header, array_pad($data, count($header), ''));
-                    
-                    // Basic row skip if empty
-                    if (empty(array_filter($row))) continue;
-
-                    // Find strand if name provided — auto-create if not found
-                    $strandId = null;
-                    if (!empty($row['strand_name'])) {
-                        $strand = Strand::where('subject_id', $scheme->subject_id)
-                            ->where('grade_level_id', $scheme->grade_level_id)
-                            ->where('name', 'like', '%' . trim($row['strand_name']) . '%')
-                            ->first();
-
-                        if (!$strand) {
-                            $strand = Strand::create([
-                                'subject_id' => $scheme->subject_id,
-                                'grade_level_id' => $scheme->grade_level_id,
-                                'school_id' => $scheme->school_id,
-                                'name' => trim($row['strand_name']),
-                                'code' => \Illuminate\Support\Str::slug(substr(trim($row['strand_name']), 0, 10)) . '-' . rand(100, 999),
-                            ]);
-                        }
-                        $strandId = $strand->id;
-                    }
-
-                    $subStrandId = null;
-                    if ($strandId && !empty($row['sub_strand_name'])) {
-                        $subStrand = SubStrand::where('strand_id', $strandId)
-                            ->where('name', 'like', '%' . trim($row['sub_strand_name']) . '%')
-                            ->first();
-
-                        if (!$subStrand) {
-                            $subStrand = SubStrand::create([
-                                'strand_id' => $strandId,
-                                'school_id' => $scheme->school_id,
-                                'name' => trim($row['sub_strand_name']),
-                                'code' => \Illuminate\Support\Str::slug(substr(trim($row['sub_strand_name']), 0, 10)) . '-' . rand(100, 999),
-                            ]);
-                        }
-                        $subStrandId = $subStrand->id;
-                    }
-
-                    $scheme->entries()->create([
-                        'school_id' => $scheme->school_id,
-                        'week_number' => (int)($row['week_number'] ?? 0),
-                        'lesson_number' => (int)($row['lesson_number'] ?? 0),
-                        'duration_minutes' => (int)($row['duration_minutes'] ?? 35),
-                        'lesson_date' => !empty($row['lesson_date']) ? $row['lesson_date'] : null,
-                        'strand_id' => $strandId,
-                        'sub_strand_id' => $subStrandId,
-                        'topic' => $row['topic'] ?? 'Untitled Lesson',
-                        'key_vocabulary' => $row['key_vocabulary'] ?? '',
-                        'learning_outcomes' => $row['learning_outcomes'] ?? '',
-                        'learning_activities' => $row['learning_activities'] ?? '',
-                        'teacher_activities' => $row['teacher_activities'] ?? '',
-                        'introduction' => $row['introduction'] ?? '',
-                        'lesson_development' => $row['lesson_development'] ?? '',
-                        'conclusion' => $row['conclusion'] ?? '',
-                        'resources' => $row['resources'] ?? '',
-                        'references' => $row['references'] ?? '',
-                        'assessment' => $row['assessment'] ?? '',
-                        'remarks' => $row['remarks'] ?? '',
-                        'reflection' => $row['reflection'] ?? '',
-                        'homework' => $row['homework'] ?? '',
-                        'core_competencies' => !empty($row['core_competencies']) ? explode(',', $row['core_competencies']) : null,
-                        'pci' => !empty($row['pci']) ? explode(',', $row['pci']) : null,
-                        'inquiry_questions' => $row['inquiry_questions'] ?? '',
-                    ]);
-                    $count++;
-                }
-            });
-
-            fclose($handle);
-            return back()->with('success', "Imported {$count} entries successfully.");
+            return back()->with('success', 'Scheme entries are being imported in the background. You will see them in the list shortly.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Error importing CSV: ' . $e->getMessage());
+            return back()->with('error', 'Failed to start import: ' . $e->getMessage());
         }
     }
 

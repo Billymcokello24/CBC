@@ -1132,89 +1132,21 @@ class StudentsController extends Controller
         }
 
         try {
-            $rows = $this->parseLearnerCsv($validated['file']->getRealPath());
+            $path = $validated['file']->store('temp/imports');
+            
+            \App\Jobs\ImportStudentsJob::dispatch(
+                $path,
+                (int) $schoolId,
+                (int) $academicYearId,
+                (int) auth()->id()
+            );
 
-            if (count($rows) === 0) {
-                return back()->with('error', 'The uploaded CSV file is empty.');
-            }
-
-            $createdLearners = 0;
-            $updatedLearners = 0;
-            $createdGrades = 0;
-            $createdStreams = 0;
-            $createdClasses = 0;
-            $guardianAccounts = 0;
-
-            DB::transaction(function () use (
-                $rows,
-                $schoolId,
-                $academicYearId,
-                &$createdLearners,
-                &$updatedLearners,
-                &$createdGrades,
-                &$createdStreams,
-                &$createdClasses,
-                &$guardianAccounts
-            ) {
-                foreach ($rows as $index => $row) {
-                    $line = $index + 2;
-                    $normalized = $this->normalizeLearnerImportRow($row, $line);
-                    $grade = $this->firstOrCreateImportGrade($schoolId, $normalized, $createdGrades);
-                    $stream = $this->firstOrCreateImportStream($schoolId, $normalized, $createdStreams);
-                    $class = $this->firstOrCreateImportClass($schoolId, $academicYearId, $grade, $stream, $normalized, $createdClasses);
-
-                    $learner = Student::query()
-                        ->where('school_id', $schoolId)
-                        ->where('admission_number', $normalized['admission_number'])
-                        ->first();
-
-                    $studentPayload = [
-                        'school_id' => $schoolId,
-                        'first_name' => $normalized['first_name'],
-                        'middle_name' => $normalized['middle_name'],
-                        'last_name' => $normalized['last_name'],
-                        'admission_number' => $normalized['admission_number'],
-                        'gender' => $normalized['gender'],
-                        'date_of_birth' => $normalized['date_of_birth'],
-                        'admission_date' => now()->toDateString(),
-                        'admission_class_id' => $class?->id,
-                        'current_class_id' => $class?->id,
-                        'county' => $normalized['county'],
-                        'boarding_status' => $normalized['boarding_status'],
-                        'status' => $normalized['status'],
-                        'nationality' => 'Kenyan',
-                    ];
-
-                    if ($learner) {
-                        $learner->update($studentPayload);
-                        $updatedLearners++;
-                    } else {
-                        $learner = Student::create($studentPayload);
-                        $createdLearners++;
-                    }
-
-                    if ($class) {
-                        $this->syncEnrollmentForImportedLearner($learner, $class->id, $academicYearId);
-                    }
-
-                    if ($normalized['guardian_name'] && $normalized['guardian_email'] && $normalized['guardian_phone'] && $normalized['guardian_password']) {
-                        $this->upsertImportedGuardian($learner, $normalized, $guardianAccounts);
-                    }
-                }
-            });
-
-            $message = "Bulk upload complete: {$createdLearners} created, {$updatedLearners} updated, {$createdGrades} grades added, {$createdStreams} streams added, {$createdClasses} classes added";
-            if ($guardianAccounts > 0) {
-                $message .= ", {$guardianAccounts} guardian accounts processed";
-            }
-            $message .= '.';
-
-            return back()->with('success', $message);
+            return back()->with('success', 'Learners are being imported in the background. You will see them in the list shortly.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Import Error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to start import: ' . $e->getMessage());
         }
     }
-
+    
     protected function parseLearnerCsv(string $path): array
     {
         $handle = fopen($path, 'r');

@@ -676,63 +676,16 @@ class StaffsController extends Controller
         $schoolId = auth()->user()->school_id;
 
         try {
-            $rows = $this->parseTeacherCsv($validated['file']->getRealPath());
+            $path = $validated['file']->store('temp/imports');
+            
+            \App\Jobs\ImportStaffJob::dispatch(
+                $path,
+                (int) $schoolId
+            );
 
-            if (count($rows) === 0) {
-                return back()->with('error', 'The uploaded CSV file is empty.');
-            }
-
-            $createdTeachers = 0;
-            $updatedTeachers = 0;
-
-            DB::transaction(function () use ($rows, $schoolId, &$createdTeachers, &$updatedTeachers) {
-                foreach ($rows as $index => $row) {
-                    $line = $index + 2;
-                    $normalized = $this->normalizeTeacherImportRow($row, $line);
-
-                    $teacher = Teacher::query()->where('staff_number', $normalized['staff_number'])->first();
-
-                    if ($teacher) {
-                        $user = $teacher->user;
-                        $user->update([
-                            'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                            'email' => $normalized['email'],
-                            'phone' => $normalized['phone'] ?? $user->phone,
-                        ]);
-
-                        $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
-                        $updatedTeachers++;
-                    } else {
-                        $user = User::create([
-                            'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                            'email' => $normalized['email'],
-                            'phone' => $normalized['phone'],
-                            'password' => Hash::make($normalized['password'] ?? 'Password123'),
-                            'status' => 'active',
-                        ]);
-
-                        $roleName = strtolower($normalized['role'] ?? 'teacher');
-                        if ($this->roleService->isValidTemplate($roleName)) {
-                            $user->assignRole($roleName);
-                        }
-
-                        $teacherData = collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray();
-                        $teacherData['user_id'] = $user->id;
-                        $teacherData['school_id'] = $schoolId;
-                        $teacherData['status'] = 'active';
-
-                        Teacher::create($teacherData);
-                        $createdTeachers++;
-
-                        // Send Welcome Email
-                        Mail::to($user->email)->send(new UserCreatedMail($user, $normalized['password'] ?? 'Password123'));
-                    }
-                }
-            });
-
-            return back()->with('success', "Bulk upload complete: {$createdTeachers} created, {$updatedTeachers} updated.");
+            return back()->with('success', 'Staff members are being imported in the background. You will see them in the list shortly.');
         } catch (\Exception $e) {
-            return back()->with('error', 'Import Error: ' . $e->getMessage());
+            return back()->with('error', 'Failed to start import: ' . $e->getMessage());
         }
     }
 
