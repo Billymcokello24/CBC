@@ -60,6 +60,9 @@ class HandleInertiaRequests extends Middleware
                     'active' => $user && $user->hasRole('super_admin') && session()->has('viewing_school_id'),
                     'school_name' => session()->has('viewing_school_id') ? \App\Models\School::find(session('viewing_school_id'))?->name : null,
                 ],
+                'active_imports' => $user ? \App\Models\ImportProcess::where('user_id', $user->id)
+                    ->whereIn('status', ['pending', 'processing'])
+                    ->get() : [],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

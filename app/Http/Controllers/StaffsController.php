@@ -691,9 +691,17 @@ class StaffsController extends Controller
         try {
             $path = $validated['file']->store('temp/imports');
             
+            $importProcess = \App\Models\ImportProcess::create([
+                'user_id' => auth()->id(),
+                'school_id' => $schoolId,
+                'type' => 'staff',
+                'status' => 'pending',
+            ]);
+
             \App\Jobs\ImportStaffJob::dispatch(
                 $path,
-                (int) $schoolId
+                (int) $schoolId,
+                $importProcess->id
             );
 
             return back()->with('success', 'Staff members are being imported in the background. You will see them in the list shortly.');

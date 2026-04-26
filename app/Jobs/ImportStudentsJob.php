@@ -29,16 +29,18 @@ class ImportStudentsJob implements ShouldQueue
     protected $schoolId;
     protected $academicYearId;
     protected $userId;
+    protected $importProcessId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $filePath, int $schoolId, int $academicYearId, int $userId)
+    public function __construct(string $filePath, int $schoolId, int $academicYearId, int $userId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
         $this->schoolId = $schoolId;
         $this->academicYearId = $academicYearId;
         $this->userId = $userId;
+        $this->importProcessId = $importProcessId;
     }
 
     /**
@@ -50,14 +52,29 @@ class ImportStudentsJob implements ShouldQueue
         
         try {
             $rows = $this->parseLearnerCsv($fullPath);
+            $totalRows = count($rows);
             
-            if (count($rows) === 0) {
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'processing',
+                    'total_rows' => $totalRows
+                ]);
+            }
+
+            if ($totalRows === 0) {
+                if ($this->importProcessId) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
+                }
                 return;
             }
 
             DB::transaction(function () use ($rows) {
                 foreach ($rows as $index => $row) {
                     $line = $index + 2;
+                    
+                    if ($this->importProcessId && $index % 10 === 0) {
+                        \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
+                    }
                     $normalized = $this->normalizeLearnerImportRow($row, $line);
                     
                     $createdGrades = 0; // Local tracking doesn't matter for the job result yet
@@ -110,9 +127,21 @@ class ImportStudentsJob implements ShouldQueue
             // Cleanup
             Storage::delete($this->filePath);
 
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'completed',
+                    'processed_rows' => count($rows)
+                ]);
+            }
+
         } catch (\Exception $e) {
             \Log::error('ImportStudentsJob Error: ' . $e->getMessage());
-            // Optionally notify user via DB notification
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
         }
     }
 

@@ -25,17 +25,19 @@ class ImportLessonPlansJob implements ShouldQueue
     protected $subjectId;
     protected $schoolId;
     protected $userId;
+    protected $importProcessId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $filePath, int $classId, int $subjectId, int $schoolId, int $userId)
+    public function __construct(string $filePath, int $classId, int $subjectId, int $schoolId, int $userId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
         $this->classId = $classId;
         $this->subjectId = $subjectId;
         $this->schoolId = $schoolId;
         $this->userId = $userId;
+        $this->importProcessId = $importProcessId;
     }
 
     /**
@@ -55,11 +57,25 @@ class ImportLessonPlansJob implements ShouldQueue
                 return;
             }
 
+            // Estimate total rows (optional but good for progress)
+            $totalLines = count(file($fullPath)) - 1;
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'processing',
+                    'total_rows' => $totalLines
+                ]);
+            }
+
             $teacher = Teacher::where('user_id', $this->userId)->first();
             $academic_term_id = AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->first()?->id;
             $grade_level_id = SchoolClass::find($this->classId)?->grade_level_id;
 
+            $i = 0;
             while (($row = fgetcsv($handle)) !== FALSE) {
+                $i++;
+                if ($this->importProcessId && $i % 5 === 0) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $i]);
+                }
                 if (count($header) !== count($row)) continue;
                 $data = array_combine($header, $row);
                 
@@ -143,8 +159,21 @@ class ImportLessonPlansJob implements ShouldQueue
             fclose($handle);
             Storage::delete($this->filePath);
 
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'completed',
+                    'processed_rows' => isset($i) ? $i : 0
+                ]);
+            }
+
         } catch (\Exception $e) {
             \Log::error('ImportLessonPlansJob Error: ' . $e->getMessage());
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
         }
     }
 }

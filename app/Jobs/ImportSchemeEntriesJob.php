@@ -20,14 +20,16 @@ class ImportSchemeEntriesJob implements ShouldQueue
 
     protected $filePath;
     protected $schemeId;
+    protected $importProcessId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $filePath, int $schemeId)
+    public function __construct(string $filePath, int $schemeId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
         $this->schemeId = $schemeId;
+        $this->importProcessId = $importProcessId;
     }
 
     /**
@@ -47,11 +49,25 @@ class ImportSchemeEntriesJob implements ShouldQueue
                 return;
             }
 
+            // Estimate total rows (optional but good for progress)
+            $totalLines = count(file($fullPath)) - 1;
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'processing',
+                    'total_rows' => $totalLines
+                ]);
+            }
+
             // Normalize header
             $header = array_map(fn($v) => trim(strtolower(preg_replace('/^\xEF\xBB\xBF/', '', $v))), $header);
             
-            DB::transaction(function () use ($handle, $header, $scheme) {
+            $i = 0;
+            DB::transaction(function () use ($handle, $header, $scheme, &$i) {
                 while (($data = fgetcsv($handle)) !== false) {
+                    $i++;
+                    if ($this->importProcessId && $i % 5 === 0) {
+                        \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $i]);
+                    }
                     $row = array_combine($header, array_pad($data, count($header), ''));
                     if (empty(array_filter($row))) continue;
 
@@ -123,8 +139,21 @@ class ImportSchemeEntriesJob implements ShouldQueue
             fclose($handle);
             Storage::delete($this->filePath);
 
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'completed',
+                    'processed_rows' => isset($i) ? $i : 0
+                ]);
+            }
+
         } catch (\Exception $e) {
             \Log::error('ImportSchemeEntriesJob Error: ' . $e->getMessage());
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
         }
     }
 }

@@ -450,12 +450,20 @@ class AcademicPlannerController extends Controller
         try {
             $path = $request->file('file')->store('temp/imports');
             
+            $importProcess = \App\Models\ImportProcess::create([
+                'user_id' => auth()->id(),
+                'school_id' => (int) auth()->user()->school_id,
+                'type' => 'lesson_plans',
+                'status' => 'pending',
+            ]);
+
             \App\Jobs\ImportLessonPlansJob::dispatch(
                 $path,
                 (int) $request->class_id,
                 (int) $request->subject_id,
                 (int) auth()->user()->school_id,
-                (int) auth()->id()
+                (int) auth()->id(),
+                $importProcess->id
             );
 
             return back()->with('success', 'Lesson plans are being imported in the background. You will see them in the list shortly.');
@@ -779,9 +787,17 @@ class AcademicPlannerController extends Controller
         try {
             $path = $request->file('file')->store('temp/imports');
             
+            $importProcess = \App\Models\ImportProcess::create([
+                'user_id' => auth()->id(),
+                'school_id' => $scheme->school_id,
+                'type' => 'schemes',
+                'status' => 'pending',
+            ]);
+
             \App\Jobs\ImportSchemeEntriesJob::dispatch(
                 $path,
-                (int) $scheme->id
+                (int) $scheme->id,
+                $importProcess->id
             );
 
             return back()->with('success', 'Scheme entries are being imported in the background. You will see them in the list shortly.');

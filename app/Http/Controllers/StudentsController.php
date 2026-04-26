@@ -1140,11 +1140,19 @@ class StudentsController extends Controller
         try {
             $path = $validated['file']->store('temp/imports');
             
+            $importProcess = \App\Models\ImportProcess::create([
+                'user_id' => auth()->id(),
+                'school_id' => $schoolId,
+                'type' => 'students',
+                'status' => 'pending',
+            ]);
+
             \App\Jobs\ImportStudentsJob::dispatch(
                 $path,
                 (int) $schoolId,
                 (int) $academicYearId,
-                (int) auth()->id()
+                (int) auth()->id(),
+                $importProcess->id
             );
 
             return back()->with('success', 'Learners are being imported in the background. You will see them in the list shortly.');

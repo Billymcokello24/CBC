@@ -25,14 +25,16 @@ class ImportStaffJob implements ShouldQueue
 
     protected $filePath;
     protected $schoolId;
+    protected $importProcessId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(string $filePath, int $schoolId)
+    public function __construct(string $filePath, int $schoolId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
         $this->schoolId = $schoolId;
+        $this->importProcessId = $importProcessId;
     }
 
     /**
@@ -44,13 +46,27 @@ class ImportStaffJob implements ShouldQueue
         
         try {
             $rows = $this->parseTeacherCsv($fullPath);
+            $totalRows = count($rows);
+
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'processing',
+                    'total_rows' => $totalRows
+                ]);
+            }
             
-            if (count($rows) === 0) {
+            if ($totalRows === 0) {
+                if ($this->importProcessId) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
+                }
                 return;
             }
 
             DB::transaction(function () use ($rows, $roleService) {
                 foreach ($rows as $index => $row) {
+                    if ($this->importProcessId && $index % 5 === 0) {
+                        \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
+                    }
                     $line = $index + 2;
                     $normalized = $this->normalizeTeacherImportRow($row, $line);
 
@@ -95,8 +111,21 @@ class ImportStaffJob implements ShouldQueue
             // Cleanup
             Storage::delete($this->filePath);
 
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'completed',
+                    'processed_rows' => count($rows)
+                ]);
+            }
+
         } catch (\Exception $e) {
             \Log::error('ImportStaffJob Error: ' . $e->getMessage());
+            if ($this->importProcessId) {
+                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
         }
     }
 
