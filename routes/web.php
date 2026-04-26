@@ -448,7 +448,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/sub-strands', [AssessmentWizardController::class, 'getSubStrands'])->name('sub-strands');
         Route::get('/indicators', [AssessmentWizardController::class, 'getIndicators'])->name('indicators');
         
-        Route::get('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading');
+        Route::get('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading.index');
         Route::post('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
         Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
     });
@@ -458,12 +458,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
         Route::get('assessments/bulk-upload', [AssessmentController::class, 'bulkUploadView'])->name('assessments.bulk-upload');
         Route::post('assessments/bulk-upload', [AssessmentController::class, 'bulkUpload'])->name('assessments.bulk-upload.store');
-        Route::get('/assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading');
+        Route::get('/assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading_overview');
         Route::get('/assessments/analytics', [AssessmentController::class, 'analytics'])->name('assessments.analytics');
         Route::get('assessments/report-cards', [AssessmentController::class, 'reportCards'])->name('assessments.report-cards');
         Route::get('assessments/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('assessments.report-cards.show');
         Route::get('assessments/rubrics', [AssessmentController::class, 'rubrics'])->name('assessments.rubrics');
-        Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
         Route::get('assessments/results/export', [AssessmentController::class, 'exportResults'])->name('assessments.results.export');
 
         // Portfolio Management
@@ -496,7 +495,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ATTENDANCE
     // ──────────────────────────────────────────────
     Route::middleware(['check_permission:attendance.view,attendance.view_own'])->group(function () {
-        Route::inertia('attendance', 'attendance/Index')->name('attendance.index');
+        Route::inertia('attendance', 'attendance/Index')->name('attendance.overview');
         Route::inertia('attendance/reports', 'attendance/Reports')->name('attendance.reports');
     });
 
