@@ -457,13 +457,18 @@ class DashboardController extends Controller
 
             $attendanceRate = $this->calculateAttendanceRate();
 
-            $feeStats = collect(['total' => 0, 'previous' => 0]);
+            $feeStats = (object) ['total' => 0, 'previous' => 0];
             try {
                 if (Schema::hasTable('fee_payments') && Schema::hasColumn('fee_payments', 'school_id')) {
-                    $feeStats = FeePayment::selectRaw("
+                    $dbFeeStats = FeePayment::selectRaw("
                         SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as total,
                         SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as previous
                     ", [Carbon::now()->month, Carbon::now()->year, Carbon::now()->subMonth()->month, Carbon::now()->subMonth()->year])->first();
+                    
+                    if ($dbFeeStats) {
+                        $feeStats->total = $dbFeeStats->total;
+                        $feeStats->previous = $dbFeeStats->previous;
+                    }
                 }
             } catch (\Exception $e) {
                 Log::warning('Fee collection query failed: ' . $e->getMessage());
@@ -523,8 +528,8 @@ class DashboardController extends Controller
             if (!Schema::hasTable('student_attendances')) return 0;
             $startOfWeek = Carbon::now()->startOfWeek();
             $endOfWeek = Carbon::now()->endOfWeek();
-            $totalRecords = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])->count();
-            $presentRecords = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])->where('status', 'present')->count();
+            $totalRecords = StudentAttendance::whereBetween('attendance_date', [$startOfWeek, $endOfWeek])->count();
+            $presentRecords = StudentAttendance::whereBetween('attendance_date', [$startOfWeek, $endOfWeek])->where('status', 'present')->count();
             return $totalRecords === 0 ? 0 : round(($presentRecords / $totalRecords) * 100, 1);
         } catch (\Exception $e) {
             return 0;
@@ -631,13 +636,13 @@ class DashboardController extends Controller
             $startOfWeek = Carbon::now()->startOfWeek()->toDateString();
             $endOfWeek = Carbon::now()->endOfWeek()->toDateString();
 
-            $stats = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])
+            $stats = StudentAttendance::whereBetween('attendance_date', [$startOfWeek, $endOfWeek])
                 ->selectRaw("
-                    date,
+                    attendance_date as date,
                     COUNT(*) as total,
                     SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present
                 ")
-                ->groupBy('date')
+                ->groupBy('attendance_date')
                 ->get()
                 ->keyBy(fn($item) => Carbon::parse($item->date)->format('Y-m-d'));
             
