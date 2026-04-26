@@ -27,7 +27,7 @@ composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
 # Install NPM Dependencies and Build Assets
 npm install
-npm run build
+npm run build:ssr
 
 # Run Migrations
 php artisan migrate --force
