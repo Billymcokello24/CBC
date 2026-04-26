@@ -31,6 +31,7 @@ import {
     Grid2x2,
     ChevronLeft,
     ChevronRight,
+    Home,
 } from 'lucide-vue-next';
 import {
     DropdownMenu,
@@ -173,22 +174,20 @@ const breadcrumbs = [
 <template>
     <Head title="Departments" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="mx-auto max-w-[1600px] animate-in space-y-12 p-6 pb-20 duration-1000 fade-in slide-in-from-bottom-4"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Page Header -->
-            <div
-                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
-            >
-                <div class="space-y-1">
-                    <h1
-                        class="text-3xl font-bold tracking-tight text-foreground"
-                    >
+            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Departments</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Department Management
                     </h1>
-                    <p class="text-sm text-muted-foreground">
-                        Organize academic units, manage staff assignments, and
-                        track departmental performance.
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Organize academic units, manage staff assignments, and track departmental performance.
                     </p>
                 </div>
 
@@ -769,11 +768,11 @@ const breadcrumbs = [
             <!-- Delete Modal -->
             <div
                 v-if="showDeleteModal"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+                class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6"
                 @click.self="showDeleteModal = false"
             >
                 <div
-                    class="w-full max-w-md animate-in rounded-2xl border bg-background p-6 shadow-xl duration-200 zoom-in-95"
+                    class="w-full max-w-md animate-in rounded-xl border border-border bg-background p-6 shadow-xl duration-200 zoom-in-95"
                 >
                     <h2 class="text-lg font-bold">Delete Department</h2>
                     <p class="mt-2 text-sm text-muted-foreground">

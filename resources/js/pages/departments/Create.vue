@@ -3,7 +3,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Building2, Save, X } from 'lucide-vue-next';
+import { ArrowLeft, Building2, Save, X, Home, ChevronRight } from 'lucide-vue-next';
 
 const page = usePage();
 const form = useForm({
@@ -33,30 +33,24 @@ const breadcrumbs = [
 <template>
     <Head title="Create Department" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="w-full animate-in space-y-8 px-4 py-8 duration-500 fade-in sm:space-y-12 sm:px-6 sm:py-12 lg:px-8"
-        >
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
             <!-- Header -->
-            <div class="flex items-center gap-4">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    as-child
-                    class="h-10 w-10 rounded-xl text-slate-400 transition-all hover:bg-slate-50 hover:text-blue-600"
-                >
-                    <Link href="/departments">
-                        <ArrowLeft class="h-5 w-5" />
-                    </Link>
+            <div class="flex items-start gap-4 px-1">
+                <Button variant="outline" size="icon" class="mt-1 flex h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" as-child>
+                    <Link href="/departments"><ArrowLeft class="h-4 w-4 md:h-5 md:w-5" /></Link>
                 </Button>
-                <div>
-                    <h1
-                        class="text-2xl font-bold tracking-tight text-slate-900 uppercase"
-                    >
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Departments</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Create</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Create Department
                     </h1>
-                    <p
-                        class="mt-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
-                    >
+                    <p class="text-sm text-muted-foreground sm:text-sm">
                         Add a new academic faculty or unit
                     </p>
                 </div>

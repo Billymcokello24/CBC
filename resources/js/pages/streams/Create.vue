@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Loader2, PlusSquare } from 'lucide-vue-next';
+import { ArrowLeft, Loader2, PlusSquare, Home, ChevronRight } from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,23 +35,30 @@ const submit = () => {
 <template>
     <Head title="Add Stream" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div class="flex items-center gap-4">
-                <Button variant="ghost" size="icon" as-child
-                    ><Link href="/streams"><ArrowLeft class="h-5 w-5" /></Link
-                ></Button>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight">
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+            <div class="flex items-start gap-4 px-1">
+                <Button variant="outline" size="icon" class="mt-1 flex h-8 w-8 shrink-0 rounded-xl md:h-10 md:w-10" as-child>
+                    <Link href="/streams"><ArrowLeft class="h-4 w-4 md:h-5 md:w-5" /></Link>
+                </Button>
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Streams</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Add Stream</span>
+                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
                         Add Stream
                     </h1>
-                    <p class="text-muted-foreground">
+                    <p class="text-sm text-muted-foreground sm:text-sm">
                         Create a new school stream and link it to classes
                     </p>
                 </div>
             </div>
             <form
                 @submit.prevent="submit"
-                class="space-y-6 rounded-xl border bg-card p-6"
+                class="space-y-6 rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
             >
                 <div class="flex items-center gap-2 border-b pb-4">
                     <input

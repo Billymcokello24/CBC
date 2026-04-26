@@ -12,6 +12,8 @@ import {
     ShieldCheck,
     ShieldOff,
     Trash2,
+    Home,
+    ChevronRight,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -289,25 +291,22 @@ watch(
             </div>
         </div>
 
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10"
-                    >
-                        <Layers3 class="h-6 w-6 text-orange-600" />
+        <div class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8">
+            <div class="flex flex-col gap-4 border-b border-sidebar-border pb-8 md:flex-row md:items-end md:justify-between px-1">
+                <div class="flex flex-col gap-1">
+                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
+                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Classes</span>
+                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                        <span class="font-medium tracking-tight text-foreground uppercase">Allocations</span>
                     </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Class Subject Allocations
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Assign only grade-appropriate subjects to teachers
-                            within specific classes
-                        </p>
-                    </div>
+                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
+                        Class Subject Allocations
+                    </h1>
+                    <p class="text-sm text-muted-foreground sm:text-sm">
+                        Assign only grade-appropriate subjects to teachers within specific classes.
+                    </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <Button variant="outline" as-child
@@ -620,11 +619,11 @@ watch(
 
         <div
             v-if="showCreate"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            class="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6 duration-300 fade-in"
             @click.self="showCreate = false"
         >
             <div
-                class="w-full max-w-3xl rounded-xl border bg-background p-6 shadow-xl"
+                class="w-full max-w-3xl animate-in rounded-xl border border-border bg-background p-8 shadow-xl duration-200 zoom-in-95"
             >
                 <h2 class="text-lg font-semibold">
                     {{
@@ -742,11 +741,11 @@ watch(
 
         <div
             v-if="showConfirm"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+            class="fixed inset-0 z-[100] flex animate-in items-center justify-center bg-black/40 p-4 shadow-2xl backdrop-blur-sm sm:p-6 duration-300 fade-in"
             @click.self="showConfirm = false"
         >
             <div
-                class="w-full max-w-md rounded-xl border bg-background p-6 shadow-xl"
+                class="w-full max-w-md animate-in rounded-xl border border-border bg-background p-8 shadow-xl duration-200 zoom-in-95"
             >
                 <h2 class="text-lg font-semibold">
                     {{
