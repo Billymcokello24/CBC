@@ -427,7 +427,7 @@ const getStatusColor = (active: boolean) => {
             </div>
 
             <!-- Table Card -->
-            <div class="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+            <div class="card-premium overflow-hidden">
                 <!-- Toolbar -->
                 <div class="p-4 sm:p-6 border-b border-slate-50 space-y-4">
                     <div class="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
@@ -630,9 +630,9 @@ const getStatusColor = (active: boolean) => {
 
         <!-- Action Modals -->
         <Dialog :open="confirmOpen" @update:open="closeActionModal">
-            <DialogContent class="sm:max-w-[440px] rounded-[2.5rem] border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <DialogContent class="sm:max-w-[440px] rounded-xl border-slate-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                 <div class="p-8 space-y-6 text-center">
-                    <div class="mx-auto h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
+                    <div class="mx-auto h-20 w-20 rounded-2xl flex items-center justify-center shadow-xl mb-6 shadow-blue-500/10" :class="confirmMode === 'delete' || confirmMode === 'bulkDelete' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'">
                         <Trash2 v-if="confirmMode === 'delete' || confirmMode === 'bulkDelete'" class="h-10 w-10" />
                         <ShieldAlert v-else class="h-10 w-10" />
                     </div>
@@ -661,11 +661,11 @@ const getStatusColor = (active: boolean) => {
         </Dialog>
 
         <Dialog :open="promoteOpen" @update:open="closePromoteModal">
-            <DialogContent class="sm:max-w-[500px] rounded-[3rem] border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <DialogContent class="sm:max-w-[500px] rounded-xl border-emerald-100 p-0 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                 <div class="bg-emerald-600 px-10 py-8 text-white relative overflow-hidden">
                     <div class="absolute -right-8 -top-8 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
                     <div class="flex items-center gap-5 relative z-10">
-                        <div class="h-16 w-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
+                        <div class="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
                             <ArrowUpCircle class="h-10 w-10 text-white" />
                         </div>
                         <div>
@@ -697,13 +697,13 @@ const getStatusColor = (active: boolean) => {
 
                     <div class="flex flex-col gap-3 pt-4">
                         <Button 
-                            class="h-14 rounded-[1.5rem] bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
+                            class="h-14 rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-black text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-900/10 transition-all border-0 italic" 
                             :disabled="promotionForm.processing" 
                             @click="promoteSelectedLearners"
                         >
                             {{ promotionForm.processing ? 'ADVANCING_REGISTRY...' : 'INITIATE_PROMOTION_CYCLE' }}
                         </Button>
-                        <Button variant="ghost" class="h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
+                        <Button variant="ghost" class="h-12 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all" @click="closePromoteModal">CANCEL_SEQUENCE</Button>
                     </div>
                 </div>
             </DialogContent>

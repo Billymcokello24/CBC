@@ -1,30 +1,4 @@
-<script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { 
-    Users, Search, Filter, Mail, Phone, Building2, 
-    UserPlus, BadgeCheck, LayoutGrid, List as ListIcon,
-    ChevronDown, GraduationCap, Eye, Plus, MoreHorizontal,
-    Edit, Trash2, ShieldCheck, Briefcase, UserCheck
-} from 'lucide-vue-next';
-import { ref, watch } from 'vue';
-import AppLayout from '@/layouts/AppLayout.vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import type { BreadcrumbItem } from '@/types';
+import PageHeader from '@/components/ui/PageHeader.vue';
 
 const props = defineProps<{
     teachers: any;
