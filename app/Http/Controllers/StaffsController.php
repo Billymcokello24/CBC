@@ -93,12 +93,25 @@ class StaffsController extends Controller
             $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
         }
 
-        $roles = $this->roleService->getTemplates()->map(function ($role) use ($isRestrictedHOD, $hodDeptId) {
+        $query = DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('roles.guard_name', 'web');
+
+        if ($isRestrictedHOD) {
+            $query->join('teachers', 'teachers.user_id', '=', 'model_has_roles.model_id')
+                  ->where('teachers.department_id', $hodDeptId);
+        }
+
+        $roleCounts = $query->select('roles.name', DB::raw('count(*) as count'))
+            ->groupBy('roles.name')
+            ->pluck('count', 'name');
+
+        $roles = $this->roleService->getTemplates()->map(function ($role) use ($roleCounts) {
             return [
                 'id' => $role->id,
                 'name' => $role->name,
                 'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
-                'count' => $this->safeRoleCount([$role->name], $isRestrictedHOD ? $hodDeptId : null),
+                'count' => $roleCounts[$role->name] ?? 0,
             ];
         });
 

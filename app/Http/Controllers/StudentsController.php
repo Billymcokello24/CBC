@@ -109,21 +109,27 @@ class StudentsController extends Controller
             }
         }
 
-        $totalLearners = (clone $statsBase)->count();
-        $activeLearners = (clone $statsBase)->where('status', 'active')->count();
-        $boys = (clone $statsBase)->where('gender', 'male')->count();
-        $girls = (clone $statsBase)->where('gender', 'female')->count();
-        $newThisTerm = (clone $statsBase)->whereDate('admission_date', '>=', now()->subMonths(3))->count();
-        $previousTerm = (clone $statsBase)->whereDate('admission_date', '<', now()->subMonths(3))->count();
-        $growth = $previousTerm > 0 ? round(($newThisTerm / $previousTerm) * 100, 1) : 0.0;
+        $stats = (clone $statsBase)
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN gender = 'male' THEN 1 ELSE 0 END) as boys,
+                SUM(CASE WHEN gender = 'female' THEN 1 ELSE 0 END) as girls,
+                SUM(CASE WHEN admission_date >= ? THEN 1 ELSE 0 END) as new_this_term,
+                SUM(CASE WHEN admission_date < ? THEN 1 ELSE 0 END) as previous_term,
+                SUM(CASE WHEN status IN ('withdrawn', 'inactive', 'transferred') THEN 1 ELSE 0 END) as withdrawn
+            ", [now()->subMonths(3)->toDateString(), now()->subMonths(3)->toDateString()])
+            ->first();
+
+        $growth = $stats->previous_term > 0 ? round(($stats->new_this_term / $stats->previous_term) * 100, 1) : 0.0;
 
         return Inertia::render('students/Index', [
             'learners' => $learners,
             'stats' => [
-                'total' => $totalLearners,
-                'active' => $activeLearners,
-                'withdrawn' => (clone $statsBase)->whereIn('status', ['withdrawn', 'inactive', 'transferred'])->count(),
-                'new_this_month' => $newThisTerm,
+                'total' => $stats->total,
+                'active' => $stats->active,
+                'withdrawn' => $stats->withdrawn,
+                'new_this_month' => $stats->new_this_term,
                 'growth' => $growth,
             ],
             'filters' => [

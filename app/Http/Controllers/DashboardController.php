@@ -423,54 +423,55 @@ class DashboardController extends Controller
     private function getStats(): array
     {
         try {
-            $totalStudents = Student::active()->count();
-            $previousTermDate = Carbon::now()->subMonths(3);
+            $previousTermDate = Carbon::now()->subMonths(3)->toDateString();
             
-            $previousStudents = Student::active()
-                ->where('created_at', '<', $previousTermDate)
-                ->count();
+            $learnerStats = Student::active()->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
+            ", [$previousTermDate])->first();
             
-            $studentGrowth = $previousStudents > 0
-                ? round((($totalStudents - $previousStudents) / $previousStudents) * 100, 1)
+            $totalStudents = $learnerStats->total;
+            $studentGrowth = $learnerStats->previous > 0
+                ? round((($totalStudents - $learnerStats->previous) / $learnerStats->previous) * 100, 1)
                 : 0;
 
-            $totalTeachers = Teacher::active()->count();
-            $previousTeachersCount = Teacher::active()
-                ->where('created_at', '<', $previousTermDate)
-                ->count();
+            $teacherStats = Teacher::active()->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
+            ", [$previousTermDate])->first();
             
-            $teacherGrowth = $previousTeachersCount > 0
-                ? round((($totalTeachers - $previousTeachersCount) / $previousTeachersCount) * 100, 1)
+            $totalTeachers = $teacherStats->total;
+            $teacherGrowth = $teacherStats->previous > 0
+                ? round((($totalTeachers - $teacherStats->previous) / $teacherStats->previous) * 100, 1)
                 : 0;
 
-            $totalClasses = SchoolClass::where('is_active', true)->count();
-            $previousClasses = SchoolClass::where('is_active', true)
-                ->where('created_at', '<', $previousTermDate)
-                ->count();
-            $classGrowth = $previousClasses > 0
-                ? round((($totalClasses - $previousClasses) / $previousClasses) * 100, 1)
+            $classStats = SchoolClass::where('is_active', true)->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
+            ", [$previousTermDate])->first();
+            
+            $totalClasses = $classStats->total;
+            $classGrowth = $classStats->previous > 0
+                ? round((($totalClasses - $classStats->previous) / $classStats->previous) * 100, 1)
                 : 0;
 
             $attendanceRate = $this->calculateAttendanceRate();
 
-            $feeCollection = 0;
-            $previousCollections = 0;
+            $feeStats = collect(['total' => 0, 'previous' => 0]);
             try {
                 if (Schema::hasTable('fee_payments') && Schema::hasColumn('fee_payments', 'school_id')) {
-                    $feeCollection = FeePayment::whereMonth('payment_date', Carbon::now()->month)
-                        ->whereYear('payment_date', Carbon::now()->year)
-                        ->sum('amount') ?? 0;
-                    
-                    $previousCollections = FeePayment::whereMonth('payment_date', Carbon::now()->subMonth()->month)
-                        ->whereYear('payment_date', Carbon::now()->subMonth()->year)
-                        ->sum('amount') ?? 0;
+                    $feeStats = FeePayment::selectRaw("
+                        SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as total,
+                        SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as previous
+                    ", [Carbon::now()->month, Carbon::now()->year, Carbon::now()->subMonth()->month, Carbon::now()->subMonth()->year])->first();
                 }
             } catch (\Exception $e) {
                 Log::warning('Fee collection query failed: ' . $e->getMessage());
             }
 
-            $collectionGrowth = $previousCollections > 0
-                ? round((($feeCollection - $previousCollections) / $previousCollections) * 100, 1)
+            $feeCollection = $feeStats->total ?? 0;
+            $collectionGrowth = ($feeStats->previous ?? 0) > 0
+                ? round((($feeCollection - $feeStats->previous) / $feeStats->previous) * 100, 1)
                 : 0;
 
             $pendingFees = 0;
@@ -487,18 +488,18 @@ class DashboardController extends Controller
             $totalSubjects = \App\Models\Curriculum\Subject::where('is_active', true)->count();
 
             return [
-                'total_learners' => $totalStudents,
+                'total_learners' => (int) $totalStudents,
                 'learner_growth' => $studentGrowth,
-                'total_teachers' => $totalTeachers,
+                'total_teachers' => (int) $totalTeachers,
                 'teacher_growth' => $teacherGrowth,
-                'total_classes' => $totalClasses,
+                'total_classes' => (int) $totalClasses,
                 'class_growth' => $classGrowth,
                 'attendance_rate' => $attendanceRate,
-                'fee_collection' => $feeCollection,
+                'fee_collection' => (float) $feeCollection,
                 'collection_growth' => $collectionGrowth,
-                'pending_fees' => $pendingFees,
-                'total_guardians' => $totalGuardians,
-                'total_subjects' => $totalSubjects,
+                'pending_fees' => (float) $pendingFees,
+                'total_guardians' => (int) $totalGuardians,
+                'total_subjects' => (int) $totalSubjects,
             ];
         } catch (\Exception $e) {
             Log::error('getStats error: ' . $e->getMessage());
@@ -534,11 +535,25 @@ class DashboardController extends Controller
     {
         try {
             $months = []; $newStudents = []; $withdrawals = [];
+            $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
+            
+            $admissions = Student::where('admission_date', '>=', $sixMonthsAgo)
+                ->selectRaw("DATE_FORMAT(admission_date, '%Y-%m') as month_key, COUNT(*) as count")
+                ->groupBy('month_key')
+                ->pluck('count', 'month_key');
+
+            $withdrawalStats = Student::where('withdrawal_date', '>=', $sixMonthsAgo)
+                ->where('status', 'withdrawn')
+                ->selectRaw("DATE_FORMAT(withdrawal_date, '%Y-%m') as month_key, COUNT(*) as count")
+                ->groupBy('month_key')
+                ->pluck('count', 'month_key');
+
             for ($i = 5; $i >= 0; $i--) {
                 $date = Carbon::now()->subMonths($i);
+                $key = $date->format('Y-m');
                 $months[] = $date->format('M');
-                $newStudents[] = Student::whereMonth('admission_date', $date->month)->whereYear('admission_date', $date->year)->count();
-                $withdrawals[] = Student::whereMonth('withdrawal_date', $date->month)->whereYear('withdrawal_date', $date->year)->where('status', 'withdrawn')->count();
+                $newStudents[] = $admissions[$key] ?? 0;
+                $withdrawals[] = $withdrawalStats[$key] ?? 0;
             }
             return ['labels' => $months, 'datasets' => [
                 ['label' => 'New Students', 'data' => $newStudents, 'color' => 'rgb(59, 130, 246)'],
@@ -611,18 +626,28 @@ class DashboardController extends Controller
             if (!Schema::hasTable('student_attendances')) return $this->getEmptyWeeklyAttendance();
             
             $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-            $presentData = [];
-            $absentData = [];
+            $presentData = []; $absentData = [];
             
-            $startOfWeek = Carbon::now()->startOfWeek();
+            $startOfWeek = Carbon::now()->startOfWeek()->toDateString();
+            $endOfWeek = Carbon::now()->endOfWeek()->toDateString();
+
+            $stats = StudentAttendance::whereBetween('date', [$startOfWeek, $endOfWeek])
+                ->selectRaw("
+                    date,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present
+                ")
+                ->groupBy('date')
+                ->get()
+                ->keyBy(fn($item) => Carbon::parse($item->date)->format('Y-m-d'));
             
+            $currentDate = Carbon::now()->startOfWeek();
             for ($i = 0; $i < 5; $i++) {
-                $date = $startOfWeek->copy()->addDays($i);
-                $total = StudentAttendance::whereDate('date', $date)->count();
-                $present = StudentAttendance::whereDate('date', $date)->where('status', 'present')->count();
+                $key = $currentDate->toDateString();
+                $item = $stats[$key] ?? null;
                 
-                if ($total > 0) {
-                    $presentRate = round(($present / $total) * 100, 1);
+                if ($item && $item->total > 0) {
+                    $presentRate = round(($item->present / $item->total) * 100, 1);
                     $absentRate = 100 - $presentRate;
                 } else {
                     $presentRate = 0;
@@ -631,6 +656,7 @@ class DashboardController extends Controller
                 
                 $presentData[] = $presentRate;
                 $absentData[] = $absentRate;
+                $currentDate->addDay();
             }
             
             return ['labels' => $days, 'datasets' => [
