@@ -1126,7 +1126,14 @@ class StudentsController extends Controller
         ]);
 
         $schoolId = auth()->user()->school_id ?: session('viewing_school_id');
-        $academicYearId = DB::table('academic_years')->where('is_current', true)
+
+        // If still no school_id and the user is an admin, they might need to select a school first or we pick the first one as fallback for super admin
+        if (!$schoolId && auth()->user()->hasRole('super_admin')) {
+            $schoolId = \App\Models\School::first()?->id;
+        }
+
+        $academicYearId = DB::table('academic_years')
+            ->where('status', 'active') // Changed from is_current to status = 'active'
             ->when($schoolId, fn($q) => $q->where('school_id', $schoolId))
             ->value('id')
             ?? DB::table('academic_years')
@@ -1134,7 +1141,7 @@ class StudentsController extends Controller
             ->orderByDesc('start_date')->value('id');
 
         if (!$schoolId || !$academicYearId) {
-            return back()->with('error', 'School context (ID) or academic year setup is missing, so bulk upload cannot continue.');
+            return back()->with('error', 'School context (ID) or academic year setup is missing. Please ensure an active academic year exists for the current school.');
         }
 
         try {

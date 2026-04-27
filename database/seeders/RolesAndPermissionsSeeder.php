@@ -21,6 +21,12 @@ class RolesAndPermissionsSeeder extends Seeder
             // Users
             'users.view', 'users.create', 'users.update', 'users.delete', 'users.manage',
 
+            // Grades
+            'grades.view', 'grades.create', 'grades.update', 'grades.delete',
+
+            // Streams
+            'streams.view', 'streams.create', 'streams.update', 'streams.delete',
+
             // Students
             'students.view', 'students.create', 'students.update', 'students.delete',
             'students.view_own', 'students.enroll', 'students.transfer',
@@ -36,12 +42,6 @@ class RolesAndPermissionsSeeder extends Seeder
             // Classes
             'classes.view', 'classes.create', 'classes.update', 'classes.delete',
             'classes.assign_students', 'classes.assign_teachers',
-
-            // Grades
-            'grades.view', 'grades.create', 'grades.update', 'grades.delete',
-
-            // Streams
-            'streams.view', 'streams.create', 'streams.update', 'streams.delete',
 
             // Curriculum
             'curriculum.view', 'curriculum.create', 'curriculum.update', 'curriculum.delete',
@@ -107,6 +107,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'staffs.view', 'staffs.create', 'staffs.update', 'staffs.delete', 'staffs.assign_subjects',
             'guardians.view', 'guardians.create', 'guardians.update', 'guardians.delete',
             'classes.view', 'classes.create', 'classes.update', 'classes.delete', 'classes.assign_students', 'classes.assign_teachers',
+            'grades.view', 'grades.create', 'grades.update', 'grades.delete',
+            'streams.view', 'streams.create', 'streams.update', 'streams.delete',
             'curriculum.view', 'curriculum.create', 'curriculum.update',
             'assessments.view', 'assessments.create', 'assessments.update', 'assessments.delete', 'assessments.grade',
             'attendance.view', 'attendance.mark', 'attendance.update', 'attendance.reports',
@@ -131,6 +133,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'staffs.view', 'staffs.create', 'staffs.update', 'staffs.assign_subjects',
             'guardians.view',
             'classes.view', 'classes.create', 'classes.update', 'classes.assign_students', 'classes.assign_teachers',
+            'grades.view', 'grades.create', 'grades.update', 'grades.delete',
+            'streams.view', 'streams.create', 'streams.update', 'streams.delete',
             'curriculum.view',
             'assessments.view', 'assessments.create', 'assessments.update', 'assessments.grade',
             'attendance.view', 'attendance.reports',

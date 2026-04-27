@@ -243,7 +243,7 @@ watch(flashSuccess, (value) => {
                         class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
                     >
                         <Plus class="mr-2 h-4 w-4" />
-                        Add Grade
+                        Add New Grade
                     </Link>
                 </div>
             </div>
@@ -595,12 +595,7 @@ watch(flashSuccess, (value) => {
                     <h3 class="text-xl font-bold text-foreground">No Grade Structures Found</h3>
                     <p class="max-w-xs text-sm font-medium text-muted-foreground/60 mx-auto">We couldn't find any levels matching your criteria. Reset filters or add a new grade level.</p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <Button variant="ghost" class="h-11 rounded-xl px-8 text-xs font-bold uppercase tracking-tight" @click="searchQuery = ''; selectedStatus = 'all'">Reset Grid</Button>
-                    <Button as-child v-if="hasPermission('grades.create')" class="h-11 rounded-xl bg-primary px-8 text-xs font-bold uppercase tracking-tight text-white">
-                        <Link href="/grades/create">Add Grade</Link>
-                    </Button>
-                </div>
+                <Button variant="outline" class="h-11 rounded-xl px-8 text-xs font-bold uppercase tracking-tight" @click="searchQuery = ''; selectedStatus = 'all'">Reset Grid</Button>
             </div>
 
             <!-- Footer Message -->
