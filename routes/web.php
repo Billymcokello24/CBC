@@ -37,11 +37,6 @@ Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
-Route::get('/about', [\App\Http\Controllers\LandingController::class, 'about'])->name('about');
-Route::get('/modules', [\App\Http\Controllers\LandingController::class, 'modules'])->name('modules');
-Route::get('/contact', [\App\Http\Controllers\LandingController::class, 'contact'])->name('contact');
-Route::post('/book-demo', [\App\Http\Controllers\LandingController::class, 'bookDemo'])->name('book-demo');
-
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard — accessible to ALL authenticated users (role-specific data returned by controller)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
