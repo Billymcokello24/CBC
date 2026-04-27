@@ -30,8 +30,8 @@ const route = (window as any).route;
             <div class="mx-auto max-w-7xl px-6">
                 <div class="flex h-16 items-center justify-between">
                     <Link :href="route('home')" class="flex items-center gap-3">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
-                            <GraceCap class="h-5 w-5 text-white" />
+                        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 shadow-sm">
+                            <GraduationCap class="h-4 w-4 text-white" />
                         </div>
                         <span class="text-lg font-bold tracking-tight uppercase">CBC<span class="text-blue-600">Core</span></span>
                     </Link>
@@ -53,7 +53,7 @@ const route = (window as any).route;
                         
                         <div class="space-y-6">
                             <div class="flex items-center gap-4">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
                                     <Mail class="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
@@ -62,7 +62,7 @@ const route = (window as any).route;
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
                                     <Phone class="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
@@ -71,7 +71,7 @@ const route = (window as any).route;
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-md bg-white shadow-sm dark:bg-slate-900 border dark:border-slate-800">
                                     <MapPin class="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
@@ -83,7 +83,7 @@ const route = (window as any).route;
                     </div>
 
                     <!-- Form -->
-                    <div class="rounded-xl bg-white p-8 shadow-lg dark:bg-slate-900/50 border dark:border-slate-800">
+                    <div class="rounded-md bg-white p-8 shadow-lg dark:bg-slate-900/50 border dark:border-slate-800">
                         <form @submit.prevent="submit" class="space-y-4">
                             <div class="grid gap-4 sm:grid-cols-2">
                                 <div>

@@ -57,7 +57,7 @@ const route = (window as any).route;
             <div class="mx-auto max-w-7xl px-6">
                 <div class="flex h-16 items-center justify-between">
                     <Link :href="route('home')" class="flex items-center gap-3">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 shadow-sm">
                             <GraduationCap class="h-5 w-5 text-white" />
                         </div>
                         <span class="text-lg font-bold tracking-tight uppercase">CBC<span class="text-blue-600">Core</span></span>
@@ -81,8 +81,8 @@ const route = (window as any).route;
                     <div v-for="group in moduleGroups" :key="group.name">
                         <h2 class="mb-8 text-[9px] font-bold tracking-[0.3em] text-blue-600 uppercase">{{ group.name }}</h2>
                         <div class="grid gap-6 md:grid-cols-3">
-                            <div v-for="item in group.items" :key="item.title" class="rounded-xl border border-slate-200 bg-white p-8 transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50">
-                                <div class="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                            <div v-for="item in group.items" :key="item.title" class="rounded-md border border-slate-200 bg-white p-8 transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50">
+                                <div class="mb-6 flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
                                     <component :is="item.icon" class="h-5 w-5" />
                                 </div>
                                 <h3 class="mb-3 text-lg font-bold tracking-tight">{{ item.title }}</h3>

@@ -10,6 +10,7 @@ use App\Models\Academic\AcademicYear;
 use App\Models\Academic\AcademicTerm;
 use App\Models\Finance\FeePayment;
 use App\Models\Finance\StudentFee;
+use App\Models\Academic\SchoolSubject;
 use App\Models\Attendance\StudentAttendance;
 use App\Models\Communication\Announcement;
 use App\Models\Communication\Event;
@@ -425,7 +426,7 @@ class DashboardController extends Controller
         try {
             $previousTermDate = Carbon::now()->subMonths(3)->toDateString();
             
-            $learnerStats = Student::active()->selectRaw("
+            $learnerStats = Student::selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
             ", [$previousTermDate])->first();
@@ -435,7 +436,7 @@ class DashboardController extends Controller
                 ? round((($totalStudents - $learnerStats->previous) / $learnerStats->previous) * 100, 1)
                 : 0;
 
-            $teacherStats = Teacher::active()->selectRaw("
+            $teacherStats = Teacher::selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
             ", [$previousTermDate])->first();
@@ -445,7 +446,7 @@ class DashboardController extends Controller
                 ? round((($totalTeachers - $teacherStats->previous) / $teacherStats->previous) * 100, 1)
                 : 0;
 
-            $classStats = SchoolClass::where('is_active', true)->selectRaw("
+            $classStats = SchoolClass::selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN created_at < ? THEN 1 ELSE 0 END) as previous
             ", [$previousTermDate])->first();
@@ -459,16 +460,14 @@ class DashboardController extends Controller
 
             $feeStats = (object) ['total' => 0, 'previous' => 0];
             try {
-                if (Schema::hasTable('fee_payments') && Schema::hasColumn('fee_payments', 'school_id')) {
-                    $dbFeeStats = FeePayment::selectRaw("
-                        SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as total,
-                        SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as previous
-                    ", [Carbon::now()->month, Carbon::now()->year, Carbon::now()->subMonth()->month, Carbon::now()->subMonth()->year])->first();
-                    
-                    if ($dbFeeStats) {
-                        $feeStats->total = $dbFeeStats->total;
-                        $feeStats->previous = $dbFeeStats->previous;
-                    }
+                $dbFeeStats = FeePayment::selectRaw("
+                    SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as total,
+                    SUM(CASE WHEN MONTH(payment_date) = ? AND YEAR(payment_date) = ? THEN amount ELSE 0 END) as previous
+                ", [Carbon::now()->month, Carbon::now()->year, Carbon::now()->subMonth()->month, Carbon::now()->subMonth()->year])->first();
+                
+                if ($dbFeeStats) {
+                    $feeStats->total = $dbFeeStats->total;
+                    $feeStats->previous = $dbFeeStats->previous;
                 }
             } catch (\Exception $e) {
                 Log::warning('Fee collection query failed: ' . $e->getMessage());
@@ -481,16 +480,13 @@ class DashboardController extends Controller
 
             $pendingFees = 0;
             try {
-                if (Schema::hasTable('student_fees') && Schema::hasColumn('student_fees', 'school_id')) {
-                    $pendingFees = StudentFee::whereIn('status', ['pending', 'partial'])
-                        ->sum(DB::raw('total_amount - paid_amount')) ?? 0;
-                }
+                $pendingFees = StudentFee::sum('balance') ?? 0;
             } catch (\Exception $e) {
                 Log::warning('Pending fees query failed: ' . $e->getMessage());
             }
 
-            $totalGuardians = Guardian::where('is_active', true)->count();
-            $totalSubjects = \App\Models\Curriculum\Subject::where('is_active', true)->count();
+            $totalGuardians = Guardian::count();
+            $totalSubjects = SchoolSubject::count();
 
             return [
                 'total_learners' => (int) $totalStudents,

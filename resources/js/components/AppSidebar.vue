@@ -1156,7 +1156,7 @@ const toggleItem = (title: string) => {
 
                 <div
                     v-if="$page.props.auth.school?.logo"
-                    class="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 border-sidebar-border bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/20"
+                    class="h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-sidebar-border bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/20"
                 >
                     <img
                         :src="$page.props.auth.school.logo"
@@ -1166,7 +1166,7 @@ const toggleItem = (title: string) => {
                 </div>
                 <div
                     v-else
-                    class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all duration-300 group-hover:scale-105"
+                    class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all duration-300 group-hover:scale-105"
                 >
                     <span class="text-2xl font-bold">{{
                         $page.props.auth.school?.name?.[0] || 'T'
@@ -1194,7 +1194,7 @@ const toggleItem = (title: string) => {
                             <div v-if="item.children">
                                 <SidebarMenuButton
                                     @click="toggleItem(item.title)"
-                                    class="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                    class="group flex w-full items-center justify-between rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                     :class="{
                                         'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm':
                                             activeItem === item.title,
@@ -1233,7 +1233,7 @@ const toggleItem = (title: string) => {
                             <Link
                                 v-else
                                 :href="item.href"
-                                class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                class="group flex items-center gap-3 rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                 :class="{
                                     'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm':
                                         $page.url === item.href,
@@ -1257,7 +1257,7 @@ const toggleItem = (title: string) => {
                     <div v-if="item.children">
                         <SidebarMenuButton
                             @click="toggleItem(item.title)"
-                            class="group flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            class="group flex w-full items-center justify-between rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                             :class="{
                                 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm':
                                     activeItem === item.title,
@@ -1294,7 +1294,7 @@ const toggleItem = (title: string) => {
                     <Link
                         v-else
                         :href="item.href"
-                        class="group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        class="group flex items-center gap-3 rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     >
                         <component :is="item.icon" class="h-4 w-4 opacity-70" />
                         <span>{{ item.title }}</span>

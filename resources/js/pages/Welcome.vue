@@ -93,8 +93,8 @@ const route = (window as any).route;
             <div class="mx-auto max-w-7xl px-6">
                 <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
-                            <GraduationCap class="h-5 w-5 text-white" />
+                        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 shadow-sm">
+                            <GraduationCap class="h-4 w-4 text-white" />
                         </div>
                         <span class="text-lg font-bold tracking-tight uppercase">CBC<span class="text-blue-600">Core</span></span>
                     </div>
@@ -109,7 +109,7 @@ const route = (window as any).route;
                         <Link v-if="canLogin" href="/login" class="text-xs font-bold tracking-wide text-slate-600 uppercase transition-colors hover:text-blue-600 dark:text-slate-300">
                             Login
                         </Link>
-                        <Button v-if="canRegister" as-child class="h-9 rounded-md bg-blue-600 px-5 text-xs font-bold tracking-wide shadow-sm hover:bg-blue-700">
+                        <Button v-if="canRegister" as-child class="h-8 rounded-md bg-blue-600 px-4 text-[10px] font-bold tracking-wide shadow-sm hover:bg-blue-700">
                             <Link href="/register">GET STARTED</Link>
                         </Button>
                         <Button
@@ -147,8 +147,8 @@ const route = (window as any).route;
         <main>
             <section class="relative overflow-hidden pt-32 pb-16 lg:pt-48 lg:pb-24">
                 <!-- Background Image Layer -->
-                <div class="absolute inset-0 -z-10 opacity-[0.05] dark:opacity-[0.08]">
-                    <img src="https://images.unsplash.com/photo-1544531585-9847b68c8c86?q=80&w=2070&auto=format&fit=crop" class="h-full w-full object-cover">
+                <div class="absolute inset-0 -z-10 opacity-[0.03] dark:opacity-[0.05]">
+                    <img src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=2022&auto=format&fit=crop" class="h-full w-full object-cover">
                 </div>
 
                 <div class="mx-auto max-w-7xl px-6">
@@ -158,14 +158,14 @@ const route = (window as any).route;
                                 <Star class="h-3 w-3" />
                                 Premium School Management
                             </div>
-                            <h1 class="mb-6 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl dark:text-white">
+                            <h1 class="mb-6 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl dark:text-white">
                                 Modernize Your School with <span class="text-blue-600">CBC Core</span>
                             </h1>
-                            <p class="mb-8 max-w-lg text-base leading-relaxed text-slate-600 dark:text-slate-400">
+                            <p class="mb-8 max-w-lg text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                                 A comprehensive platform designed for Kenyan schools. Manage students, assessments, and finances with an intuitive interface built for efficiency.
                             </p>
                             <div class="flex flex-wrap items-center gap-4">
-                                <Button size="lg" as-child class="h-12 rounded-lg bg-blue-600 px-8 text-xs font-bold tracking-wider shadow-md hover:bg-blue-700">
+                                <Button size="lg" as-child class="h-10 rounded-md bg-blue-600 px-6 text-[10px] font-bold tracking-wider shadow-md hover:bg-blue-700">
                                     <Link href="/register">START FREE TRIAL</Link>
                                 </Button>
                                 <button @click="showDemoModal = true" class="group flex items-center gap-2 text-xs font-bold tracking-wider text-slate-600 uppercase dark:text-slate-300">
@@ -178,7 +178,7 @@ const route = (window as any).route;
                         <!-- Hero Mockup -->
                         <div class="relative lg:block transition-all duration-700 delay-200 ease-out" :class="{ 'translate-x-0 opacity-100': isLoaded, 'translate-x-12 opacity-0': !isLoaded }">
                             <div class="relative mx-auto w-full max-w-[380px]">
-                                <div class="relative z-10 overflow-hidden rounded-xl border-4 border-slate-900 bg-slate-900 shadow-xl dark:border-slate-800">
+                                <div class="relative z-10 overflow-hidden rounded-md border-4 border-slate-900 bg-slate-900 shadow-xl dark:border-slate-800">
                                     <div class="aspect-[9/18] bg-slate-50 dark:bg-[#020617]">
                                         <div class="p-5 pt-8">
                                             <div class="mb-6 flex items-center justify-between">
@@ -239,13 +239,13 @@ const route = (window as any).route;
                         <h2 class="text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl dark:text-white">
                             Integrated Solutions for <span class="text-blue-600">Modern Schools</span>
                         </h2>
-                        <p class="text-base text-slate-600 dark:text-slate-400">
+                        <p class="text-sm text-slate-600 dark:text-slate-400">
                             Our platform addresses the core needs of school administrators and teachers, providing tools that simplify complex administrative tasks.
                         </p>
                     </div>
 
                     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                        <div v-for="feature in features" :key="feature.title" class="group flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-8 transition-all hover:border-blue-600/20 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/50">
+                        <div v-for="feature in features" :key="feature.title" class="group flex flex-col justify-between rounded-md border border-slate-100 bg-white p-8 transition-all hover:border-blue-600/20 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900/50">
                             <div>
                                 <div class="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
                                     <component :is="feature.icon" class="h-5 w-5" />
@@ -267,14 +267,14 @@ const route = (window as any).route;
                     <h2 class="mb-8 text-3xl font-bold tracking-tight dark:text-white sm:text-4xl">
                         Streamline Your School's <br> <span class="text-blue-600">Operations Today</span>
                     </h2>
-                    <p class="mx-auto mb-10 max-w-xl text-base text-slate-600 dark:text-slate-400">
+                    <p class="mx-auto mb-10 max-w-xl text-sm text-slate-600 dark:text-slate-400">
                         Adopt a system that grows with your institution. Start your 14-day free trial or contact us for a personalized demo.
                     </p>
                     <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                        <Button size="lg" as-child class="h-14 rounded-md bg-blue-600 px-10 text-xs font-bold tracking-wider shadow-md hover:bg-blue-700">
+                        <Button size="lg" as-child class="h-12 rounded-md bg-blue-600 px-8 text-[10px] font-bold tracking-wider shadow-md hover:bg-blue-700">
                             <Link href="/register">START NOW</Link>
                         </Button>
-                        <button @click="showDemoModal = true" class="h-14 rounded-md border border-slate-200 bg-white px-10 text-xs font-bold tracking-wider transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-transparent">
+                        <button @click="showDemoModal = true" class="h-12 rounded-md border border-slate-200 bg-white px-8 text-[10px] font-bold tracking-wider transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-transparent">
                             REQUEST DEMO
                         </button>
                     </div>
@@ -285,7 +285,7 @@ const route = (window as any).route;
         <!-- Demo Modal -->
         <div v-if="showDemoModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-[#020617]/70 backdrop-blur-sm" @click="showDemoModal = false"></div>
-            <div class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-[#0f172a] border dark:border-slate-800">
+            <div class="relative w-full max-w-md rounded-md bg-white p-6 shadow-xl dark:bg-[#0f172a] border dark:border-slate-800">
                 <button @click="showDemoModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
                     <X class="h-5 w-5" />
                 </button>

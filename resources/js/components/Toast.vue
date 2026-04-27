@@ -61,30 +61,30 @@ const dismiss = () => {
     >
         <div
             v-if="show"
-            class="pointer-events-auto fixed top-6 right-6 z-[9999] w-full max-w-[280px] overflow-hidden rounded-lg border border-border bg-background/95 shadow-xl backdrop-blur-sm ring-1 ring-black/5 dark:ring-white/5"
+            class="pointer-events-auto fixed top-4 right-4 z-[9999] w-full max-w-[240px] overflow-hidden rounded-md border border-slate-200 bg-white/95 shadow-lg backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95"
         >
-            <div class="px-3 py-2.5">
+            <div class="px-2.5 py-2">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <CheckCircle2
                             v-if="type === 'success'"
-                            class="h-4 w-4 text-emerald-500"
+                            class="h-3.5 w-3.5 text-blue-600"
                         />
                         <AlertCircle
                             v-else-if="type === 'error'"
-                            class="h-4 w-4 text-rose-500"
+                            class="h-3.5 w-3.5 text-rose-500"
                         />
-                        <Info v-else class="h-4 w-4 text-primary" />
+                        <Info v-else class="h-3.5 w-3.5 text-slate-400" />
                     </div>
                     <div class="ml-2 w-0 flex-1">
                         <p
-                            class="text-[10px] font-black tracking-[0.2em] uppercase leading-none"
+                            class="text-[8px] font-black tracking-[0.2em] uppercase leading-none"
                             :class="
                                 type === 'success'
-                                    ? 'text-emerald-500'
+                                    ? 'text-blue-600'
                                     : type === 'error'
                                       ? 'text-rose-500'
-                                      : 'text-primary'
+                                      : 'text-slate-400'
                             "
                         >
                             {{
@@ -96,19 +96,18 @@ const dismiss = () => {
                             }}
                         </p>
                         <p
-                            class="mt-1 text-[11px] font-medium leading-tight text-foreground/80"
+                            class="mt-1 text-[10px] font-medium leading-tight text-slate-600 dark:text-slate-300"
                         >
                             {{ message }}
                         </p>
                     </div>
-                    <div class="ml-3 flex flex-shrink-0">
+                    <div class="ml-2 flex flex-shrink-0">
                         <button
                             type="button"
                             @click="dismiss"
-                            class="inline-flex rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none"
+                            class="inline-flex rounded-md p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                         >
-                            <span class="sr-only">Close</span>
-                            <X class="h-3.5 w-3.5" />
+                            <X class="h-3 w-3" />
                         </button>
                     </div>
                 </div>
@@ -116,16 +115,16 @@ const dismiss = () => {
             <!-- Progress Bar -->
             <div
                 v-if="show"
-                class="h-0.5 w-full overflow-hidden bg-muted"
+                class="h-0.5 w-full overflow-hidden bg-slate-100 dark:bg-slate-800"
             >
                 <div
                     class="h-full animate-[progress_5s_linear_forwards]"
                     :class="
                         type === 'success'
-                            ? 'bg-emerald-500'
+                            ? 'bg-blue-600'
                             : type === 'error'
-                              ? 'bg-rose-500'
-                              : 'bg-primary'
+                               ? 'bg-rose-500'
+                               : 'bg-slate-400'
                     "
                 ></div>
             </div>

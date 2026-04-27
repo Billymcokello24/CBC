@@ -15,7 +15,7 @@ const route = (window as any).route;
             <div class="mx-auto max-w-7xl px-6">
                 <div class="flex h-16 items-center justify-between">
                     <Link :href="route('home')" class="flex items-center gap-3">
-                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 shadow-sm">
                             <GraduationCap class="h-5 w-5 text-white" />
                         </div>
                         <span class="text-lg font-bold tracking-tight uppercase">CBC<span class="text-blue-600">Core</span></span>
@@ -46,21 +46,21 @@ const route = (window as any).route;
                 <div class="mx-auto max-w-7xl px-6">
                     <div class="grid gap-12 lg:grid-cols-3">
                         <div class="space-y-4">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
                                 <Heart class="h-5 w-5" />
                             </div>
                             <h3 class="text-lg font-bold">Our Philosophy</h3>
                             <p class="text-xs leading-relaxed text-slate-500">We believe that technology should be an enabler, not a barrier. Our tools are designed to be accessible and intuitive for all users.</p>
                         </div>
                         <div class="space-y-4">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
                                 <Target class="h-5 w-5" />
                             </div>
                             <h3 class="text-lg font-bold">Strategic Vision</h3>
                             <p class="text-xs leading-relaxed text-slate-500">To be the leading provider of school management solutions in East Africa, fostering a more connected and efficient education ecosystem.</p>
                         </div>
                         <div class="space-y-4">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-md bg-blue-600 text-white shadow-sm">
                                 <Users2 class="h-5 w-5" />
                             </div>
                             <h3 class="text-lg font-bold">Institutional Impact</h3>
