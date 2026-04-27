@@ -40,6 +40,8 @@ Route::inertia('/', 'Welcome', [
 Route::get('/modules', [\App\Http\Controllers\LandingController::class, 'modules'])->name('landing.modules');
 Route::get('/about', [\App\Http\Controllers\LandingController::class, 'about'])->name('landing.about');
 Route::get('/contact', [\App\Http\Controllers\LandingController::class, 'contact'])->name('landing.contact');
+Route::get('/pricing', [\App\Http\Controllers\LandingController::class, 'pricing'])->name('landing.pricing');
+Route::get('/faq', [\App\Http\Controllers\LandingController::class, 'faq'])->name('landing.faq');
 Route::post('/book-demo', [\App\Http\Controllers\LandingController::class, 'bookDemo'])->name('demo.book');
 
 Route::middleware(['auth', 'verified'])->group(function () {

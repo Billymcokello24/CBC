@@ -23,6 +23,16 @@ class LandingController extends Controller
         return Inertia::render('landing/Contact');
     }
 
+    public function pricing()
+    {
+        return Inertia::render('landing/Pricing');
+    }
+
+    public function faq()
+    {
+        return Inertia::render('landing/FAQ');
+    }
+
     public function bookDemo(Request $request)
     {
         $validated = $request->validate([
