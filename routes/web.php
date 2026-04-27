@@ -625,3 +625,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+
+Route::get('/test-mail', function () {
+    try {
+        \Illuminate\Support\Facades\Mail::raw('This is a test email to verify SMTP configuration.', function ($message) {
+            $message->to('billyochiengokello@gmail.com')
+                ->subject('SMTP Verification Test');
+        });
+        return 'Email sent successfully via ' . config('mail.mailers.smtp.host');
+    } catch (\Exception $e) {
+        return 'Failed to send email: ' . $e->getMessage();
+    }
+});
