@@ -624,6 +624,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
+
+// Custom Multi-Step Registration
+Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register/send-otp', [\App\Http\Controllers\Auth\RegistrationController::class, 'sendOtp'])->name('register.send-otp');
+Route::post('/register/verify-otp', [\App\Http\Controllers\Auth\RegistrationController::class, 'verifyOtp'])->name('register.verify-otp');
+Route::post('/register/complete', [\App\Http\Controllers\Auth\RegistrationController::class, 'register'])->name('register.complete');
+
 require __DIR__.'/settings.php';
 
 Route::get('/test-mail', function () {
