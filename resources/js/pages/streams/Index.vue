@@ -131,10 +131,10 @@ const getStatusColor = (active: boolean) => {
                             <Rows3 class="h-4 w-4" />
                         </Button>
                     </div>
-                    <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <Button as-child class="h-10 rounded-xl bg-primary px-6 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                         <Link href="/streams/create">
                             <Plus class="mr-2.5 h-4 w-4" />
-                            Provision channel
+                            Add New Stream
                         </Link>
                     </Button>
                 </div>

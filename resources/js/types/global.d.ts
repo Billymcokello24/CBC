@@ -29,12 +29,16 @@ declare module 'vue' {
         $inertia: typeof Router;
         $page: Page;
         $headManager: ReturnType<typeof createHeadManager>;
-        route: ((name: string, params?: any, absolute?: boolean) => string) & {
-            current: (name?: string, params?: any) => boolean;
-        };
+        route: Route;
     }
 }
 
+interface Route {
+    (name: string, params?: any, absolute?: boolean): string;
+    (): { current: (name?: string, params?: any) => boolean };
+    current: (name?: string, params?: any) => boolean;
+}
+
 declare global {
-    function route(name: string, params?: any, absolute?: boolean): string;
+    var route: Route;
 }
