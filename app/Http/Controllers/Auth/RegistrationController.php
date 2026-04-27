@@ -35,29 +35,20 @@ class RegistrationController extends Controller
 
         $otp = rand(100000, 999999);
         
-        // Store details and OTP in cache for 15 minutes
         Cache::put('reg_otp_' . $request->email, [
             'otp' => $otp,
             'school_details' => $request->only(['school_name', 'admin_name', 'school_level']),
         ], now()->addMinutes(15));
 
-        // Send Email (Queued)
         try {
             Mail::to($request->email)->queue(new RegistrationOtpMail($otp));
         } catch (\Exception $e) {
-            // Log the error but proceed for dev if using log driver
             \Log::error("Failed to send registration OTP: " . $e->getMessage());
         }
 
-        return response()->json([
-            'message' => 'Verification code sent to your email.',
-            'email' => $request->email
-        ]);
+        return back()->with('success', 'Verification code sent to your email.');
     }
 
-    /**
-     * Step 2: Verify OTP.
-     */
     public function verifyOtp(Request $request)
     {
         $request->validate([
@@ -68,10 +59,10 @@ class RegistrationController extends Controller
         $data = Cache::get('reg_otp_' . $request->email);
 
         if (!$data || $data['otp'] != $request->otp) {
-            return response()->json(['message' => 'Invalid or expired verification code.'], 422);
+            return back()->with('error', 'Invalid or expired verification code.');
         }
 
-        return response()->json(['message' => 'Email verified successfully.']);
+        return back()->with('success', 'Email verified successfully.');
     }
 
     /**
@@ -128,9 +119,6 @@ class RegistrationController extends Controller
         // Login the user
         auth()->login($user);
 
-        return response()->json([
-            'message' => 'Registration successful!',
-            'redirect' => route('dashboard')
-        ]);
+        return redirect()->route('dashboard')->with('success', 'Registration successful! Welcome to ' . $school->name);
     }
 }

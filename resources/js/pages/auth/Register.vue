@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import {
     Mail,
     Lock,
@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputError from '@/components/InputError.vue';
 import AuthSplitLayout from '@/layouts/auth/AuthSplitLayout.vue';
-import axios from 'axios';
+import Toast from '@/components/Toast.vue';
 
 const step = ref(1);
 const showPassword = ref(false);
@@ -39,44 +39,26 @@ const form = useForm({
     otp: '',
 });
 
-const sendOtp = async () => {
-    verificationError.value = '';
-    form.processing = true;
-    try {
-        const response = await axios.post(route('register.send-otp'), {
-            school_name: form.school_name,
-            admin_name: form.name,
-            email: form.email,
-            school_level: form.school_level
-        });
-        successMessage.value = response.data.message;
-        otpSent.value = true;
-        step.value = 2;
-    } catch (error: any) {
-        if (error.response?.data?.errors) {
-            form.errors = error.response.data.errors;
-        } else {
-            verificationError.value = error.response?.data?.message || 'Failed to send code.';
-        }
-    } finally {
-        form.processing = false;
-    }
+const sendOtp = () => {
+    router.post(route('register.send-otp'), {
+        school_name: form.school_name,
+        admin_name: form.name,
+        email: form.email,
+        school_level: form.school_level
+    }, {
+        onSuccess: () => step.value = 2,
+    });
 };
 
-const verifyOtp = async () => {
-    verificationError.value = '';
+const verifyOtp = () => {
     isVerifying.value = true;
-    try {
-        await axios.post(route('register.verify-otp'), {
-            email: form.email,
-            otp: form.otp
-        });
-        step.value = 3;
-    } catch (error: any) {
-        verificationError.value = error.response?.data?.message || 'Invalid code.';
-    } finally {
-        isVerifying.value = false;
-    }
+    router.post(route('register.verify-otp'), {
+        email: form.email,
+        otp: form.otp
+    }, {
+        onSuccess: () => step.value = 3,
+        onFinish: () => isVerifying.value = false,
+    });
 };
 
 const submitFinal = () => {
@@ -290,5 +272,6 @@ const submitFinal = () => {
             Already have an account?
             <Link href="/login" class="font-semibold text-teal-600 hover:text-teal-500">Sign in</Link>
         </p>
+        <Toast />
     </AuthSplitLayout>
 </template>
