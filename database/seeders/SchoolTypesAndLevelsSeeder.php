@@ -20,7 +20,7 @@ class SchoolTypesAndLevelsSeeder extends Seeder
         ];
 
         foreach ($schoolTypes as $type) {
-            SchoolType::create($type);
+            SchoolType::updateOrCreate(['code' => $type['code']], $type);
         }
 
         // School Levels
@@ -33,7 +33,7 @@ class SchoolTypesAndLevelsSeeder extends Seeder
         ];
 
         foreach ($schoolLevels as $level) {
-            SchoolLevel::create($level);
+            SchoolLevel::updateOrCreate(['code' => $level['code']], $level);
         }
     }
 }

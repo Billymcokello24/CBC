@@ -23,7 +23,10 @@ class CurriculumSeeder extends Seeder
         ];
 
         foreach ($competencies as $index => $competency) {
-            Competency::create(array_merge($competency, ['display_order' => $index + 1]));
+            Competency::updateOrCreate(
+                ['code' => $competency['code']],
+                array_merge($competency, ['display_order' => $index + 1])
+            );
         }
 
         // Learning Areas and Subjects
@@ -119,13 +122,18 @@ class CurriculumSeeder extends Seeder
             $subjects = $areaData['subjects'];
             unset($areaData['subjects']);
 
-            $learningArea = LearningArea::create(array_merge($areaData, ['display_order' => $areaIndex + 1]));
+            $learningArea = LearningArea::updateOrCreate(
+                ['code' => $areaData['code']],
+                array_merge($areaData, ['display_order' => $areaIndex + 1])
+            );
 
             foreach ($subjects as $subIndex => $subject) {
-                Subject::create(array_merge($subject, [
-                    'learning_area_id' => $learningArea->id,
-                    'display_order' => $subIndex + 1,
-                ]));
+                Subject::updateOrCreate(
+                    ['code' => $subject['code'], 'learning_area_id' => $learningArea->id],
+                    array_merge($subject, [
+                        'display_order' => $subIndex + 1,
+                    ])
+                );
             }
         }
     }
