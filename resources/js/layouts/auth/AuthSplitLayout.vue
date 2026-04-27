@@ -13,7 +13,7 @@ defineProps<{
     role?: string;
 }>();
 
-const route = (window as any).route;
+
 </script>
 
 <template>

@@ -4,7 +4,7 @@ import { Heart, Target, Users2, Star } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import LandingLayout from '@/layouts/LandingLayout.vue';
 
-const route = (window as any).route;
+
 </script>
 
 <template>

@@ -41,7 +41,7 @@ const navLinks = [
     { name: 'Contact', href: 'landing.contact' },
 ];
 
-const route = (window as any).route;
+
 </script>
 
 <template>
@@ -100,9 +100,8 @@ const route = (window as any).route;
                     </div>
 
                     <!-- Mobile Toggle -->
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden p-2 text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                        <Menu v-if="!mobileMenuOpen" class="h-6 w-6" />
-                        <X v-else class="h-6 w-6" />
+                    <button @click="mobileMenuOpen = true" class="lg:hidden p-2 text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <Menu class="h-6 w-6" />
                     </button>
                 </div>
             </div>
@@ -125,52 +124,61 @@ const route = (window as any).route;
                 <div 
                     v-if="mobileMenuOpen" 
                     @click="mobileMenuOpen = false"
-                    class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                    class="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
                 ></div>
             </transition>
 
             <!-- Sidebar -->
             <transition
-                enter-active-class="transition-transform duration-500 ease-out"
+                enter-active-class="transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1)"
                 enter-from-class="-translate-x-full"
                 enter-to-class="translate-x-0"
-                leave-active-class="transition-transform duration-300 ease-in"
+                leave-active-class="transition-transform duration-300 cubic-bezier(0.4, 0, 1, 1)"
                 leave-from-class="translate-x-0"
                 leave-to-class="-translate-x-full"
             >
-                <div v-if="mobileMenuOpen" class="absolute top-0 left-0 bottom-0 w-[300px] bg-white dark:bg-slate-950 shadow-2xl p-8 flex flex-col">
-                    <div class="flex items-center gap-3 mb-12">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B63F6] text-white">
-                            <BookOpen class="h-6 w-6" />
+                <div v-if="mobileMenuOpen" class="absolute top-0 left-0 bottom-0 w-[85%] max-w-[340px] bg-white dark:bg-slate-950 shadow-2xl p-8 flex flex-col pointer-events-auto">
+                    <div class="flex items-center justify-between mb-12">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3B63F6] text-white">
+                                <BookOpen class="h-6 w-6" />
+                            </div>
+                            <span class="text-xl font-bold tracking-tight text-[#3B63F6]">Cloud School</span>
                         </div>
-                        <span class="text-xl font-bold tracking-tight text-[#3B63F6]">Cloud School</span>
+                        <button @click="mobileMenuOpen = false" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+                            <X class="h-5 w-5" />
+                        </button>
                     </div>
 
-                    <div class="flex flex-col gap-6 flex-grow">
+                    <nav class="flex flex-col gap-2 flex-grow">
                         <Link 
                             v-for="link in navLinks" 
                             :key="link.name"
                             @click="mobileMenuOpen = false"
                             :href="route(link.href)"
-                            class="text-lg font-bold text-slate-700 dark:text-slate-300 hover:text-[#3B63F6] transition-colors"
-                            :class="{ 'text-[#3B63F6]': route().current(link.href) }"
+                            class="flex items-center h-14 px-6 rounded-2xl text-base font-bold transition-all"
+                            :class="route().current(link.href) 
+                                ? 'bg-blue-50 text-[#3B63F6] dark:bg-blue-500/10' 
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'"
                         >
                             {{ link.name }}
                         </Link>
-                    </div>
+                    </nav>
 
                     <div class="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
                         <template v-if="page.props.auth?.user">
-                            <Link :href="route('dashboard')" @click="mobileMenuOpen = false">
-                                <Button class="h-14 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
-                                    Dashboard
+                            <Link :href="route('dashboard')" @click="mobileMenuOpen = false" class="block">
+                                <Button class="h-16 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
+                                    Go to Dashboard
                                 </Button>
                             </Link>
                         </template>
                         <template v-else>
-                            <Link :href="route('login')" @click="mobileMenuOpen = false" class="block w-full text-center py-4 text-sm font-bold text-slate-600 dark:text-slate-400">Sign In</Link>
-                            <Link :href="route('register')" @click="mobileMenuOpen = false">
-                                <Button class="h-14 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
+                            <Link :href="route('login')" @click="mobileMenuOpen = false" class="block w-full text-center py-4 text-sm font-bold text-slate-600 dark:text-slate-400">
+                                Sign In to Account
+                            </Link>
+                            <Link :href="route('register')" @click="mobileMenuOpen = false" class="block">
+                                <Button class="h-16 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
                                     Get Started
                                 </Button>
                             </Link>

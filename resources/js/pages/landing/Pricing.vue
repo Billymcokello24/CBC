@@ -87,7 +87,7 @@ const plans = [
     }
 ];
 
-const route = (window as any).route;
+
 </script>
 
 <template>
