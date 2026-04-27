@@ -238,7 +238,6 @@ watch(flashSuccess, (value) => {
                         {{ selectedView === 'grid' ? 'Table View' : 'Grid View' }}
                     </Button>
                     <Link
-                        v-if="hasPermission('grades.create')"
                         href="/grades/create"
                         class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] active:scale-95"
                     >
