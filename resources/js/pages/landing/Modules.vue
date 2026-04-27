@@ -44,6 +44,7 @@ const moduleGroups = [
         ]
     }
 ];
+const route = (window as any).route;
 </script>
 
 <template>

@@ -80,6 +80,7 @@ const partners = [
     { name: 'KNEC Integrated', logo: 'KNEC' },
     { name: 'TSC Sync', logo: 'TSC' },
 ];
+const route = (window as any).route;
 </script>
 
 <template>

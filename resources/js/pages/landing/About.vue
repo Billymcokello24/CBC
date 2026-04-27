@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { GraduationCap, ArrowLeft, Heart, Target, Users2 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
+const route = (window as any).route;
 </script>
 
 <template>

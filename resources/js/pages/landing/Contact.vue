@@ -17,6 +17,7 @@ const submit = () => {
         onSuccess: () => form.reset(),
     });
 };
+const route = (window as any).route;
 </script>
 
 <template>
