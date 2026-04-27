@@ -53,60 +53,37 @@ const searchFocused = ref(false);
         class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
         <div
-            class="flex h-12 items-center gap-1 px-2 sm:h-14 sm:gap-2 sm:px-4 md:h-16 md:px-8"
+            class="flex h-14 items-center gap-1 px-4 sm:h-16 sm:gap-2 sm:px-6 md:h-20 md:px-10 lg:px-12"
         >
             <div class="flex shrink-0 items-center gap-1 sm:gap-4">
                 <SidebarTrigger
-                    class="-ml-0.5 h-8 w-8 p-0 hover:bg-slate-100 sm:h-9 sm:w-9 dark:hover:bg-slate-800"
+                    class="-ml-2 h-9 w-9 rounded-xl p-0 transition-all hover:bg-muted"
                 />
             </div>
 
-            <!-- Search Area — hidden on very small screens -->
+            <!-- Search Area -->
             <div
-                class="hidden flex-1 items-center justify-center px-2 sm:flex md:px-20 lg:px-40"
+                class="hidden flex-1 items-center justify-center px-4 sm:flex md:px-12 lg:px-24"
             >
-                <div class="group relative w-full max-w-2xl">
+                <div class="group relative w-full max-w-lg">
                     <Search
-                        class="absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary sm:h-4 sm:w-4"
+                        class="absolute top-1/2 left-4 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60 transition-colors group-focus-within:text-primary"
                     />
                     <Input
                         placeholder="Search... (Ctrl+K)"
-                        class="h-8 w-full rounded-xl border-border bg-muted/30 pr-4 pl-9 text-xs transition-all focus:bg-background sm:h-9 sm:pr-12 sm:pl-10 sm:text-sm md:h-10"
+                        class="h-10 w-full rounded-2xl border-border/50 bg-muted/40 pr-4 pl-10 text-[11px] font-bold tracking-tight transition-all focus:bg-background focus:ring-4 focus:ring-primary/5 sm:h-11 sm:text-xs"
                         @focus="searchFocused = true"
                         @blur="searchFocused = false"
                     />
-                    <div
-                        class="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1"
-                    >
-                        <kbd
-                            class="pointer-events-none hidden h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium opacity-100 select-none md:flex"
-                        >
-                            <span class="text-xs">⌘</span>K
-                        </kbd>
-                    </div>
                 </div>
             </div>
 
-            <!-- Spacer on very small screens where search is hidden -->
-            <div class="flex-1 sm:hidden"></div>
-
             <!-- Actions Area -->
-            <div class="flex shrink-0 items-center gap-1 sm:gap-2 md:gap-4">
-                <!-- Search icon for very small screens -->
+            <div class="flex shrink-0 items-center gap-2 md:gap-3">
                 <Button
                     variant="ghost"
                     size="icon"
-                    class="h-8 w-8 rounded-lg p-0 hover:bg-slate-100 sm:hidden dark:hover:bg-slate-800"
-                >
-                    <Search
-                        class="h-4 w-4 text-slate-600 dark:text-slate-400"
-                    />
-                </Button>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    class="h-8 w-8 rounded-lg p-0 hover:bg-slate-100 sm:h-9 sm:w-9 sm:rounded-xl md:h-10 md:w-10 dark:hover:bg-slate-800"
+                    class="h-9 w-9 rounded-xl transition-all hover:bg-muted sm:h-10 sm:w-10 md:h-12 md:w-12"
                     @click="toggleDarkMode"
                 >
                     <Sun
@@ -119,26 +96,26 @@ const searchFocused = ref(false);
                 <Button
                     variant="ghost"
                     size="icon"
-                    class="relative h-8 w-8 rounded-lg p-0 hover:bg-slate-100 sm:h-9 sm:w-9 sm:rounded-xl md:h-10 md:w-10 dark:hover:bg-slate-800"
+                    class="relative h-9 w-9 rounded-xl transition-all hover:bg-muted sm:h-10 sm:w-10 md:h-12 md:w-12"
                 >
                     <Bell
-                        class="h-4 w-4 text-slate-600 sm:h-5 sm:w-5 dark:text-slate-400"
+                        class="h-4 w-4 text-muted-foreground sm:h-5 sm:w-5"
                     />
                     <span
-                        class="absolute top-1.5 right-1.5 flex h-1.5 w-1.5 rounded-full bg-rose-500 ring-2 ring-background sm:top-2.5 sm:right-2.5 sm:h-2 sm:w-2"
+                        class="absolute top-2 right-2 flex h-1.5 w-1.5 rounded-full bg-primary ring-4 ring-background sm:top-3 sm:right-3 sm:h-2 sm:w-2"
                     ></span>
                 </Button>
 
-                <div class="mx-0.5 hidden h-5 w-px bg-border sm:block"></div>
+                <div class="mx-1 h-6 w-px bg-border/50"></div>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger as-child>
                         <Button
                             variant="ghost"
-                            class="flex h-8 items-center gap-1 rounded-lg px-1 hover:bg-slate-100 sm:h-10 sm:gap-3 sm:rounded-xl sm:pr-4 sm:pl-2 md:h-11 dark:hover:bg-slate-800"
+                            class="group flex h-10 items-center gap-2 rounded-xl px-1 transition-all hover:bg-muted sm:h-12 sm:gap-3 sm:pr-4 sm:pl-2 md:h-14"
                         >
                             <div
-                                class="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary sm:h-8 sm:w-8 sm:text-sm"
+                                class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-xs font-black text-primary transition-all group-hover:scale-110 sm:h-10 sm:w-10 sm:text-sm"
                             >
                                 {{
                                     user.name
@@ -149,19 +126,19 @@ const searchFocused = ref(false);
                                 }}
                             </div>
                             <div
-                                class="hidden flex-col items-start text-left leading-tight lg:flex"
+                                class="hidden flex-col items-start text-left leading-none lg:flex"
                             >
                                 <span
-                                    class="text-xs font-bold text-slate-900 dark:text-slate-100"
+                                    class="text-[11px] font-black uppercase tracking-tight text-foreground"
                                     >{{ user.name }}</span
                                 >
                                 <span
-                                    class="text-xs font-bold tracking-tighter text-slate-400 uppercase"
+                                    class="mt-1 text-[9px] font-black tracking-[0.1em] text-muted-foreground uppercase"
                                     >{{ user.role || 'Super Admin' }}</span
                                 >
                             </div>
                             <ChevronDown
-                                class="hidden h-3 w-3 text-slate-400 sm:block"
+                                class="hidden h-3 w-3 text-muted-foreground/50 transition-transform group-data-[state=open]:rotate-180 sm:block"
                             />
                         </Button>
                     </DropdownMenuTrigger>

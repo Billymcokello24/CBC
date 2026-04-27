@@ -19,8 +19,11 @@ withDefaults(defineProps<Props>(), {
 });
 
 watchEffect(() => {
-    const page = usePage();
-    const themeColor = page.props.auth?.school?.theme_color;
+    const page = usePage<any>();
+    const school = page.props.auth?.school;
+    
+    // Apply dynamic theme color if set
+    const themeColor = school?.theme_color;
     if (themeColor) {
         document.documentElement.style.setProperty('--primary', themeColor);
         document.documentElement.style.setProperty('--ring', themeColor);
@@ -32,6 +35,26 @@ watchEffect(() => {
             '--sidebar-ring',
             themeColor,
         );
+    }
+
+    // Apply dynamic favicon and document title
+    if (school) {
+        // Update Title - formats as "School Name - [Original Page Title]"
+        const baseTitle = page.props.title || 'Dashboard';
+        document.title = `${school.name} | ${baseTitle}`;
+
+        // Update Favicon to School Logo
+        if (school.logo) {
+            const faviconArr = document.querySelectorAll('link[rel*="icon"]');
+            faviconArr.forEach(link => {
+                link.setAttribute('href', school.logo);
+            });
+            
+            const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+            if (appleIcon) {
+                appleIcon.setAttribute('href', school.logo);
+            }
+        }
     }
 });
 </script>
