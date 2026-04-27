@@ -37,6 +37,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'classes.view', 'classes.create', 'classes.update', 'classes.delete',
             'classes.assign_students', 'classes.assign_teachers',
 
+            // Grades
+            'grades.view', 'grades.create', 'grades.update', 'grades.delete',
+
+            // Streams
+            'streams.view', 'streams.create', 'streams.update', 'streams.delete',
+
             // Curriculum
             'curriculum.view', 'curriculum.create', 'curriculum.update', 'curriculum.delete',
 

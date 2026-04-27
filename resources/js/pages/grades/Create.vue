@@ -1,17 +1,30 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, Loader2, PlusSquare } from 'lucide-vue-next';
+import { 
+    ArrowLeft, 
+    Loader2, 
+    Layers, 
+    ChevronDown, 
+    Zap, 
+    Activity, 
+    Database, 
+    Plus,
+    Building2,
+    Settings2
+} from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Grades', href: '/grades' },
-    { title: 'Add Grade', href: '/grades/create' },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Grade Structure', href: '/grades' },
+    { title: 'New Node', href: '/grades/create' },
 ];
 
 const form = useForm({
@@ -39,171 +52,171 @@ const submit = () => {
         start_level: Number(data.start_level),
         end_level: Number(data.end_level),
         is_active: Boolean(data.is_active),
-    })).post('/grades');
+    })).post('/grades', {
+        preserveScroll: true,
+    });
 };
 </script>
 
 <template>
-    <Head title="Add Grade" />
+    <Head title="Architect New Grade Level" />
+    
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 p-6">
-            <div class="flex items-center gap-4">
-                <Button variant="ghost" size="icon" as-child
-                    ><Link href="/grades"><ArrowLeft class="h-5 w-5" /></Link
-                ></Button>
-                <div>
-                    <h1 class="text-2xl font-bold tracking-tight">Add Grade</h1>
-                    <p class="text-muted-foreground">
-                        Create a new grade level and position it in the academic
-                        progression
+        <div class="mx-auto flex h-full max-w-[1000px] flex-1 animate-in flex-col gap-12 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
+            <!-- Strategic Header -->
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-center gap-6">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        as-child
+                        class="h-12 w-12 rounded-2xl border-border bg-card shadow-sm transition-all hover:bg-muted"
+                    >
+                        <Link href="/grades">
+                            <ArrowLeft class="h-5 w-5 text-muted-foreground" />
+                        </Link>
+                    </Button>
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-3">
+                            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black uppercase">
+                                Architect Grade Level
+                            </h1>
+                            <Badge variant="outline" class="rounded-lg border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold tracking-widest text-primary uppercase shadow-sm">Academic Structure</Badge>
+                        </div>
+                        <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Defining institutional milestones and academic progression nodes</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Hub -->
+            <div class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+                <div class="flex flex-col md:flex-row items-center justify-between border-b border-border/50 bg-muted/10 px-10 py-6 gap-6">
+                    <div class="flex items-center gap-4">
+                        <Zap class="h-5 w-5 text-primary" />
+                        <div class="space-y-0.5">
+                            <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">Bulk instantiation</h2>
+                            <p class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Generate multiple grade levels in sequence</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 px-6 py-3 rounded-2xl bg-card border border-border/50 shadow-sm">
+                        <span class="text-[10px] font-black uppercase tracking-widest transition-colors" :class="form.is_bulk ? 'text-primary' : 'text-muted-foreground opacity-40'">Enable Sequence Mode</span>
+                        <Switch v-model:checked="form.is_bulk" class="data-[state=checked]:bg-primary" />
+                    </div>
+                </div>
+
+                <form @submit.prevent="submit" class="p-10 space-y-10">
+                    <!-- Bulk Node Logic -->
+                    <div v-if="form.is_bulk" class="animate-in fade-in slide-in-from-top-4 duration-500 space-y-10">
+                        <div class="grid gap-10 md:grid-cols-2">
+                             <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Base Name Protocol</Label>
+                                <Input v-model="form.base_name" placeholder="Grade" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-black tracking-widest uppercase focus:bg-background" />
+                                <InputError :message="form.errors.base_name" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Unit Category</Label>
+                                <Input v-model="form.category" placeholder="CBC" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                                <InputError :message="form.errors.category" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Sequence Start</Label>
+                                <Input v-model="form.start_level" type="number" min="1" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                                <InputError :message="form.errors.start_level" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Sequence End</Label>
+                                <Input v-model="form.end_level" type="number" min="1" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                                <InputError :message="form.errors.end_level" />
+                            </div>
+                             <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Operational State</Label>
+                                <div class="relative">
+                                    <select v-model="form.is_active" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold uppercase outline-none focus:bg-background">
+                                        <option :value="true">Active Synchronization</option>
+                                        <option :value="false">Dormant Node</option>
+                                    </select>
+                                    <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Node Logic -->
+                    <div v-else class="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10">
+                        <div class="grid gap-10 md:grid-cols-2">
+                            <div class="space-y-3 md:col-span-2">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Grade Level Identity *</Label>
+                                <Input v-model="form.name" placeholder="GRADE 9" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-black tracking-widest uppercase focus:bg-background" />
+                                <InputError :message="form.errors.name" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Architectural Code *</Label>
+                                <Input v-model="form.code" placeholder="G9" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-black tracking-[0.2em] text-primary uppercase focus:bg-background" />
+                                <InputError :message="form.errors.code" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px) font-bold tracking-widest text-muted-foreground uppercase opacity-60">Structural Category</Label>
+                                <Input v-model="form.category" placeholder="JUNIOR SECONDARY" required class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                                <InputError :message="form.errors.category" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Progression Order</Label>
+                                <Input v-model="form.level_order" type="number" min="1" class="h-14 rounded-2xl border-border bg-muted/20 px-6 text-sm font-bold focus:bg-background" />
+                                <InputError :message="form.errors.level_order" />
+                            </div>
+                            <div class="space-y-3">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Node Pulse State</Label>
+                                <div class="relative">
+                                    <select v-model="form.is_active" class="h-14 w-full cursor-pointer appearance-none rounded-2xl border border-border bg-muted/20 px-6 text-sm font-bold uppercase outline-none focus:bg-background">
+                                        <option :value="true">Active Synchronization</option>
+                                        <option :value="false">Dormant Node</option>
+                                    </select>
+                                    <ChevronDown class="pointer-events-none absolute right-6 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/30" />
+                                </div>
+                            </div>
+                            <div class="space-y-3 border-t border-border/50 pt-6 md:col-span-2 mt-4">
+                                <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60 mb-4 block">Age Demographic Parameters (Optional)</Label>
+                                <div class="grid gap-6 md:grid-cols-2">
+                                    <div class="space-y-2">
+                                        <Label class="text-[9px] font-bold uppercase opacity-40">Minimum Age</Label>
+                                        <Input v-model="form.minimum_age" type="number" min="1" placeholder="13" class="h-12 rounded-xl border-border bg-muted/5 px-6 text-sm focus:bg-background" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <Label class="text-[9px] font-bold uppercase opacity-40">Maximum Age</Label>
+                                        <Input v-model="form.maximum_age" type="number" min="1" placeholder="15" class="h-12 rounded-xl border-border bg-muted/5 px-6 text-sm focus:bg-background" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Final Strategic Actions -->
+                    <div class="flex flex-wrap items-center justify-end gap-6 pt-6 border-t border-border/50">
+                        <Button variant="ghost" class="h-14 rounded-[1.5rem] px-10 text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase hover:bg-muted" as-child>
+                            <Link href="/grades">Abort Creation</Link>
+                        </Button>
+                        <Button type="submit" :disabled="form.processing" class="h-14 rounded-[1.5rem] bg-primary px-14 text-[10px] font-bold tracking-[0.2em] text-white uppercase shadow-2xl shadow-primary/30 transition-all hover:scale-[1.05] active:scale-[0.98]">
+                            <Loader2 v-if="form.processing" class="mr-3 h-5 w-5 animate-spin" />
+                            <Database v-else class="mr-3 h-5 w-5" />
+                            Synchronize Grade Node
+                        </Button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Architecture Logic Hint -->
+            <div class="flex items-center gap-6 rounded-[2rem] border border-primary/10 bg-primary/5 p-8">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-primary/10 transition-transform group-hover:rotate-12">
+                    <Building2 class="h-6 w-6 text-primary" />
+                </div>
+                <div class="space-y-1">
+                    <p class="text-[10px] font-black tracking-widest text-primary uppercase">Architectural Synchronization</p>
+                    <p class="text-xs font-bold text-muted-foreground leading-relaxed uppercase opacity-70">
+                        Grade levels define the vertical axis of the institutional matrix. Categories ensure correct curriculum allocation and assessment logic application.
                     </p>
                 </div>
             </div>
-            <form
-                @submit.prevent="submit"
-                class="space-y-6 rounded-xl border bg-card p-6"
-            >
-                <div class="flex items-center gap-2 border-b pb-4">
-                    <input
-                        type="checkbox"
-                        id="is_bulk"
-                        v-model="form.is_bulk"
-                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                    />
-                    <Label
-                        for="is_bulk"
-                        class="cursor-pointer text-base font-semibold"
-                        >Bulk Creation Mode</Label
-                    >
-                </div>
-
-                <div
-                    v-if="form.is_bulk"
-                    class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-                >
-                    <div class="space-y-2">
-                        <Label for="base_name">Base Name</Label
-                        ><Input
-                            id="base_name"
-                            v-model="form.base_name"
-                            placeholder="Grade"
-                        /><InputError :message="form.errors.base_name" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="start_level">Start Level</Label
-                        ><Input
-                            id="start_level"
-                            v-model="form.start_level"
-                            type="number"
-                            min="1"
-                        /><InputError :message="form.errors.start_level" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="end_level">End Level</Label
-                        ><Input
-                            id="end_level"
-                            v-model="form.end_level"
-                            type="number"
-                            min="1"
-                        /><InputError :message="form.errors.end_level" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="category">Category</Label
-                        ><Input
-                            id="category"
-                            v-model="form.category"
-                        /><InputError :message="form.errors.category" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="is_active">Status</Label
-                        ><select
-                            id="is_active"
-                            v-model="form.is_active"
-                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                        >
-                            <option :value="true">Active</option>
-                            <option :value="false">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div v-else class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    <div class="space-y-2">
-                        <Label for="name">Name</Label
-                        ><Input
-                            id="name"
-                            v-model="form.name"
-                            placeholder="Grade 9"
-                        /><InputError :message="form.errors.name" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="code">Code</Label
-                        ><Input
-                            id="code"
-                            v-model="form.code"
-                            placeholder="G9"
-                        /><InputError :message="form.errors.code" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="category">Category</Label
-                        ><Input
-                            id="category"
-                            v-model="form.category"
-                            placeholder="Junior Secondary"
-                        /><InputError :message="form.errors.category" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="level_order">Level Order</Label
-                        ><Input
-                            id="level_order"
-                            v-model="form.level_order"
-                            type="number"
-                            min="1"
-                        /><InputError :message="form.errors.level_order" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="minimum_age">Minimum Age</Label
-                        ><Input
-                            id="minimum_age"
-                            v-model="form.minimum_age"
-                            type="number"
-                            min="1"
-                        /><InputError :message="form.errors.minimum_age" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="maximum_age">Maximum Age</Label
-                        ><Input
-                            id="maximum_age"
-                            v-model="form.maximum_age"
-                            type="number"
-                            min="1"
-                        /><InputError :message="form.errors.maximum_age" />
-                    </div>
-                    <div class="space-y-2">
-                        <Label for="is_active">Status</Label
-                        ><select
-                            id="is_active"
-                            v-model="form.is_active"
-                            class="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                        >
-                            <option :value="true">Active</option>
-                            <option :value="false">Inactive</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3">
-                    <Button type="button" variant="outline" as-child
-                        ><Link href="/grades">Cancel</Link></Button
-                    >
-                    <Button type="submit" :disabled="form.processing"
-                        ><Loader2
-                            v-if="form.processing"
-                            class="mr-2 h-4 w-4 animate-spin"
-                        /><PlusSquare v-else class="mr-2 h-4 w-4" />Save
-                        Grade</Button
-                    >
-                </div>
-            </form>
         </div>
     </AppLayout>
 </template>
+

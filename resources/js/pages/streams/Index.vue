@@ -51,7 +51,7 @@ interface StreamRow {
     capacity: number | null;
     is_active: boolean;
     classes_count: number;
-    students_count: number;
+    learners_count: number;
     lead_name: string | null;
 }
 
@@ -134,7 +134,7 @@ const getStatusColor = (active: boolean) => {
                     <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                         <Link href="/streams/create">
                             <Plus class="mr-2.5 h-4 w-4" />
-                            Provision channel
+                            Add Stream
                         </Link>
                     </Button>
                 </div>
@@ -213,11 +213,11 @@ const getStatusColor = (active: boolean) => {
                         <div class="grid grid-cols-2 gap-4 rounded-2xl border border-border/50 bg-muted/10 p-4">
                             <div class="space-y-0.5">
                                 <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Population</p>
-                                <p class="text-xs font-black text-foreground uppercase">{{ stream.students_count }} Assets</p>
+                                <p class="text-xs font-black text-foreground uppercase">{{ stream.learners_count }} Assets</p>
                             </div>
                             <div class="space-y-0.5">
                                 <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Density</p>
-                                <p class="text-xs font-black text-foreground uppercase">{{ Math.round((stream.students_count / (stream.capacity || 1)) * 100) }}% Load</p>
+                                <p class="text-xs font-black text-foreground uppercase">{{ Math.round((stream.learners_count / (stream.capacity || 1)) * 100) }}% Load</p>
                             </div>
                         </div>
 
@@ -258,11 +258,11 @@ const getStatusColor = (active: boolean) => {
                                         <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ stream.code }}</p>
                                     </div>
                                 </td>
-                                <td class="px-6 py-5 text-xs font-black text-foreground uppercase tracking-tight">{{ stream.students_count }} Synchronized Assets</td>
+                                <td class="px-6 py-5 text-xs font-black text-foreground uppercase tracking-tight">{{ stream.learners_count }} Synchronized Assets</td>
                                 <td class="px-6 py-5">
                                     <div class="flex items-center gap-4">
                                         <div class="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                                            <div :style="{ width: `${Math.min((stream.students_count / (stream.capacity || 1)) * 100, 100)}%` }" class="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)]"></div>
+                                            <div :style="{ width: `${Math.min((stream.learners_count / (stream.capacity || 1)) * 100, 100)}%` }" class="h-full bg-primary shadow-[0_0_8px_rgba(var(--primary),0.4)]"></div>
                                         </div>
                                         <span class="text-[9px] font-black text-muted-foreground uppercase opacity-60">{{ stream.capacity || 'Inf' }} Cap</span>
                                     </div>
@@ -293,6 +293,22 @@ const getStatusColor = (active: boolean) => {
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+            <!-- Empty State -->
+            <div v-if="streams.length === 0" class="flex flex-col items-center justify-center space-y-6 rounded-3xl border border-dashed border-border/80 bg-muted/5 py-40 mx-1">
+                <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/20 text-muted-foreground/20">
+                    <Building2 class="h-10 w-10" />
+                </div>
+                <div class="space-y-2 text-center">
+                    <h3 class="text-xl font-bold text-foreground">No Academic Streams Found</h3>
+                    <p class="max-w-xs text-sm font-medium text-muted-foreground/60 mx-auto">Architect your institutional matrix by adding your first academic stream.</p>
+                </div>
+                 <div class="flex items-center gap-3">
+                    <Button variant="ghost" class="h-11 rounded-xl px-8 text-xs font-bold uppercase tracking-tight" @click="searchQuery = ''; selectedStatus = 'all'">Reset Grid</Button>
+                    <Button as-child class="h-11 rounded-xl bg-primary px-8 text-xs font-bold uppercase tracking-tight text-white">
+                        <Link href="/streams/create">Add Stream</Link>
+                    </Button>
                 </div>
             </div>
         </div>
