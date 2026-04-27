@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { GraduationCap } from 'lucide-vue-next';
+import { GraduationCap, ArrowLeft } from 'lucide-vue-next';
 
 const page = usePage();
 

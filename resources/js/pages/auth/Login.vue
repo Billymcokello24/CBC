@@ -30,7 +30,7 @@ const submit = () => {
     <AuthSplitLayout
         title="Welcome back"
         description="Enter your credentials to access your account"
-        image="/images/auth/login_bg.png"
+        image="/home/billy/.gemini/antigravity/brain/2c7a70c6-2ba1-4568-86a0-d740105e365e/login_auth_bg_1777295437627.png"
         quote="The beautiful thing about learning is that no one can take it away from you."
         author="B.B. King"
         role="Legendary Musician"

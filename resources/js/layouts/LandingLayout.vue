@@ -79,12 +79,24 @@ const route = (window as any).route;
                     </div>
 
                     <!-- Actions -->
-                    <div class="hidden lg:flex items-center gap-4">
-                        <Link :href="route('register')">
-                            <Button class="h-11 px-8 rounded-xl bg-[#3B63F6] hover:bg-blue-700 text-white text-[13px] font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
-                                Get Started
-                            </Button>
-                        </Link>
+                    <div class="hidden lg:flex items-center gap-6">
+                        <template v-if="page.props.auth?.user">
+                            <Link :href="route('dashboard')">
+                                <Button class="h-11 px-8 rounded-xl bg-[#3B63F6] hover:bg-blue-700 text-white text-[13px] font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        </template>
+                        <template v-else>
+                            <Link :href="route('login')" class="text-[13px] font-bold text-slate-600 hover:text-[#3B63F6] transition-colors">
+                                Sign In
+                            </Link>
+                            <Link :href="route('register')">
+                                <Button class="h-11 px-8 rounded-xl bg-[#3B63F6] hover:bg-blue-700 text-white text-[13px] font-bold shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95">
+                                    Get Started
+                                </Button>
+                            </Link>
+                        </template>
                     </div>
 
                     <!-- Mobile Toggle -->
@@ -148,12 +160,21 @@ const route = (window as any).route;
                     </div>
 
                     <div class="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                        <Link :href="route('login')" @click="mobileMenuOpen = false" class="block w-full text-center py-4 text-sm font-bold text-slate-600 dark:text-slate-400">Sign In</Link>
-                        <Link :href="route('register')" @click="mobileMenuOpen = false">
-                            <Button class="h-14 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
-                                Get Started
-                            </Button>
-                        </Link>
+                        <template v-if="page.props.auth?.user">
+                            <Link :href="route('dashboard')" @click="mobileMenuOpen = false">
+                                <Button class="h-14 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
+                                    Dashboard
+                                </Button>
+                            </Link>
+                        </template>
+                        <template v-else>
+                            <Link :href="route('login')" @click="mobileMenuOpen = false" class="block w-full text-center py-4 text-sm font-bold text-slate-600 dark:text-slate-400">Sign In</Link>
+                            <Link :href="route('register')" @click="mobileMenuOpen = false">
+                                <Button class="h-14 w-full rounded-2xl bg-[#3B63F6] text-white text-sm font-bold shadow-xl shadow-blue-600/20">
+                                    Get Started
+                                </Button>
+                            </Link>
+                        </template>
                     </div>
                 </div>
             </transition>
