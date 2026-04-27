@@ -30,9 +30,15 @@
             }
         </style>
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        @php
+            $schoolLogo = auth()->user()?->school?->logo;
+            $schoolName = auth()->user()?->school?->name;
+            $favicon = $schoolLogo ? (str_starts_with($schoolLogo, 'http') ? $schoolLogo : \Illuminate\Support\Facades\Storage::url($schoolLogo)) : '/favicon.ico';
+        @endphp
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
+        <title inertia>{{ $schoolName ? $schoolName . ' - ' . config('app.name') : config('app.name') }}</title>
+
+        <link rel="icon" href="{{ $favicon }}" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 

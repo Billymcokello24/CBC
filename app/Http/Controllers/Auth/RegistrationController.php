@@ -103,6 +103,7 @@ class RegistrationController extends Controller
         // 1. Create School
         $school = School::create([
             'name' => $schoolDetails['school_name'],
+            'code' => strtoupper(Str::random(8)),
             'email' => $request->email,
             'status' => 'active',
             'school_type_id' => 5, // Private default
