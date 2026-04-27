@@ -34,8 +34,8 @@ class LandingController extends Controller
         ]);
 
         try {
-            // Attempt to send email via SMTP
-            Mail::to('info@doitrix.co.ke')->send(new \App\Mail\DemoRequestMail($validated));
+            // Queue the email to be sent in the background
+            Mail::to('billyochiengokello@gmail.com')->queue(new \App\Mail\DemoRequestMail($validated));
         } catch (\Exception $e) {
             // Log error but continue to give user positive feedback if the database/queues are handled
             \Illuminate\Support\Facades\Log::error('Mail failed: ' . $e->getMessage());
