@@ -54,6 +54,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('imports/{process}/cancel', [\App\Http\Controllers\ImportController::class, 'cancel'])->name('imports.cancel');
     Route::get('imports/active', [\App\Http\Controllers\ImportController::class, 'getActiveImports'])->name('imports.active');
 
+    // ──────────────────────────────────────────────
+    // EXPORT MANAGEMENT
+    // ──────────────────────────────────────────────
+    Route::post('exports/start', [\App\Http\Controllers\ExportController::class, 'start'])->name('exports.start');
+    Route::get('exports/{process}/status', [\App\Http\Controllers\ExportController::class, 'status'])->name('exports.status');
+    Route::get('exports/{process}/download', [\App\Http\Controllers\ExportController::class, 'download'])->name('exports.download');
+
+
 
     // User Import Status Tracker
     Route::get('/api/user/imports/{importProcess}', function (\App\Models\ImportProcess $importProcess) {

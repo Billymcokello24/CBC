@@ -68,6 +68,15 @@ class HandleInertiaRequests extends Middleware
                     ->latest()
                     ->take(5)
                     ->get() : [],
+                'active_exports' => $user ? \App\Models\ExportProcess::where('user_id', $user->id)
+                    ->whereIn('status', ['pending', 'processing'])
+                    ->get() : [],
+                'recent_exports' => $user ? \App\Models\ExportProcess::where('user_id', $user->id)
+                    ->whereIn('status', ['completed', 'failed'])
+                    ->latest()
+                    ->take(5)
+                    ->get() : [],
+
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     CheckCircle2,
     Download,
@@ -229,15 +230,25 @@ const getStatusColor = (status: string) => {
     }
 };
 
-const downloadPdf = () => {
-    const params = new URLSearchParams({
-        search: searchQuery.value,
-        status: selectedStatus.value,
-        class_id: selectedClassId.value ? String(selectedClassId.value) : '',
-        gender: selectedGender.value,
-    }).toString();
-    
-    window.location.href = `/students/export-pdf?${params}`;
+const downloadPdf = async () => {
+    try {
+        const response = await axios.post('/exports/start', {
+            type: 'students',
+            filters: {
+                search: searchQuery.value,
+                status: selectedStatus.value,
+                class_id: selectedClassId.value ? String(selectedClassId.value) : '',
+                gender: selectedGender.value,
+            }
+        });
+        
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('export-started', { detail: response.data }));
+        }
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Failed to start export. Please try again.');
+    }
 };
 </script>
 
