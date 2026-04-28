@@ -49,6 +49,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import ProfilePhotoUpload from '@/components/forms/ProfilePhotoUpload.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import InputError from '@/components/InputError.vue';
 import type { BreadcrumbItem } from '@/types';
 
@@ -107,6 +108,12 @@ interface Teacher {
         grade_level: { name: string };
         stream: { name: string } | null;
     }>;
+    classes_as_assistant: Array<{
+        id: number;
+        name: string;
+        grade_level: { name: string };
+        stream: { name: string } | null;
+    }>;
     subject_assignments: Array<{
         id: number;
         subject: { id: number; name: string; code: string };
@@ -120,6 +127,7 @@ const props = defineProps<{
     teacher: Teacher;
     departments: Array<{ id: number; name: string }>;
     availableClasses: AvailableClass[];
+    availableSubjects: Array<{ id: number; name: string; code: string }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -152,10 +160,54 @@ const getStatusColor = (status: string) => {
 };
 
 const stats = computed(() => [
-    { label: 'Assigned', val: props.teacher.classes_as_teacher.length, sub: 'Classes', icon: Building2 },
+    { label: 'Primary', val: props.teacher.classes_as_teacher.length, sub: 'Classes', icon: ShieldCheck },
+    { label: 'Assistant', val: props.teacher.classes_as_assistant.length, sub: 'Classes', icon: ShieldPlus },
     { label: 'Teaching', val: props.teacher.subject_assignments.length, sub: 'Subjects', icon: BookOpen },
-    { label: 'Profile', val: '100%', sub: 'Complete', icon: ShieldCheck },
 ]);
+
+const showAssignClassModal = ref(false);
+const assignClassForm = useForm({
+    class_id: '',
+    assignment_role: 'primary',
+});
+
+const submitClassAssignment = () => {
+    assignClassForm.post(`/staffs/${props.teacher.id}/assign-class-teacher`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAssignClassModal.value = false;
+        },
+    });
+};
+
+const showSubjectsModal = ref(false);
+const subjectForm = useForm({
+    assignments: props.teacher.subject_assignments.map(sa => ({
+        subject_id: String(sa.subject.id),
+        class_id: String(sa.school_class.id)
+    }))
+});
+
+if (subjectForm.assignments.length === 0) {
+    subjectForm.assignments.push({ subject_id: '', class_id: '' });
+}
+
+const addSubjectRow = () => {
+    subjectForm.assignments.push({ subject_id: '', class_id: '' });
+};
+
+const removeSubjectRow = (index: number) => {
+    subjectForm.assignments.splice(index, 1);
+};
+
+const submitSubjects = () => {
+    subjectForm.post(`/staffs/${props.teacher.id}/assign-subjects`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showSubjectsModal.value = false;
+        }
+    });
+};
 </script>
 
 <template>
@@ -306,16 +358,39 @@ const stats = computed(() => [
                              <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                                 <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-8 py-5">
                                     <h3 class="text-xs font-bold text-foreground uppercase">Assigned Classes</h3>
-                                    <Button variant="ghost" size="sm" class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary">Manage Classes</Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary hover:bg-primary/10 transition-all"
+                                        @click="showAssignClassModal = true"
+                                    >
+                                        Assign to Class
+                                    </Button>
                                 </div>
                                 <div class="p-8">
-                                    <div v-if="teacher.classes_as_teacher.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                        <div v-for="cls in teacher.classes_as_teacher" :key="cls.id" class="group flex items-center justify-between rounded-xl border border-border bg-muted/10 p-5 transition-all hover:bg-card">
+                                    <div v-if="teacher.classes_as_teacher.length > 0 || teacher.classes_as_assistant.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                        <!-- Primary Classes -->
+                                        <div v-for="cls in teacher.classes_as_teacher" :key="'primary-' + cls.id" class="group flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-5 transition-all hover:bg-card">
                                             <div class="space-y-1">
-                                                <p class="text-[10px] font-bold text-primary uppercase">{{ cls.grade_level?.name }}</p>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-[9px] font-black uppercase text-primary tracking-widest bg-white px-1.5 py-0.5 rounded border border-primary/10 shadow-sm">Primary</span>
+                                                    <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">{{ cls.grade_level?.name }}</p>
+                                                </div>
                                                 <p class="text-sm font-bold text-foreground uppercase">{{ cls.name }}</p>
                                             </div>
-                                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-border/30"><Building2 class="h-5 w-5 text-muted-foreground" /></div>
+                                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-border/30"><Building2 class="h-5 w-5 text-primary" /></div>
+                                        </div>
+
+                                        <!-- Assistant Classes -->
+                                        <div v-for="cls in teacher.classes_as_assistant" :key="'assistant-' + cls.id" class="group flex items-center justify-between rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 transition-all hover:bg-card">
+                                            <div class="space-y-1">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-[9px] font-black uppercase text-emerald-600 tracking-widest bg-white px-1.5 py-0.5 rounded border border-emerald-500/10 shadow-sm">Assistant</span>
+                                                    <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">{{ cls.grade_level?.name }}</p>
+                                                </div>
+                                                <p class="text-sm font-bold text-foreground uppercase">{{ cls.name }}</p>
+                                            </div>
+                                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-border/30"><ShieldPlus class="h-5 w-5 text-emerald-600" /></div>
                                         </div>
                                     </div>
                                     <div v-else class="flex flex-col items-center justify-center py-12 text-center">
@@ -329,7 +404,14 @@ const stats = computed(() => [
                              <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                                 <div class="flex items-center justify-between border-b border-border/50 bg-muted/5 px-8 py-5">
                                     <h3 class="text-xs font-bold text-foreground uppercase">Subject Assignments</h3>
-                                    <Button variant="ghost" size="sm" class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary">Manage Subjects</Button>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="sm" 
+                                        class="h-8 rounded-lg text-[10px] font-bold uppercase text-primary hover:bg-primary/10 transition-all"
+                                        @click="showSubjectsModal = true"
+                                    >
+                                        Manage Subjects
+                                    </Button>
                                 </div>
                                 <div class="p-8">
                                     <div v-if="teacher.subject_assignments.length > 0" class="overflow-x-auto">
@@ -401,5 +483,159 @@ const stats = computed(() => [
                 </main>
             </div>
         </div>
+        <!-- Assign Class Modal -->
+        <Dialog v-model:open="showAssignClassModal">
+            <DialogContent class="sm:max-w-[450px]">
+                <DialogHeader>
+                    <DialogTitle class="text-xl font-bold">Assign Class Role</DialogTitle>
+                    <DialogDescription class="text-sm font-medium text-muted-foreground">
+                        Assign <span class="font-bold text-foreground">{{ teacher.full_name }}</span> to lead or assist a class.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div class="space-y-6 py-6">
+                    <!-- Class Selection -->
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold tracking-wider text-muted-foreground uppercase opacity-40">Target Class</label>
+                        <SearchableSelect 
+                            v-model="assignClassForm.class_id"
+                            :options="availableClasses"
+                            placeholder="Select a class..."
+                            searchPlaceholder="Search classes..."
+                            class="h-12 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary text-foreground"
+                        />
+                        <InputError :message="assignClassForm.errors.class_id" />
+                    </div>
+
+                    <!-- Role Selection -->
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold tracking-wider text-muted-foreground uppercase opacity-40">Leadership Role</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button
+                                type="button"
+                                @click="assignClassForm.assignment_role = 'primary'"
+                                class="flex flex-col items-center gap-2 rounded-xl border p-4 transition-all"
+                                :class="assignClassForm.assignment_role === 'primary' 
+                                    ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                                    : 'border-border bg-card hover:border-primary/20'"
+                            >
+                                <span class="text-xs font-bold uppercase" :class="assignClassForm.assignment_role === 'primary' ? 'text-primary' : 'text-muted-foreground'">Primary</span>
+                                <span class="text-[9px] font-medium text-muted-foreground opacity-60">Class Teacher</span>
+                            </button>
+                            <button
+                                type="button"
+                                @click="assignClassForm.assignment_role = 'assistant'"
+                                class="flex flex-col items-center gap-2 rounded-xl border p-4 transition-all"
+                                :class="assignClassForm.assignment_role === 'assistant' 
+                                    ? 'border-primary bg-primary/5 ring-1 ring-primary' 
+                                    : 'border-border bg-card hover:border-primary/20'"
+                            >
+                                <span class="text-xs font-bold uppercase" :class="assignClassForm.assignment_role === 'assistant' ? 'text-primary' : 'text-muted-foreground'">Assistant</span>
+                                <span class="text-[9px] font-medium text-muted-foreground opacity-60">Co-Teacher</span>
+                            </button>
+                        </div>
+                        <InputError :message="assignClassForm.errors.assignment_role" />
+                    </div>
+                </div>
+
+                <DialogFooter class="gap-3 pt-2 sm:justify-start">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        class="h-10 rounded-lg px-6 text-xs font-bold text-muted-foreground uppercase"
+                        @click="showAssignClassModal = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        type="button" 
+                        class="h-10 rounded-lg bg-slate-900 px-8 text-xs font-bold text-white uppercase shadow-lg"
+                        :disabled="assignClassForm.processing"
+                        @click="submitClassAssignment"
+                    >
+                        <Loader2 v-if="assignClassForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Confirm Assignment
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        <!-- Manage Subjects Modal -->
+        <Dialog v-model:open="showSubjectsModal">
+            <DialogContent class="sm:max-w-[700px] max-h-[90vh] flex flex-col">
+                <DialogHeader class="px-1 text-left">
+                    <DialogTitle class="text-xl font-bold">Manage Subject Assignments</DialogTitle>
+                    <DialogDescription class="text-sm font-medium text-muted-foreground">
+                        Assign subjects and classes to <span class="font-bold text-foreground">{{ teacher.full_name }}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div class="flex-1 overflow-y-auto px-1 py-8 space-y-6">
+                    <div v-for="(row, index) in subjectForm.assignments" :key="index" 
+                         class="group relative grid grid-cols-1 md:grid-cols-[1fr_1fr_40px] items-end gap-4 p-4 rounded-xl border border-border bg-muted/5 hover:bg-muted/10 transition-all">
+                        
+                        <div class="space-y-2">
+                             <label class="text-[10px] font-bold text-muted-foreground uppercase opacity-40 ml-1">Subject</label>
+                             <SearchableSelect 
+                                v-model="row.subject_id"
+                                :options="availableSubjects"
+                                placeholder="Select Subject"
+                                searchPlaceholder="Search Subjects..."
+                                class="h-10 rounded-lg border-border bg-background font-bold text-xs"
+                             />
+                        </div>
+
+                        <div class="space-y-2">
+                             <label class="text-[10px] font-bold text-muted-foreground uppercase opacity-40 ml-1">Class</label>
+                             <SearchableSelect 
+                                v-model="row.class_id"
+                                :options="availableClasses"
+                                placeholder="Select Class"
+                                searchPlaceholder="Search Classes..."
+                                class="h-10 rounded-lg border-border bg-background font-bold text-xs"
+                             />
+                        </div>
+
+                        <Button 
+                            v-if="subjectForm.assignments.length > 1"
+                            variant="ghost" 
+                            size="icon" 
+                            class="h-10 w-10 text-rose-500 hover:bg-rose-50"
+                            @click="removeSubjectRow(index)"
+                        >
+                            <Trash2 class="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <Button 
+                        variant="outline" 
+                        class="w-full h-12 border-dashed border-2 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all"
+                        @click="addSubjectRow"
+                    >
+                        <Plus class="mr-2 h-4 w-4" />
+                        Add Subject Assignment
+                    </Button>
+                </div>
+
+                <DialogFooter class="px-1 gap-3 sm:justify-start pt-4 border-t border-border/50">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        class="h-10 rounded-lg px-6 text-xs font-bold text-muted-foreground uppercase"
+                        @click="showSubjectsModal = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        type="button" 
+                        class="h-10 rounded-lg bg-slate-900 px-8 text-xs font-bold text-white uppercase shadow-lg ml-auto"
+                        :disabled="subjectForm.processing"
+                        @click="submitSubjects"
+                    >
+                        <Loader2 v-if="subjectForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Save Assignments
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

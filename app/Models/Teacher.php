@@ -133,6 +133,11 @@ class Teacher extends Model
         return $this->hasMany(SchoolClass::class, 'class_teacher_id', 'user_id');
     }
 
+    public function classesAsAssistant(): HasMany
+    {
+        return $this->hasMany(SchoolClass::class, 'assistant_teacher_id', 'user_id');
+    }
+
     public function assignedClasses(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(SchoolClass::class, 'teacher_subjects', 'teacher_id', 'class_id')

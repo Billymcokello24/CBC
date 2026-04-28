@@ -264,6 +264,11 @@ class AcademicManagementController extends Controller
             ],
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
             'academicYears' => DB::table('academic_years')->orderByDesc('start_date')->get(['id', 'name']),
+            'availableTeachers' => Teacher::where('status', 'active')
+                ->whereNotNull('user_id')
+                ->get()
+                ->map(fn($t) => ['id' => $t->user_id, 'name' => $t->full_name])
+                ->values(),
             'statusOptions' => [
                 ['value' => 'all', 'label' => 'All Statuses'],
                 ['value' => 'active', 'label' => 'Active'],
@@ -325,6 +330,8 @@ class AcademicManagementController extends Controller
             'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
             'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
             'capacity' => ['required', 'integer', 'min:1'],
+            'class_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assistant_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -337,6 +344,8 @@ class AcademicManagementController extends Controller
             'academic_year_id' => $validated['academic_year_id'],
             'name' => $validated['name'],
             'code' => $validated['code'],
+            'class_teacher_id' => $validated['class_teacher_id'] ?? null,
+            'assistant_teacher_id' => $validated['assistant_teacher_id'] ?? null,
             'capacity' => $validated['capacity'],
             'is_active' => $validated['is_active'],
         ]);
@@ -367,6 +376,8 @@ class AcademicManagementController extends Controller
             'stream_id' => ['nullable', 'integer', 'exists:streams,id'],
             'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],
             'capacity' => ['required', 'integer', 'min:1'],
+            'class_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assistant_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
             'is_active' => ['required', 'boolean'],
         ]);
 
@@ -399,6 +410,20 @@ class AcademicManagementController extends Controller
     {
         SchoolClass::whereKey($id)->update(['is_active' => false]);
         return back()->with('success', 'Class deactivated successfully.');
+    }
+
+    public function assignTeacher(Request $request, int $id): RedirectResponse
+    {
+        $class = SchoolClass::findOrFail($id);
+
+        $validated = $request->validate([
+            'class_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assistant_teacher_id' => ['nullable', 'integer', 'exists:users,id'],
+        ]);
+
+        $class->update($validated);
+
+        return back()->with('success', 'Teacher assigned successfully.');
     }
 
     public function bulkAction(Request $request): RedirectResponse
@@ -627,6 +652,11 @@ class AcademicManagementController extends Controller
                 ['value' => 'male', 'label' => 'Male'],
                 ['value' => 'female', 'label' => 'Female'],
             ],
+            'availableTeachers' => Teacher::where('status', 'active')
+                ->whereNotNull('user_id')
+                ->get()
+                ->map(fn($t) => ['id' => $t->user_id, 'name' => $t->full_name])
+                ->values(),
         ]);
     }
 
@@ -696,9 +726,10 @@ class AcademicManagementController extends Controller
                 $classIds = DB::table('classes')->where('grade_level_id', $grade->id)->pluck('id');
                 $learners = $classIds->isEmpty() ? 0 : Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
 
-                $grade->classes_count = DB::table('classes')->where('grade_level_id', $grade->id)->count();
-                $grade->learners_count = $learners;
-                return $grade;
+                return array_merge($grade->toArray(), [
+                    'classes_count' => DB::table('classes')->where('grade_level_id', $grade->id)->count(),
+                    'learners_count' => $learners,
+                ]);
             });
 
         $school = School::find(auth()->user()->school_id);
@@ -1127,11 +1158,17 @@ class AcademicManagementController extends Controller
             ->get()
             ->map(function (Stream $stream) {
                 $classIds = SchoolClass::where('stream_id', $stream->id)->pluck('id');
-                $students = $classIds->isEmpty() ? 0 : Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+                $learners = $classIds->isEmpty() ? 0 : Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
 
-                $stream->classes_count = SchoolClass::where('stream_id', $stream->id)->count();
-                $stream->learners_count = $students;
-                return $stream;
+                return [
+                    'id' => $stream->id,
+                    'name' => $stream->name,
+                    'code' => $stream->code,
+                    'capacity' => $stream->capacity,
+                    'is_active' => $stream->is_active,
+                    'classes_count' => SchoolClass::where('stream_id', $stream->id)->count(),
+                    'learners_count' => $learners,
+                ];
             });
 
         $school = School::find(auth()->user()->school_id);

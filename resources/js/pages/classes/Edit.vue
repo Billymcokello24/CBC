@@ -2,6 +2,7 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, Loader2, Save } from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,10 +28,13 @@ const props = defineProps<{
         academic_year_id: number;
         capacity: number;
         is_active: boolean;
+        class_teacher_id: number | null;
+        assistant_teacher_id: number | null;
     };
     grades: Array<{ id: number; name: string; code: string }>;
     streams: Array<{ id: number; name: string; code: string }>;
     academicYears: Array<{ id: number; name: string }>;
+    availableTeachers: Array<{ id: number; name: string }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -49,6 +53,8 @@ const form = useForm({
     academic_year_id: String(props.classroom.academic_year_id),
     capacity: props.classroom.capacity,
     is_active: props.classroom.is_active,
+    class_teacher_id: props.classroom.class_teacher_id ? String(props.classroom.class_teacher_id) : '',
+    assistant_teacher_id: props.classroom.assistant_teacher_id ? String(props.classroom.assistant_teacher_id) : '',
 });
 
 const submit = () => {
@@ -58,6 +64,8 @@ const submit = () => {
         stream_id: data.stream_id ? Number(data.stream_id) : null,
         academic_year_id: Number(data.academic_year_id),
         capacity: Number(data.capacity),
+        class_teacher_id: data.class_teacher_id ? Number(data.class_teacher_id) : null,
+        assistant_teacher_id: data.assistant_teacher_id ? Number(data.assistant_teacher_id) : null,
         is_active: Boolean(data.is_active),
     })).put(`/classes/${props.classroom.id}`);
 };
@@ -267,6 +275,55 @@ const submit = () => {
                                     <InputError
                                         :message="form.errors.academic_year_id"
                                     />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="overflow-hidden rounded-xl border bg-card shadow-sm"
+                    >
+                        <div
+                            class="border-b bg-muted/50 px-8 py-6"
+                        >
+                            <h2 class="text-lg font-bold text-foreground"
+                                >Personnel Leadership</h2
+                            >
+                            <p class="text-xs font-medium text-muted-foreground"
+                                >Assign members of staff to lead and assist this class.</p
+                            >
+                        </div>
+                        <div class="p-8">
+                            <div class="grid gap-8 md:grid-cols-2">
+                                <div class="space-y-3">
+                                    <Label
+                                        for="class_teacher_id"
+                                        class="ml-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase opacity-40"
+                                        >Class Teacher</label
+                                    >
+                                    <SearchableSelect 
+                                         v-model="form.class_teacher_id"
+                                         :options="availableTeachers"
+                                         placeholder="No teacher assigned"
+                                         searchPlaceholder="Filter teachers..."
+                                         class="h-11 rounded-lg border-border bg-background px-4 text-xs font-bold"
+                                     />
+                                    <InputError :message="form.errors.class_teacher_id" />
+                                </div>
+                                <div class="space-y-3">
+                                    <Label
+                                        for="assistant_teacher_id"
+                                        class="ml-1 text-[10px] font-bold tracking-wider text-muted-foreground uppercase opacity-40"
+                                        >Assistant Teacher</label
+                                    >
+                                    <SearchableSelect 
+                                         v-model="form.assistant_teacher_id"
+                                         :options="availableTeachers"
+                                         placeholder="No assistant assigned"
+                                         searchPlaceholder="Filter assistants..."
+                                         class="h-11 rounded-lg border-border bg-background px-4 text-xs font-bold"
+                                     />
+                                    <InputError :message="form.errors.assistant_teacher_id" />
                                 </div>
                             </div>
                         </div>

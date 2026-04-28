@@ -74,6 +74,7 @@ const selectOption = (option: Option) => {
         <PopoverContent
             class="w-[--reka-popover-trigger-width] p-0"
             align="start"
+            side="bottom"
         >
             <div class="flex flex-col">
                 <div

@@ -156,48 +156,94 @@ class CurriculumManagementController extends Controller
     {
         $search = trim((string) $request->string('search'));
         $status = (string) $request->string('status');
-        $view = (string) $request->string('view', 'grid');
+        $areaId = (string) $request->string('learning_area_id');
+        $perPage = $request->integer('per_page', 20);
+
+        $subjectGrades = DB::table('subject_grade_levels')
+            ->where('is_active', true)
+            ->get(['subject_id', 'grade_level_id'])
+            ->groupBy('subject_id')
+            ->map(fn($rows) => collect($rows)->pluck('grade_level_id')->values())
+            ->all();
 
         $subjects = Subject::query()
             ->with(['learningArea:id,name', 'department:id,name,code'])
             ->withCount('strands')
-            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
+            ->when($search !== '', function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner->where('subjects.name', 'like', "%{$search}%")
+                        ->orWhere('subjects.code', 'like', "%{$search}%")
+                        ->orWhereHas('learningArea', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+                });
+            })
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->when($areaId !== '' && $areaId !== 'all', fn ($q) => $q->where('learning_area_id', $areaId))
             ->orderBy('display_order')
+            ->paginate($perPage)
+            ->through(function ($subject) use ($subjectGrades) {
+                return [
+                    'id' => $subject->id,
+                    'name' => $subject->name,
+                    'code' => $subject->code,
+                    'learning_area_id' => $subject->learning_area_id,
+                    'learning_area' => $subject->learningArea?->name,
+                    'grade_level_ids' => $subjectGrades[$subject->id] ?? [],
+                    'is_active' => $subject->is_active,
+                    'description' => $subject->description,
+                    'strands_count' => $subject->strands_count,
+                    'subject_type' => $subject->subject_type,
+                    'department' => $subject->department ? [
+                        'id' => $subject->department->id,
+                        'name' => $subject->department->name,
+                    ] : null,
+                ];
+            });
+
+        $grades = \App\Models\Academic\GradeLevel::orderBy('level_order')->get(['id', 'name']);
+        $academicYear = DB::table('academic_years')->where('is_current', true)->first() 
+            ?? DB::table('academic_years')->orderByDesc('start_date')->first();
+
+        $teachers = \App\Models\Teacher::where('status', 'active')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'staff_number'])
+            ->map(fn($t) => [
+                'id' => $t->id,
+                'name' => $t->full_name,
+                'staff_number' => $t->staff_number,
+            ]);
+
+        $classes = \App\Models\Academic\SchoolClass::query()
+            ->with(['gradeLevel:id,name', 'stream:id,name', 'academicYear:id,name'])
+            ->orderByDesc('academic_year_id')
+            ->orderBy('name')
             ->get()
-            ->map(fn (Subject $subject) => [
-                'id' => $subject->id,
-                'learning_area_id' => $subject->learning_area_id,
-                'learning_area' => $subject->learningArea?->name,
-                'department_id' => $subject->department_id,
-                'department' => $subject->department ? [
-                    'id' => $subject->department->id,
-                    'name' => $subject->department->name,
-                    'code' => $subject->department->code,
-                ] : null,
-                'name' => $subject->name,
-                'code' => $subject->code,
-                'description' => $subject->description,
-                'subject_type' => $subject->subject_type,
-                'is_examinable' => $subject->is_examinable,
-                'display_order' => $subject->display_order,
-                'is_active' => $subject->is_active,
-                'strands_count' => $subject->strands_count,
-            ])
-            ->values();
+            ->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'grade_id' => $c->grade_level_id,
+                'grade_name' => $c->gradeLevel?->name,
+                'stream' => $c->stream?->name,
+                'academic_year' => $c->academicYear?->name,
+            ]);
 
         return Inertia::render('curriculum/Subjects', [
             'subjects' => $subjects,
+            'grades' => $grades,
             'learningAreas' => LearningArea::query()->orderBy('display_order')->get(['id', 'name']),
+            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'teachers' => $teachers,
+            'classes' => $classes,
+            'academicYear' => $academicYear,
             'stats' => [
-                'total' => $subjects->count(),
-                'active' => $subjects->where('is_active', true)->count(),
-                'strands' => $subjects->sum('strands_count'),
+                'total' => Subject::count(),
+                'active' => Subject::active()->count(),
+                'areas' => LearningArea::count(),
             ],
             'filters' => [
                 'search' => $search,
                 'status' => $status === '' ? 'all' : $status,
-                'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
+                'learning_area_id' => $areaId === '' ? 'all' : $areaId,
+                'per_page' => $perPage,
             ],
             'statusOptions' => [
                 ['value' => 'all', 'label' => 'All Statuses'],

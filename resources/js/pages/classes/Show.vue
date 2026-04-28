@@ -18,6 +18,7 @@ import {
     UserCheck,
     ArrowUpCircle,
     Users,
+    Loader2,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,15 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -54,7 +64,10 @@ const props = defineProps<{
         is_active: boolean;
         teacher: string | null;
         teacher_email: string | null;
+        class_teacher_id: number | null;
+        assistant_teacher_id: number | null;
     };
+    availableTeachers: Array<{ id: number; name: string }>;
     subjectAllocations: Array<{
         id: number;
         teacher_id: number;
@@ -115,6 +128,20 @@ const subjectConfirmMode = ref<'activate' | 'deactivate' | 'delete'>(
 const selectedSubjectAllocation = ref<
     (typeof props.subjectAllocations)[number] | null
 >(null);
+
+const showAssignTeacherModal = ref(false);
+const assignTeacherForm = useForm({
+    class_teacher_id: props.classroom.class_teacher_id ? String(props.classroom.class_teacher_id) : '',
+});
+
+const submitTeacherAssignment = () => {
+    assignTeacherForm.patch(`/classes/${props.classroom.id}/assign-teacher`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            showAssignTeacherModal.value = false;
+        },
+    });
+};
 
 const applyFilters = () => {
     router.get(
@@ -405,6 +432,14 @@ const confirmSubjectAction = () => {
                             ><Edit class="mr-2 h-4 w-4" />Edit Class</Link
                         >
                     </Button>
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-lg border-primary text-primary transition-all hover:bg-primary hover:text-white"
+                        @click="showAssignTeacherModal = true"
+                    >
+                        <ShieldCheck class="mr-2 h-4 w-4" />
+                        Assign Teacher
+                    </Button>
                 </div>
             </div>
 
@@ -453,11 +488,19 @@ const confirmSubjectAction = () => {
                 <div
                     class="rounded-xl border bg-white p-5 shadow-sm transition-all hover:shadow-md"
                 >
-                    <p
-                        class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
-                    >
-                        Class Teacher
-                    </p>
+                    <div class="flex items-center justify-between">
+                        <p
+                            class="mb-3 text-[10px] font-bold text-muted-foreground uppercase opacity-40"
+                        >
+                            Class Teacher
+                        </p>
+                        <button 
+                            @click="showAssignTeacherModal = true"
+                            class="text-[10px] font-bold text-primary uppercase transition-opacity hover:opacity-70"
+                        >
+                            Change
+                        </button>
+                    </div>
                     <div class="flex flex-col gap-1 truncate">
                         <p
                             class="truncate text-xs font-bold text-foreground"
@@ -1363,5 +1406,50 @@ const confirmSubjectAction = () => {
             </transition>
         </div>
     </div>
+        <!-- Assign Teacher Modal -->
+        <Dialog v-model:open="showAssignTeacherModal">
+            <DialogContent class="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle class="text-xl font-bold">Assign Class Teacher</DialogTitle>
+                    <DialogDescription class="text-sm font-medium text-muted-foreground">
+                        Select a teacher to lead <span class="font-bold text-foreground">{{ classroom.name }}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <div class="space-y-6 py-6">
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-bold tracking-wider text-muted-foreground uppercase opacity-40">Choose Teacher</label>
+                        <SearchableSelect 
+                            v-model="assignTeacherForm.class_teacher_id"
+                            :options="availableTeachers"
+                            placeholder="Select a teacher..."
+                            searchPlaceholder="Search by staff name..."
+                            class="h-12 rounded-xl border-border bg-muted/20 font-bold focus:ring-primary text-foreground"
+                        />
+                        <p v-if="assignTeacherForm.errors.class_teacher_id" class="text-[10px] font-bold text-rose-500 uppercase">{{ assignTeacherForm.errors.class_teacher_id }}</p>
+                    </div>
+                </div>
+
+                <DialogFooter class="gap-3 pt-2 sm:justify-start">
+                    <Button 
+                        type="button" 
+                        variant="ghost" 
+                        class="h-10 rounded-lg px-6 text-xs font-bold text-muted-foreground uppercase"
+                        @click="showAssignTeacherModal = false"
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        type="button" 
+                        class="h-10 rounded-lg bg-slate-900 px-8 text-xs font-bold text-white uppercase shadow-lg"
+                        :disabled="assignTeacherForm.processing"
+                        @click="submitTeacherAssignment"
+                    >
+                        <Loader2 v-if="assignTeacherForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                        Save Assignment
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

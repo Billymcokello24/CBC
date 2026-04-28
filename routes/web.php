@@ -285,6 +285,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('classes/bulk-action', [AcademicManagementController::class, 'bulkAction'])->name('classes.bulk-action');
         Route::patch('classes/{id}/activate', [AcademicManagementController::class, 'activateClass'])->name('classes.activate');
         Route::patch('classes/{id}/deactivate', [AcademicManagementController::class, 'deactivateClass'])->name('classes.deactivate');
+        Route::patch('classes/{id}/assign-teacher', [AcademicManagementController::class, 'assignTeacher'])->name('classes.assign-teacher');
 
         Route::get('grades/{id}/edit', [AcademicManagementController::class, 'editGrade'])->name('grades.edit');
         Route::put('grades/{id}', [AcademicManagementController::class, 'updateGrade'])->name('grades.update');

@@ -12,9 +12,11 @@ use App\Models\Academic\GradeLevel;
 use App\Models\Academic\SchoolClass;
 use App\Models\Teacher;
 use App\Models\TeacherSubject;
+use App\Models\Curriculum\StudentAchievement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,6 +24,9 @@ class SyllabusController extends Controller
 {
     public function index(Request $request): Response
     {
+        $search = $request->string('search')->trim();
+        $perPage = $request->integer('per_page', 20);
+
         $subjectGrades = DB::table('subject_grade_levels')
             ->where('is_active', true)
             ->get(['subject_id', 'grade_level_id'])
@@ -58,15 +63,20 @@ class SyllabusController extends Controller
         }
 
         $subjects = $subjectsQuery->with(['learningArea:id,name'])
+            ->when($search->isNotEmpty(), function($q) use ($search) {
+                $q->where(fn($sq) => $sq->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%"));
+            })
             ->orderBy('name')
-            ->get(['id', 'name', 'learning_area_id'])
-            ->map(function ($subject) use ($subjectGrades) {
+            ->paginate($perPage)
+            ->through(function ($subject) use ($subjectGrades) {
                 return [
                     'id' => $subject->id,
                     'name' => $subject->name,
+                    'code' => $subject->code,
                     'learning_area_id' => $subject->learning_area_id,
                     'learning_area' => $subject->learningArea?->name,
                     'grade_level_ids' => $subjectGrades[$subject->id] ?? [],
+                    'is_active' => $subject->is_active,
                 ];
             });
 
@@ -102,8 +112,8 @@ class SyllabusController extends Controller
             'teachers' => $teachers,
             'classes' => $classes,
             'academicYear' => $academicYear,
+            'filters' => $request->only(['search', 'per_page']),
         ]);
-
     }
 
     public function show(Request $request, Subject $subject, GradeLevel $grade): Response

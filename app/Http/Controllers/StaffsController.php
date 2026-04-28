@@ -474,6 +474,8 @@ class StaffsController extends Controller
             'staffDesignation', 
             'classesAsTeacher.gradeLevel', 
             'classesAsTeacher.stream',
+            'classesAsAssistant.gradeLevel', 
+            'classesAsAssistant.stream',
             'subjectAssignments.subject',
             'subjectAssignments.schoolClass'
         ]);
@@ -489,11 +491,9 @@ class StaffsController extends Controller
                 ->get()
                 ->map(fn ($cls) => [
                     'id' => $cls->id,
-                    'name' => $cls->name,
-                    'grade' => $cls->gradeLevel?->name,
-                    'is_assigned' => !is_null($cls->class_teacher_id),
-                    'current_teacher' => $cls->classTeacher?->name,
+                    'name' => "{$cls->gradeLevel?->name} {$cls->stream?->name}",
                 ]),
+            'availableSubjects' => \App\Models\Curriculum\Subject::active()->orderBy('name')->get(['id', 'name', 'code']),
             'counties' => config('settings.counties', []),
         ]);
     }
