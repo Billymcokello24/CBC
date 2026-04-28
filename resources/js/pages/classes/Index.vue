@@ -24,6 +24,7 @@ import {
     Minus,
     Filter,
     Layers,
+    FileText,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -224,6 +225,16 @@ const confirmDeleteClass = (cls: any) => {
         router.delete(`/classes/${cls.id}`, { preserveScroll: true });
     }
 };
+
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        grade_id: selectedGradeId.value,
+        status: selectedStatus.value,
+        academic_year_id: selectedAcademicYearId.value,
+    });
+    window.location.href = `/classes/export-pdf?${params.toString()}`;
+};
 </script>
 
 <template>
@@ -246,6 +257,14 @@ const confirmDeleteClass = (cls: any) => {
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
                     <Button
                         variant="outline"
                         class="h-10 rounded-lg border-border px-6 text-xs font-bold uppercase transition-all hover:bg-muted"

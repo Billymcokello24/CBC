@@ -24,6 +24,7 @@ import {
     LayoutGrid,
     MoreHorizontal,
     BookOpen,
+    FileText,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
@@ -194,6 +195,13 @@ watch(flashSuccess, (value) => {
         toastTimer = setTimeout(() => (showToast.value = false), 3000);
     }
 }, { immediate: true });
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        status: selectedStatus.value,
+    });
+    window.location.href = `/grades/export-pdf?${params.toString()}`;
+};
 </script>
 
 <template>
@@ -229,6 +237,14 @@ watch(flashSuccess, (value) => {
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
                     <Button
                         variant="outline"
                         class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"

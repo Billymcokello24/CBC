@@ -31,6 +31,7 @@ import {
     Grid2x2,
     ChevronLeft,
     ChevronRight,
+    FileText,
 } from 'lucide-vue-next';
 import {
     DropdownMenu,
@@ -168,6 +169,14 @@ const exportUrl = computed(() => {
     return `/departments/export?${params.toString()}`;
 });
 
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: search.value,
+        status: statusFilter.value,
+    });
+    window.location.href = `/departments/export-pdf?${params.toString()}`;
+};
+
 const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Departments', href: '/departments' },
@@ -204,10 +213,18 @@ const breadcrumbs = [
                     <Button
                         variant="outline"
                         class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
                         @click="router.get(exportUrl)"
                     >
                         <Download class="mr-2 h-4 w-4 opacity-70" />
-                        Export
+                        Export CSV
                     </Button>
                     <Link
                         href="/departments/create"

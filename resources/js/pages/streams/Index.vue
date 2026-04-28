@@ -28,6 +28,7 @@ import {
     Building2,
     TrendingUp,
     LayoutGrid,
+    FileText,
 } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -104,6 +105,14 @@ const getStatusColor = (active: boolean) => {
         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' 
         : 'bg-slate-400 text-white shadow-lg shadow-slate-400/20';
 };
+
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        status: selectedStatus.value,
+    });
+    window.location.href = `/streams/export-pdf?${params.toString()}`;
+};
 </script>
 
 <template>
@@ -131,6 +140,14 @@ const getStatusColor = (active: boolean) => {
                             <Rows3 class="h-4 w-4" />
                         </Button>
                     </div>
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
                     <Button as-child class="h-10 rounded-xl bg-primary px-6 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
                         <Link href="/streams/create">
                             <Plus class="mr-2.5 h-4 w-4" />

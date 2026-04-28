@@ -159,6 +159,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ──────────────────────────────────────────────
     Route::middleware(['check_permission:staffs.view'])->group(function () {
         Route::get('staffs/directory', [StaffsController::class, 'directory'])->name('staffs.directory');
+        Route::get('staffs/directory/export-pdf', [StaffsController::class, 'exportDirectoryPdf'])->name('staffs.directory.export-pdf');
         Route::get('staffs/directory/{role}', [StaffsController::class, 'roleDirectory'])->name('staffs.role-directory');
         Route::get('staffs/template/download', [StaffsController::class, 'downloadTemplate'])->name('staffs.template.download');
     });
@@ -202,6 +203,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // CLASSES, GRADES, STREAMS, DEPARTMENTS
     // ──────────────────────────────────────────────
     Route::middleware(['check_permission:classes.view'])->group(function () {
+        // PDF Exports
+        Route::get('departments/export-pdf', [AcademicManagementController::class, 'exportDepartmentsPdf'])->name('departments.export-pdf');
+        Route::get('classes/export-pdf', [AcademicManagementController::class, 'exportClassesPdf'])->name('classes.export-pdf');
+        Route::get('grades/export-pdf', [AcademicManagementController::class, 'exportGradesPdf'])->name('grades.export-pdf');
+        Route::get('streams/export-pdf', [AcademicManagementController::class, 'exportStreamsPdf'])->name('streams.export-pdf');
+
         // Classes
         Route::get('classes', [AcademicManagementController::class, 'classes'])->name('classes.index');
         Route::get('classes/allocations', [AcademicManagementController::class, 'allocations'])->name('classes.allocations');

@@ -11,6 +11,8 @@ use App\Models\TeacherSubject;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\School;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -178,6 +180,32 @@ class AcademicManagementController extends Controller
         return back()->with('success', 'Subject allocation deleted successfully.');
     }
 
+    public function exportDepartmentsPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+
+        $items = \App\Models\Academic\Department::query()
+            ->with('headOfDepartment')
+            ->withCount(['teachers', 'subjects'])
+            ->when($search !== '', fn($q) => $q->where('name', 'like', "%{$search}%"))
+            ->orderBy('name')
+            ->get();
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.departments', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('departments_report_' . date('Y_m_d_His') . '.pdf');
+    }
+
     public function classes(Request $request): Response
     {
         $search = trim((string) $request->input('search'));
@@ -242,6 +270,41 @@ class AcademicManagementController extends Controller
                 ['value' => 'inactive', 'label' => 'Inactive'],
             ],
         ]);
+    }
+
+    public function exportClassesPdf(Request $request)
+    {
+        $search = trim((string) $request->input('search'));
+        $gradeId = $request->input('grade_id');
+        $status = $request->input('status');
+        $academicYearId = $request->input('academic_year_id');
+
+        $items = SchoolClass::query()
+            ->with(['gradeLevel', 'stream', 'academicYear', 'classTeacher'])
+            ->withCount(['students as learners_count' => fn ($q) => $q->where('status', 'active')])
+            ->when($request->filled('search'), function ($q) use ($search) {
+                $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%"));
+            })
+            ->when($request->filled('grade_id') && $gradeId > 0, fn ($q) => $q->where('grade_level_id', $gradeId))
+            ->when($request->filled('status') && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->when($request->filled('academic_year_id') && $academicYearId > 0, fn ($q) => $q->where('academic_year_id', $academicYearId))
+            ->orderBy('name')
+            ->get();
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.classes', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('classes_report_' . date('Y_m_d_His') . '.pdf');
     }
 
     public function createClass(): Response
@@ -617,6 +680,40 @@ class AcademicManagementController extends Controller
                 ['value' => 'inactive', 'label' => 'Inactive'],
             ],
         ]);
+    }
+
+    public function exportGradesPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+
+        $items = GradeLevel::query()
+            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->orderBy('level_order')
+            ->get()
+            ->map(function (GradeLevel $grade) {
+                $classIds = DB::table('classes')->where('grade_level_id', $grade->id)->pluck('id');
+                $learners = $classIds->isEmpty() ? 0 : Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+
+                $grade->classes_count = DB::table('classes')->where('grade_level_id', $grade->id)->count();
+                $grade->learners_count = $learners;
+                return $grade;
+            });
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.grades', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('grades_report_' . date('Y_m_d_His') . '.pdf');
     }
 
     public function createGrade(): Response
@@ -1016,6 +1113,40 @@ class AcademicManagementController extends Controller
                 ['value' => 'inactive', 'label' => 'Inactive'],
             ],
         ]);
+    }
+
+    public function exportStreamsPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+
+        $items = Stream::query()
+            ->when($search !== '', fn ($q) => $q->where(fn ($inner) => $inner->where('name', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%")))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+            ->orderBy('name')
+            ->get()
+            ->map(function (Stream $stream) {
+                $classIds = SchoolClass::where('stream_id', $stream->id)->pluck('id');
+                $students = $classIds->isEmpty() ? 0 : Student::whereIn('current_class_id', $classIds)->where('status', 'active')->count();
+
+                $stream->classes_count = SchoolClass::where('stream_id', $stream->id)->count();
+                $stream->learners_count = $students;
+                return $stream;
+            });
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.streams', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('streams_report_' . date('Y_m_d_His') . '.pdf');
     }
 
     public function createStream(): Response

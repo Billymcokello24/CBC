@@ -18,6 +18,7 @@ import {
     BadgeCheck,
     Plus,
     Heart,
+    FileText as FileTextIcon,
 } from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -99,6 +100,10 @@ const navigateToRole = (role: any) => {
         router.get(`/staffs/directory/${role.name}`);
     }
 };
+
+const downloadPdf = () => {
+    window.location.href = '/staffs/directory/export-pdf';
+};
 </script>
 
 <template>
@@ -121,6 +126,14 @@ const navigateToRole = (role: any) => {
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-lg border-border px-4 text-xs font-bold uppercase transition-all hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileTextIcon class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
                     <Link
                         href="/staffs/create"
                         class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-xs font-bold text-white shadow-sm transition-all hover:bg-primary/90"

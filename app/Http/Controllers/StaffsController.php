@@ -232,6 +232,62 @@ class StaffsController extends Controller
         return $pdf->download('staff_directory_' . date('Y_m_d_His') . '.pdf');
     }
 
+    public function exportDirectoryPdf()
+    {
+        $user = auth()->user();
+        $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);
+        $hodDeptId = null;
+
+        if ($isRestrictedHOD) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+        }
+
+        $query = DB::table('model_has_roles')
+            ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->where('roles.guard_name', 'web');
+
+        if ($isRestrictedHOD) {
+            $query->join('teachers', 'teachers.user_id', '=', 'model_has_roles.model_id')
+                  ->where('teachers.department_id', $hodDeptId);
+        }
+
+        $roleCounts = $query->select('roles.name', DB::raw('count(*) as count'))
+            ->groupBy('roles.name')
+            ->pluck('count', 'name');
+
+        $roles = $this->roleService->getTemplates()->map(function ($role) use ($roleCounts) {
+            return [
+                'name' => $role->name,
+                'display_name' => str_replace('_', ' ', ucwords($role->name, '_')),
+                'count' => $roleCounts[$role->name] ?? 0,
+            ];
+        });
+
+        $roles_array = $roles->toArray();
+        if (!$isRestrictedHOD) {
+            $roles_array[] = [
+                'name' => 'parent',
+                'display_name' => 'Parents',
+                'count' => \App\Models\Guardian::count(),
+            ];
+        }
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.staff_directory_summary', [
+            'roles' => $roles_array,
+            'school' => $school,
+            'themeColor' => $themeColor,
+            'totalStaff' => array_sum(array_column($roles_array, 'count'))
+        ]);
+
+        return $pdf->download('staff_structure_report_' . date('Y_m_d_His') . '.pdf');
+    }
+
     public function index(Request $request): Response
     {
         $search = is_array($request->input('search')) ? '' : trim((string) ($request->input('search') ?? ''));

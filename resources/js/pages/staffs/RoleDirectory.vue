@@ -18,6 +18,7 @@ import {
     Eye,
     Plus,
     MoreHorizontal,
+    FileText,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -89,6 +90,15 @@ const getStatusColor = (status: string) => {
             return 'bg-slate-400 text-white';
     }
 };
+
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        department_id: departmentFilter.value,
+        role: props.role.name,
+    });
+    window.location.href = `/staffs/export-pdf?${params.toString()}`;
+};
 </script>
 
 <template>
@@ -122,6 +132,14 @@ const getStatusColor = (status: string) => {
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        class="h-10 rounded-lg border-border px-4 text-xs font-bold uppercase transition-all hover:bg-muted"
+                        @click="downloadPdf"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
+                    </Button>
                     <Link
                         :href="`/staffs/create?role=${role.name}`"
                         class="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90"
