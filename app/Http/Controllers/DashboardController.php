@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\Schema;
 use App\Models\Curriculum\SchemeOfWork;
 use App\Models\Curriculum\LessonPlan;
 use App\Models\Curriculum\AssignmentSubmission;
+use App\Models\Curriculum\Subject;
+use App\Models\Academic\Department;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -73,17 +75,18 @@ class DashboardController extends Controller
             $currentYear = AcademicYear::where('is_current', true)->first();
             $currentTerm = AcademicTerm::where('is_current', true)->first();
 
+            $stats = $this->getStats();
+            
             return Inertia::render('Dashboard', [
                 'dashboardType' => 'admin',
-                'stats' => $this->getStats(),
-                'enrollmentTrends' => $this->getEnrollmentTrends(),
-                'classPerformance' => $this->getClassPerformance(),
-                'genderDistribution' => $this->getGenderDistribution(),
+                'stats' => $stats,
+                'classCapacity' => $this->getClassCapacity(),
                 'weeklyAttendance' => $this->getWeeklyAttendance(),
+                'enrollmentTrends' => $this->getEnrollmentTrends(),
                 'recentActivities' => $this->getRecentActivities(),
-                'recentEnrollments' => $this->getRecentEnrollments(),
-                'upcomingEvents' => $this->getUpcomingEvents(),
-                'notificationsCount' => $this->getNotificationsCount(),
+                'subjectAnalytics' => $this->getSubjectAnalytics(),
+                'streamAnalytics' => $this->getStreamAnalytics(),
+                'learnerQuickAccess' => $this->getLearnerQuickAccess(),
                 'currentYear' => $currentYear,
                 'currentTerm' => $currentTerm,
             ]);
@@ -92,17 +95,36 @@ class DashboardController extends Controller
             return Inertia::render('Dashboard', [
                 'dashboardType' => 'admin',
                 'stats' => $this->getDefaultStats(),
-                'enrollmentTrends' => $this->getDefaultEnrollmentTrends(),
-                'classPerformance' => $this->getDefaultClassPerformance(),
-                'genderDistribution' => $this->getDefaultGenderDistribution(),
+                'classCapacity' => ['labels' => [], 'actual' => [], 'expected' => []],
                 'weeklyAttendance' => $this->getDefaultWeeklyAttendance(),
                 'recentActivities' => $this->getDefaultRecentActivities(),
-                'recentEnrollments' => [],
-                'upcomingEvents' => $this->getDefaultUpcomingEvents(),
-                'notificationsCount' => 0,
+                'subjectAnalytics' => [],
+                'streamAnalytics' => [],
+                'learnerQuickAccess' => [],
                 'currentYear' => null,
                 'currentTerm' => null,
             ]);
+        }
+    }
+
+    private function getLearnerQuickAccess(): array
+    {
+        try {
+            return Student::where('status', 'active')
+                ->with('currentClass:id,name')
+                ->latest()
+                ->limit(6)
+                ->get()
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'name' => $s->full_name,
+                    'class' => $s->currentClass?->name ?? 'Unassigned',
+                    'photo' => $s->photo_url,
+                    'admission_number' => $s->admission_number
+                ])
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
         }
     }
 
@@ -485,8 +507,8 @@ class DashboardController extends Controller
                 Log::warning('Pending fees query failed: ' . $e->getMessage());
             }
 
-            $totalGuardians = Guardian::count();
-            $totalSubjects = SchoolSubject::count();
+            $totalDepartments = \App\Models\Academic\Department::count();
+            $totalSubjects = Subject::count();
 
             return [
                 'total_learners' => (int) $totalStudents,
@@ -499,7 +521,7 @@ class DashboardController extends Controller
                 'fee_collection' => (float) $feeCollection,
                 'collection_growth' => $collectionGrowth,
                 'pending_fees' => (float) $pendingFees,
-                'total_guardians' => (int) $totalGuardians,
+                'total_departments' => (int) $totalDepartments,
                 'total_subjects' => (int) $totalSubjects,
             ];
         } catch (\Exception $e) {
@@ -609,6 +631,127 @@ class DashboardController extends Controller
         return ['labels' => [], 'datasets' => [
             ['label' => 'Average Score', 'data' => [], 'color' => 'rgb(16, 185, 129)'],
         ]];
+    }
+
+    private function getDepartmentPerformance(): array
+    {
+        try {
+            $performance = DB::table('student_assessments')
+                ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
+                ->join('subjects', 'assessments.subject_id', '=', 'subjects.id')
+                ->join('departments', 'subjects.department_id', '=', 'departments.id')
+                ->select('departments.name', DB::raw('AVG(student_assessments.percentage) as average'))
+                ->groupBy('departments.id', 'departments.name')
+                ->orderBy('average', 'desc')
+                ->get();
+
+            return [
+                'labels' => $performance->pluck('name')->toArray(),
+                'data' => $performance->pluck('average')->map(fn($v) => round($v, 1))->toArray(),
+            ];
+        } catch (\Exception $e) {
+            return ['labels' => [], 'data' => []];
+        }
+    }
+
+    private function getSubjectAnalytics(): array
+    {
+        try {
+            return DB::table('subjects')
+                ->leftJoin('assessments', 'subjects.id', '=', 'assessments.subject_id')
+                ->leftJoin('student_assessments', 'assessments.id', '=', 'student_assessments.assessment_id')
+                ->select(
+                    'subjects.name',
+                    'subjects.code',
+                    DB::raw('COUNT(DISTINCT assessments.id) as assessment_count'),
+                    DB::raw('AVG(student_assessments.percentage) as avg_score')
+                )
+                ->groupBy('subjects.id', 'subjects.name', 'subjects.code')
+                ->orderBy('avg_score', 'desc')
+                ->limit(5)
+                ->get()
+                ->map(fn($s) => (array)$s)
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    private function getNewStudentsThisMonth(): array
+    {
+        try {
+            return Student::whereMonth('admission_date', Carbon::now()->month)
+                ->whereYear('admission_date', Carbon::now()->year)
+                ->with('currentClass:id,name')
+                ->latest()
+                ->limit(5)
+                ->get()
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'name' => $s->full_name,
+                    'class' => $s->currentClass?->name ?? 'Unassigned',
+                    'date' => $s->admission_date ? $s->admission_date->format('M d') : 'N/A',
+                    'photo' => $s->photo_url,
+                ])
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    private function getGradeDistribution(): array
+    {
+        try {
+            $grades = \App\Models\Academic\GradeLevel::withCount('students')->get();
+            return [
+                'labels' => $grades->pluck('name')->toArray(),
+                'data' => $grades->pluck('students_count')->toArray(),
+            ];
+        } catch (\Exception $e) {
+            return ['labels' => [], 'data' => []];
+        }
+    }
+
+    private function getClassCapacity(): array
+    {
+        try {
+            // Pick classes that actually have students first to ensure the graph shows "real" data
+            $classes = SchoolClass::withCount('activeStudents')
+                ->where('is_active', true)
+                ->orderBy('active_students_count', 'desc')
+                ->limit(8)
+                ->get();
+
+            // Fallback if no classes have students, just get any 8 classes
+            if ($classes->sum('active_students_count') == 0) {
+                $classes = SchoolClass::limit(8)->get();
+                $classes->loadCount('activeStudents');
+            }
+
+            return [
+                'labels' => $classes->pluck('name')->toArray(),
+                'actual' => $classes->pluck('active_students_count')->toArray(),
+                'expected' => $classes->pluck('capacity')->toArray(),
+            ];
+        } catch (\Exception $e) {
+            Log::error('getClassCapacity error: ' . $e->getMessage());
+            return ['labels' => [], 'actual' => [], 'expected' => []];
+        }
+    }
+
+    private function getStreamAnalytics(): array
+    {
+        try {
+            return DB::table('streams')
+                ->leftJoin('classes', 'streams.id', '=', 'classes.stream_id')
+                ->leftJoin('students', 'classes.id', '=', 'students.current_class_id')
+                ->select('streams.name', DB::raw('COUNT(students.id) as student_count'))
+                ->groupBy('streams.id', 'streams.name')
+                ->get()
+                ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
     }
 
     private function getGenderDistribution(): array
@@ -785,5 +928,40 @@ class DashboardController extends Controller
             }
             return 0;
         } catch (\Exception $e) { return 0; }
+    }
+
+    private function getDefaultStats(): array
+    {
+        return $this->getZeroStats();
+    }
+
+    private function getDefaultEnrollmentTrends(): array
+    {
+        return ['labels' => [], 'datasets' => []];
+    }
+
+    private function getDefaultClassPerformance(): array
+    {
+        return $this->getEmptyClassPerformance();
+    }
+
+    private function getDefaultGenderDistribution(): array
+    {
+        return ['labels' => ['Boys', 'Girls'], 'datasets' => [['label' => 'Learners', 'data' => [0, 0]]]];
+    }
+
+    private function getDefaultWeeklyAttendance(): array
+    {
+        return $this->getEmptyWeeklyAttendance();
+    }
+
+    private function getDefaultRecentActivities(): array
+    {
+        return [];
+    }
+
+    private function getDefaultUpcomingEvents(): array
+    {
+        return [];
     }
 }

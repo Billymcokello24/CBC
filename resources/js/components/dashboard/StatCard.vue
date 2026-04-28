@@ -5,6 +5,7 @@ interface Props {
     title: string;
     value: string;
     description?: string;
+    subTitle?: string;
     icon: LucideIcon;
     trend?: {
         value: number;
@@ -41,21 +42,26 @@ const trendColors = {
             <div class="space-y-4">
                 <div class="space-y-1">
                     <p
-                        class="text-[13px] font-medium whitespace-nowrap text-muted-foreground"
+                        class="text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                     >
                         {{ title }}
                     </p>
-                    <h3
-                        class="text-3xl font-bold tracking-tight text-foreground"
-                    >
-                        {{ value }}
-                    </h3>
+                    <div class="flex flex-col">
+                        <h3
+                            class="text-3xl font-black tracking-tighter text-foreground"
+                        >
+                            {{ value }}
+                        </h3>
+                        <p v-if="subTitle" class="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">
+                            {{ subTitle }}
+                        </p>
+                    </div>
                 </div>
 
                 <div
                     v-if="trend"
                     :class="[
-                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm font-semibold',
+                        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-black uppercase tracking-tighter',
                         trendColors[trend.direction],
                     ]"
                 >
@@ -63,18 +69,15 @@ const trendColors = {
                         :is="
                             trend.direction === 'up' ? TrendingUp : TrendingDown
                         "
-                        class="h-3.5 w-3.5"
+                        class="h-3 w-3"
                     />
                     {{ trend.value }}%
-                    <span class="ml-1 font-normal text-muted-foreground/60"
-                        >vs last month</span
-                    >
                 </div>
             </div>
 
             <div
                 :class="[
-                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-500 group-hover:scale-110',
+                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-transform duration-500 group-hover:scale-110 shadow-sm',
                     iconWrappers[variant],
                 ]"
             >

@@ -11,6 +11,7 @@ use App\Models\Curriculum\LessonPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -252,6 +253,44 @@ class CurriculumManagementController extends Controller
             ],
         ]);
     }
+
+    public function exportPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $areaId = (string) $request->string('learning_area_id');
+
+        $query = Subject::query()
+            ->with(['learningArea:id,name', 'department:id,name,code']);
+
+        $query->when($search !== '', function ($q) use ($search) {
+            $q->where(function ($inner) use ($search) {
+                $inner->where('subjects.name', 'like', "%{$search}%")
+                    ->orWhere('subjects.code', 'like', "%{$search}%")
+                    ->orWhereHas('learningArea', fn($sq) => $sq->where('name', 'like', "%{$search}%"));
+            });
+        })
+        ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('is_active', $status === 'active'))
+        ->when($areaId !== '' && $areaId !== 'all', fn ($q) => $q->where('learning_area_id', $areaId))
+        ->orderBy('display_order');
+
+        $items = $query->get();
+        $school = \App\Models\School::find(auth()->user()->school_id);
+        
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.subjects', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('subjects_registry_' . date('Y_m_d_His') . '.pdf');
+    }
+
 
     public function storeSubject(Request $request): RedirectResponse
     {

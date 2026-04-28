@@ -283,6 +283,16 @@ const bulkAction = (action: 'activate' | 'deactivate' | 'delete') => {
                         Add Many Subjects
                     </Button>
                     <Button
+                        variant="outline"
+                        as-child
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
+                    >
+                        <a :href="`/curriculum/subjects/export-pdf?search=${searchQuery}&learning_area_id=${selectedArea}`" target="_blank">
+                            <Download class="mr-2 h-4 w-4 text-rose-500" />
+                            Download PDF
+                        </a>
+                    </Button>
+                    <Button
                         @click="showAddModal = true"
                         class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all font-bold uppercase tracking-widest"
                     >

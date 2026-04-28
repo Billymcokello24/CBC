@@ -1,348 +1,283 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface Dataset {
+    label: string;
+    data: number[];
+    color?: string;
+}
+
+interface ChartData {
+    labels: string[];
+    datasets: Dataset[];
+}
 
 interface Props {
     title: string;
-    chartType?: 'bar' | 'line' | 'doughnut' | 'area';
-    data: {
-        labels: string[];
-        datasets: {
-            label: string;
-            data: number[];
-            color?: string;
-        }[];
-    };
+    chartType: 'bar' | 'line' | 'doughnut' | 'area';
+    data: ChartData;
     height?: number;
-    loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    chartType: 'bar',
     height: 300,
-    loading: false,
 });
 
-const chartRef = ref<HTMLCanvasElement | null>(null);
+const activeTooltip = ref<{ x: number, y: number, label: string, values: { label: string, value: number, color: string }[] } | null>(null);
+const containerRef = ref<HTMLElement | null>(null);
 
-// Calculate max value for scaling
-const maxValue = computed(() => {
-    const allValues = props.data.datasets.flatMap((d) => d.data);
-    return Math.max(...allValues, 1) * 1.1;
+const maxVal = computed(() => {
+    const allValues = props.data.datasets.flatMap(d => d.data);
+    return Math.max(...allValues, 10) * 1.1; // Add 10% headroom
 });
 
-// Colors for datasets
-const defaultColors = [
-    'rgb(59, 130, 246)', // blue
-    'rgb(16, 185, 129)', // green
-    'rgb(245, 158, 11)', // amber
-    'rgb(239, 68, 68)', // red
-    'rgb(139, 92, 246)', // purple
-    'rgb(236, 72, 153)', // pink
+const colors = [
+    'rgb(59, 130, 246)', // Blue
+    'rgb(16, 185, 129)', // Emerald
+    'rgb(244, 63, 94)',  // Rose
+    'rgb(139, 92, 246)', // Violet
+    'rgb(245, 158, 11)', // Amber
 ];
 
-const getBarHeight = (value: number) => {
-    return (value / maxValue.value) * 100;
+const getColor = (index: number, dataset: Dataset) => {
+    return dataset.color || colors[index % colors.length];
 };
 
-const getColor = (index: number, dataset: any) => {
-    return dataset.color || defaultColors[index % defaultColors.length];
+const chartWidth = 600;
+const chartHeight = 300;
+const padding = { top: 30, right: 40, bottom: 40, left: 50 };
+
+const innerWidth = chartWidth - padding.left - padding.right;
+const innerHeight = chartHeight - padding.top - padding.bottom;
+
+const getX = (index: number) => {
+    return padding.left + (index * (innerWidth / (props.data.labels.length - 1 || 1)));
+};
+
+const getY = (value: number) => {
+    return padding.top + innerHeight - (value / maxVal.value) * innerHeight;
+};
+
+// Advanced: Cubic Bezier Curve Generation for smooth links
+const getCurvePath = (data: number[]) => {
+    if (data.length < 2) return '';
+    
+    let path = `M ${getX(0)} ${getY(data[0])}`;
+    
+    for (let i = 0; i < data.length - 1; i++) {
+        const x1 = getX(i);
+        const y1 = getY(data[i]);
+        const x2 = getX(i + 1);
+        const y2 = getY(data[i + 1]);
+        
+        // Control points for smooth curve
+        const cp1x = x1 + (x2 - x1) / 2;
+        const cp1y = y1;
+        const cp2x = x1 + (x2 - x1) / 2;
+        const cp2y = y2;
+        
+        path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
+    }
+    return path;
+};
+
+const handleMouseMove = (e: MouseEvent) => {
+    if (!containerRef.value) return;
+    const rect = containerRef.value.getBoundingClientRect();
+    const svgRelX = (e.clientX - rect.left) * (chartWidth / rect.width);
+    
+    // Find closest index
+    const labelSpacing = innerWidth / (props.data.labels.length - 1 || 1);
+    let index = Math.round((svgRelX - padding.left) / labelSpacing);
+    index = Math.max(0, Math.min(props.data.labels.length - 1, index));
+    
+    const x = getX(index);
+    const label = props.data.labels[index];
+    const values = props.data.datasets.map((ds, i) => ({
+        label: ds.label,
+        value: ds.data[index],
+        color: getColor(i, ds)
+    }));
+
+    activeTooltip.value = {
+        x,
+        y: Math.min(...values.map(v => getY(v.value))),
+        label,
+        values
+    };
+};
+
+const handleMouseLeave = () => {
+    activeTooltip.value = null;
 };
 </script>
 
 <template>
-    <div
-        class="flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-sm dark:border-white/5"
-    >
-        <div class="mb-8 flex items-center justify-between">
+    <Card class="chart-card group relative overflow-hidden border-border/40 bg-card/50 backdrop-blur-xl transition-all hover:border-primary/20 hover:shadow-2xl">
+        <CardHeader class="flex flex-row items-center justify-between pb-2">
             <div class="space-y-1">
-                <h3 class="text-base font-semibold text-foreground">
+                <CardTitle class="text-[10px] font-black uppercase tracking-widest text-foreground/70">
                     {{ title }}
-                </h3>
-                <p class="text-[13px] text-muted-foreground">
-                    Analytical insights from current data
-                </p>
+                </CardTitle>
+                <div class="h-0.5 w-6 bg-primary/40 rounded-full transition-all group-hover:w-10"></div>
             </div>
-            <div class="flex items-center gap-4">
-                <div
-                    v-for="(dataset, index) in data.datasets"
-                    :key="index"
-                    class="flex items-center gap-2 text-sm font-medium text-muted-foreground"
-                >
-                    <span
-                        class="h-2 w-2 rounded-full"
-                        :style="{ backgroundColor: getColor(index, dataset) }"
-                    ></span>
-                    <span>{{ dataset.label }}</span>
-                </div>
+            <div class="flex gap-1 opacity-40">
+                <div class="h-1 w-1 rounded-full bg-foreground"></div>
+                <div class="h-1 w-1 rounded-full bg-foreground"></div>
             </div>
-        </div>
-
-        <div
-            v-if="loading"
-            class="flex items-end justify-between gap-2"
-            :style="{ height: `${height}px` }"
-        >
-            <div
-                v-for="i in 7"
-                :key="i"
-                class="flex-1 animate-pulse rounded-xl bg-muted/40"
-                :style="{ height: `${Math.random() * 80 + 20}%` }"
-            ></div>
-        </div>
-
-        <!-- Simple Bar Chart -->
-        <div
-            v-else-if="chartType === 'bar'"
-            class="relative flex-1"
-            :style="{ minHeight: `${height}px` }"
-        >
-            <!-- Y-axis labels -->
-            <div
-                class="absolute top-0 bottom-8 left-0 flex flex-col justify-between text-xs text-muted-foreground/40"
-            >
-                <span>{{ Math.round(maxValue) }}</span>
-                <span>{{ Math.round(maxValue / 2) }}</span>
-                <span>0</span>
-            </div>
-
-            <!-- Chart area -->
-            <div
-                class="ml-10 flex h-[calc(100%-30px)] items-end gap-3 border-b border-border/50 pb-2"
-            >
-                <div
-                    v-for="(label, labelIndex) in data.labels"
-                    :key="labelIndex"
-                    class="flex h-full flex-1 flex-col items-center gap-2"
-                >
-                    <div
-                        class="flex h-full w-full items-end justify-center gap-1.5"
-                    >
-                        <div
-                            v-for="(dataset, datasetIndex) in data.datasets"
-                            :key="datasetIndex"
-                            class="w-full max-w-[12px] rounded-t-sm transition-all duration-500 hover:opacity-80"
-                            :style="{
-                                height: `${getBarHeight(dataset.data[labelIndex])}%`,
-                                backgroundColor: getColor(
-                                    datasetIndex,
-                                    dataset,
-                                ),
-                            }"
-                        ></div>
-                    </div>
-                </div>
-            </div>
-            <!-- X-axis labels inline with bars -->
-            <div
-                class="absolute right-0 bottom-0 left-10 flex justify-between px-2"
-            >
-                <span
-                    v-for="(label, i) in data.labels"
-                    :key="i"
-                    class="max-w-[40px] truncate text-xs text-muted-foreground/40"
-                    >{{ label }}</span
-                >
-            </div>
-        </div>
-
-        <!-- Simple Area/Line Chart -->
-        <div
-            v-else-if="chartType === 'line' || chartType === 'area'"
-            class="relative flex-1"
-            :style="{ minHeight: `${height}px` }"
-        >
-            <svg class="h-[calc(100%-30px)] w-full" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient
-                        v-for="(dataset, index) in data.datasets"
-                        :key="`gradient-${index}`"
-                        :id="`gradient-${index}`"
-                        x1="0%"
-                        y1="0%"
-                        x2="0%"
-                        y2="100%"
-                    >
-                        <stop
-                            offset="0%"
-                            :style="{
-                                stopColor: getColor(index, dataset),
-                                stopOpacity: 0.2,
-                            }"
-                        />
-                        <stop
-                            offset="100%"
-                            :style="{
-                                stopColor: getColor(index, dataset),
-                                stopOpacity: 0,
-                            }"
-                        />
-                    </linearGradient>
-                </defs>
-
-                <g
-                    v-for="(dataset, datasetIndex) in data.datasets"
-                    :key="datasetIndex"
-                >
-                    <!-- Area fill -->
-                    <path
-                        v-if="chartType === 'area'"
-                        :d="
-                            (() => {
-                                const points = dataset.data
-                                    .map((value, i) => {
-                                        const x =
-                                            (i /
-                                                Math.max(
-                                                    dataset.data.length - 1,
-                                                    1,
-                                                )) *
-                                            100;
-                                        const y = 10 - (value / maxValue) * 90;
-                                        return `${x}%,${y}%`;
-                                    })
-                                    .join(' L');
-                                return `M0%,100% L${points} L100%,100% Z`;
-                            })()
-                        "
-                        :fill="`url(#gradient-${datasetIndex})`"
-                    />
-
-                    <!-- Line -->
-                    <polyline
-                        :points="
-                            dataset.data
-                                .map((value, i) => {
-                                    const x =
-                                        (i /
-                                            Math.max(
-                                                dataset.data.length - 1,
-                                                1,
-                                            )) *
-                                        100;
-                                    const y = 10 - (value / maxValue) * 90;
-                                    return `${x}%,${y}%`;
-                                })
-                                .join(' ')
-                        "
-                        fill="none"
-                        :stroke="getColor(datasetIndex, dataset)"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="drop-shadow-sm"
-                    />
-                </g>
-            </svg>
-
-            <!-- X-axis labels -->
-            <div
-                class="absolute right-0 bottom-0 left-0 flex justify-between px-2 text-xs text-muted-foreground/40"
-            >
-                <span v-for="(label, i) in data.labels" :key="i">{{
-                    label
-                }}</span>
-            </div>
-        </div>
-
-        <!-- Doughnut Chart -->
-        <div
-            v-else-if="chartType === 'doughnut'"
-            class="flex flex-1 items-center justify-between gap-10"
-            :style="{ minHeight: `${height}px` }"
-        >
-            <div class="relative flex flex-1 items-center justify-center">
-                <svg width="180" height="180" viewBox="0 0 200 200">
-                    <g transform="translate(100, 100)">
-                        <circle
-                            cx="0"
-                            cy="0"
-                            r="75"
-                            fill="none"
+        </CardHeader>
+        <CardContent>
+            <div ref="containerRef" class="relative" :style="{ height: `${height}px` }" @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
+                <!-- SVG Chart Engine -->
+                <svg :viewBox="`0 0 ${chartWidth} ${chartHeight}`" class="h-full w-full overflow-visible">
+                    <!-- Grid Lines -->
+                    <g class="grid-lines">
+                        <line v-for="i in 5" :key="i"
+                            :x1="padding.left"
+                            :y1="padding.top + (innerHeight / 4) * (i - 1)"
+                            :x2="chartWidth - padding.right"
+                            :y2="padding.top + (innerHeight / 4) * (i - 1)"
                             stroke="currentColor"
-                            stroke-width="20"
-                            class="text-muted/10"
-                        />
-                        <circle
-                            v-for="(value, index) in data.datasets[0]?.data ||
-                            []"
-                            :key="index"
-                            cx="0"
-                            cy="0"
-                            r="75"
-                            fill="none"
-                            :stroke="getColor(index, {})"
-                            stroke-width="20"
-                            :stroke-dasharray="`${
-                                (value /
-                                    Math.max(
-                                        data.datasets[0].data.reduce(
-                                            (a, b) => a + b,
-                                            0,
-                                        ),
-                                        1,
-                                    )) *
-                                471.2
-                            } 471.2`"
-                            :stroke-dashoffset="`${-data.datasets[0].data
-                                .slice(0, index)
-                                .reduce(
-                                    (a, b) =>
-                                        a +
-                                        (b /
-                                            Math.max(
-                                                data.datasets[0].data.reduce(
-                                                    (c, d) => c + d,
-                                                    0,
-                                                ),
-                                                1,
-                                            )) *
-                                            471.2,
-                                    0,
-                                )}`"
-                            stroke-linecap="round"
-                            class="transition-all duration-700 ease-out"
+                            stroke-width="0.5"
+                            class="text-muted-foreground/10"
                         />
                     </g>
+
+                    <!-- AXIS LABELS -->
+                    <g class="labels font-sans">
+                        <text v-for="(label, i) in data.labels" :key="i"
+                            :x="getX(i)"
+                            :y="chartHeight - 10"
+                            text-anchor="middle"
+                            class="fill-muted-foreground text-[9px] font-black uppercase tracking-tighter"
+                        >
+                            {{ label }}
+                        </text>
+                        <!-- Y Axis labels (Mini) -->
+                        <text v-for="i in 5" :key="i"
+                            :x="padding.left - 10"
+                            :y="padding.top + (innerHeight / 4) * (i - 1) + 3"
+                            text-anchor="end"
+                            class="fill-muted-foreground/40 text-[8px] font-bold"
+                        >
+                            {{ Math.round(maxVal - (maxVal / 4) * (i - 1)) }}
+                        </text>
+                    </g>
+
+                    <!-- LINE CHART MODE -->
+                    <template v-if="chartType === 'line' || chartType === 'area'">
+                        <g v-for="(dataset, i) in data.datasets" :key="i">
+                            <!-- Area Fill -->
+                            <path v-if="chartType === 'area'"
+                                :d="`${getCurvePath(dataset.data)} L ${getX(dataset.data.length-1)} ${padding.top + innerHeight} L ${padding.left} ${padding.top + innerHeight} Z`"
+                                :fill="getColor(i, dataset)"
+                                fill-opacity="0.05"
+                                class="transition-all duration-700"
+                            />
+                            <!-- Curve Line -->
+                            <path
+                                :d="getCurvePath(dataset.data)"
+                                fill="none"
+                                :stroke="getColor(i, dataset)"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="transition-all duration-700"
+                            />
+                            <!-- Data Markers -->
+                            <circle v-for="(val, j) in dataset.data" :key="j"
+                                :cx="getX(j)"
+                                :cy="getY(val)"
+                                r="2.5"
+                                :fill="getColor(i, dataset)"
+                                stroke="white"
+                                stroke-width="1"
+                                class="transition-all hover:r-4 cursor-pointer"
+                            />
+                        </g>
+                    </template>
+
+                    <!-- BAR CHART MODE -->
+                    <template v-else-if="chartType === 'bar'">
+                        <g v-for="(dataset, i) in data.datasets" :key="i">
+                            <rect v-for="(val, j) in dataset.data" :key="j"
+                                :x="getX(j) - 8 + (i * 10)"
+                                :y="getY(val)"
+                                width="8"
+                                :height="padding.top + innerHeight - getY(val)"
+                                :fill="getColor(i, dataset)"
+                                rx="1.5"
+                                class="transition-all hover:opacity-80"
+                            />
+                        </g>
+                    </template>
+
+                    <!-- DOUGHNUT CHART MODE -->
+                    <template v-else-if="chartType === 'doughnut'">
+                        <g transform="translate(300, 150)">
+                            <circle r="70" fill="none" stroke="currentColor" stroke-width="15" class="text-muted/10" />
+                            <circle v-for="(val, i) in data.datasets[0].data" :key="i"
+                                r="70" fill="none"
+                                :stroke="colors[i % colors.length]"
+                                stroke-width="15"
+                                :stroke-dasharray="`${(val/maxVal)*440} 1000`"
+                                transform="rotate(-90)"
+                                stroke-linecap="round"
+                            />
+                        </g>
+                    </template>
+
+                    <!-- Interactive Tooltip Overlay -->
+                    <g v-if="activeTooltip" class="pointer-events-none">
+                        <line :x1="activeTooltip.x" :y1="padding.top" :x2="activeTooltip.x" :y2="padding.top + innerHeight" 
+                            stroke="currentColor" stroke-width="1" stroke-dasharray="3" class="text-primary/20" />
+                    </g>
                 </svg>
-                <div
-                    class="absolute inset-0 flex flex-col items-center justify-center"
-                >
-                    <span
-                        class="text-3xl font-bold tracking-tight text-foreground"
-                        >{{
-                            data.datasets[0]?.data.reduce((a, b) => a + b, 0) ||
-                            0
-                        }}</span
+
+                <!-- TOOLTIP POPUP -->
+                <transition name="fade">
+                    <div v-if="activeTooltip"
+                        class="absolute z-50 pointer-events-none bg-card/95 backdrop-blur-md border border-primary/20 shadow-2xl rounded-xl p-3 text-left w-44"
+                        :style="{ left: `${(activeTooltip.x / chartWidth) * 100}%`, top: `15%`, transform: 'translateX(-50%)' }"
                     >
-                    <span
-                        class="text-xs font-medium tracking-wider text-muted-foreground/60 uppercase"
-                        >Total</span
-                    >
-                </div>
+                        <div class="text-[9px] font-black uppercase text-primary mb-2 border-b border-primary/10 pb-1 tracking-widest">{{ activeTooltip.label }}</div>
+                        <div v-for="v in activeTooltip.values" :key="v.label" class="flex items-center justify-between gap-3 mb-1.5 last:mb-0">
+                            <div class="flex items-center gap-2">
+                                <div class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: v.color }"></div>
+                                <span class="text-[9px] font-bold text-foreground/80 truncate w-24 tracking-tighter">{{ v.label }}</span>
+                            </div>
+                            <span class="text-[10px] font-black text-foreground">{{ v.value.toLocaleString() }}</span>
+                        </div>
+                    </div>
+                </transition>
             </div>
 
             <!-- Legend -->
-            <div class="flex min-w-[140px] flex-col gap-3">
-                <div
-                    v-for="(label, index) in data.labels"
-                    :key="index"
-                    class="group flex items-center justify-between gap-4 rounded-xl p-2 transition-colors hover:bg-muted/30"
-                >
-                    <div class="flex items-center gap-2">
-                        <span
-                            class="h-2 w-2 rounded-full"
-                            :style="{ backgroundColor: getColor(index, {}) }"
-                        ></span>
-                        <span
-                            class="text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground"
-                            >{{ label }}</span
-                        >
-                    </div>
-                    <span class="text-sm font-semibold text-foreground">{{
-                        data.datasets[0]?.data[index] || 0
-                    }}</span>
+            <div class="mt-4 flex flex-wrap justify-center gap-4 border-t border-border/20 pt-4">
+                <div v-for="(ds, i) in data.datasets" :key="i" class="flex items-center gap-2">
+                    <div class="h-1.5 w-3 rounded-full" :style="{ backgroundColor: getColor(i, ds) }"></div>
+                    <span class="text-[8px] font-black uppercase text-muted-foreground tracking-widest">{{ ds.label }}</span>
                 </div>
             </div>
-        </div>
-    </div>
+        </CardContent>
+    </Card>
 </template>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-enter-from, .fade-leave-to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.95);
+}
+
+path {
+    transition: d 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-card:hover {
+    transform: translateY(-2px);
+}
+</style>

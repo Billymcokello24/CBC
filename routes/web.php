@@ -330,6 +330,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/learning-areas', [CurriculumManagementController::class, 'learningAreas'])->name('curriculum.learning-areas');
         Route::get('curriculum/learning-areas/{learningArea}', [CurriculumManagementController::class, 'showLearningArea'])->name('curriculum.learning-areas.show');
         Route::get('curriculum/subjects', [CurriculumManagementController::class, 'subjects'])->name('curriculum.subjects');
+        Route::get('curriculum/subjects/export-pdf', [CurriculumManagementController::class, 'exportPdf'])->name('curriculum.subjects.export-pdf');
         Route::get('curriculum/subjects/{subject}', [CurriculumManagementController::class, 'showSubject'])->name('curriculum.subjects.show');
         Route::get('curriculum/strands', [CurriculumManagementController::class, 'strands'])->name('curriculum.strands');
         Route::get('curriculum/strands/{id}', [CurriculumManagementController::class, 'showStrand'])->name('curriculum.strands.show');
