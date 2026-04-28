@@ -25,14 +25,12 @@ class ImportStudentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 600; // Increase timeout to 10 minutes
     protected $filePath;
     protected $schoolId;
     protected $academicYearId;
     protected $userId;
     protected $importProcessId;
 
-    // Cache for optimization to avoid repeating queries within the SAME job instance
     protected $gradeCache = [];
     protected $streamCache = [];
     protected $classCache = [];
@@ -66,25 +64,167 @@ class ImportStudentsJob implements ShouldQueue
                 return;
             }
 
-            $currentTermId = DB::table('academic_terms')->where('school_id', $this->schoolId)->where('is_current', true)->value('id');
-            $roleParent = Role::where('name', 'parent')->first();
-            $processedCount = 0;
+            $guardianUsersToUpsert = [];
+            $guardiansToUpsert = [];
+            $studentsToUpsert = [];
+            $emailsToDispatch = [];
+            $enrollmentMap = [];
 
-            // PROCESS IN CHUNKS TO PREVENT MEMORY EXHAUSTION (OOM)
-            $chunks = array_chunk($rows, 200);
-            
-            foreach ($chunks as $chunkIndex => $chunk) {
-                $this->processChunk($chunk, $currentTermId, $roleParent, $processedCount);
+            // 1. PHASE ONE: Normalization & Map Creation
+            foreach ($rows as $index => $row) {
+                $line = $index + 2;
+                $normalized = $this->normalizeLearnerImportRow($row, $line);
                 
-                $processedCount += count($chunk);
-                if ($this->importProcessId) {
-                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $processedCount]);
+                // Track for Grade/Class mapping
+                $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized);
+                $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized);
+                $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized);
+
+                if ($normalized['guardian_email']) {
+                    $guardianUsersToUpsert[] = [
+                        'name' => $normalized['guardian_name'] ?: 'Guardian',
+                        'email' => $normalized['guardian_email'],
+                        'phone' => $normalized['guardian_phone'],
+                        'password' => Hash::make(Str::random(12)),
+                        'status' => 'active',
+                        'school_id' => $this->schoolId,
+                        'force_password_change' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                $studentsToUpsert[] = [
+                    'school_id' => $this->schoolId,
+                    'first_name' => $normalized['first_name'],
+                    'middle_name' => $normalized['middle_name'],
+                    'last_name' => $normalized['last_name'],
+                    'admission_number' => $normalized['admission_number'],
+                    'upi' => $normalized['upi'],
+                    'gender' => $normalized['gender'],
+                    'date_of_birth' => $normalized['date_of_birth'],
+                    'birth_certificate_number' => $normalized['birth_certificate_number'],
+                    'nationality' => $normalized['nationality'] ?: 'Kenyan',
+                    'religion' => $normalized['religion'],
+                    'primary_language' => $normalized['primary_language'],
+                    'secondary_language' => $normalized['secondary_language'],
+                    'home_address' => $normalized['home_address'],
+                    'county' => $normalized['county'],
+                    'sub_county' => $normalized['sub_county'],
+                    'ward' => $normalized['ward'],
+                    'blood_group' => $normalized['blood_group'],
+                    'medical_conditions' => $normalized['medical_conditions'],
+                    'allergies' => $normalized['allergies'],
+                    'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
+                    'boarding_status' => $normalized['boarding_status'],
+                    'status' => $normalized['status'] ?: 'active',
+                    'current_class_id' => $class?->id,
+                    'admission_class_id' => $class?->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                $enrollmentMap[$normalized['admission_number']] = [
+                    'class_id' => $class?->id,
+                    'boarding_status' => $normalized['boarding_status'],
+                    'guardian_email' => $normalized['guardian_email'],
+                    'guardian_name' => $normalized['guardian_name'],
+                ];
+
+                if ($this->importProcessId && $index % 50 === 0) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
+                }
+            }
+
+            // 2. PHASE TWO: DB Execution
+            DB::transaction(function () use ($guardianUsersToUpsert, $studentsToUpsert, $enrollmentMap, &$emailsToDispatch) {
+                // Bulk Users (Guardian Accounts)
+                if (!empty($guardianUsersToUpsert)) {
+                    User::upsert($guardianUsersToUpsert, ['email'], ['name', 'phone']);
+                    $foundUsers = User::whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
                     
-                    // Check for cancellation every chunk
-                    $process = \App\Models\ImportProcess::find($this->importProcessId);
-                    if ($process && $process->status === 'canceled') {
-                        throw new \RuntimeException('Import process was canceled by the user.');
+                    $roleParent = Role::where('name', 'parent')->first();
+                    
+                    $gToUpsert = [];
+                    foreach ($foundUsers as $email => $user) {
+                        if ($roleParent) $user->assignRole($roleParent);
+                        $emailsToDispatch[] = ['user' => $user, 'email' => $email];
+
+                        $gToUpsert[] = [
+                            'user_id' => $user->id,
+                            'school_id' => $this->schoolId,
+                            'first_name' => $user->name,
+                            'last_name' => 'Guardian',
+                            'email' => $email,
+                            'phone' => $user->phone,
+                            'is_active' => true,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
                     }
+                    Guardian::upsert($gToUpsert, ['email', 'school_id'], ['user_id', 'phone']);
+                }
+
+                // Bulk Students
+                Student::upsert($studentsToUpsert, ['admission_number', 'school_id'], [
+                    'first_name', 'middle_name', 'last_name', 'upi', 'gender', 'date_of_birth', 
+                    'birth_certificate_number', 'current_class_id', 'boarding_status'
+                ]);
+
+                // Retrieve for Enrollments & Relationships
+                $adms = collect($studentsToUpsert)->pluck('admission_number')->toArray();
+                $foundStudents = Student::whereIn('admission_number', $adms)->where('school_id', $this->schoolId)->get()->keyBy('admission_number');
+                $foundGuardians = Guardian::where('school_id', $this->schoolId)->whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
+                
+                $enrollments = [];
+                $currentTermId = DB::table('academic_terms')->where('school_id', $this->schoolId)->where('is_current', true)->value('id');
+
+                foreach ($foundStudents as $adm => $student) {
+                    $map = $enrollmentMap[$adm];
+                    if ($map['class_id']) {
+                        $enrollments[] = [
+                            'school_id' => $this->schoolId,
+                            'student_id' => $student->id,
+                            'academic_year_id' => $this->academicYearId,
+                            'class_id' => $map['class_id'],
+                            'academic_term_id' => $currentTermId,
+                            'enrollment_date' => now()->toDateString(),
+                            'enrollment_type' => 'new',
+                            'status' => 'active',
+                            'enrolled_by' => $this->userId,
+                            'boarding_status' => $map['boarding_status'],
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+
+                    // Attach Guardian
+                    if ($map['guardian_email'] && isset($foundGuardians[$map['guardian_email']])) {
+                        $guardianId = $foundGuardians[$map['guardian_email']]->id;
+                        DB::table('guardian_student')->updateOrInsert(
+                            ['student_id' => $student->id, 'guardian_id' => $guardianId],
+                            [
+                                'relationship' => 'guardian',
+                                'is_primary_contact' => true,
+                                'is_emergency_contact' => true,
+                                'can_pickup' => true,
+                                'receives_reports' => true,
+                                'receives_fees_notification' => true,
+                                'is_fee_payer' => true,
+                                'updated_at' => now()
+                            ]
+                        );
+                    }
+                }
+                \App\Models\StudentEnrollment::upsert($enrollments, ['student_id', 'academic_year_id', 'school_id'], ['class_id', 'status', 'boarding_status']);
+            });
+
+            // 3. PHASE THREE: Deferred Emails
+            foreach ($emailsToDispatch as $index => $item) {
+                try {
+                    Mail::to($item['email'])->later(now()->addSeconds($index * 0.5), new UserCreatedMail($item['user'], 'Set your password via login screen'));
+                } catch (\Exception $e) {
+                    \Log::warning("Delayed email failed for guardian {$item['email']}: " . $e->getMessage());
                 }
             }
 
@@ -92,150 +232,8 @@ class ImportStudentsJob implements ShouldQueue
             if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed', 'processed_rows' => $totalRows]);
 
         } catch (\Exception $e) {
-            \Log::error('ImportStudentsJob Fatal Error: ' . $e->getMessage());
-            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500)]);
-        }
-    }
-
-    protected function processChunk(array $chunk, $currentTermId, $roleParent, $startOffset): void
-    {
-        $guardianUsersToUpsert = [];
-        $studentsToUpsert = [];
-        $enrollmentMap = [];
-        $emailsToDispatch = [];
-
-        foreach ($chunk as $index => $row) {
-            $line = $startOffset + $index + 2;
-            $normalized = $this->normalizeLearnerImportRow($row, $line);
-            
-            $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized);
-            $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized);
-            $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized);
-
-            if ($normalized['guardian_email']) {
-                $guardianUsersToUpsert[] = [
-                    'name' => $normalized['guardian_name'] ?: 'Guardian',
-                    'email' => $normalized['guardian_email'],
-                    'phone' => $normalized['guardian_phone'],
-                    'password' => Hash::make(Str::random(12)),
-                    'status' => 'active',
-                    'school_id' => $this->schoolId,
-                    'force_password_change' => true,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-
-            $studentsToUpsert[] = [
-                'school_id' => $this->schoolId,
-                'first_name' => $normalized['first_name'],
-                'middle_name' => $normalized['middle_name'],
-                'last_name' => $normalized['last_name'],
-                'admission_number' => $normalized['admission_number'],
-                'upi' => $normalized['upi'],
-                'gender' => $normalized['gender'],
-                'date_of_birth' => $normalized['date_of_birth'],
-                'birth_certificate_number' => $normalized['birth_certificate_number'],
-                'nationality' => $normalized['nationality'] ?: 'Kenyan',
-                'religion' => $normalized['religion'],
-                'primary_language' => $normalized['primary_language'],
-                'secondary_language' => $normalized['secondary_language'],
-                'home_address' => $normalized['home_address'],
-                'county' => $normalized['county'],
-                'sub_county' => $normalized['sub_county'],
-                'ward' => $normalized['ward'],
-                'blood_group' => $normalized['blood_group'],
-                'medical_conditions' => $normalized['medical_conditions'],
-                'allergies' => $normalized['allergies'],
-                'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
-                'boarding_status' => $normalized['boarding_status'],
-                'status' => $normalized['status'] ?: 'active',
-                'current_class_id' => $class?->id,
-                'admission_class_id' => $class?->id,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-
-            $enrollmentMap[$normalized['admission_number']] = [
-                'class_id' => $class?->id,
-                'boarding_status' => $normalized['boarding_status'],
-                'guardian_email' => $normalized['guardian_email'],
-            ];
-        }
-
-        DB::transaction(function () use ($guardianUsersToUpsert, $studentsToUpsert, $enrollmentMap, $roleParent, $currentTermId, &$emailsToDispatch) {
-            // 1. GUARDIAN USERS
-            if (!empty($guardianUsersToUpsert)) {
-                User::upsert($guardianUsersToUpsert, ['email'], ['name', 'phone']);
-                $foundUsers = User::whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
-                
-                $gToUpsert = [];
-                foreach ($foundUsers as $email => $user) {
-                    if ($roleParent) $user->assignRole($roleParent);
-                    $emailsToDispatch[] = ['user' => $user, 'email' => $email];
-
-                    $gToUpsert[] = [
-                        'user_id' => $user->id,
-                        'school_id' => $this->schoolId,
-                        'first_name' => $user->name,
-                        'last_name' => 'Guardian',
-                        'email' => $email,
-                        'phone' => $user->phone,
-                        'is_active' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-                Guardian::upsert($gToUpsert, ['email', 'school_id'], ['user_id', 'phone']);
-            }
-
-            // 2. STUDENTS
-            Student::upsert($studentsToUpsert, ['admission_number', 'school_id'], [
-                'first_name', 'middle_name', 'last_name', 'upi', 'gender', 'date_of_birth', 
-                'birth_certificate_number', 'current_class_id', 'boarding_status', 'updated_at'
-            ]);
-
-            // 3. ENROLLMENTS & RELATIONSHIPS
-            $adms = collect($studentsToUpsert)->pluck('admission_number')->toArray();
-            $foundStudents = Student::whereIn('admission_number', $adms)->where('school_id', $this->schoolId)->get()->keyBy('admission_number');
-            $foundGuardians = Guardian::where('school_id', $this->schoolId)->whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
-            
-            $enrollments = [];
-            foreach ($foundStudents as $adm => $student) {
-                $map = $enrollmentMap[$adm];
-                if ($map['class_id']) {
-                    $enrollments[] = [
-                        'school_id' => $this->schoolId,
-                        'student_id' => $student->id,
-                        'academic_year_id' => $this->academicYearId,
-                        'class_id' => $map['class_id'],
-                        'academic_term_id' => $currentTermId,
-                        'enrollment_date' => now()->toDateString(),
-                        'enrollment_type' => 'new',
-                        'status' => 'active',
-                        'enrolled_by' => $this->userId,
-                        'boarding_status' => $map['boarding_status'],
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-
-                if ($map['guardian_email'] && isset($foundGuardians[$map['guardian_email']])) {
-                    DB::table('guardian_student')->updateOrInsert(
-                        ['student_id' => $student->id, 'guardian_id' => $foundGuardians[$map['guardian_email']]->id],
-                        ['relationship' => 'guardian', 'is_primary_contact' => true, 'updated_at' => now()]
-                    );
-                }
-            }
-            if (!empty($enrollments)) {
-                \App\Models\StudentEnrollment::upsert($enrollments, ['student_id', 'academic_year_id', 'school_id'], ['class_id', 'status', 'boarding_status']);
-            }
-        });
-
-        // 4. DEFERRED EMAILS (Optional, but user said "all records first then emails", so maybe keep this at the very end of HANDLE?)
-        // Actually, to prevent OOM, sending emails per chunk with a delay is better.
-        foreach ($emailsToDispatch as $idx => $item) {
-            Mail::to($item['email'])->later(now()->addSeconds($idx * 0.5), new UserCreatedMail($item['user'], 'Set your password via login screen'));
+            \Log::error('ImportStudentsJob Error: ' . $e->getMessage());
+            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
         }
     }
 
