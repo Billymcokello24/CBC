@@ -49,7 +49,7 @@ class BulkDeleteJob implements ShouldQueue
 
                 if (isset($filters['all']) && $filters['all']) {
                     $f = $filters['filters'] ?? [];
-                    if (!empty($f['search'])) $query->where('name', 'like', '%' . $f['search'] . '%');
+                    if (!empty($f['search'])) $query->search($f['search']);
                     if (!empty($f['status']) && $f['status'] !== 'all') $query->where('status', $f['status']);
                     if (!empty($f['gender']) && $f['gender'] !== 'all') $query->where('gender', $f['gender']);
                     if (!empty($f['class_id'])) $query->where('current_class_id', $f['class_id']);
@@ -60,7 +60,9 @@ class BulkDeleteJob implements ShouldQueue
                 $studentIds = $query->pluck('id');
                 $userIds = Student::whereIn('id', $studentIds)->pluck('user_id')->filter();
 
-                Student::whereIn('id', $studentIds)->delete();
+                // Delete related records via model events (Student has thorough boots)
+                Student::whereIn('id', $studentIds)->get()->each->delete();
+                
                 if ($userIds->isNotEmpty()) {
                     User::whereIn('id', $userIds)->delete();
                 }
@@ -70,8 +72,8 @@ class BulkDeleteJob implements ShouldQueue
 
                 if (isset($filters['all']) && $filters['all']) {
                     $f = $filters['filters'] ?? [];
-                    if (!empty($f['search'])) $query->where('name', 'like', '%' . $f['search'] . '%');
-                    if (!empty($f['status'])) $query->where('status', $f['status']);
+                    if (!empty($f['search'])) $query->search($f['search']);
+                    if (!empty($f['status']) && $f['status'] !== 'all') $query->where('status', $f['status']);
                     if (!empty($f['department_id'])) $query->where('department_id', $f['department_id']);
                 } else {
                     $query->whereIn('id', $filters['ids'] ?? []);
@@ -80,7 +82,34 @@ class BulkDeleteJob implements ShouldQueue
                 $teacherIds = $query->pluck('id');
                 $userIds = Teacher::whereIn('id', $teacherIds)->pluck('user_id')->filter();
 
-                Teacher::whereIn('id', $teacherIds)->delete();
+                // Explicitly nullify class teacher relationships to avoid FK issues
+                DB::table('classes')->whereIn('class_teacher_id', $userIds)->update(['class_teacher_id' => null]);
+                
+                // Delete staff profiles via model events to trigger thorough cleanup
+                Teacher::whereIn('id', $teacherIds)->get()->each->delete();
+                
+                if ($userIds->isNotEmpty()) {
+                    User::whereIn('id', $userIds)->delete();
+                }
+
+            } elseif ($type === 'delete_parents') {
+                $query = \App\Models\Guardian::where('school_id', $school_id);
+
+                if (isset($filters['all']) && $filters['all']) {
+                    $f = $filters['filters'] ?? [];
+                    if (!empty($f['search'])) $query->search($f['search']);
+                    if (!empty($f['status']) && $f['status'] !== 'all') {
+                        $query->where('is_active', $f['status'] === 'active');
+                    }
+                } else {
+                    $query->whereIn('id', $filters['ids'] ?? []);
+                }
+
+                $guardianIds = $query->pluck('id');
+                $userIds = \App\Models\Guardian::whereIn('id', $guardianIds)->pluck('user_id')->filter();
+
+                \App\Models\Guardian::whereIn('id', $guardianIds)->get()->each->delete();
+                
                 if ($userIds->isNotEmpty()) {
                     User::whereIn('id', $userIds)->delete();
                 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Academic\AcademicYear;
 use App\Models\Academic\Department;
 use App\Models\Academic\SchoolClass;
 use App\Models\StaffCategory;
@@ -48,7 +49,8 @@ class StaffsController extends Controller
             return 0;
         }
 
-        $query = User::role($existingRoles);
+        // Only count users who HAVE a teacher record (for this school)
+        $query = User::role($existingRoles)->whereHas('teacher');
 
         if ($departmentId) {
             $query->whereHas('teacher', function ($q) use ($departmentId) {

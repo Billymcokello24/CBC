@@ -12,7 +12,7 @@ class ExportController extends Controller
     public function start(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:staff,students',
+            'type' => 'required|string|in:staff,students,parents',
             'filters' => 'nullable|array'
         ]);
 
@@ -57,7 +57,7 @@ class ExportController extends Controller
     public function startDelete(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:staff,students',
+            'type' => 'required|string|in:staff,students,parents',
             'ids' => 'nullable|array',
             'all_matching' => 'nullable|boolean',
             'filters' => 'nullable|array'

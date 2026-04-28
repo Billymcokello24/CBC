@@ -21,26 +21,41 @@ class ParentsController extends Controller
     public function index(Request $request): Response
     {
         $search = $request->input('search', '');
+        $status = $request->input('status', 'all');
+        $perPage = $request->input('per_page', 20);
         
         $parents = Guardian::query()
+            ->where('school_id', auth()->user()->school_id)
             ->with([
                 'students:id,first_name,last_name,admission_number', 
                 'user' => fn($q) => $q->withoutGlobalScopes()->select('id', 'email')
             ])
             ->when($search, fn($q) => $q->search($search))
+            ->when($status !== 'all', function($q) use ($status) {
+                return $q->where('is_active', $status === 'active');
+            })
             ->latest()
-            ->paginate(12)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('parents/Index', [
             'parents' => $parents,
-            'filters' => $request->only(['search']),
-            'stats' => [
-                'total' => Guardian::count(),
-                'active' => Guardian::where('is_active', true)->count(),
-                'new_this_month' => Guardian::whereMonth('created_at', now()->month)->count(),
+            'filters' => [
+                'search' => $search,
+                'status' => $status,
+                'per_page' => (int) $perPage,
             ],
-            'can_export' => true
+            'stats' => [
+                'total' => Guardian::where('school_id', auth()->user()->school_id)->count(),
+                'active' => Guardian::where('school_id', auth()->user()->school_id)->where('is_active', true)->count(),
+                'new_this_month' => Guardian::where('school_id', auth()->user()->school_id)->whereMonth('created_at', now()->month)->count(),
+            ],
+            'can_export' => true,
+            'statusOptions' => [
+                ['value' => 'all', 'label' => 'All Statuses'],
+                ['value' => 'active', 'label' => 'Active Accounts'],
+                ['value' => 'inactive', 'label' => 'Locked Accounts'],
+            ]
         ]);
     }
 

@@ -1,30 +1,28 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     Users,
     Search,
     Filter,
     Mail,
     Phone,
-    Building2,
     UserPlus,
-    BadgeCheck,
-    LayoutGrid,
-    List as ListIcon,
-    ChevronDown,
-    GraduationCap,
     Eye,
     Plus,
     MoreHorizontal,
-    Heart,
-    Home,
-    MapPin,
-    PhoneForwarded,
-    ShieldCheck,
     Edit,
     Trash2,
-    ChevronRight,
     FileText,
+    CheckSquare,
+    Square,
+    Home,
+    ChevronDown,
+    ChevronRight,
+    Loader2,
+    AlertCircle,
+    CheckCircle2,
+    X,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -40,25 +38,41 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { BreadcrumbItem } from '@/types';
 
+interface GuardianRow {
+    id: number;
+    first_name: string;
+    last_name: string;
+    name: string;
+    email: string | null;
+    phone: string;
+    id_number: string | null;
+    is_active: boolean;
+    relationship_type?: string;
+    students: Array<{ id: number; first_name: string; last_name: string }>;
+}
+
 const props = defineProps<{
     parents: {
-        data: any[];
+        data: GuardianRow[];
         total: number;
         current_page: number;
         last_page: number;
+        per_page: number;
         from: number;
         to: number;
-        prev_page_url: string | null;
-        next_page_url: string | null;
+        links: any[];
     };
     filters: {
         search?: string;
+        status?: string;
+        per_page?: number;
     };
     stats: {
         total: number;
         active: number;
         new_this_month: number;
     };
+    statusOptions: Array<{ value: string; label: string }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -68,16 +82,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const searchQuery = ref(props.filters.search || '');
-const viewMode = ref('grid');
+const selectedStatus = ref(props.filters.status || 'all');
+const perPage = ref(props.filters.per_page || 20);
+const selectedParentIds = ref<number[]>([]);
+const isGlobalSelection = ref(false);
 
 let debounceTimer: any;
-const applyFilters = () => {
+const applyFilters = (page = 1) => {
     router.get(
         '/parents',
         {
-            search: searchQuery.value,
+            search: searchQuery.value || undefined,
+            status: selectedStatus.value !== 'all' ? selectedStatus.value : undefined,
+            per_page: perPage.value,
+            page,
         },
-        { preserveState: true, replace: true },
+        { preserveState: true, preserveScroll: true, replace: true },
     );
 };
 
@@ -86,90 +106,141 @@ watch(searchQuery, () => {
     debounceTimer = setTimeout(() => applyFilters(), 400);
 });
 
-const getStatusColor = (active: boolean) => {
-    return active
-        ? 'bg-emerald-500 text-white shadow-sm'
-        : 'bg-slate-400 text-white';
-};
+watch([selectedStatus, perPage], () => applyFilters());
 
-const deleteParent = (id: number) => {
-    if (
-        confirm(
-            'Are you sure you want to delete this parent account? This will unlink all students.',
-        )
-    ) {
-        router.delete(`/parents/${id}`);
+const toggleSelection = (id: number) => {
+    isGlobalSelection.value = false;
+    const index = selectedParentIds.value.indexOf(id);
+    if (index === -1) {
+        selectedParentIds.value.push(id);
+    } else {
+        selectedParentIds.value.splice(index, 1);
     }
 };
 
-const downloadPdf = () => {
-    const params = new URLSearchParams({
-        search: searchQuery.value,
-    }).toString();
-    
-    window.location.href = `/parents/export-pdf?${params}`;
+const toggleAllSelection = () => {
+    if (selectedParentIds.value.length === props.parents.data.length || isGlobalSelection.value) {
+        selectedParentIds.value = [];
+        isGlobalSelection.value = false;
+    } else {
+        selectedParentIds.value = props.parents.data.map((p) => p.id);
+    }
 };
+
+const selectAllMatching = () => {
+    isGlobalSelection.value = true;
+    selectedParentIds.value = props.parents.data.map((p) => p.id);
+};
+
+const handleBulkDelete = async () => {
+    const count = isGlobalSelection.value ? props.stats.total : selectedParentIds.value.length;
+    if (window.confirm(`Are you sure you want to delete ${count} ${isGlobalSelection.value ? 'matching' : 'selected'} parent accounts? This action will also delete associated user accounts.`)) {
+        try {
+            const response = await axios.post('/exports/start-delete', {
+                type: 'parents',
+                ids: selectedParentIds.value,
+                all_matching: isGlobalSelection.value,
+                filters: isGlobalSelection.value ? {
+                    search: searchQuery.value,
+                    status: selectedStatus.value,
+                } : null
+            });
+            
+            selectedParentIds.value = [];
+            isGlobalSelection.value = false;
+            
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('delete-started', { detail: response.data }));
+            }
+        } catch (error) {
+            console.error('Bulk delete failed:', error);
+            alert('Failed to start deletion. Please try again.');
+        }
+    }
+};
+
+const deleteParent = (id: number) => {
+    if (confirm('Are you sure you want to delete this parent account? This will also remove the user account.')) {
+        router.delete(`/parents/${id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                selectedParentIds.value = selectedParentIds.value.filter(pId => pId !== id);
+            }
+        });
+    }
+};
+
+const downloadPdf = async () => {
+    try {
+        const response = await axios.post('/exports/start', {
+            type: 'parents',
+            filters: {
+                search: searchQuery.value,
+                status: selectedStatus.value,
+            }
+        });
+        
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('export-started', { detail: response.data }));
+        }
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Failed to start export. Please try again.');
+    }
+};
+
+const getStatusColor = (active: boolean) => {
+    return active
+        ? 'bg-emerald-500 text-white shadow-sm'
+        : 'bg-slate-400 text-white shadow-sm';
+};
+
 </script>
 
 <template>
     <Head title="Parent Registry" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
             <!-- Page Header -->
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1"
-            >
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-xs text-muted-foreground sm:text-xs">
-                        <Home class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">People</span>
-                        <ChevronRight class="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                        <span class="font-medium tracking-tight text-foreground uppercase">Parents</span>
-                    </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        Family Registry
-                    </h1>
-                    <p class="text-sm text-muted-foreground sm:text-sm">
-                        Manage parents and legal guardians associated with your students.
-                    </p>
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Parent Registry</h1>
+                    <p class="text-xs text-muted-foreground uppercase tracking-widest font-bold opacity-60">Management of school guardians</p>
                 </div>
 
-                <div class="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
-                        @click="viewMode = viewMode === 'grid' ? 'list' : 'grid'"
-                    >
-                        <component
-                            :is="viewMode === 'grid' ? ListIcon : LayoutGrid"
-                            class="mr-2 h-4 w-4 opacity-70"
-                        />
-                        {{ viewMode === 'grid' ? 'Table View' : 'Grid View' }}
-                    </Button>
+                <div class="flex flex-wrap items-center gap-3">
                     <Button
                         variant="outline"
                         @click="downloadPdf"
-                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
                     >
                         <FileText class="mr-2 h-4 w-4 text-rose-500" />
-                        Download PDF
+                        Export PDF
                     </Button>
-                    <Link
-                        href="/parents/create"
-                        class="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-6 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary/90 active:scale-95"
-                    >
-                        <Plus class="mr-2 h-4 w-4" />
-                        Add Parent
-                    </Link>
+                    <template v-if="selectedParentIds.length > 0">
+                        <Button
+                            variant="outline"
+                            @click="handleBulkDelete"
+                            class="h-10 rounded-lg border-rose-200 bg-rose-50 px-4 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                        >
+                            <Trash2 class="mr-2 h-4 w-4" />
+                            Bulk Delete ({{ isGlobalSelection ? stats.total : selectedParentIds.length }})
+                        </Button>
+                    </template>
+                    <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
+                        <Link href="/parents/create">
+                            <Plus class="mr-2 h-4 w-4" />
+                            Add Parent
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
             <!-- Stats Overview -->
             <div class="grid grid-cols-1 gap-4 px-1 sm:grid-cols-3 sm:gap-6">
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 dark:border-white/5">
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
                     <div class="mb-4 flex items-center justify-between">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                             <Users class="h-5 w-5" />
@@ -180,10 +251,10 @@ const downloadPdf = () => {
                     <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Registered Guardians</p>
                 </div>
 
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-emerald-200 dark:border-white/5">
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-emerald-200">
                     <div class="mb-4 flex items-center justify-between">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
-                            <ShieldCheck class="h-5 w-5" />
+                            <CheckCircle2 class="h-5 w-5" />
                         </div>
                         <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Active Now</span>
                     </div>
@@ -191,10 +262,10 @@ const downloadPdf = () => {
                     <p class="mt-1 text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Accounts Active</p>
                 </div>
 
-                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20 dark:border-white/5">
+                <div class="group rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/20">
                     <div class="mb-4 flex items-center justify-between">
                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                            <UserPlus class="h-5 w-5" />
+                            <Plus class="h-5 w-5" />
                         </div>
                         <span class="text-[10px] font-bold tracking-tight text-muted-foreground/30 uppercase">Growth</span>
                     </div>
@@ -203,134 +274,86 @@ const downloadPdf = () => {
                 </div>
             </div>
 
-            <!-- Search Bar -->
-            <div class="flex flex-col items-center justify-between gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:flex-row">
-                <div class="group relative w-full md:max-w-md">
-                    <Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
-                    <Input
-                        v-model="searchQuery"
-                        placeholder="Search by name, phone or email..."
-                        class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-bold tracking-tight uppercase transition-all focus:bg-background"
-                    />
-                </div>
-                
+            <!-- Global Selection Banner -->
+            <div v-if="selectedParentIds.length === parents.data.length && parents.data.length > 0 && !isGlobalSelection && stats.total > parents.data.length" 
+                 class="rounded-xl bg-primary/10 border border-primary/20 p-4 flex items-center justify-between animate-in slide-in-from-top-2 mx-1">
                 <div class="flex items-center gap-3">
-                    <Button
-                        variant="outline"
-                        class="h-11 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
-                    >
-                        <Filter class="mr-2 h-3.5 w-3.5 opacity-70" />
-                        Refine Search
-                    </Button>
+                    <CheckSquare class="h-5 w-5 text-primary" />
+                    <p class="text-sm font-medium text-primary">All {{ selectedParentIds.length }} parents on this page are selected.</p>
                 </div>
+                <Button variant="link" @click="selectAllMatching" class="text-sm font-bold text-primary hover:no-underline">
+                    Select all {{ stats.total }} matching parent records instead
+                </Button>
             </div>
 
-            <!-- Grid View -->
-            <div
-                v-if="viewMode === 'grid' && parents.total > 0"
-                class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 px-1"
-            >
-                <div
-                    v-for="parent in parents.data"
-                    :key="parent.id"
-                    class="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-primary/20 hover:shadow-xl"
-                >
-                    <div class="mb-6 flex items-start justify-between">
-                        <div class="relative">
-                            <div class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-primary/10 transition-transform group-hover:scale-110">
-                                <img
-                                    v-if="parent.photo"
-                                    :src="parent.photo"
-                                    class="h-full w-full object-cover"
-                                />
-                                <div
-                                    v-else
-                                    class="text-xl font-bold text-primary"
-                                >
-                                    {{ parent.first_name[0] }}{{ parent.last_name[0] }}
-                                </div>
-                            </div>
-                            <div 
-                                class="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-card bg-emerald-500"
-                                v-if="parent.is_active"
-                            ></div>
-                        </div>
+            <div v-else-if="isGlobalSelection" 
+                 class="rounded-xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between animate-in slide-in-from-top-2 mx-1">
+                <div class="flex items-center gap-3">
+                    <CheckSquare class="h-5 w-5 text-emerald-400" />
+                    <p class="text-sm font-medium text-white">Awesome! You've selected all {{ stats.total }} matching parents across all pages.</p>
+                </div>
+                <Button variant="link" @click="toggleAllSelection" class="text-sm font-bold text-emerald-400 hover:no-underline">
+                    Clear Global Selection
+                </Button>
+            </div>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger as-child>
-                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg opacity-40 hover:opacity-100">
-                                    <MoreHorizontal class="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" class="w-52 rounded-xl border-border p-2 shadow-xl">
-                                <DropdownMenuItem as-child class="rounded-lg py-2.5 text-xs font-bold">
-                                    <Link :href="`/parents/${parent.id}`" class="flex w-full items-center">
-                                        <Eye class="mr-3 h-4 w-4 opacity-60" /> View Detailed
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem as-child class="rounded-lg py-2.5 text-xs font-bold text-primary">
-                                    <Link :href="`/parents/${parent.id}/edit`" class="flex w-full items-center">
-                                        <Edit class="mr-3 h-4 w-4 opacity-60" /> Edit Record
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator class="my-1" />
-                                <DropdownMenuItem @click="deleteParent(parent.id)" class="rounded-lg py-2.5 text-xs font-bold text-rose-500">
-                                    <Trash2 class="mr-3 h-4 w-4 opacity-60" /> Purge Account
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+            <!-- Filters -->
+            <div class="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:flex-row md:items-center md:justify-between px-1 mx-1">
+                <div class="flex flex-1 items-center gap-4">
+                    <div class="group relative flex-1 max-w-md">
+                        <Search class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground/40 transition-colors group-focus-within:text-primary" />
+                        <Input
+                            v-model="searchQuery"
+                            placeholder="Find parents by name, email, or phone..."
+                            class="h-11 rounded-xl border-border bg-muted/20 pl-10 text-xs font-semibold transition-all focus:bg-background"
+                        />
                     </div>
+                </div>
 
-                    <div class="space-y-4">
-                        <div>
-                            <h3 class="line-clamp-1 text-base font-bold text-foreground">
-                                {{ parent.first_name }} {{ parent.last_name }}
-                            </h3>
-                            <div class="mt-1 flex items-center gap-2 text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tight">
-                                ID: #{{ parent.id_number || parent.id.toString().padStart(4, '0') }}
-                            </div>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                         <span class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Status:</span>
+                         <div class="relative">
+                            <select v-model="selectedStatus" class="h-10 cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 pr-10 text-[10px] font-bold uppercase outline-none hover:bg-muted/40 transition-all">
+                                <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                            </select>
+                            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40" />
                         </div>
-
-                        <div class="flex flex-col space-y-2 border-t border-border/50 pt-4">
-                            <div class="flex items-center gap-2 text-xs font-bold text-foreground/80">
-                                <Phone class="h-3.5 w-3.5 text-primary opacity-60" />
-                                {{ parent.phone }}
-                            </div>
-                            <div v-if="parent.email" class="flex max-w-full items-center gap-2 truncate text-[10px] font-bold text-muted-foreground uppercase opacity-60">
-                                <Mail class="h-3.5 w-3.5" />
-                                {{ parent.email }}
-                            </div>
-                        </div>
-
-                        <div class="flex flex-wrap gap-1.5 pt-2">
-                             <Badge
-                                v-for="student in parent.students"
-                                :key="student.id"
-                                variant="outline"
-                                class="rounded-lg border-none bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary uppercase"
-                            >
-                                {{ student.first_name }}
-                            </Badge>
-                            <span v-if="!parent.students?.length" class="text-[10px] font-bold text-muted-foreground/30 uppercase">No students</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                         <span class="text-[10px] font-bold text-muted-foreground uppercase opacity-60">Show:</span>
+                         <div class="relative">
+                            <select v-model="perPage" class="h-10 cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 pr-10 text-[10px] font-bold uppercase outline-none hover:bg-muted/40 transition-all">
+                                <option :value="20">20 Rows</option>
+                                <option :value="50">50 Rows</option>
+                                <option :value="100">100 Rows</option>
+                                <option :value="200">200 Rows</option>
+                                <option :value="500">500 Rows</option>
+                            </select>
+                            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- List View -->
-            <div
-                v-else-if="viewMode === 'list' && parents.total > 0"
-                class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm dark:border-white/5"
-            >
+            <!-- Table -->
+            <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm mx-1">
                 <div class="scrollbar-hide overflow-x-auto">
                     <table class="w-full min-w-[1000px] text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/5 text-muted-foreground">
-                                <th class="px-6 py-5 text-xs font-bold tracking-tight uppercase">Parent Identity</th>
-                                <th class="px-6 py-5 text-xs font-bold tracking-tight uppercase">Children</th>
-                                <th class="px-6 py-5 text-xs font-bold tracking-tight uppercase">Contact info</th>
-                                <th class="px-6 py-5 text-center text-xs font-bold tracking-tight uppercase">Account</th>
-                                <th class="px-6 py-5 text-right text-xs font-bold tracking-tight uppercase px-8">Actions</th>
+                            <tr class="border-b border-border/50 bg-muted/5 text-muted-foreground/60 transition-colors">
+                                <th class="w-16 px-6 py-5">
+                                    <button @click="toggleAllSelection" class="flex h-5 w-5 items-center justify-center rounded border border-border bg-background transition-colors hover:border-primary">
+                                        <CheckSquare v-if="selectedParentIds.length === parents.data.length && parents.data.length > 0" class="h-4 w-4 text-primary" />
+                                        <Square v-else class="h-4 w-4 text-muted-foreground/20" />
+                                    </button>
+                                </th>
+                                <th class="px-6 py-5 text-[10px] font-bold tracking-widest uppercase">Guardian Profile</th>
+                                <th class="px-6 py-5 text-[10px] font-bold tracking-widest uppercase">Associated Students</th>
+                                <th class="px-6 py-5 text-[10px] font-bold tracking-widest uppercase text-center">Relationship</th>
+                                <th class="px-6 py-5 text-[10px] font-bold tracking-widest uppercase">Contact details</th>
+                                <th class="px-6 py-5 text-[10px] font-bold tracking-widest uppercase">Status</th>
+                                <th class="px-6 py-5 text-right text-[10px] font-bold tracking-widest uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/30">
@@ -338,26 +361,24 @@ const downloadPdf = () => {
                                 v-for="parent in parents.data"
                                 :key="parent.id"
                                 class="group transition-all hover:bg-muted/30"
+                                :class="selectedParentIds.includes(parent.id) ? 'bg-primary/5' : ''"
                             >
                                 <td class="px-6 py-4">
+                                    <button @click.stop="toggleSelection(parent.id)" class="flex h-5 w-5 items-center justify-center rounded border border-border bg-background transition-colors hover:border-primary">
+                                        <CheckSquare v-if="selectedParentIds.includes(parent.id)" class="h-4 w-4 text-primary" />
+                                        <Square v-else class="h-4 w-4 text-muted-foreground/20" />
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4">
                                     <div class="flex items-center gap-4">
-                                        <div class="flex h-10 w-10 overflow-hidden rounded-xl bg-primary/10 text-xs font-bold text-primary transition-all group-hover:scale-110">
-                                            <img
-                                                v-if="parent.photo"
-                                                :src="parent.photo"
-                                                class="h-full w-full object-cover"
-                                            />
-                                            <div v-else class="flex h-full w-full items-center justify-center uppercase">
+                                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
+                                            <div class="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-bold text-primary">
                                                 {{ parent.first_name[0] }}{{ parent.last_name[0] }}
                                             </div>
                                         </div>
-                                        <div>
-                                            <p class="text-sm font-bold text-foreground">
-                                                {{ parent.first_name }} {{ parent.last_name }}
-                                            </p>
-                                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground uppercase opacity-40">
-                                                ID: {{ parent.id_number || 'N/A' }}
-                                            </p>
+                                        <div class="space-y-0.5">
+                                            <p class="font-semibold text-foreground group-hover:text-primary transition-colors text-sm">{{ parent.first_name }} {{ parent.last_name }}</p>
+                                            <p class="text-[10px] text-muted-foreground font-bold tracking-widest uppercase opacity-40">ID: {{ parent.id_number || 'N/A' }}</p>
                                         </div>
                                     </div>
                                 </td>
@@ -366,142 +387,91 @@ const downloadPdf = () => {
                                         <Badge
                                             v-for="student in parent.students"
                                             :key="student.id"
-                                            class="rounded-lg border-none bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary uppercase"
+                                            class="rounded-lg border-none bg-primary/5 px-2.5 py-0.5 text-[10px] font-bold text-primary uppercase shadow-sm"
                                         >
                                             {{ student.first_name }} {{ student.last_name }}
                                         </Badge>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col space-y-1">
-                                        <div class="flex items-center gap-2 text-xs font-bold text-foreground">
-                                            <Phone class="h-3.5 w-3.5 text-primary opacity-60" />
-                                            {{ parent.phone }}
-                                        </div>
-                                        <div v-if="parent.email" class="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tight">
-                                            {{ parent.email }}
-                                        </div>
+                                        <p v-if="!parent.students?.length" class="text-[10px] text-muted-foreground font-bold uppercase opacity-30 italic">No linked children</p>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <Badge
-                                        variant="secondary"
-                                        class="border-none px-3 py-1 text-[10px] font-bold tracking-tight uppercase"
-                                        :class="parent.is_active ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-500/10 text-slate-500'"
-                                    >
+                                    <Badge variant="outline" class="rounded-lg border-primary/10 bg-primary/5 px-2 py-0.5 text-[10px] font-bold text-primary uppercase">
+                                        {{ parent.relationship_type || 'Guardian' }}
+                                    </Badge>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col space-y-1">
+                                        <div class="flex items-center gap-2 text-xs font-bold text-foreground/80">
+                                            <Phone class="h-3.5 w-3.5 text-primary opacity-60" />
+                                            {{ parent.phone }}
+                                        </div>
+                                        <div class="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                                            <Mail class="h-3.5 w-3.5" />
+                                            {{ parent.email || 'NO EMAIL' }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <Badge :class="getStatusColor(parent.is_active)" class="rounded-lg border-0 px-2.5 py-1 text-[10px] font-bold uppercase shadow-sm">
                                         {{ parent.is_active ? 'Active' : 'Locked' }}
                                     </Badge>
                                 </td>
-                                <td class="px-6 py-4 text-right px-8">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-9 w-9 rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-                                            as-child
-                                        >
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                                        <Button variant="ghost" size="icon" as-child class="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" title="View Profile">
                                             <Link :href="`/parents/${parent.id}`"><Eye class="h-4 w-4" /></Link>
                                         </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            class="h-9 w-9 rounded-xl text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary"
-                                            as-child
-                                        >
+                                        <Button variant="ghost" size="icon" as-child class="h-8 w-8 rounded-lg hover:bg-primary/10 hover:text-primary" title="Edit Parent">
                                             <Link :href="`/parents/${parent.id}/edit`"><Edit class="h-4 w-4" /></Link>
                                         </Button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    class="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
-                                                >
-                                                    <MoreHorizontal class="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="end"
-                                                class="w-56 rounded-xl border-border p-2 shadow-xl"
-                                            >
-                                                <DropdownMenuItem class="rounded-lg py-2.5 text-xs font-bold">
-                                                    <BadgeCheck class="mr-3 h-4 w-4 opacity-60" />
-                                                    Verify Account
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator class="my-1" />
-                                                <DropdownMenuItem @click="deleteParent(parent.id)" class="rounded-lg py-2.5 text-xs font-bold text-rose-500">
-                                                    <Trash2 class="mr-3 h-4 w-4 opacity-60" />
-                                                    Purge Record
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            class="h-8 w-8 rounded-lg hover:bg-rose-50 hover:text-rose-600" 
+                                            title="Purge Record"
+                                            @click="deleteParent(parent.id)"
+                                        >
+                                            <Trash2 class="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            <!-- Empty State -->
-            <div
-                v-if="parents.total === 0"
-                class="flex flex-col items-center justify-center space-y-6 rounded-3xl border border-dashed border-border/80 bg-muted/5 py-40"
-            >
-                <div
-                    class="flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/20 text-muted-foreground/20"
-                >
-                    <Users class="h-10 w-10" />
-                </div>
-                <div class="space-y-2 text-center">
-                    <h3 class="text-xl font-bold text-foreground">
-                        No Parents Records
-                    </h3>
-                    <p class="mx-auto max-w-sm text-sm font-medium text-muted-foreground/60">
-                        We couldn't find any parent entries matching your criteria. Try adjusting your search queries.
-                    </p>
-                </div>
-                <Button
-                    variant="outline"
-                    class="h-11 rounded-xl px-8 text-xs font-bold tracking-tight uppercase"
-                    @click="searchQuery = ''"
-                >
-                    Reset Filter
-                </Button>
-            </div>
-
-            <!-- Pagination -->
-            <div
-                v-if="parents.last_page > 1"
-                class="flex flex-col items-center justify-between gap-4 border-t border-border/50 bg-muted/5 px-6 py-6 md:flex-row shadow-sm rounded-2xl"
-            >
-                <p class="text-xs font-bold tracking-tight text-muted-foreground/40 uppercase">
-                    Showing {{ parents.from }} to {{ parents.to }} of {{ parents.total }} family entries
-                </p>
-                <div class="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        class="h-9 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted"
-                        :disabled="parents.current_page <= 1"
-                        @click="router.get(parents.prev_page_url || '')"
-                    >
-                        Previous
-                    </Button>
-                    <div
-                        class="flex h-9 min-w-[36px] items-center justify-center rounded-xl bg-primary text-xs font-bold text-white shadow-lg shadow-primary/20"
-                    >
-                        {{ parents.current_page }} / {{ parents.last_page }}
+                <!-- Empty State -->
+                <div v-if="parents.total === 0" class="flex flex-col items-center justify-center py-32 text-center">
+                    <div class="h-16 w-16 rounded-2xl bg-muted/30 flex items-center justify-center mb-4">
+                        <Users class="h-8 w-8 text-muted-foreground/30" />
                     </div>
-                    <Button
-                        variant="outline"
-                        class="h-9 rounded-xl border-border px-4 text-xs font-bold tracking-tight uppercase shadow-sm transition-all hover:bg-muted"
-                        :disabled="parents.current_page >= parents.last_page"
-                        @click="router.get(parents.next_page_url || '')"
-                    >
-                        Next
-                    </Button>
+                    <h3 class="text-sm font-bold text-foreground">No Parents Found</h3>
+                    <p class="text-xs text-muted-foreground mt-1 max-w-[250px]">We couldn't find any guardian records matching your search filters.</p>
+                    <Button variant="outline" @click="searchQuery = ''; selectedStatus = 'all'" class="mt-6 h-9 rounded-xl text-[10px] font-bold uppercase px-6">Clear All Filters</Button>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5">
+                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-50">Row {{ parents.from }} - {{ parents.to }} OF {{ stats.total }} TOTAL</p>
+                    <div class="flex items-center gap-1.5">
+                        <template v-for="(link, i) in parents.links" :key="i">
+                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-[10px] font-bold transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" @click="applyFilters(Number(link.label))">{{ link.label }}</Button>
+                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="applyFilters(parents.current_page - 1)">Prev</Button>
+                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-[10px] font-bold uppercase border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" @click="applyFilters(parents.current_page + 1)">Next</Button>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
     </AppLayout>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

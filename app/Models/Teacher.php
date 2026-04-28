@@ -41,6 +41,21 @@ class Teacher extends Model
 
     protected $appends = ['full_name', 'photo_url'];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Teacher $teacher) {
+            $teacher->qualifications()->delete();
+            $teacher->certifications()->delete();
+            $teacher->documents()->delete();
+            $teacher->leaves()->delete();
+            $teacher->attendance()->delete();
+            $teacher->appraisals()->delete();
+            $teacher->trainings()->delete();
+            $teacher->subjectAssignments()->delete();
+            $teacher->timetableSlots()->delete();
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
