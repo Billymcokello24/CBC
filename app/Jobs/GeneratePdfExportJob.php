@@ -32,9 +32,12 @@ class GeneratePdfExportJob implements ShouldQueue
     public function handle(): void
     {
         $process = ExportProcess::find($this->exportProcessId);
-        if (!$process) return;
+        if (!$process || $process->status === 'cancelled') return;
 
         try {
+            // Re-check status in case it was cancelled while in queue
+            if ($process->status === 'cancelled') return;
+            
             $process->update(['status' => 'processing']);
             
             $filters = $process->filters;

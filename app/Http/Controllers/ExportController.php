@@ -39,6 +39,50 @@ class ExportController extends Controller
         return response()->json($process);
     }
 
+    public function cancel(ExportProcess $process)
+    {
+        abort_unless($process->user_id === auth()->id(), 403);
+        
+        if ($process->status === 'pending' || $process->status === 'processing') {
+            $process->update([
+                'status' => 'cancelled',
+                'error_message' => 'Process cancelled by user.'
+            ]);
+            return response()->json(['message' => 'Process cancelled.']);
+        }
+
+        return response()->json(['message' => 'Process cannot be cancelled.'], 400);
+    }
+
+    public function startDelete(Request $request)
+    {
+        $request->validate([
+            'type' => 'required|string|in:staff,students',
+            'ids' => 'nullable|array',
+            'all_matching' => 'nullable|boolean',
+            'filters' => 'nullable|array'
+        ]);
+
+        $process = ExportProcess::create([
+            'user_id' => auth()->id(),
+            'school_id' => auth()->user()->school_id,
+            'type' => 'delete_' . $request->type,
+            'status' => 'pending',
+            'filters' => [
+                'ids' => $request->ids,
+                'all' => $request->all_matching,
+                'filters' => $request->filters
+            ]
+        ]);
+
+        \App\Jobs\BulkDeleteJob::dispatch($process->id);
+
+        return response()->json([
+            'id' => $process->id,
+            'message' => 'Bulk deletion has started in the background.'
+        ]);
+    }
+
     public function download(ExportProcess $process)
     {
         abort_unless($process->user_id === auth()->id(), 403);

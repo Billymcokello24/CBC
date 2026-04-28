@@ -183,24 +183,32 @@ const selectAllMatching = () => {
     selectedLearnerIds.value = props.learners.data.map((l: any) => l.id);
 };
 
-const handleBulkDelete = () => {
+const handleBulkDelete = async () => {
     const count = isGlobalSelection.value ? props.stats.total : selectedLearnerIds.value.length;
     if (window.confirm(`Are you sure you want to delete ${count} ${isGlobalSelection.value ? 'matching' : 'selected'} students? This action is reversible via soft delete.`)) {
-        router.post('/students/bulk-delete', {
-            learner_ids: selectedLearnerIds.value,
-            all_matching: isGlobalSelection.value,
-            filters: isGlobalSelection.value ? {
-                search: searchQuery.value,
-                status: selectedStatus.value,
-                class_id: selectedClassId.value,
-                gender: selectedGender.value,
-            } : null
-        }, {
-            onSuccess: () => {
-                selectedLearnerIds.value = [];
-                isGlobalSelection.value = false;
+        try {
+            const response = await axios.post('/exports/start-delete', {
+                type: 'students',
+                ids: selectedLearnerIds.value,
+                all_matching: isGlobalSelection.value,
+                filters: isGlobalSelection.value ? {
+                    search: searchQuery.value,
+                    status: selectedStatus.value,
+                    class_id: selectedClassId.value,
+                    gender: selectedGender.value,
+                } : null
+            });
+            
+            selectedLearnerIds.value = [];
+            isGlobalSelection.value = false;
+            
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('delete-started', { detail: response.data }));
             }
-        });
+        } catch (error) {
+            console.error('Bulk delete failed:', error);
+            alert('Failed to start deletion. Please try again.');
+        }
     }
 };
 
@@ -296,6 +304,27 @@ const downloadPdf = async () => {
                 <div class="space-y-1">
                     <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Students</h1>
                     <p class="text-xs text-muted-foreground">Managing all students in the school</p>
+                </div>
+
+                <div v-if="promoteOpen" class="flex-1 max-w-md animate-in slide-in-from-top-2">
+                    <div class="flex items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-2 pr-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                            <ArrowUpCircle class="h-5 w-5" />
+                        </div>
+                        <div class="flex-grow">
+                             <div class="relative">
+                                <select v-model="promotionTargetClass" class="h-9 w-full cursor-pointer appearance-none rounded-lg border border-emerald-200 bg-white px-3 pr-8 text-xs font-bold text-emerald-900 outline-none focus:ring-2 focus:ring-emerald-500/20">
+                                    <option value="">Move {{ selectedLearnerIds.length }} to...</option>
+                                    <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-400" />
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <Button @click="handleBulkPromotion" :disabled="promotionForm.processing || !promotionTargetClass" class="h-9 rounded-lg bg-emerald-600 px-4 text-[10px] font-bold text-white hover:bg-emerald-700">PROMOTE</Button>
+                             <Button variant="ghost" @click="promoteOpen = false" class="h-9 w-9 p-0 rounded-lg text-emerald-400 hover:text-emerald-600 hover:bg-emerald-100"><X class="h-4 w-4" /></Button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -551,24 +580,7 @@ const downloadPdf = async () => {
             </div>
         </div>
 
-        <!-- Floating Selection Action Bar -->
-        <div v-if="selectedLearnerIds.length > 0" class="fixed bottom-10 left-1/2 z-50 -translate-x-1/2 animate-in fade-in slide-in-from-bottom-10">
-            <div class="flex items-center gap-6 rounded-2xl border border-primary/20 bg-slate-900 px-6 py-4 text-white shadow-2xl">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20"><Users class="h-5 w-5 text-primary" /></div>
-                    <div class="space-y-0.5">
-                        <p class="text-xs font-semibold tracking-tight">{{ selectedLearnerIds.length }} students selected</p>
-                        <p class="text-[10px] font-medium text-white/50 uppercase">Selection Actions</p>
-                    </div>
-                </div>
-                <div class="h-10 w-px bg-white/10 mx-2"></div>
-                <div class="flex items-center gap-2">
-                    <Button @click="promoteOpen = true" class="h-10 rounded-xl bg-primary px-6 text-xs font-semibold text-white shadow-lg hover:bg-primary/90 transition-all">Bulk Promote</Button>
-                    <Button @click="handleBulkDelete" class="h-10 rounded-xl bg-rose-600 px-6 text-xs font-semibold text-white shadow-lg hover:bg-rose-700 transition-all">Bulk Delete</Button>
-                    <Button variant="ghost" @click="selectedLearnerIds = []" class="h-10 rounded-xl px-4 text-xs font-medium text-slate-400 hover:text-white">Clear</Button>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Confirm Dialog -->
         <Dialog :open="confirmOpen" @update:open="confirmOpen = $event">
@@ -594,39 +606,6 @@ const downloadPdf = async () => {
             </DialogContent>
         </Dialog>
 
-        <Dialog :open="promoteOpen" @update:open="promoteOpen = $event">
-             <DialogContent class="sm:max-w-[450px] rounded-2xl border-border bg-card p-0 shadow-2xl overflow-hidden">
-                <div class="p-6">
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500"><ArrowUpCircle class="h-6 w-6" /></div>
-                        <div class="space-y-1">
-                            <h3 class="text-lg font-bold tracking-tight text-foreground">Promote Students</h3>
-                            <p class="text-xs text-muted-foreground font-medium">Move students to a new class</p>
-                        </div>
-                    </div>
-                    <div class="space-y-6">
-                        <div class="p-4 rounded-xl border border-emerald-100 bg-emerald-50/30">
-                            <p class="text-sm font-semibold text-foreground">{{ selectedLearnerIds.length }} students selected for promotion.</p>
-                        </div>
-                        <div class="space-y-2">
-                            <Label class="text-xs font-medium text-muted-foreground">Target Class</Label>
-                            <div class="relative">
-                                <select v-model="promotionTargetClass" class="h-11 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/10 px-4 text-sm font-medium outline-none focus:bg-background">
-                                    <option value="">Select target class</option>
-                                    <option v-for="c in classes" :key="c.id" :value="c.id">{{ c.name }}</option>
-                                </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground/40" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex items-center justify-end gap-3 bg-muted/10 p-4 border-t border-border/50">
-                    <Button variant="ghost" @click="promoteOpen = false" class="h-10 rounded-lg px-4 text-xs font-semibold">Cancel</Button>
-                    <Button @click="handleBulkPromotion" :disabled="promotionForm.processing || !promotionTargetClass" class="h-10 rounded-lg bg-emerald-600 px-6 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all">Promote Students</Button>
-                </div>
-            </DialogContent>
-        </Dialog>
-        
         <BulkUploadModal v-model:open="bulkUploadOpen" @uploaded="applyFilters()" />
     </AppLayout>
 </template>

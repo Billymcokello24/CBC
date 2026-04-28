@@ -122,24 +122,32 @@ const selectAllMatching = () => {
     selectedStaffIds.value = props.teachers.data.map((t: any) => t.id);
 };
 
-const handleBulkDelete = () => {
+const handleBulkDelete = async () => {
     const count = isGlobalSelection.value ? props.stats.total : selectedStaffIds.value.length;
     if (window.confirm(`Are you sure you want to delete ${count} ${isGlobalSelection.value ? 'matching' : 'selected'} staff members? This action is reversible via soft delete.`)) {
-        router.post('/staffs/bulk-delete', {
-            ids: selectedStaffIds.value,
-            all_matching: isGlobalSelection.value,
-            filters: isGlobalSelection.value ? {
-                search: searchQuery.value,
-                status: statusFilter.value,
-                department_id: departmentFilter.value,
-                role: roleFilter.value,
-            } : null
-        }, {
-            onSuccess: () => {
-                selectedStaffIds.value = [];
-                isGlobalSelection.value = false;
+        try {
+            const response = await axios.post('/exports/start-delete', {
+                type: 'staff',
+                ids: selectedStaffIds.value,
+                all_matching: isGlobalSelection.value,
+                filters: isGlobalSelection.value ? {
+                    search: searchQuery.value,
+                    status: statusFilter.value,
+                    department_id: departmentFilter.value,
+                    role: roleFilter.value,
+                } : null
+            });
+            
+            selectedStaffIds.value = [];
+            isGlobalSelection.value = false;
+            
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('delete-started', { detail: response.data }));
             }
-        });
+        } catch (error) {
+            console.error('Bulk delete failed:', error);
+            alert('Failed to start deletion. Please try again.');
+        }
     }
 };
 

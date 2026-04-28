@@ -58,7 +58,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // EXPORT MANAGEMENT
     // ──────────────────────────────────────────────
     Route::post('exports/start', [\App\Http\Controllers\ExportController::class, 'start'])->name('exports.start');
+    Route::post('exports/start-delete', [\App\Http\Controllers\ExportController::class, 'startDelete'])->name('exports.start-delete');
     Route::get('exports/{process}/status', [\App\Http\Controllers\ExportController::class, 'status'])->name('exports.status');
+    Route::post('exports/{process}/cancel', [\App\Http\Controllers\ExportController::class, 'cancel'])->name('exports.cancel');
     Route::get('exports/{process}/download', [\App\Http\Controllers\ExportController::class, 'download'])->name('exports.download');
 
 
