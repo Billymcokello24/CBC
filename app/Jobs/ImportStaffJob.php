@@ -189,38 +189,33 @@ class ImportStaffJob implements ShouldQueue
             throw new \InvalidArgumentException("CSV line {$line}: first_name, last_name, staff_number and email are required.");
         }
 
-        $departmentId = null;
-        if (!empty($row['department_name'])) {
-            $departmentId = Department::query()->firstOrCreate(
-                ['school_id' => $this->schoolId, 'name' => $row['department_name']],
-                [
-                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['department_name'], '')),
-                    'is_active' => true
-                ]
-            )->id;
-        }
+        $departmentName = !empty($row['department_name']) ? $row['department_name'] : 'Academic';
+        $departmentId = Department::query()->firstOrCreate(
+            ['school_id' => $this->schoolId, 'name' => $departmentName],
+            [
+                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($departmentName, '')),
+                'is_active' => true
+            ]
+        )->id;
 
-        $categoryId = null;
-        if (!empty($row['staff_category_name'])) {
-            $categoryId = StaffCategory::query()->firstOrCreate(
-                ['school_id' => $this->schoolId, 'name' => $row['staff_category_name']],
-                [
-                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['staff_category_name'], '')),
-                    'is_active' => true
-                ]
-            )->id;
-        }
+        $categoryName = !empty($row['staff_category_name']) ? $row['staff_category_name'] : 'Teaching Staff';
+        $categoryId = StaffCategory::query()->firstOrCreate(
+            ['school_id' => $this->schoolId, 'name' => $categoryName],
+            [
+                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($categoryName, '')),
+                'is_active' => true
+            ]
+        )->id;
 
-        $designationId = null;
-        if (!empty($row['staff_designation_name'])) {
-            $designationId = StaffDesignation::query()->firstOrCreate(
-                ['school_id' => $this->schoolId, 'name' => $row['staff_designation_name']],
-                [
-                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['staff_designation_name'], '')),
-                    'is_active' => true
-                ]
-            )->id;
-        }
+        $designationName = !empty($row['staff_designation_name']) ? $row['staff_designation_name'] : 'Teacher';
+        $designationId = StaffDesignation::query()->firstOrCreate(
+            ['school_id' => $this->schoolId, 'name' => $designationName],
+            [
+                'staff_category_id' => $categoryId,
+                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($designationName, '')),
+                'is_active' => true
+            ]
+        )->id;
 
         return [
             'first_name' => $row['first_name'],
@@ -229,8 +224,8 @@ class ImportStaffJob implements ShouldQueue
             'staff_number' => $row['staff_number'],
             'tsc_number' => $row['tsc_number'] ?? null,
             'email' => $row['email'],
-            'phone' => $row['phone'] ?? null,
-            'gender' => $row['gender'] ?? 'male',
+            'phone' => $row['phone'] ?? '0000000000',
+            'gender' => strtolower($row['gender'] ?? 'male'),
             'role' => $row['role'] ?? 'teacher',
             'date_of_birth' => $row['date_of_birth'] ?? null,
             'id_number' => $row['id_number'] ?? null,

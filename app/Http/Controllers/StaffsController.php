@@ -76,14 +76,14 @@ class StaffsController extends Controller
                 'id' => $teacher->department->id,
                 'name' => $teacher->department->name,
             ] : null,
-            'user' => [
+            'user' => $teacher->user ? [
                 'id' => $teacher->user->id,
                 'email' => $teacher->user->email ?? $teacher->email,
                 'roles' => $teacher->user->roles->map(fn($role) => [
                     'id' => $role->id,
                     'name' => $role->name,
                 ]),
-            ],
+            ] : null,
         ];
     }
 
@@ -158,12 +158,16 @@ class StaffsController extends Controller
             ->whereHas('user', function ($q) use ($roleName) {
                 $q->role($roleName);
             })
-            ->with(['department:id,name', 'user.roles'])
+            ->with([
+                'department:id,name', 
+                'user' => fn($q) => $q->withoutGlobalScopes()->with('roles')
+            ])
             ->when($search !== '', fn ($q) => $q->search($search))
             ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId));
 
         $staffs = $query->orderBy('first_name')
             ->paginate($request->integer('per_page', 20))
+            ->through(fn ($teacher) => $this->transformStaffRow($teacher))
             ->withQueryString();
 
         return Inertia::render('staffs/RoleDirectory', [
@@ -202,7 +206,10 @@ class StaffsController extends Controller
         }
 
         $query = Teacher::query()
-            ->with(['department:id,name', 'user.roles'])
+            ->with([
+                'department:id,name', 
+                'user' => fn($q) => $q->withoutGlobalScopes()->with('roles')
+            ])
             ->when($search !== '', fn ($q) => $q->search($search))
             ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
             ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId));
@@ -475,7 +482,9 @@ class StaffsController extends Controller
             abort_unless($teacher->department_id == $hodDeptId, 403, 'You do not have permission to edit staff in another department.');
         }
 
-        $teacher->load('user.roles');
+        $teacher->load([
+            'user' => fn($q) => $q->withoutGlobalScopes()->with('roles')
+        ]);
         return Inertia::render('staffs/Edit', [
             'teacher' => $teacher,
             'departments' => Department::orderBy('name')->get(['id', 'name']),
@@ -536,7 +545,7 @@ class StaffsController extends Controller
         ]);
 
         return DB::transaction(function () use ($validated, $request, $teacher) {
-            $user = $teacher->user;
+            $user = $teacher->user()->withoutGlobalScopes()->first();
 
             $userData = [
                 'name' => "{$validated['first_name']} {$validated['last_name']}",

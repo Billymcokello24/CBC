@@ -22,7 +22,10 @@ class ParentsController extends Controller
         $search = $request->input('search', '');
         
         $parents = Guardian::query()
-            ->with(['students:id,first_name,last_name,admission_number', 'user:id,email'])
+            ->with([
+                'students:id,first_name,last_name,admission_number', 
+                'user' => fn($q) => $q->withoutGlobalScopes()->select('id', 'email')
+            ])
             ->when($search, fn($q) => $q->search($search))
             ->latest()
             ->paginate(12)
@@ -120,7 +123,10 @@ class ParentsController extends Controller
      */
     public function show(Guardian $parent): Response
     {
-        $parent->load(['students:id,first_name,last_name,admission_number', 'user:id,email,name']);
+        $parent->load([
+            'students:id,first_name,last_name,admission_number', 
+            'user' => fn($q) => $q->withoutGlobalScopes()->select('id', 'email', 'name')
+        ]);
         return Inertia::render('parents/Show', [
             'parent' => $parent
         ]);
@@ -131,7 +137,10 @@ class ParentsController extends Controller
      */
     public function edit(Guardian $parent): Response
     {
-        $parent->load(['students:id', 'user:id,email']);
+        $parent->load([
+            'students:id', 
+            'user' => fn($q) => $q->withoutGlobalScopes()->select('id', 'email')
+        ]);
         return Inertia::render('parents/Edit', [
             'parent' => $parent,
             'students' => Student::active()->select('id', 'first_name', 'last_name', 'admission_number')->get(),
@@ -160,11 +169,15 @@ class ParentsController extends Controller
             DB::beginTransaction();
 
             // 1. Update User Account
-            $parent->user->update([
-                'name' => "{$validated['first_name']} {$validated['last_name']}",
-                'email' => $validated['email'],
-                'phone' => $validated['phone'],
-            ]);
+            // Use withoutGlobalScopes() because the user might have been originally created for a different school
+            $parentUser = $parent->user()->withoutGlobalScopes()->first();
+            if ($parentUser) {
+                $parentUser->update([
+                    'name' => "{$validated['first_name']} {$validated['last_name']}",
+                    'email' => $validated['email'],
+                    'phone' => $validated['phone'],
+                ]);
+            }
 
             // 2. Update Guardian Profile
             $parent->update($request->except(['student_ids', 'password', 'password_confirmation']));
