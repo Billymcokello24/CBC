@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
+import axios from 'axios';
 import {
     Users,
     Search,
@@ -31,6 +32,7 @@ import {
     ExternalLink,
     Upload,
     FileText,
+    CheckSquare,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -65,9 +67,12 @@ const searchQuery = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || 'all');
 const departmentFilter = ref(props.filters.department_id || 'all');
 const roleFilter = ref(props.filters.role || 'all');
+const perPage = ref(props.filters.per_page || 20);
 const bulkUploadOpen = ref(false);
+const selectedStaffIds = ref<number[]>([]);
+const isGlobalSelection = ref(false);
 
-const applyFilters = () => {
+const applyFilters = (pageNumber?: number) => {
     router.get(
         '/staffs',
         {
@@ -75,6 +80,8 @@ const applyFilters = () => {
             status: statusFilter.value,
             department_id: departmentFilter.value,
             role: roleFilter.value,
+            per_page: perPage.value,
+            page: pageNumber,
         },
         { preserveState: true, replace: true },
     );
@@ -87,9 +94,54 @@ watch(searchQuery, () => {
 });
 
 watch(
-    [statusFilter, departmentFilter, roleFilter],
+    [statusFilter, departmentFilter, roleFilter, perPage],
     () => applyFilters(),
 );
+
+const toggleSelection = (id: number) => {
+    isGlobalSelection.value = false;
+    const index = selectedStaffIds.value.indexOf(id);
+    if (index === -1) {
+        selectedStaffIds.value.push(id);
+    } else {
+        selectedStaffIds.value.splice(index, 1);
+    }
+};
+
+const toggleAllSelection = () => {
+    if (selectedStaffIds.value.length === props.teachers.data.length || isGlobalSelection.value) {
+        selectedStaffIds.value = [];
+        isGlobalSelection.value = false;
+    } else {
+        selectedStaffIds.value = props.teachers.data.map((t: any) => t.id);
+    }
+};
+
+const selectAllMatching = () => {
+    isGlobalSelection.value = true;
+    selectedStaffIds.value = props.teachers.data.map((t: any) => t.id);
+};
+
+const handleBulkDelete = () => {
+    const count = isGlobalSelection.value ? props.stats.total : selectedStaffIds.value.length;
+    if (window.confirm(`Are you sure you want to delete ${count} ${isGlobalSelection.value ? 'matching' : 'selected'} staff members? This action is reversible via soft delete.`)) {
+        router.post('/staffs/bulk-delete', {
+            ids: selectedStaffIds.value,
+            all_matching: isGlobalSelection.value,
+            filters: isGlobalSelection.value ? {
+                search: searchQuery.value,
+                status: statusFilter.value,
+                department_id: departmentFilter.value,
+                role: roleFilter.value,
+            } : null
+        }, {
+            onSuccess: () => {
+                selectedStaffIds.value = [];
+                isGlobalSelection.value = false;
+            }
+        });
+    }
+};
 
 const confirmDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this staff member?')) {
@@ -97,15 +149,25 @@ const confirmDelete = (id: number) => {
     }
 };
 
-const downloadPdf = () => {
-    const params = new URLSearchParams({
-        search: searchQuery.value,
-        status: statusFilter.value,
-        department_id: departmentFilter.value,
-        role: roleFilter.value,
-    }).toString();
-    
-    window.location.href = `/staffs/export-pdf?${params}`;
+const downloadPdf = async () => {
+    try {
+        const response = await axios.post('/exports/start', {
+            type: 'staff',
+            filters: {
+                search: searchQuery.value,
+                status: statusFilter.value,
+                department_id: departmentFilter.value,
+                role: roleFilter.value,
+            }
+        });
+        
+        if (window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('export-started', { detail: response.data }));
+        }
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Failed to start export. Please try again.');
+    }
 };
 
 const getStatusColor = (status: string) => {
@@ -148,6 +210,15 @@ const getStatusColor = (status: string) => {
                         Bulk Upload
                     </Button>
                     <Button
+                        v-if="selectedStaffIds.length > 0"
+                        variant="outline"
+                        @click="handleBulkDelete"
+                        class="h-10 rounded-lg border-rose-200 bg-rose-50 px-4 text-xs font-semibold text-rose-700 hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-900 dark:text-rose-400"
+                    >
+                        <Trash2 class="mr-2 h-4 w-4" />
+                        Bulk Delete ({{ isGlobalSelection ? stats.total : selectedStaffIds.length }})
+                    </Button>
+                    <Button
                         variant="outline"
                         @click="downloadPdf"
                         class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
@@ -162,6 +233,27 @@ const getStatusColor = (status: string) => {
                         </Link>
                     </Button>
                 </div>
+            </div>
+
+            <!-- Global Selection Banner -->
+            <div v-if="selectedStaffIds.length === teachers.data.length && teachers.data.length > 0 && !isGlobalSelection && stats.total > teachers.data.length" 
+                 class="rounded-xl bg-primary/10 border border-primary/20 p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+                <div class="flex items-center gap-3">
+                    <CheckSquare class="h-5 w-5 text-primary" />
+                    <p class="text-sm font-medium text-primary">All <b>{{ teachers.data.length }}</b> staff on this page are selected.</p>
+                </div>
+                <Button variant="link" @click="selectAllMatching" class="text-xs font-bold text-primary underline">
+                    Select all {{ stats.total }} staff members matching these filters
+                </Button>
+            </div>
+            <div v-if="isGlobalSelection" class="rounded-xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between text-white animate-in slide-in-from-top-2 shadow-xl">
+                 <div class="flex items-center gap-3">
+                    <Database class="h-5 w-5 text-primary" />
+                    <p class="text-sm font-medium">All <b>{{ stats.total }}</b> staff members are selected.</p>
+                </div>
+                <Button variant="link" @click="selectedStaffIds = []; isGlobalSelection = false;" class="text-xs font-bold text-white/60 hover:text-white underline">
+                    Clear selection
+                </Button>
             </div>
 
             <!-- Stats -->
@@ -189,6 +281,19 @@ const getStatusColor = (status: string) => {
                     <div class="flex items-center gap-2">
                         <Filter class="h-4 w-4 text-primary" />
                         <span class="text-xs font-bold text-foreground uppercase">Filter Staff</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 pr-4 border-r border-border">
+                            <Label class="text-[10px] font-bold text-muted-foreground uppercase">Show</Label>
+                            <select v-model="perPage" class="h-8 rounded-lg border border-border bg-transparent px-2 text-[11px] font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20">
+                                <option :value="20">20 / page</option>
+                                <option :value="50">50 / page</option>
+                                <option :value="100">100 / page</option>
+                                <option :value="200">200 / page</option>
+                                <option :value="500">500 / page</option>
+                            </select>
+                        </div>
+                        <Button variant="ghost" size="sm" class="h-8 text-xs font-medium">Filter Results</Button>
                     </div>
                 </div>
                 <div class="p-6">
@@ -241,7 +346,13 @@ const getStatusColor = (status: string) => {
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/5 text-xs font-bold text-muted-foreground uppercase">
+                            <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                <th class="w-12 px-6 py-4">
+                                    <button @click="toggleAllSelection" class="flex h-4 w-4 items-center justify-center rounded border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedStaffIds.length === teachers.data.length && teachers.data.length > 0" class="h-3 w-3 text-primary" />
+                                        <div v-else-if="selectedStaffIds.length > 0" class="h-1.5 w-1.5 rounded-sm bg-primary"></div>
+                                    </button>
+                                </th>
                                 <th class="px-6 py-4">Name</th>
                                 <th class="px-6 py-4">Department</th>
                                 <th class="px-6 py-4">Designation</th>
@@ -252,15 +363,20 @@ const getStatusColor = (status: string) => {
                         <tbody class="divide-y divide-border/50 text-xs font-medium">
                             <tr v-for="teacher in teachers.data" :key="teacher.id" class="group transition-all hover:bg-muted/5">
                                 <td class="px-6 py-4">
+                                    <button @click="toggleSelection(teacher.id)" class="flex h-4 w-4 items-center justify-center rounded border border-border bg-background transition-all hover:border-primary">
+                                        <CheckSquare v-if="selectedStaffIds.includes(teacher.id)" class="h-3 w-3 text-primary" />
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                                        <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border bg-muted shadow-sm transition-transform group-hover:scale-105">
                                             <img v-if="teacher.photo_url" :src="teacher.photo_url" class="h-full w-full object-cover" />
                                             <div v-else class="flex h-full w-full items-center justify-center bg-primary/10 text-[10px] font-bold text-primary">
                                                 {{ (teacher.name || 'S').charAt(0).toUpperCase() }}
                                             </div>
                                         </div>
                                         <div class="space-y-0.5">
-                                            <p class="font-semibold text-foreground">{{ teacher.name }}</p>
+                                            <p class="font-semibold text-foreground group-hover:text-primary transition-colors">{{ teacher.name }}</p>
                                             <p class="text-[10px] text-muted-foreground">{{ teacher.email }}</p>
                                         </div>
                                     </div>
@@ -272,7 +388,7 @@ const getStatusColor = (status: string) => {
                                 </td>
                                 <td class="px-6 py-4 text-muted-foreground">{{ teacher.role || 'Personnel' }}</td>
                                 <td class="px-6 py-4">
-                                    <Badge :class="getStatusColor(teacher.status)" class="rounded-lg border-0 px-2.5 py-1 text-[10px] font-semibold">
+                                    <Badge :class="getStatusColor(teacher.status)" class="rounded-lg border-0 px-2.5 py-1 text-[10px] font-semibold uppercase shadow-sm">
                                         {{ teacher.status }}
                                     </Badge>
                                 </td>
@@ -293,18 +409,6 @@ const getStatusColor = (status: string) => {
                                         >
                                             <Trash2 class="h-4 w-4" />
                                         </Button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger as-child>
-                                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-muted"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-48 rounded-xl border-border bg-card p-2 shadow-xl">
-                                                <DropdownMenuItem class="rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground focus:bg-muted">
-                                                    <Mail class="mr-3 h-4 w-4" />
-                                                    Send Message
-                                                </DropdownMenuItem>
-                                                <!-- Other secondary actions can go here -->
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
                                     </div>
                                 </td>
                             </tr>
@@ -327,5 +431,6 @@ const getStatusColor = (status: string) => {
         </div>
 
         <StaffBulkUploadModal v-model:open="bulkUploadOpen" @uploaded="applyFilters()" />
+
     </AppLayout>
 </template>

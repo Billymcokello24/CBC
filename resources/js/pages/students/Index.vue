@@ -115,6 +115,7 @@ const selectedClassId = ref<string>(
 const selectedGender = ref(props.filters.gender ?? 'all');
 const showFilters = ref(props.filters.show_filters ?? true);
 const perPage = ref(props.filters.per_page ?? 15);
+const isGlobalSelection = ref(false);
 
 const actionForm = useForm({});
 const promotionForm = useForm<{ learner_ids: number[] }>({ learner_ids: [] });
@@ -158,12 +159,8 @@ watch(
     () => applyFilters(),
 );
 
-const activeRate = computed(() => {
-    if (!props.stats.total) return 0;
-    return Math.round((props.stats.active / props.stats.total) * 100);
-});
-
 const toggleSelection = (id: number) => {
+    isGlobalSelection.value = false;
     const index = selectedLearnerIds.value.indexOf(id);
     if (index === -1) {
         selectedLearnerIds.value.push(id);
@@ -173,12 +170,44 @@ const toggleSelection = (id: number) => {
 };
 
 const toggleAllSelection = () => {
-    if (selectedLearnerIds.value.length === props.learners.data.length) {
+    if (selectedLearnerIds.value.length === props.learners.data.length || isGlobalSelection.value) {
         selectedLearnerIds.value = [];
+        isGlobalSelection.value = false;
     } else {
-        selectedLearnerIds.value = props.learners.data.map((l) => l.id);
+        selectedLearnerIds.value = props.learners.data.map((l: any) => l.id);
     }
 };
+
+const selectAllMatching = () => {
+    isGlobalSelection.value = true;
+    selectedLearnerIds.value = props.learners.data.map((l: any) => l.id);
+};
+
+const handleBulkDelete = () => {
+    const count = isGlobalSelection.value ? props.stats.total : selectedLearnerIds.value.length;
+    if (window.confirm(`Are you sure you want to delete ${count} ${isGlobalSelection.value ? 'matching' : 'selected'} students? This action is reversible via soft delete.`)) {
+        router.post('/students/bulk-delete', {
+            learner_ids: selectedLearnerIds.value,
+            all_matching: isGlobalSelection.value,
+            filters: isGlobalSelection.value ? {
+                search: searchQuery.value,
+                status: selectedStatus.value,
+                class_id: selectedClassId.value,
+                gender: selectedGender.value,
+            } : null
+        }, {
+            onSuccess: () => {
+                selectedLearnerIds.value = [];
+                isGlobalSelection.value = false;
+            }
+        });
+    }
+};
+
+const activeRate = computed(() => {
+    if (!props.stats.total) return 0;
+    return Math.round((props.stats.active / props.stats.total) * 100);
+});
 
 const openConfirm = (mode: 'suspend' | 'activate' | 'delete', learner: LearnerRow) => {
     confirmMode.value = mode;
@@ -250,6 +279,7 @@ const downloadPdf = async () => {
         alert('Failed to start export. Please try again.');
     }
 };
+
 </script>
 
 <template>
@@ -275,8 +305,26 @@ const downloadPdf = async () => {
                         class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
                     >
                         <Upload class="mr-2 h-4 w-4 text-primary" />
-                        Add Many Students
+                        Bulk Upload
                     </Button>
+                    <template v-if="selectedLearnerIds.length > 0">
+                        <Button
+                            variant="outline"
+                            @click="promoteOpen = true"
+                            class="h-10 rounded-lg border-primary/20 bg-primary/5 px-4 text-xs font-semibold text-primary hover:bg-primary/10"
+                        >
+                            <Users class="mr-2 h-4 w-4" />
+                            Bulk Promote ({{ isGlobalSelection ? stats.total : selectedLearnerIds.length }})
+                        </Button>
+                        <Button
+                            variant="outline"
+                            @click="handleBulkDelete"
+                            class="h-10 rounded-lg border-rose-200 bg-rose-50 px-4 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                        >
+                            <Trash2 class="mr-2 h-4 w-4" />
+                            Bulk Delete
+                        </Button>
+                    </template>
                     <Button
                         variant="outline"
                         @click="downloadPdf"
@@ -292,6 +340,27 @@ const downloadPdf = async () => {
                         </Link>
                     </Button>
                 </div>
+            </div>
+
+            <!-- Global Selection Banner -->
+            <div v-if="selectedLearnerIds.length === learners.data.length && learners.data.length > 0 && !isGlobalSelection && stats.total > learners.data.length" 
+                 class="rounded-xl bg-primary/10 border border-primary/20 p-4 flex items-center justify-between animate-in slide-in-from-top-2">
+                <div class="flex items-center gap-3">
+                    <CheckSquare class="h-5 w-5 text-primary" />
+                    <p class="text-sm font-medium text-primary">All <b>{{ learners.data.length }}</b> students on this page are selected.</p>
+                </div>
+                <Button variant="link" @click="selectAllMatching" class="text-xs font-bold text-primary underline">
+                    Select all {{ stats.total }} students matching these filters
+                </Button>
+            </div>
+            <div v-if="isGlobalSelection" class="rounded-xl bg-slate-900 border border-slate-800 p-4 flex items-center justify-between text-white animate-in slide-in-from-top-2 shadow-xl">
+                 <div class="flex items-center gap-3">
+                    <Database class="h-5 w-5 text-primary" />
+                    <p class="text-sm font-medium">All <b>{{ stats.total }}</b> students matching filters are selected.</p>
+                </div>
+                <Button variant="link" @click="selectedLearnerIds = []; isGlobalSelection = false;" class="text-xs font-bold text-white/60 hover:text-white underline">
+                    Clear selection
+                </Button>
             </div>
 
             <!-- Stats Grid -->
@@ -318,11 +387,23 @@ const downloadPdf = async () => {
                 <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
                     <div class="flex items-center gap-2">
                         <Search class="h-4 w-4 text-primary" />
-                        <span class="text-xs font-semibold text-foreground">Filter Students</span>
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Student Registry</span>
                     </div>
-                    <Button variant="ghost" size="sm" @click="showFilters = !showFilters" class="h-8 text-xs font-medium">
-                        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
-                    </Button>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 pr-4 border-r border-border">
+                            <Label class="text-[10px] font-bold text-muted-foreground uppercase">Show</Label>
+                            <select v-model="perPage" class="h-8 rounded-lg border border-border bg-transparent px-2 text-[11px] font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20">
+                                <option :value="15">15 / page</option>
+                                <option :value="50">50 / page</option>
+                                <option :value="100">100 / page</option>
+                                <option :value="200">200 / page</option>
+                                <option :value="500">500 / page</option>
+                            </select>
+                        </div>
+                        <Button variant="ghost" size="sm" @click="showFilters = !showFilters" class="h-8 text-xs font-medium">
+                            {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+                        </Button>
+                    </div>
                 </div>
                 <div v-show="showFilters" class="p-6">
                      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -483,6 +564,7 @@ const downloadPdf = async () => {
                 <div class="h-10 w-px bg-white/10 mx-2"></div>
                 <div class="flex items-center gap-2">
                     <Button @click="promoteOpen = true" class="h-10 rounded-xl bg-primary px-6 text-xs font-semibold text-white shadow-lg hover:bg-primary/90 transition-all">Bulk Promote</Button>
+                    <Button @click="handleBulkDelete" class="h-10 rounded-xl bg-rose-600 px-6 text-xs font-semibold text-white shadow-lg hover:bg-rose-700 transition-all">Bulk Delete</Button>
                     <Button variant="ghost" @click="selectedLearnerIds = []" class="h-10 rounded-xl px-4 text-xs font-medium text-slate-400 hover:text-white">Clear</Button>
                 </div>
             </div>

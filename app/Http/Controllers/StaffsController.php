@@ -727,12 +727,33 @@ class StaffsController extends Controller
     public function bulkDelete(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'ids' => ['required', 'array', 'min:1'],
+            'ids' => ['nullable', 'array'],
             'ids.*' => ['integer', 'exists:teachers,id'],
+            'all_matching' => ['nullable', 'boolean'],
+            'filters' => ['nullable', 'array'],
         ]);
 
-        DB::transaction(function () use ($validated) {
-            $teachers = Teacher::whereIn('id', $validated['ids'])->get();
+        $ids = $validated['ids'] ?? [];
+        $allMatching = $validated['all_matching'] ?? false;
+
+        DB::transaction(function () use ($ids, $allMatching, $validated) {
+            $query = Teacher::query();
+            
+            if ($allMatching) {
+                $filters = $validated['filters'] ?? [];
+                $search = $filters['search'] ?? '';
+                $status = $filters['status'] ?? 'all';
+                $deptId = $filters['department_id'] ?? 'all';
+
+                $query->where('school_id', auth()->user()->school_id)
+                    ->when($search !== '', fn ($q) => $q->search($search))
+                    ->when($status !== 'all', fn ($q) => $q->where('status', $status))
+                    ->when($deptId !== 'all', fn ($q) => $q->where('department_id', $deptId));
+            } else {
+                $query->whereIn('id', $ids);
+            }
+
+            $teachers = $query->with('user')->get();
             foreach ($teachers as $teacher) {
                 $user = $teacher->user;
                 $teacher->delete();

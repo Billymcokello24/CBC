@@ -605,13 +605,40 @@ class StudentsController extends Controller
     public function bulkDelete(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'learner_ids' => ['required', 'array', 'min:1'],
+            'learner_ids' => ['nullable', 'array'],
             'learner_ids.*' => ['integer', 'exists:students,id'],
+            'all_matching' => ['nullable', 'boolean'],
+            'filters' => ['nullable', 'array'],
         ]);
 
-        Student::whereIn('id', $validated['learner_ids'])->delete();
+        $ids = $validated['learner_ids'] ?? [];
+        $allMatching = $validated['all_matching'] ?? false;
 
-        return redirect()->route('students.index')->with('success', count($validated['learner_ids']) . ' learners deleted successfully.');
+        DB::transaction(function () use ($ids, $allMatching, $validated) {
+            $query = Student::query();
+            
+            if ($allMatching) {
+                $filters = $validated['filters'] ?? [];
+                $search = trim((string) ($filters['search'] ?? ''));
+                $status = (string) ($filters['status'] ?? 'all');
+                $classId = (int) ($filters['class_id'] ?? 0);
+                $gender = (string) ($filters['gender'] ?? 'all');
+                $boardingStatus = (string) ($filters['boarding_status'] ?? 'all');
+
+                $query->where('school_id', auth()->user()->school_id)
+                    ->when($search !== '', fn ($q) => $q->search($search))
+                    ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+                    ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))
+                    ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
+                    ->when($boardingStatus !== '' && $boardingStatus !== 'all', fn ($q) => $q->where('boarding_status', $boardingStatus));
+            } else {
+                $query->whereIn('id', $ids);
+            }
+
+            $query->delete();
+        });
+
+        return redirect()->route('students.index')->with('success', 'Selected learners deleted successfully.');
     }
 
 
