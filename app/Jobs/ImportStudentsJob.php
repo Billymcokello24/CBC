@@ -474,21 +474,32 @@ class ImportStudentsJob implements ShouldQueue
         $lastName = count($nameParts) ? array_pop($nameParts) : $firstName;
         $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
 
-        $randomPassword = \Illuminate\Support\Str::random(12);
-        $user = User::create([
-            'name' => trim((string) $data['name']),
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'password' => Hash::make($randomPassword),
-            'status' => 'active',
-            'school_id' => $student->school_id,
-            'force_password_change' => true,
-            'locale' => config('app.locale'),
-            'timezone' => config('app.timezone'),
-        ]);
+        $user = User::query()->where('email', $data['email'])->first();
 
-        if (Role::query()->where('name', 'parent')->where('guard_name', 'web')->exists()) {
-            $user->assignRole('parent');
+        if ($user) {
+            $user->update(array_filter([
+                'name' => $data['name'],
+                'phone' => $data['phone'],
+            ], fn ($value) => $value !== null && $value !== ''));
+        } else {
+            $randomPassword = \Illuminate\Support\Str::random(12);
+            $user = User::create([
+                'name' => trim((string) $data['name']),
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'password' => Hash::make($randomPassword),
+                'status' => 'active',
+                'school_id' => $student->school_id,
+                'force_password_change' => true,
+                'locale' => config('app.locale'),
+                'timezone' => config('app.timezone'),
+            ]);
+
+            if (Role::query()->where('name', 'parent')->where('guard_name', 'web')->exists()) {
+                $user->assignRole('parent');
+            }
+
+            Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
         }
 
         $guardian = Guardian::create([
@@ -517,8 +528,6 @@ class ImportStudentsJob implements ShouldQueue
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-
-        Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
 
         return $guardian;
     }

@@ -99,16 +99,27 @@ class ImportStaffJob implements ShouldQueue
 
                         $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
                     } else {
-                        $randomPassword = \Illuminate\Support\Str::random(12);
-                        $user = User::create([
-                            'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                            'email' => $normalized['email'],
-                            'phone' => $normalized['phone'],
-                            'password' => Hash::make($randomPassword),
-                            'status' => 'active',
-                            'school_id' => $this->schoolId,
-                            'force_password_change' => true,
-                        ]);
+                        $user = User::query()->where('email', $normalized['email'])->first();
+
+                        if ($user) {
+                            $user->update([
+                                'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                                'phone' => $normalized['phone'] ?? $user->phone,
+                            ]);
+                        } else {
+                            $randomPassword = \Illuminate\Support\Str::random(12);
+                            $user = User::create([
+                                'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                                'email' => $normalized['email'],
+                                'phone' => $normalized['phone'],
+                                'password' => Hash::make($randomPassword),
+                                'status' => 'active',
+                                'school_id' => $this->schoolId,
+                                'force_password_change' => true,
+                            ]);
+
+                            Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
+                        }
 
                         $roleName = strtolower($normalized['role'] ?? 'teacher');
                         if ($roleService->isValidTemplate($roleName)) {
@@ -121,8 +132,6 @@ class ImportStaffJob implements ShouldQueue
                         $teacherData['status'] = 'active';
 
                         Teacher::create($teacherData);
-
-                        Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
                     }
                 }
             });
