@@ -231,7 +231,7 @@ class ImportStaffJob implements ShouldQueue
         $departmentId = Department::query()->firstOrCreate(
             ['school_id' => $this->schoolId, 'name' => $departmentName],
             [
-                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($departmentName, '')),
+                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($departmentName, '')), 0, 100),
                 'is_active' => true
             ]
         )->id;
@@ -240,7 +240,7 @@ class ImportStaffJob implements ShouldQueue
         $categoryId = StaffCategory::query()->firstOrCreate(
             ['school_id' => $this->schoolId, 'name' => $categoryName],
             [
-                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($categoryName, '')),
+                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($categoryName, '')), 0, 100),
                 'is_active' => true
             ]
         )->id;
@@ -250,7 +250,7 @@ class ImportStaffJob implements ShouldQueue
             ['school_id' => $this->schoolId, 'name' => $designationName],
             [
                 'staff_category_id' => $categoryId,
-                'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($designationName, '')),
+                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($designationName, '')), 0, 100),
                 'is_active' => true
             ]
         )->id;
