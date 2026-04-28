@@ -190,10 +190,10 @@ class StaffsController extends Controller
 
     public function index(Request $request): Response
     {
-        $search = trim((string) $request->string('search'));
-        $status = (string) $request->string('status');
-        $departmentId = (string) $request->string('department_id');
-        $roleName = (string) $request->string('role');
+        $search = is_array($request->input('search')) ? '' : trim((string) ($request->input('search') ?? ''));
+        $status = is_array($request->input('status')) ? 'all' : (string) ($request->input('status') ?? 'all');
+        $departmentId = is_array($request->input('department_id')) ? 'all' : (string) ($request->input('department_id') ?? 'all');
+        $roleName = is_array($request->input('role')) ? 'all' : (string) ($request->input('role') ?? 'all');
 
         $user = auth()->user();
         $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);

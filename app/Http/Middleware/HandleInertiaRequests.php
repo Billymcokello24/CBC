@@ -63,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                 'active_imports' => $user ? \App\Models\ImportProcess::where('user_id', $user->id)
                     ->whereIn('status', ['pending', 'processing'])
                     ->get() : [],
+                'recent_imports' => $user ? \App\Models\ImportProcess::where('user_id', $user->id)
+                    ->whereIn('status', ['completed', 'failed'])
+                    ->latest()
+                    ->take(5)
+                    ->get() : [],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

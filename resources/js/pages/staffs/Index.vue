@@ -29,6 +29,7 @@ import {
     TrendingUp,
     ShieldAlert,
     ExternalLink,
+    Upload,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -44,6 +45,7 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import type { BreadcrumbItem } from '@/types';
+import StaffBulkUploadModal from './partials/StaffBulkUploadModal.vue';
 
 const props = defineProps<{
     teachers: any;
@@ -62,6 +64,7 @@ const searchQuery = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || 'all');
 const departmentFilter = ref(props.filters.department_id || 'all');
 const roleFilter = ref(props.filters.role || 'all');
+const bulkUploadOpen = ref(false);
 
 const applyFilters = () => {
     router.get(
@@ -124,6 +127,14 @@ const getStatusColor = (status: string) => {
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
+                    <Button
+                        variant="outline"
+                        @click="bulkUploadOpen = true"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
+                    >
+                        <Upload class="mr-2 h-4 w-4 text-primary" />
+                        Bulk Upload
+                    </Button>
                     <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90">
                         <Link href="/staffs/create">
                             <UserPlus class="mr-2 h-4 w-4" />
@@ -294,5 +305,7 @@ const getStatusColor = (status: string) => {
                 </div>
             </div>
         </div>
+
+        <StaffBulkUploadModal v-model:open="bulkUploadOpen" @uploaded="applyFilters()" />
     </AppLayout>
 </template>

@@ -48,6 +48,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard — accessible to ALL authenticated users (role-specific data returned by controller)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // User Import Status Tracker
+    Route::get('/api/user/imports/{importProcess}', function (\App\Models\ImportProcess $importProcess) {
+        abort_unless($importProcess->user_id === auth()->id(), 403);
+        return response()->json($importProcess);
+    });
+
     // Super Admin Routes
     Route::middleware(['role:super_admin'])->prefix('super-admin')->name('super-admin.')->group(function () {
         Route::get('dashboard', [SuperAdminDashboardController::class, 'index'])->name('dashboard');

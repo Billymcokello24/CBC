@@ -62,88 +62,123 @@ class ImportStaffJob implements ShouldQueue
                 return;
             }
 
-            DB::transaction(function () use ($rows, $roleService) {
-                foreach ($rows as $index => $row) {
+            foreach ($rows as $index => $row) {
+                try {
+                    $line = $index + 2;
+                    
                     if ($this->importProcessId && $index % 5 === 0) {
                         \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
                     }
-                    $line = $index + 2;
-                    $normalized = $this->normalizeTeacherImportRow($row, $line);
 
-                    $teacher = Teacher::query()
-                        ->where('school_id', $this->schoolId)
-                        ->where(function ($q) use ($normalized) {
-                            $q->where('staff_number', $normalized['staff_number']);
-                            if (!empty($normalized['email'])) {
-                                $q->orWhereHas('user', function ($uq) use ($normalized) {
-                                    $uq->where('email', $normalized['email']);
-                                });
-                                $q->orWhere('email', $normalized['email']);
+                    DB::transaction(function () use ($row, $line, $roleService) {
+                        $normalized = $this->normalizeTeacherImportRow($row, $line);
+
+                        $teacher = Teacher::query()
+                            ->withoutGlobalScopes()
+                            ->where('school_id', $this->schoolId)
+                            ->where(function ($q) use ($normalized) {
+                                $q->where('staff_number', $normalized['staff_number']);
+                                if (!empty($normalized['email'])) {
+                                    $q->orWhereHas('user', function ($uq) use ($normalized) {
+                                        $uq->withoutGlobalScopes()->where('email', $normalized['email']);
+                                    });
+                                    $q->orWhere('email', $normalized['email']);
+                                }
+                                if (!empty($normalized['id_number'])) {
+                                    $q->orWhere('id_number', $normalized['id_number']);
+                                }
+                                if (!empty($normalized['tsc_number'])) {
+                                    $q->orWhere('tsc_number', $normalized['tsc_number']);
+                                }
+                            })
+                            ->first();
+
+                        if ($teacher) {
+                            $user = $teacher->user()->withoutGlobalScopes()->first();
+                            
+                            // Check if we need to switch the user linkage because the email in CSV matches a different existing user
+                            $globalUser = User::query()->withoutGlobalScopes()->where('email', $normalized['email'])->first();
+                            
+                            if ($globalUser && (!$user || $user->id !== $globalUser->id)) {
+                                $user = $globalUser;
+                                $teacher->update(['user_id' => $user->id]);
                             }
-                            if (!empty($normalized['id_number'])) {
-                                $q->orWhere('id_number', $normalized['id_number']);
+
+                            if ($user) {
+                                $user->update([
+                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                                    'phone' => $normalized['phone'] ?? $user->phone,
+                                ]);
                             }
-                            if (!empty($normalized['tsc_number'])) {
-                                $q->orWhere('tsc_number', $normalized['tsc_number']);
-                            }
-                        })
-                        ->first();
 
-                    if ($teacher) {
-                        $user = $teacher->user;
-                        $user->update([
-                            'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                            'email' => $normalized['email'],
-                            'phone' => $normalized['phone'] ?? $user->phone,
-                        ]);
-
-                        $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
-                    } else {
-                        $user = User::query()->where('email', $normalized['email'])->first();
-
-                        if ($user) {
-                            $user->update([
-                                'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                                'phone' => $normalized['phone'] ?? $user->phone,
-                            ]);
+                            $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
                         } else {
-                            $randomPassword = \Illuminate\Support\Str::random(12);
-                            $user = User::create([
-                                'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                                'email' => $normalized['email'],
-                                'phone' => $normalized['phone'],
-                                'password' => Hash::make($randomPassword),
-                                'status' => 'active',
-                                'school_id' => $this->schoolId,
-                                'force_password_change' => true,
-                            ]);
+                            // Find or create global user
+                            $user = User::query()->withoutGlobalScopes()->where('email', $normalized['email'])->first();
 
-                            Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
+                            if ($user) {
+                                $user->update([
+                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                                    'phone' => $normalized['phone'] ?? $user->phone,
+                                ]);
+                            } else {
+                                $randomPassword = \Illuminate\Support\Str::random(12);
+                                $user = User::create([
+                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                                    'email' => $normalized['email'],
+                                    'phone' => $normalized['phone'],
+                                    'password' => Hash::make($randomPassword),
+                                    'status' => 'active',
+                                    'school_id' => $this->schoolId,
+                                    'force_password_change' => true,
+                                ]);
+
+                                try {
+                                    Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
+                                } catch (\Exception $me) {
+                                    \Log::warning("Email failed for staff {$user->email}: " . $me->getMessage());
+                                }
+                            }
+
+                            $roleName = strtolower($normalized['role'] ?? 'teacher');
+                            if ($roleService->isValidTemplate($roleName)) {
+                                $user->assignRole($roleName);
+                            }
+
+                            $teacherData = collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray();
+                            $teacherData['user_id'] = $user->id;
+                            $teacherData['school_id'] = $this->schoolId;
+                            $teacherData['status'] = 'active';
+
+                            Teacher::create($teacherData);
                         }
-
-                        $roleName = strtolower($normalized['role'] ?? 'teacher');
-                        if ($roleService->isValidTemplate($roleName)) {
-                            $user->assignRole($roleName);
-                        }
-
-                        $teacherData = collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray();
-                        $teacherData['user_id'] = $user->id;
-                        $teacherData['school_id'] = $this->schoolId;
-                        $teacherData['status'] = 'active';
-
-                        Teacher::create($teacherData);
+                    });
+                } catch (\Exception $rowError) {
+                    \Log::error("ImportStaffJob Error at row " . ($index + 2) . ": " . $rowError->getMessage());
+                    if ($this->importProcessId) {
+                         $process = \App\Models\ImportProcess::find($this->importProcessId);
+                         if ($process) {
+                             $currentErrors = $process->error_message ? $process->error_message . "\n" : "";
+                             $process->update([
+                                 'error_message' => substr($currentErrors . "Row " . ($index + 2) . ": " . $rowError->getMessage(), 0, 1000)
+                             ]);
+                         }
                     }
                 }
-            });
+            }
 
             // Cleanup
             Storage::delete($this->filePath);
 
             if ($this->importProcessId) {
-                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
-                    'status' => 'completed',
-                    'processed_rows' => count($rows)
-                ]);
+                $finalProcess = \App\Models\ImportProcess::find($this->importProcessId);
+                if ($finalProcess) {
+                    $hasErrors = !empty($finalProcess->error_message);
+                    $finalProcess->update([
+                        'status' => $hasErrors ? 'failed' : 'completed',
+                        'processed_rows' => count($rows)
+                    ]);
+                }
             }
 
         } catch (\Exception $e) {
@@ -165,7 +200,10 @@ class ImportStaffJob implements ShouldQueue
         }
 
         $header = fgetcsv($handle) ?: [];
-        $header = array_map(fn ($value) => trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value)), $header);
+        $header = array_map(function ($value) {
+            $cleaned = trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value));
+            return \Illuminate\Support\Str::slug($cleaned, '_');
+        }, $header);
 
         $rows = [];
         while (($data = fgetcsv($handle)) !== false) {
