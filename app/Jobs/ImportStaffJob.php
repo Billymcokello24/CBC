@@ -18,18 +18,21 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Services\RoleTemplateService;
+use Illuminate\Support\Str;
 
 class ImportStaffJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $timeout = 600;
     protected $filePath;
     protected $schoolId;
     protected $importProcessId;
 
-    /**
-     * Create a new job instance.
-     */
+    protected $deptCache = [];
+    protected $catCache = [];
+    protected $desCache = [];
+
     public function __construct(string $filePath, int $schoolId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
@@ -37,9 +40,6 @@ class ImportStaffJob implements ShouldQueue
         $this->importProcessId = $importProcessId;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(RoleTemplateService $roleService): void
     {
         $fullPath = Storage::path($this->filePath);
@@ -56,161 +56,108 @@ class ImportStaffJob implements ShouldQueue
             }
             
             if ($totalRows === 0) {
-                if ($this->importProcessId) {
-                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
-                }
+                if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
                 return;
             }
 
-            foreach ($rows as $index => $row) {
-                try {
-                    $line = $index + 2;
+            $processedCount = 0;
+            $chunks = array_chunk($rows, 200);
+
+            foreach ($chunks as $chunkIndex => $chunk) {
+                $this->processChunk($chunk, $roleService, $processedCount);
+                
+                $processedCount += count($chunk);
+                if ($this->importProcessId) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $processedCount]);
                     
-                    if ($this->importProcessId && $index % 5 === 0) {
-                        \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
-                    }
-
-                    DB::transaction(function () use ($row, $line, $roleService) {
-                        $normalized = $this->normalizeTeacherImportRow($row, $line);
-
-                        $teacher = Teacher::query()
-                            ->withoutGlobalScopes()
-                            ->where('school_id', $this->schoolId)
-                            ->where(function ($q) use ($normalized) {
-                                $q->where('staff_number', $normalized['staff_number']);
-                                if (!empty($normalized['email'])) {
-                                    $q->orWhereHas('user', function ($uq) use ($normalized) {
-                                        $uq->withoutGlobalScopes()->where('email', $normalized['email']);
-                                    });
-                                    $q->orWhere('email', $normalized['email']);
-                                }
-                                if (!empty($normalized['id_number'])) {
-                                    $q->orWhere('id_number', $normalized['id_number']);
-                                }
-                                if (!empty($normalized['tsc_number'])) {
-                                    $q->orWhere('tsc_number', $normalized['tsc_number']);
-                                }
-                            })
-                            ->first();
-
-                        if ($teacher) {
-                            $user = $teacher->user()->withoutGlobalScopes()->first();
-                            
-                            // Check if we need to switch the user linkage because the email in CSV matches a different existing user
-                            $globalUser = User::query()->withoutGlobalScopes()->where('email', $normalized['email'])->first();
-                            
-                            if ($globalUser && (!$user || $user->id !== $globalUser->id)) {
-                                $user = $globalUser;
-                                $teacher->update(['user_id' => $user->id]);
-                            }
-
-                            if ($user) {
-                                $user->update([
-                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                                    'phone' => $normalized['phone'] ?? $user->phone,
-                                ]);
-                            }
-
-                            $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
-                        } else {
-                            // Find or create global user
-                            $user = User::query()->withoutGlobalScopes()->where('email', $normalized['email'])->first();
-
-                            if ($user) {
-                                $user->update([
-                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                                    'phone' => $normalized['phone'] ?? $user->phone,
-                                ]);
-                            } else {
-                                $randomPassword = \Illuminate\Support\Str::random(12);
-                                $user = User::create([
-                                    'name' => "{$normalized['first_name']} {$normalized['last_name']}",
-                                    'email' => $normalized['email'],
-                                    'phone' => $normalized['phone'],
-                                    'password' => Hash::make($randomPassword),
-                                    'status' => 'active',
-                                    'school_id' => $this->schoolId,
-                                    'force_password_change' => true,
-                                ]);
-
-                                try {
-                                    Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
-                                } catch (\Exception $me) {
-                                    \Log::warning("Email failed for staff {$user->email}: " . $me->getMessage());
-                                }
-                            }
-
-                            $roleName = strtolower($normalized['role'] ?? 'teacher');
-                            if ($roleService->isValidTemplate($roleName)) {
-                                $user->assignRole($roleName);
-                            }
-
-                            $teacherData = collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray();
-                            $teacherData['user_id'] = $user->id;
-                            $teacherData['school_id'] = $this->schoolId;
-                            $teacherData['status'] = 'active';
-
-                            Teacher::create($teacherData);
-                        }
-                    });
-                } catch (\Exception $rowError) {
-                    \Log::error("ImportStaffJob Error at row " . ($index + 2) . ": " . $rowError->getMessage());
-                    if ($this->importProcessId) {
-                         $process = \App\Models\ImportProcess::find($this->importProcessId);
-                         if ($process) {
-                             $currentErrors = $process->error_message ? $process->error_message . "\n" : "";
-                             $process->update([
-                                 'error_message' => substr($currentErrors . "Row " . ($index + 2) . ": " . $rowError->getMessage(), 0, 1000)
-                             ]);
-                         }
+                    $process = \App\Models\ImportProcess::find($this->importProcessId);
+                    if ($process && $process->status === 'canceled') {
+                        throw new \RuntimeException('Import process was canceled by the user.');
                     }
                 }
             }
 
-            // Cleanup
             Storage::delete($this->filePath);
-
-            if ($this->importProcessId) {
-                $finalProcess = \App\Models\ImportProcess::find($this->importProcessId);
-                if ($finalProcess) {
-                    $hasErrors = !empty($finalProcess->error_message);
-                    $finalProcess->update([
-                        'status' => $hasErrors ? 'failed' : 'completed',
-                        'processed_rows' => count($rows)
-                    ]);
-                }
-            }
+            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed', 'processed_rows' => $totalRows]);
 
         } catch (\Exception $e) {
-            \Log::error('ImportStaffJob Error: ' . $e->getMessage());
-            if ($this->importProcessId) {
-                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
-                    'status' => 'failed',
-                    'error_message' => $e->getMessage()
-                ]);
+            \Log::error('ImportStaffJob Fatal Error: ' . $e->getMessage());
+            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500)]);
+        }
+    }
+
+    protected function processChunk(array $chunk, RoleTemplateService $roleService, $startOffset): void
+    {
+        $usersToUpsert = [];
+        $teachersToUpsert = [];
+        $emailsToDispatch = [];
+        
+        foreach ($chunk as $index => $row) {
+            $line = $startOffset + $index + 2;
+            $normalized = $this->normalizeTeacherImportRow($row, $line);
+            
+            $usersToUpsert[] = [
+                'name' => "{$normalized['first_name']} {$normalized['last_name']}",
+                'email' => $normalized['email'],
+                'phone' => $normalized['phone'],
+                'password' => Hash::make(Str::random(12)),
+                'status' => 'active',
+                'school_id' => $this->schoolId,
+                'force_password_change' => true,
+                'created_at' => now(), 'updated_at' => now(),
+            ];
+
+            $teachersToUpsert[] = $normalized;
+        }
+
+        DB::transaction(function () use ($usersToUpsert, $teachersToUpsert, $roleService, &$emailsToDispatch) {
+            User::upsert($usersToUpsert, ['email'], ['name', 'phone']);
+            $emails = collect($usersToUpsert)->pluck('email')->toArray();
+            $foundUsers = User::whereIn('email', $emails)->get()->keyBy('email');
+
+            $finalTeachers = [];
+            foreach ($teachersToUpsert as $tData) {
+                $user = $foundUsers[$tData['email']] ?? null;
+                if (!$user) continue;
+
+                $roleName = strtolower($tData['role'] ?? 'teacher');
+                if ($roleService->isValidTemplate($roleName)) $user->assignRole($roleName);
+
+                $emailsToDispatch[] = ['user' => $user, 'email' => $user->email];
+
+                $finalTeachers[] = [
+                    'user_id' => $user->id, 'school_id' => $this->schoolId,
+                    'staff_number' => $tData['staff_number'], 'tsc_number' => $tData['tsc_number'],
+                    'first_name' => $tData['first_name'], 'middle_name' => $tData['middle_name'], 'last_name' => $tData['last_name'],
+                    'email' => $tData['email'], 'phone' => $tData['phone'], 'gender' => $tData['gender'],
+                    'date_of_birth' => $tData['date_of_birth'], 'id_number' => $tData['id_number'], 'nationality' => $tData['nationality'],
+                    'department_id' => $tData['department_id'], 'staff_category_id' => $tData['staff_category_id'], 'staff_designation_id' => $tData['staff_designation_id'],
+                    'contract_type' => $tData['contract_type'], 'employment_type' => $tData['employment_type'], 'date_joined' => $tData['date_joined'], 'basic_salary' => $tData['basic_salary'],
+                    'status' => 'active', 'created_at' => now(), 'updated_at' => now(),
+                ];
             }
+
+            Teacher::upsert($finalTeachers, ['staff_number', 'school_id'], [
+                'user_id', 'first_name', 'middle_name', 'last_name', 'email', 'phone', 'gender', 'date_of_birth', 
+                'id_number', 'nationality', 'department_id', 'staff_category_id', 'staff_designation_id', 
+                'contract_type', 'employment_type', 'date_joined', 'basic_salary', 'updated_at'
+            ]);
+        });
+
+        foreach ($emailsToDispatch as $idx => $item) {
+            Mail::to($item['email'])->later(now()->addSeconds($idx * 0.5), new UserCreatedMail($item['user'], 'Set your password via login screen'));
         }
     }
 
     protected function parseTeacherCsv(string $path): array
     {
         $handle = fopen($path, 'r');
-        if (!$handle) {
-            throw new \RuntimeException('Unable to read the uploaded CSV file.');
-        }
-
+        if (!$handle) throw new \RuntimeException('Unable to read CSV.');
         $header = fgetcsv($handle) ?: [];
-        $header = array_map(function ($value) {
-            $cleaned = trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value));
-            return \Illuminate\Support\Str::slug($cleaned, '_');
-        }, $header);
-
+        $header = array_map(fn ($v) => Str::slug(trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $v)), '_'), $header);
         $rows = [];
         while (($data = fgetcsv($handle)) !== false) {
-            if ($data === [null] || count(array_filter($data, fn ($value) => trim((string) $value) !== '')) === 0) {
-                continue;
-            }
-
+            if ($data === [null] || count(array_filter($data, fn ($v) => trim((string) $v) !== '')) === 0) continue;
             $row = [];
             foreach ($header as $index => $column) {
                 $row[$column] = isset($data[$index]) ? trim((string) $data[$index]) : null;
@@ -227,54 +174,35 @@ class ImportStaffJob implements ShouldQueue
             throw new \InvalidArgumentException("CSV line {$line}: first_name, last_name, staff_number and email are required.");
         }
 
-        $departmentName = !empty($row['department_name']) ? $row['department_name'] : 'Academic';
-        $departmentId = Department::query()->firstOrCreate(
-            ['school_id' => $this->schoolId, 'name' => $departmentName],
-            [
-                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($departmentName, '')), 0, 100),
-                'is_active' => true
-            ]
-        )->id;
+        $dept = !empty($row['department_name']) ? $row['department_name'] : 'Academic';
+        if (!isset($this->deptCache[$dept])) {
+            $this->deptCache[$dept] = Department::firstOrCreate(['school_id' => $this->schoolId, 'name' => $dept], [
+                'code' => substr(Str::upper(Str::slug($dept, '')), 0, 100), 'is_active' => true
+            ])->id;
+        }
 
-        $categoryName = !empty($row['staff_category_name']) ? $row['staff_category_name'] : 'Teaching Staff';
-        $categoryId = StaffCategory::query()->firstOrCreate(
-            ['school_id' => $this->schoolId, 'name' => $categoryName],
-            [
-                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($categoryName, '')), 0, 100),
-                'is_active' => true
-            ]
-        )->id;
+        $cat = !empty($row['staff_category_name']) ? $row['staff_category_name'] : 'Teaching Staff';
+        if (!isset($this->catCache[$cat])) {
+            $this->catCache[$cat] = StaffCategory::firstOrCreate(['school_id' => $this->schoolId, 'name' => $cat], [
+                'code' => substr(Str::upper(Str::slug($cat, '')), 0, 100), 'is_active' => true
+            ])->id;
+        }
 
-        $designationName = !empty($row['staff_designation_name']) ? $row['staff_designation_name'] : 'Teacher';
-        $designationId = StaffDesignation::query()->firstOrCreate(
-            ['school_id' => $this->schoolId, 'name' => $designationName],
-            [
-                'staff_category_id' => $categoryId,
-                'code' => substr(\Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($designationName, '')), 0, 100),
-                'is_active' => true
-            ]
-        )->id;
+        $des = !empty($row['staff_designation_name']) ? $row['staff_designation_name'] : 'Teacher';
+        if (!isset($this->desCache[$des])) {
+            $this->desCache[$des] = StaffDesignation::firstOrCreate(['school_id' => $this->schoolId, 'name' => $des], [
+                'staff_category_id' => $this->catCache[$cat],
+                'code' => substr(Str::upper(Str::slug($des, '')), 0, 100), 'is_active' => true
+            ])->id;
+        }
 
         return [
-            'first_name' => $row['first_name'],
-            'middle_name' => $row['middle_name'] ?? null,
-            'last_name' => $row['last_name'],
-            'staff_number' => $row['staff_number'],
-            'tsc_number' => $row['tsc_number'] ?? null,
-            'email' => $row['email'],
-            'phone' => $row['phone'] ?? '0000000000',
-            'gender' => strtolower($row['gender'] ?? 'male'),
-            'role' => $row['role'] ?? 'teacher',
-            'date_of_birth' => $row['date_of_birth'] ?? null,
-            'id_number' => $row['id_number'] ?? null,
-            'nationality' => $row['nationality'] ?? 'Kenyan',
-            'department_id' => $departmentId,
-            'staff_category_id' => $categoryId,
-            'staff_designation_id' => $designationId,
-            'contract_type' => $row['contract_type'] ?? null,
-            'employment_type' => $row['employment_type'] ?? null,
-            'date_joined' => $row['date_joined'] ?? null,
-            'basic_salary' => $row['basic_salary'] ?? null,
+            'first_name' => $row['first_name'], 'middle_name' => $row['middle_name'] ?? null, 'last_name' => $row['last_name'],
+            'staff_number' => $row['staff_number'], 'tsc_number' => $row['tsc_number'] ?? null, 'email' => $row['email'],
+            'phone' => $row['phone'] ?? '0000000000', 'gender' => strtolower($row['gender'] ?? 'male'), 'role' => $row['role'] ?? 'teacher',
+            'date_of_birth' => $row['date_of_birth'] ?? null, 'id_number' => $row['id_number'] ?? null, 'nationality' => $row['nationality'] ?? 'Kenyan',
+            'department_id' => $this->deptCache[$dept], 'staff_category_id' => $this->catCache[$cat], 'staff_designation_id' => $this->desCache[$des],
+            'contract_type' => $row['contract_type'] ?? null, 'employment_type' => $row['employment_type'] ?? null, 'date_joined' => $row['date_joined'] ?? null, 'basic_salary' => $row['basic_salary'] ?? null,
         ];
     }
 }

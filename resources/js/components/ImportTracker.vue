@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { usePage, router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, watch, ref, computed } from 'vue';
-import { Loader2, CheckCircle2, AlertCircle, X, History, Info } from 'lucide-vue-next';
+import { Loader2, CheckCircle2, AlertCircle, X, History, Info, StopCircle } from 'lucide-vue-next';
 
 const page = usePage();
 const polling = ref(false);
@@ -81,6 +81,16 @@ watch(failedImports, (newVal: any[], oldVal: any[]) => {
     }
 }, { deep: true });
 
+const cancelImport = (id: number) => {
+    if (confirm('Are you sure you want to stop this upload? Any already processed records will remain.')) {
+        router.post(`/imports/${id}/cancel`, {}, {
+            onSuccess: () => {
+                router.reload({ only: ['auth'] });
+            }
+        });
+    }
+};
+
 onUnmounted(() => stopPolling());
 </script>
 
@@ -92,7 +102,16 @@ onUnmounted(() => stopPolling());
                 <Loader2 class="h-5 w-5 text-blue-600 dark:text-blue-400 animate-spin" />
             </div>
             <div class="flex-grow min-w-0">
-                <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Syncing {{ imp.type }}s...</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">Syncing {{ imp.type }}s...</p>
+                    <button 
+                        @click="cancelImport(imp.id)" 
+                        class="h-6 w-6 rounded-md flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-900/30 transition-all"
+                        title="Stop Upload"
+                    >
+                        <StopCircle class="h-3.5 w-3.5" />
+                    </button>
+                </div>
                 <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Processing Row {{ imp.processed_rows }} of {{ imp.total_rows }}</p>
                 <div v-if="imp.total_rows > 0" class="mt-2 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                     <div class="h-full bg-blue-500 transition-all duration-500" :style="{ width: `${(imp.processed_rows / imp.total_rows) * 100}%` }"></div>

@@ -48,6 +48,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard — accessible to ALL authenticated users (role-specific data returned by controller)
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // ──────────────────────────────────────────────
+    // IMPORT MANAGEMENT
+    // ──────────────────────────────────────────────
+    Route::post('imports/{process}/cancel', [\App\Http\Controllers\ImportController::class, 'cancel'])->name('imports.cancel');
+    Route::get('imports/active', [\App\Http\Controllers\ImportController::class, 'getActiveImports'])->name('imports.active');
+
+
     // User Import Status Tracker
     Route::get('/api/user/imports/{importProcess}', function (\App\Models\ImportProcess $importProcess) {
         abort_unless($importProcess->user_id === auth()->id(), 403);
@@ -661,3 +668,4 @@ Route::get('/test-mail', function () {
         return 'Failed to send email: ' . $e->getMessage();
     }
 });
+

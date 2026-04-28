@@ -25,15 +25,18 @@ class ImportStudentsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $timeout = 600; // Increase timeout to 10 minutes
     protected $filePath;
     protected $schoolId;
     protected $academicYearId;
     protected $userId;
     protected $importProcessId;
 
-    /**
-     * Create a new job instance.
-     */
+    // Cache for optimization to avoid repeating queries within the SAME job instance
+    protected $gradeCache = [];
+    protected $streamCache = [];
+    protected $classCache = [];
+
     public function __construct(string $filePath, int $schoolId, int $academicYearId, int $userId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
@@ -43,9 +46,6 @@ class ImportStudentsJob implements ShouldQueue
         $this->importProcessId = $importProcessId;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         $fullPath = Storage::path($this->filePath);
@@ -62,128 +62,192 @@ class ImportStudentsJob implements ShouldQueue
             }
 
             if ($totalRows === 0) {
-                if ($this->importProcessId) {
-                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
-                }
+                if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed']);
                 return;
             }
 
-            DB::transaction(function () use ($rows) {
-                foreach ($rows as $index => $row) {
-                    $line = $index + 2;
+            $currentTermId = DB::table('academic_terms')->where('school_id', $this->schoolId)->where('is_current', true)->value('id');
+            $roleParent = Role::where('name', 'parent')->first();
+            $processedCount = 0;
+
+            // PROCESS IN CHUNKS TO PREVENT MEMORY EXHAUSTION (OOM)
+            $chunks = array_chunk($rows, 200);
+            
+            foreach ($chunks as $chunkIndex => $chunk) {
+                $this->processChunk($chunk, $currentTermId, $roleParent, $processedCount);
+                
+                $processedCount += count($chunk);
+                if ($this->importProcessId) {
+                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $processedCount]);
                     
-                    if ($this->importProcessId && $index % 10 === 0) {
-                        \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
-                    }
-                    $normalized = $this->normalizeLearnerImportRow($row, $line);
-                    
-                    $createdGrades = 0;
-                    $createdStreams = 0;
-                    $createdClasses = 0;
-                    $guardianAccounts = 0;
-
-                    // Ensure lookup is strictly scoped to this school
-                    $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized, $createdGrades);
-                    $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized, $createdStreams);
-                    $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized, $createdClasses);
-
-                    // Find student by identifying fields WITHIN THIS SCHOOL to support multi-tenancy
-                    $learner = Student::query()
-                        ->withoutGlobalScopes() // Handle manually for background job
-                        ->where('school_id', $this->schoolId)
-                        ->where(function ($q) use ($normalized) {
-                            $q->where('admission_number', $normalized['admission_number']);
-                            if (!empty($normalized['upi'])) {
-                                $q->orWhere('upi', $normalized['upi']);
-                            }
-                            if (!empty($normalized['birth_certificate_number'])) {
-                                $q->orWhere('birth_certificate_number', $normalized['birth_certificate_number']);
-                            }
-                        })
-                        ->first();
-
-                    $studentPayload = [
-                        'school_id' => $this->schoolId,
-                        'first_name' => $normalized['first_name'],
-                        'middle_name' => $normalized['middle_name'],
-                        'last_name' => $normalized['last_name'],
-                        'admission_number' => $normalized['admission_number'],
-                        'upi' => $normalized['upi'],
-                        'gender' => $normalized['gender'],
-                        'date_of_birth' => $normalized['date_of_birth'],
-                        'birth_certificate_number' => $normalized['birth_certificate_number'],
-                        'nationality' => $normalized['nationality'] ?: 'Kenyan',
-                        'religion' => $normalized['religion'],
-                        'primary_language' => $normalized['primary_language'],
-                        'secondary_language' => $normalized['secondary_language'],
-                        'home_address' => $normalized['home_address'],
-                        'county' => $normalized['county'],
-                        'sub_county' => $normalized['sub_county'],
-                        'ward' => $normalized['ward'],
-                        'blood_group' => $normalized['blood_group'],
-                        'medical_conditions' => $normalized['medical_conditions'],
-                        'allergies' => $normalized['allergies'],
-                        'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
-                        'admission_class_id' => $learner?->admission_class_id ?: ($class?->id),
-                        'current_class_id' => $class?->id ?: $learner?->current_class_id,
-                        'boarding_status' => $normalized['boarding_status'],
-                        'status' => $normalized['status'] ?: 'active',
-                    ];
-
-                    if ($learner) {
-                        $learner->update($studentPayload);
-                    } else {
-                        // Create new student record with explicit school_id
-                        $learner = Student::create($studentPayload);
-                    }
-
-                    if ($class) {
-                        $this->syncEnrollmentForImportedLearner($learner, $class->id, $this->academicYearId);
-                    }
-
-                    if ($normalized['guardian_email']) {
-                        $this->upsertImportedGuardian($learner, $normalized, $guardianAccounts);
+                    // Check for cancellation every chunk
+                    $process = \App\Models\ImportProcess::find($this->importProcessId);
+                    if ($process && $process->status === 'canceled') {
+                        throw new \RuntimeException('Import process was canceled by the user.');
                     }
                 }
-            });
-
-            // Cleanup
-            Storage::delete($this->filePath);
-
-            if ($this->importProcessId) {
-                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
-                    'status' => 'completed',
-                    'processed_rows' => count($rows)
-                ]);
             }
+
+            Storage::delete($this->filePath);
+            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed', 'processed_rows' => $totalRows]);
 
         } catch (\Exception $e) {
-            \Log::error('ImportStudentsJob Error: ' . $e->getMessage());
-            if ($this->importProcessId) {
-                \App\Models\ImportProcess::where('id', $this->importProcessId)->update([
-                    'status' => 'failed',
-                    'error_message' => $e->getMessage()
-                ]);
+            \Log::error('ImportStudentsJob Fatal Error: ' . $e->getMessage());
+            if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'failed', 'error_message' => substr($e->getMessage(), 0, 500)]);
+        }
+    }
+
+    protected function processChunk(array $chunk, $currentTermId, $roleParent, $startOffset): void
+    {
+        $guardianUsersToUpsert = [];
+        $studentsToUpsert = [];
+        $enrollmentMap = [];
+        $emailsToDispatch = [];
+
+        foreach ($chunk as $index => $row) {
+            $line = $startOffset + $index + 2;
+            $normalized = $this->normalizeLearnerImportRow($row, $line);
+            
+            $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized);
+            $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized);
+            $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized);
+
+            if ($normalized['guardian_email']) {
+                $guardianUsersToUpsert[] = [
+                    'name' => $normalized['guardian_name'] ?: 'Guardian',
+                    'email' => $normalized['guardian_email'],
+                    'phone' => $normalized['guardian_phone'],
+                    'password' => Hash::make(Str::random(12)),
+                    'status' => 'active',
+                    'school_id' => $this->schoolId,
+                    'force_password_change' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
+
+            $studentsToUpsert[] = [
+                'school_id' => $this->schoolId,
+                'first_name' => $normalized['first_name'],
+                'middle_name' => $normalized['middle_name'],
+                'last_name' => $normalized['last_name'],
+                'admission_number' => $normalized['admission_number'],
+                'upi' => $normalized['upi'],
+                'gender' => $normalized['gender'],
+                'date_of_birth' => $normalized['date_of_birth'],
+                'birth_certificate_number' => $normalized['birth_certificate_number'],
+                'nationality' => $normalized['nationality'] ?: 'Kenyan',
+                'religion' => $normalized['religion'],
+                'primary_language' => $normalized['primary_language'],
+                'secondary_language' => $normalized['secondary_language'],
+                'home_address' => $normalized['home_address'],
+                'county' => $normalized['county'],
+                'sub_county' => $normalized['sub_county'],
+                'ward' => $normalized['ward'],
+                'blood_group' => $normalized['blood_group'],
+                'medical_conditions' => $normalized['medical_conditions'],
+                'allergies' => $normalized['allergies'],
+                'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
+                'boarding_status' => $normalized['boarding_status'],
+                'status' => $normalized['status'] ?: 'active',
+                'current_class_id' => $class?->id,
+                'admission_class_id' => $class?->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            $enrollmentMap[$normalized['admission_number']] = [
+                'class_id' => $class?->id,
+                'boarding_status' => $normalized['boarding_status'],
+                'guardian_email' => $normalized['guardian_email'],
+            ];
+        }
+
+        DB::transaction(function () use ($guardianUsersToUpsert, $studentsToUpsert, $enrollmentMap, $roleParent, $currentTermId, &$emailsToDispatch) {
+            // 1. GUARDIAN USERS
+            if (!empty($guardianUsersToUpsert)) {
+                User::upsert($guardianUsersToUpsert, ['email'], ['name', 'phone']);
+                $foundUsers = User::whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
+                
+                $gToUpsert = [];
+                foreach ($foundUsers as $email => $user) {
+                    if ($roleParent) $user->assignRole($roleParent);
+                    $emailsToDispatch[] = ['user' => $user, 'email' => $email];
+
+                    $gToUpsert[] = [
+                        'user_id' => $user->id,
+                        'school_id' => $this->schoolId,
+                        'first_name' => $user->name,
+                        'last_name' => 'Guardian',
+                        'email' => $email,
+                        'phone' => $user->phone,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+                Guardian::upsert($gToUpsert, ['email', 'school_id'], ['user_id', 'phone']);
+            }
+
+            // 2. STUDENTS
+            Student::upsert($studentsToUpsert, ['admission_number', 'school_id'], [
+                'first_name', 'middle_name', 'last_name', 'upi', 'gender', 'date_of_birth', 
+                'birth_certificate_number', 'current_class_id', 'boarding_status', 'updated_at'
+            ]);
+
+            // 3. ENROLLMENTS & RELATIONSHIPS
+            $adms = collect($studentsToUpsert)->pluck('admission_number')->toArray();
+            $foundStudents = Student::whereIn('admission_number', $adms)->where('school_id', $this->schoolId)->get()->keyBy('admission_number');
+            $foundGuardians = Guardian::where('school_id', $this->schoolId)->whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
+            
+            $enrollments = [];
+            foreach ($foundStudents as $adm => $student) {
+                $map = $enrollmentMap[$adm];
+                if ($map['class_id']) {
+                    $enrollments[] = [
+                        'school_id' => $this->schoolId,
+                        'student_id' => $student->id,
+                        'academic_year_id' => $this->academicYearId,
+                        'class_id' => $map['class_id'],
+                        'academic_term_id' => $currentTermId,
+                        'enrollment_date' => now()->toDateString(),
+                        'enrollment_type' => 'new',
+                        'status' => 'active',
+                        'enrolled_by' => $this->userId,
+                        'boarding_status' => $map['boarding_status'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                if ($map['guardian_email'] && isset($foundGuardians[$map['guardian_email']])) {
+                    DB::table('guardian_student')->updateOrInsert(
+                        ['student_id' => $student->id, 'guardian_id' => $foundGuardians[$map['guardian_email']]->id],
+                        ['relationship' => 'guardian', 'is_primary_contact' => true, 'updated_at' => now()]
+                    );
+                }
+            }
+            if (!empty($enrollments)) {
+                \App\Models\StudentEnrollment::upsert($enrollments, ['student_id', 'academic_year_id', 'school_id'], ['class_id', 'status', 'boarding_status']);
+            }
+        });
+
+        // 4. DEFERRED EMAILS (Optional, but user said "all records first then emails", so maybe keep this at the very end of HANDLE?)
+        // Actually, to prevent OOM, sending emails per chunk with a delay is better.
+        foreach ($emailsToDispatch as $idx => $item) {
+            Mail::to($item['email'])->later(now()->addSeconds($idx * 0.5), new UserCreatedMail($item['user'], 'Set your password via login screen'));
         }
     }
 
     protected function parseLearnerCsv(string $path): array
     {
         $handle = fopen($path, 'r');
-        if (!$handle) {
-            throw new \RuntimeException('Unable to read the uploaded CSV file.');
-        }
-
+        if (!$handle) throw new \RuntimeException('Unable to read CSV.');
         $header = fgetcsv($handle) ?: [];
-        $header = array_map(fn ($value) => trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $value)), $header);
-
+        $header = array_map(fn ($v) => Str::slug(trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $v)), '_'), $header);
         $rows = [];
         while (($data = fgetcsv($handle)) !== false) {
-            if ($data === [null] || count(array_filter($data, fn ($value) => trim((string) $value) !== '')) === 0) {
-                continue;
-            }
-
+            if ($data === [null] || count(array_filter($data, fn ($v) => trim((string) $v) !== '')) === 0) continue;
             $row = [];
             foreach ($header as $index => $column) {
                 $row[$column] = isset($data[$index]) ? trim((string) $data[$index]) : null;
@@ -196,24 +260,14 @@ class ImportStudentsJob implements ShouldQueue
 
     protected function normalizeLearnerImportRow(array $row, int $line): array
     {
-        $firstName = trim((string) ($row['first_name'] ?? ''));
-        $lastName = trim((string) ($row['last_name'] ?? ''));
-        $admissionNumber = trim((string) ($row['admission_number'] ?? ''));
-        $gender = strtolower(trim((string) ($row['gender'] ?? 'male')));
-        $dateOfBirth = trim((string) ($row['date_of_birth'] ?? ''));
-        $gradeName = trim((string) ($row['grade_name'] ?? ''));
-        $className = trim((string) ($row['class_name'] ?? ''));
-        $boardingStatus = strtolower(trim((string) ($row['boarding_status'] ?? 'day')));
-        $status = strtolower(trim((string) ($row['status'] ?? 'active')));
-
         return [
-            'first_name' => $firstName,
+            'first_name' => trim($row['first_name'] ?? ''),
             'middle_name' => $this->nullableValue($row['middle_name'] ?? null),
-            'last_name' => $lastName,
-            'admission_number' => $admissionNumber,
+            'last_name' => trim($row['last_name'] ?? ''),
+            'admission_number' => trim($row['admission_number'] ?? ''),
             'upi' => $this->nullableValue($row['upi'] ?? null),
-            'gender' => $gender,
-            'date_of_birth' => $dateOfBirth,
+            'gender' => strtolower(trim($row['gender'] ?? 'male')),
+            'date_of_birth' => trim($row['date_of_birth'] ?? ''),
             'birth_certificate_number' => $this->nullableValue($row['birth_certificate_number'] ?? null),
             'nationality' => $this->nullableValue($row['nationality'] ?? null),
             'religion' => $this->nullableValue($row['religion'] ?? null),
@@ -226,310 +280,59 @@ class ImportStudentsJob implements ShouldQueue
             'blood_group' => $this->nullableValue($row['blood_group'] ?? null),
             'medical_conditions' => $this->nullableValue($row['medical_conditions'] ?? null),
             'allergies' => $this->nullableValue($row['allergies'] ?? null),
-            'grade_name' => $this->nullableValue($gradeName),
+            'grade_name' => $this->nullableValue($row['grade_name'] ?? null),
             'grade_code' => $this->nullableValue($row['grade_code'] ?? null),
             'grade_level_order' => is_numeric($row['grade_level_order'] ?? null) ? (int) $row['grade_level_order'] : null,
-            'grade_category' => $this->nullableValue($row['grade_category'] ?? null) ?? 'General',
+            'grade_category' => $row['grade_category'] ?? 'General',
             'stream_name' => $this->nullableValue($row['stream_name'] ?? null),
             'stream_code' => $this->nullableValue($row['stream_code'] ?? null),
-            'class_name' => $this->nullableValue($className),
+            'class_name' => $this->nullableValue($row['class_name'] ?? null),
             'class_code' => $this->nullableValue($row['class_code'] ?? null),
-            'boarding_status' => $boardingStatus,
+            'boarding_status' => strtolower(trim($row['boarding_status'] ?? 'day')),
             'admission_date' => $this->nullableValue($row['admission_date'] ?? null),
-            'status' => $status,
+            'status' => strtolower(trim($row['status'] ?? 'active')),
             'guardian_name' => $this->nullableValue($row['guardian_name'] ?? null),
             'guardian_email' => $this->nullableValue($row['guardian_email'] ?? null),
             'guardian_phone' => $this->nullableValue($row['guardian_phone'] ?? null),
         ];
     }
 
-    protected function firstOrCreateImportGrade(int $schoolId, array $data, int &$createdGrades): ?GradeLevel
+    protected function firstOrCreateImportGrade(int $schoolId, array $data): ?GradeLevel
     {
         if (!$data['grade_name']) return null;
-
-        $grade = GradeLevel::query()
-            ->where('school_id', $schoolId)
-            ->where(function ($query) use ($data) {
-                $query->where('name', $data['grade_name']);
-                if ($data['grade_code']) $query->orWhere('code', $data['grade_code']);
-            })->first();
-
-        if ($grade) {
-            // Update optional details if they were missing
-            if (!$grade->category && $data['grade_category']) {
-                $grade->update(['category' => $data['grade_category']]);
-            }
-            return $grade;
-        }
-
-        $createdGrades++;
-        return GradeLevel::create([
-            'school_id' => $schoolId,
-            'name' => $data['grade_name'],
+        $ck = $data['grade_name'] . ($data['grade_code'] ?? '');
+        if (isset($this->gradeCache[$ck])) return $this->gradeCache[$ck];
+        $grade = GradeLevel::firstOrCreate(['school_id' => $schoolId, 'name' => $data['grade_name']], [
             'code' => $data['grade_code'] ?: Str::upper(Str::slug($data['grade_name'], '')),
-            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::query()->max('level_order') + 1),
-            'category' => $data['grade_category'],
-            'is_active' => true,
+            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::max('level_order') + 1),
+            'category' => $data['grade_category'], 'is_active' => true
         ]);
+        return $this->gradeCache[$ck] = $grade;
     }
 
-    protected function firstOrCreateImportStream(int $schoolId, array $data, int &$createdStreams): ?Stream
+    protected function firstOrCreateImportStream(int $schoolId, array $data): ?Stream
     {
         if (!$data['stream_name']) return null;
-
-        $stream = Stream::query()
-            ->where('school_id', $schoolId)
-            ->where(function ($query) use ($data) {
-                $query->where('name', $data['stream_name']);
-                if ($data['stream_code']) $query->orWhere('code', $data['stream_code']);
-            })->first();
-
-        if ($stream) {
-            if ($data['stream_code'] && $stream->code !== $data['stream_code']) {
-                $stream->update(['code' => $data['stream_code']]);
-            }
-            return $stream;
-        }
-
-        $createdStreams++;
-        return Stream::create([
-            'school_id' => $schoolId,
-            'name' => $data['stream_name'],
-            'code' => $data['stream_code'] ?: Str::upper(Str::substr($data['stream_name'], 0, 3)),
-            'capacity' => 40,
-            'is_active' => true,
+        $ck = $data['stream_name'] . ($data['stream_code'] ?? '');
+        if (isset($this->streamCache[$ck])) return $this->streamCache[$ck];
+        $stream = Stream::firstOrCreate(['school_id' => $schoolId, 'name' => $data['stream_name']], [
+            'code' => $data['stream_code'] ?: Str::upper(Str::substr($data['stream_name'], 0, 3)), 'capacity' => 40, 'is_active' => true
         ]);
+        return $this->streamCache[$ck] = $stream;
     }
 
-    protected function firstOrCreateImportClass(int $schoolId, int $academicYearId, ?GradeLevel $grade, ?Stream $stream, array $data, int &$createdClasses): ?SchoolClass
+    protected function firstOrCreateImportClass(int $schoolId, int $yearId, ?GradeLevel $g, ?Stream $s, array $data): ?SchoolClass
     {
-        if (!$grade || !$data['class_name']) return null;
-
-        $query = SchoolClass::query()
-            ->where('school_id', $schoolId)
-            ->where('academic_year_id', $academicYearId)
-            ->where('grade_level_id', $grade->id)
-            ->where('name', $data['class_name']);
-
-        if ($stream) $query->where('stream_id', $stream->id);
-
-        $class = $query->first();
-        if ($class) {
-            if ($data['class_code'] && $class->code !== $data['class_code']) {
-                $class->update(['code' => $data['class_code']]);
-            }
-            return $class;
-        }
-
-        $createdClasses++;
-        return SchoolClass::create([
-            'school_id' => $schoolId,
-            'grade_level_id' => $grade->id,
-            'stream_id' => $stream?->id,
-            'academic_year_id' => $academicYearId,
-            'name' => $data['class_name'],
-            'code' => $data['class_code'] ?: Str::upper(Str::slug($data['class_name'], '-')),
-            'capacity' => 40,
-            'is_active' => true,
+        if (!$g || !$data['class_name']) return null;
+        $ck = $yearId . '_' . $g->id . '_' . ($s?->id ?? 0) . '_' . $data['class_name'];
+        if (isset($this->classCache[$ck])) return $this->classCache[$ck];
+        $q = SchoolClass::where('school_id', $schoolId)->where('academic_year_id', $yearId)->where('grade_level_id', $g->id)->where('name', $data['class_name']);
+        if ($s) $q->where('stream_id', $s->id);
+        $class = $q->first() ?: SchoolClass::create([
+            'school_id' => $schoolId, 'grade_level_id' => $g->id, 'stream_id' => $s?->id, 'academic_year_id' => $yearId,
+            'name' => $data['class_name'], 'code' => $data['class_code'] ?: Str::upper(Str::slug($data['class_name'], '')), 'capacity' => 40, 'is_active' => true
         ]);
-    }
-
-    protected function syncEnrollmentForImportedLearner(Student $student, int $classId, int $academicYearId): void
-    {
-        $currentTermId = DB::table('academic_terms')
-            ->where('school_id', $this->schoolId)
-            ->where('is_current', true)
-            ->value('id');
-
-        // Deactivate other active enrollments for this year if the class has changed
-        \App\Models\StudentEnrollment::query()
-            ->where('student_id', $student->id)
-            ->where('academic_year_id', $academicYearId)
-            ->where('status', 'active')
-            ->where('class_id', '!=', $classId)
-            ->update([
-                'status' => 'transferred',
-                'end_date' => now()->toDateString(),
-            ]);
-
-        // Use updateOrCreate on the model to ensure school_id and other traits are handled correctly
-        \App\Models\StudentEnrollment::updateOrCreate(
-            [
-                'school_id' => $this->schoolId,
-                'student_id' => $student->id,
-                'academic_year_id' => $academicYearId,
-            ],
-            [
-                'class_id' => $classId,
-                'academic_term_id' => $currentTermId,
-                'enrollment_date' => now()->toDateString(),
-                'enrollment_type' => 'new',
-                'status' => 'active',
-                'enrolled_by' => $this->userId,
-                'boarding_status' => $student->boarding_status,
-            ]
-        );
-
-        // Ensure student model's current_class_id is updated (redundant but safe)
-        $student->update(['current_class_id' => $classId]);
-    }
-
-    protected function upsertImportedGuardian(Student $student, array $data, int &$guardianAccounts): void
-    {
-        $guardianAccounts++;
-        // Explicitly scope by school_id to support multi-tenancy
-        $existingGuardian = Guardian::query()
-            ->where('school_id', $this->schoolId)
-            ->where('email', $data['guardian_email'])
-            ->first();
-
-        if ($existingGuardian && $existingGuardian->user_id) {
-            $nameParts = preg_split('/\s+/', trim((string) ($data['guardian_name'] ?: $existingGuardian->full_name))) ?: [];
-            $firstName = array_shift($nameParts) ?: $existingGuardian->first_name;
-            $lastName = count($nameParts) ? array_pop($nameParts) : $existingGuardian->last_name;
-            $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
-
-            // Update user with school scoping safety
-            User::query()
-                ->where('school_id', $this->schoolId)
-                ->where('id', $existingGuardian->user_id)
-                ->update([
-                    'name' => $data['guardian_name'] ?: $existingGuardian->full_name,
-                    'phone' => $data['guardian_phone'] ?: $existingGuardian->phone,
-                ]);
-
-            $existingGuardian->update([
-                'first_name' => $firstName,
-                'middle_name' => $middleName,
-                'last_name' => $lastName,
-                'phone' => $data['guardian_phone'] ?: $existingGuardian->phone,
-            ]);
-
-            $student->guardians()->syncWithoutDetaching([
-                $existingGuardian->id => [
-                    'relationship' => 'guardian',
-                    'is_primary_contact' => true,
-                    'is_emergency_contact' => true,
-                    'can_pickup' => true,
-                    'receives_reports' => true,
-                    'receives_fees_notification' => true,
-                    'is_fee_payer' => true,
-                    'updated_at' => now(),
-                ],
-            ]);
-            return;
-        }
-
-        $this->upsertGuardianAccountForStudent($student, [
-            'name' => $data['guardian_name'],
-            'email' => $data['guardian_email'],
-            'phone' => $data['guardian_phone'],
-        ]);
-    }
-
-    protected function upsertGuardianAccountForStudent(Student $student, array $data): Guardian
-    {
-        $existingGuardian = $student->guardians()->whereNotNull('user_id')->first();
-
-        if ($existingGuardian) {
-            $user = User::query()
-                ->where('school_id', $this->schoolId)
-                ->where('id', $existingGuardian->user_id)
-                ->first();
-            
-            $nameParts = preg_split('/\s+/', trim((string) ($data['name'] ?: $existingGuardian->full_name))) ?: [];
-            $firstName = array_shift($nameParts) ?: $existingGuardian->first_name;
-            $lastName = count($nameParts) ? array_pop($nameParts) : $existingGuardian->last_name;
-            $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
-
-            $user?->update(array_filter([
-                'name' => $data['name'] ?: $existingGuardian->full_name,
-                'email' => $data['email'] ?: $existingGuardian->email,
-                'phone' => $data['phone'] ?: $existingGuardian->phone,
-            ], fn ($value) => $value !== null && $value !== ''));
-
-            $existingGuardian->update([
-                'first_name' => $firstName,
-                'middle_name' => $middleName,
-                'last_name' => $lastName,
-                'email' => $data['email'] ?: $existingGuardian->email,
-                'phone' => $data['phone'] ?: $existingGuardian->phone,
-                'is_active' => true,
-            ]);
-
-            return $existingGuardian;
-        }
-
-        return $this->createGuardianAccountForStudent($student, [
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-        ]);
-    }
-
-    protected function createGuardianAccountForStudent(Student $student, array $data): Guardian
-    {
-        $nameParts = preg_split('/\s+/', trim((string) $data['name'])) ?: [];
-        $firstName = array_shift($nameParts) ?: 'Guardian';
-        $lastName = count($nameParts) ? array_pop($nameParts) : $firstName;
-        $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
-
-        $user = User::query()->where('email', $data['email'])->first();
-
-        if ($user) {
-            $user->update(array_filter([
-                'name' => $data['name'],
-                'phone' => $data['phone'],
-            ], fn ($value) => $value !== null && $value !== ''));
-        } else {
-            $randomPassword = \Illuminate\Support\Str::random(12);
-            $user = User::create([
-                'name' => trim((string) $data['name']),
-                'email' => $data['email'],
-                'phone' => $data['phone'],
-                'password' => Hash::make($randomPassword),
-                'status' => 'active',
-                'school_id' => $student->school_id,
-                'force_password_change' => true,
-                'locale' => config('app.locale'),
-                'timezone' => config('app.timezone'),
-            ]);
-
-            if (Role::query()->where('name', 'parent')->where('guard_name', 'web')->exists()) {
-                $user->assignRole('parent');
-            }
-
-            Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
-        }
-
-        $guardian = Guardian::create([
-            'user_id' => $user->id,
-            'school_id' => $student->school_id,
-            'first_name' => $firstName,
-            'middle_name' => $middleName,
-            'last_name' => $lastName,
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'relationship_type' => 'guardian',
-            'receives_communication' => true,
-            'is_active' => true,
-            'can_pickup' => true,
-            'is_emergency_contact' => true,
-        ]);
-
-        $student->guardians()->attach($guardian->id, [
-            'relationship' => 'guardian',
-            'is_primary_contact' => true,
-            'is_emergency_contact' => true,
-            'can_pickup' => true,
-            'receives_reports' => true,
-            'receives_fees_notification' => true,
-            'is_fee_payer' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return $guardian;
+        return $this->classCache[$ck] = $class;
     }
 
     protected function nullableValue(mixed $value): ?string
