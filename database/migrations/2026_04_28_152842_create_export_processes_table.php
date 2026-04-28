@@ -13,14 +13,6 @@ return new class extends Migration
     {
         Schema::create('export_processes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('school_id')->constrained()->onDelete('cascade');
-            $table->string('type'); // e.g., 'students', 'staff', 'delete_students', 'delete_staff'
-            $table->enum('status', ['pending', 'processing', 'completed', 'failed', 'cancelled'])->default('pending');
-            $table->json('filters')->nullable();
-            $table->string('file_path')->nullable();
-            $table->string('file_name')->nullable();
-            $table->text('error_message')->nullable();
             $table->timestamps();
         });
     }
