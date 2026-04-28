@@ -42,8 +42,6 @@ const form = useForm({
     gender: props.parent.gender,
     relationship_type: props.parent.relationship_type || 'Father',
     student_ids: [...props.selectedStudentIds],
-    password: '',
-    password_confirmation: '',
 });
 
 const filteredStudents = computed(() => {
@@ -255,49 +253,7 @@ const breadcrumbs = [
                                 </div>
                             </div>
                         </div>
-
-                        <div
-                            class="overflow-hidden rounded-xl border border-slate-200 bg-white bg-[linear-gradient(135deg,#f8faff_0%,#ffffff_100%)] p-1 shadow-xl shadow-slate-200/40 transition-all duration-500 hover:shadow-lg hover:shadow-indigo-600/10"
-                        >
-                            <div
-                                class="flex flex-col justify-between gap-6 px-10 py-8 md:flex-row md:items-center"
-                            >
-                                <div class="space-y-1">
-                                    <h3
-                                        class="flex items-center gap-2 text-lg font-extrabold text-slate-900"
-                                    >
-                                        <Shield class="h-5 w-5 text-blue-600" />
-                                        Update Password
-                                    </h3>
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        Leave blank to keep existing password
-                                    </p>
-                                </div>
-                                <div
-                                    class="grid max-w-lg flex-1 grid-cols-1 gap-4 md:grid-cols-2"
-                                >
-                                    <Input
-                                        v-model="form.password"
-                                        type="password"
-                                        placeholder="New Password"
-                                        class="h-12 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold"
-                                    />
-                                    <Input
-                                        v-model="form.password_confirmation"
-                                        type="password"
-                                        placeholder="Confirm"
-                                        class="h-12 rounded-xl border-slate-200 bg-white px-4 text-sm font-bold"
-                                    />
-                                </div>
-                            </div>
-                            <div v-if="form.errors.password" class="px-10 pb-4">
-                                <InputError :message="form.errors.password" />
-                            </div>
-                        </div>
                     </div>
-
                     <!-- Right: Dependents -->
                     <div class="space-y-8 lg:col-span-5">
                         <div

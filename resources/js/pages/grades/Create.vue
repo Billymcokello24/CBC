@@ -53,151 +53,164 @@ const submit = () => {
         is_active: Boolean(data.is_active),
     })).post('/grades');
 };
+
+const architectureItems = [
+    'Automatic Progression', 
+    'Enrollment Validation', 
+    'Asset Synchronization'
+];
+
+const operationalRefs = [
+    { label: 'CBC Compliant', sub: 'National Standards', icon: BookOpen },
+    { label: 'Sync Enabled', sub: '2024 Academic Cycle', icon: Calendar }
+];
 </script>
 
 <template>
     <Head title="Provision Grade" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto max-w-[1200px] animate-in space-y-8 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-20 md:p-8">
+        <div class="mx-auto max-w-[1000px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-20 md:p-8">
             <!-- Header Section -->
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
+                <div class="flex flex-col gap-0.5">
+                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase opacity-70">
                         <Milestone class="h-3 w-3" />
                         <ChevronRight class="h-2.5 w-2.5 opacity-50" />
                         <span>Academic</span>
                         <ChevronRight class="h-2.5 w-2.5 opacity-50" />
-                        <span>Grade Structure</span>
+                        <span>Structure</span>
                         <ChevronRight class="h-2.5 w-2.5 opacity-50" />
-                        <span class="text-foreground">Provision</span>
+                        <span class="text-primary">Provision</span>
                     </div>
-                    <h1 class="text-xl leading-tight font-extrabold tracking-tight text-foreground sm:text-2xl italic">Provision Academic Grade</h1>
-                    <p class="text-xs text-muted-foreground">Define new educational levels and sequence them within the institutional hierarchy.</p>
+                    <h1 class="text-xl font-black tracking-tight text-foreground sm:text-2xl uppercase italic">Provision Grade</h1>
+                    <p class="text-[11px] font-medium text-muted-foreground">Architecting institutional academic nodes for global synchronization.</p>
                 </div>
 
                 <Link
                     href="/grades"
-                    class="inline-flex h-9 items-center justify-center rounded-xl border border-border bg-background px-4 text-[10px] font-bold tracking-tight text-foreground uppercase transition-all hover:bg-muted"
+                    class="inline-flex h-9 items-center justify-center rounded-xl border border-border bg-background px-4 text-[10px] font-bold tracking-widest text-foreground uppercase transition-all hover:bg-muted shadow-sm"
                 >
-                    <ArrowLeft class="mr-2 h-4 w-4 opacity-70" />
+                    <ArrowLeft class="mr-2 h-3.5 w-3.5 opacity-70" />
                     Back to Matrix
                 </Link>
             </div>
 
-            <div class="grid gap-8 lg:grid-cols-3">
+            <div class="grid gap-6 lg:grid-cols-3">
                 <!-- Main Form Area -->
                 <div class="lg:col-span-2 space-y-6">
                     <form @submit.prevent="submit" class="space-y-6">
                         <!-- Mode Selector Card -->
-                        <div class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900/50">
-                            <div class="flex items-start justify-between">
-                                <div class="space-y-1">
-                                    <h3 class="text-xs font-bold tracking-tight uppercase text-slate-900 dark:text-white">Provisioning Strategy</h3>
-                                    <p class="text-[10px] text-muted-foreground text-slate-500">Choose between individual entry or bulk generation of academic levels.</p>
-                                </div>
+                        <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/20">
+                            <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <label class="relative inline-flex cursor-pointer items-center">
-                                        <input type="checkbox" v-model="form.is_bulk" class="peer sr-only" />
-                                        <div class="h-5 w-9 rounded-full bg-slate-200 after:absolute after:top-[2px] after:left-[2px] after:h-4 after:w-4 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none dark:bg-slate-700"></div>
-                                        <span class="ml-3 text-[10px] font-bold tracking-tight uppercase text-slate-600 dark:text-slate-400">Bulk Mode</span>
-                                    </label>
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                        <Zap class="h-4 w-4" />
+                                    </div>
+                                    <div class="space-y-0.5">
+                                        <h3 class="text-[10px] font-black tracking-widest uppercase text-foreground">Provisioning Strategy</h3>
+                                        <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">Bulk or Individual Node Instantiation</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 px-3 py-1.5 rounded-xl bg-muted/50 border border-border/50">
+                                    <span class="text-[9px] font-black uppercase tracking-widest transition-colors" :class="form.is_bulk ? 'text-primary' : 'text-muted-foreground opacity-40'">Bulk Mode</span>
+                                    <Switch v-model:checked="form.is_bulk" class="h-4 w-8" />
                                 </div>
                             </div>
                         </div>
 
                         <!-- Form Content Card -->
-                        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900/50 overflow-hidden">
-                            <div class="border-b border-slate-100 bg-slate-50/50 px-6 py-3 dark:border-slate-800 dark:bg-slate-800/30">
-                                <h3 class="flex items-center gap-2 text-[10px] font-bold tracking-tight uppercase text-slate-700 dark:text-slate-300">
-                                    <Layers class="h-3.5 w-3.5 text-blue-500" />
-                                    {{ form.is_bulk ? 'Batch Configuration' : 'Single Grade Parameters' }}
+                        <div class="rounded-3xl border border-border bg-card shadow-sm overflow-hidden">
+                            <div class="border-b border-border/50 bg-muted/10 px-6 py-3">
+                                <h3 class="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase text-muted-foreground">
+                                    <Layers class="h-3.5 w-3.5 text-primary" />
+                                    {{ form.is_bulk ? 'Batch Node Configuration' : 'Single Grade Parameters' }}
                                 </h3>
                             </div>
 
                             <div class="p-6">
                                 <div v-if="form.is_bulk" class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <Label for="base_name" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Base Labeling</Label>
-                                        <Input id="base_name" v-model="form.base_name" placeholder="Grade" class="h-10 rounded-xl border-slate-200 focus:ring-blue-500/20 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Base Designation</Label>
+                                        <Input v-model="form.base_name" placeholder="Grade" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold uppercase transition-all focus:bg-background" />
                                         <InputError :message="form.errors.base_name" />
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div class="space-y-2">
-                                            <Label for="start_level" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Start Offset</Label>
-                                            <Input id="start_level" v-model="form.start_level" type="number" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                            <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Start Offset</Label>
+                                            <Input v-model="form.start_level" type="number" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold transition-all focus:bg-background" />
                                         </div>
                                         <div class="space-y-2">
-                                            <Label for="end_level" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">End Limit</Label>
-                                            <Input id="end_level" v-model="form.end_level" type="number" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                            <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">End Limit</Label>
+                                            <Input v-model="form.end_level" type="number" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold transition-all focus:bg-background" />
                                         </div>
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="category" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Curriculum Category</Label>
-                                        <Input id="category" v-model="form.category" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Curriculum Category</Label>
+                                        <Input v-model="form.category" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold uppercase transition-all focus:bg-background" />
                                         <InputError :message="form.errors.category" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="is_active_bulk" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Initial Status</Label>
-                                        <select id="is_active_bulk" v-model="form.is_active" class="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-900">
-                                            <option :value="true">Active & Visible</option>
-                                            <option :value="false">Archived / Hidden</option>
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Initial Protocol State</Label>
+                                        <select v-model="form.is_active" class="flex h-10 w-full rounded-xl border border-border bg-muted/10 px-4 text-[10px] font-bold uppercase outline-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/5">
+                                            <option :value="true">Active & Synchronized</option>
+                                            <option :value="false">Archived / Dormant</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <div v-else class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <Label for="name" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Full Designation</Label>
-                                        <Input id="name" v-model="form.name" placeholder="Grade 9" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Full Designation *</Label>
+                                        <Input v-model="form.name" placeholder="Grade 9" required class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold uppercase transition-all focus:bg-background" />
                                         <InputError :message="form.errors.name" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="code" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">System Alias (Code)</Label>
-                                        <Input id="code" v-model="form.code" placeholder="G9" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">System Alias (Code) *</Label>
+                                        <Input v-model="form.code" placeholder="G9" required class="h-10 rounded-xl border-border bg-muted/10 text-xs font-black tracking-widest text-primary uppercase transition-all focus:bg-background" />
                                         <InputError :message="form.errors.code" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="level_order" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Progression Index</Label>
-                                        <Input id="level_order" v-model="form.level_order" type="number" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Progression Index</Label>
+                                        <Input v-model="form.level_order" type="number" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold transition-all focus:bg-background" />
                                         <InputError :message="form.errors.level_order" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="category" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Category Tag</Label>
-                                        <Input id="category" v-model="form.category" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Category Tag</Label>
+                                        <Input v-model="form.category" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold uppercase transition-all focus:bg-background" />
                                         <InputError :message="form.errors.category" />
                                     </div>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="space-y-2">
-                                            <Label for="min_age" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Min Age</Label>
-                                            <Input id="min_age" v-model="form.minimum_age" type="number" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                    <div class="grid grid-cols-2 gap-4 text-xs">
+                                        <div class="space-y-2 text-xs">
+                                            <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Min Age</Label>
+                                            <Input v-model="form.minimum_age" type="number" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold transition-all focus:bg-background" />
                                         </div>
-                                        <div class="space-y-2">
-                                            <Label for="max_age" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Max Age</Label>
-                                            <Input id="max_age" v-model="form.maximum_age" type="number" class="h-10 rounded-xl border-slate-200 text-xs" />
+                                        <div class="space-y-2 text-xs">
+                                            <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">Max Age</Label>
+                                            <Input v-model="form.maximum_age" type="number" class="h-10 rounded-xl border-border bg-muted/10 text-xs font-bold transition-all focus:bg-background" />
                                         </div>
                                     </div>
                                     <div class="space-y-2">
-                                        <Label for="is_active" class="text-[9px] font-bold uppercase tracking-widest text-slate-500">Presence</Label>
-                                        <select id="is_active" v-model="form.is_active" class="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-4 text-xs transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-900">
-                                            <option :value="true">Active & Visible</option>
-                                            <option :value="false">Archived / Hidden</option>
+                                        <Label class="ml-1 text-[9px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">State</Label>
+                                        <select v-model="form.is_active" class="flex h-10 w-full rounded-xl border border-border bg-muted/10 px-4 text-[10px] font-bold uppercase outline-none transition-all focus:bg-background focus:ring-2 focus:ring-primary/5">
+                                            <option :value="true">Active Synchronization</option>
+                                            <option :value="false">Dormant / Archived</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50/50 px-6 py-4 dark:border-slate-800 dark:bg-slate-800/30">
-                                <Button type="button" variant="ghost" class="text-[10px] font-bold uppercase tracking-tight" as-child>
-                                    <Link href="/grades">Cancel Request</Link>
+                            <div class="flex items-center justify-end gap-3 border-t border-border/50 bg-muted/10 px-8 py-4">
+                                <Button type="button" variant="ghost" class="h-10 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:bg-muted" as-child>
+                                    <Link href="/grades">Abort Provisioning</Link>
                                 </Button>
                                 <Button 
                                     type="submit" 
                                     :disabled="form.processing"
-                                    class="h-10 rounded-xl bg-blue-600 px-8 text-[10px] font-bold uppercase tracking-tight text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95"
+                                    class="h-10 rounded-xl bg-primary px-8 text-[9px] font-black uppercase tracking-[0.2em] text-white shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95"
                                 >
-                                    <Loader2 v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
-                                    <PlusCircle v-else class="mr-2 h-4 w-4" />
-                                    Commit Provision
+                                    <Loader2 v-if="form.processing" class="mr-3 h-4 w-4 animate-spin" />
+                                    <Database v-else class="mr-3 h-4 w-4 text-white" />
+                                    Commit Node
                                 </Button>
                             </div>
                         </div>
@@ -206,45 +219,34 @@ const submit = () => {
 
                 <!-- Info Sidebar -->
                 <div class="space-y-6">
-                    <div class="rounded-2xl border border-blue-100 bg-blue-50/30 p-5 dark:border-blue-500/20 dark:bg-blue-500/5">
-                        <div class="mb-4 flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500 text-white shadow-lg shadow-blue-500/30">
-                            <ShieldCheck class="h-4 w-4" />
+                    <div class="rounded-[2rem] border border-primary/10 bg-primary/5 p-6 space-y-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/30">
+                            <ShieldCheck class="h-5 w-5" />
                         </div>
-                        <h3 class="mb-2 text-xs font-extrabold tracking-tight text-slate-900 dark:text-white uppercase italic">System Architecture</h3>
-                        <p class="text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
-                            Grades form the structural backbone of your institution. {{ form.is_bulk ? 'Bulk provisioning automatically sequences levels.' : 'Individual grades allow for specific constraints like age limits.' }}
-                        </p>
-                        <ul class="mt-4 space-y-2">
-                            <li class="flex items-center gap-2 text-[9px] font-semibold text-slate-500 uppercase">
-                                <CheckCircle2 class="h-3 w-3 text-blue-500" />
-                                Automatic Progression Mapping
-                            </li>
-                            <li class="flex items-center gap-2 text-[9px] font-semibold text-slate-500 uppercase">
-                                <CheckCircle2 class="h-3 w-3 text-blue-500" />
-                                Enrollment Capacity Validation
-                            </li>
-                        </ul>
+                        <div class="space-y-2">
+                             <h3 class="text-xs font-black tracking-widest text-foreground uppercase italic underline decoration-primary/30 decoration-2 underline-offset-4">Core Architecture</h3>
+                            <p class="text-[10px] leading-relaxed font-bold text-muted-foreground uppercase opacity-60">
+                                Grades form the structural backbone of your institution. {{ form.is_bulk ? 'Bulk provisioning automatically sequences levels.' : 'Individual grades allow for specific constraints.' }}
+                            </p>
+                        </div>
+                        <div class="space-y-2 pt-2">
+                            <div v-for="item in architectureItems" :key="item" class="flex items-center gap-3">
+                                <CheckCircle2 class="h-3 w-3 text-primary" />
+                                <span class="text-[9px] font-black tracking-widest text-primary uppercase">{{ item }}</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/50">
-                        <h4 class="mb-4 text-[9px] font-bold uppercase tracking-widest text-slate-400">Quick Reference</h4>
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600">
-                                    <BookOpen class="h-3.5 w-3.5" />
+                    <div class="rounded-3xl border border-border bg-card p-6">
+                        <h4 class="mb-5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-40">Operational Reference</h4>
+                        <div class="space-y-5">
+                            <div v-for="(ref, idx) in operationalRefs" :key="idx" class="flex items-center gap-4">
+                                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                                    <component :is="ref.icon" class="h-4 w-4" />
                                 </div>
-                                <div>
-                                    <p class="text-[10px] font-bold text-slate-900 dark:text-white">CBC Standards</p>
-                                    <p class="text-[9px] text-slate-500">Kenya Curriculum compliant</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600">
-                                    <Calendar class="h-3.5 w-3.5" />
-                                </div>
-                                <div>
-                                    <p class="text-[10px] font-bold text-slate-900 dark:text-white">Academic Cycle</p>
-                                    <p class="text-[9px] text-slate-500">Linked to 2024 active year</p>
+                                <div class="space-y-0.5">
+                                    <p class="text-[10px] font-black text-foreground uppercase">{{ ref.label }}</p>
+                                    <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ ref.sub }}</p>
                                 </div>
                             </div>
                         </div>

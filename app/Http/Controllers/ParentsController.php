@@ -65,18 +65,22 @@ class ParentsController extends Controller
             'relationship_type' => 'required|string',
             'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
-            'password' => 'required|string|min:8|confirmed',
         ]);
 
         try {
             DB::beginTransaction();
 
+            $randomPassword = \Illuminate\Support\Str::random(12);
+
             // 1. Create User Account
             $user = User::create([
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
+                'phone' => $validated['phone'],
+                'password' => Hash::make($randomPassword),
                 'status' => 'active',
+                'school_id' => auth()->user()->school_id,
+                'force_password_change' => true,
             ]);
 
             // Assign Parent Role if it exists
@@ -96,6 +100,9 @@ class ParentsController extends Controller
                     'is_primary_contact' => true,
                 ]);
             }
+
+            // 4. Send Welcome Email
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserCreatedMail($user, $randomPassword));
 
             DB::commit();
 
@@ -147,7 +154,6 @@ class ParentsController extends Controller
             'relationship_type' => 'required|string',
             'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
-            'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         try {
@@ -157,13 +163,8 @@ class ParentsController extends Controller
             $parent->user->update([
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
+                'phone' => $validated['phone'],
             ]);
-
-            if ($request->filled('password')) {
-                $parent->user->update([
-                    'password' => Hash::make($validated['password']),
-                ]);
-            }
 
             // 2. Update Guardian Profile
             $parent->update($request->except(['student_ids', 'password', 'password_confirmation']));

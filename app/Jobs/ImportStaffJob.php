@@ -70,7 +70,24 @@ class ImportStaffJob implements ShouldQueue
                     $line = $index + 2;
                     $normalized = $this->normalizeTeacherImportRow($row, $line);
 
-                    $teacher = Teacher::query()->where('staff_number', $normalized['staff_number'])->first();
+                    $teacher = Teacher::query()
+                        ->where('school_id', $this->schoolId)
+                        ->where(function ($q) use ($normalized) {
+                            $q->where('staff_number', $normalized['staff_number']);
+                            if (!empty($normalized['email'])) {
+                                $q->orWhereHas('user', function ($uq) use ($normalized) {
+                                    $uq->where('email', $normalized['email']);
+                                });
+                                $q->orWhere('email', $normalized['email']);
+                            }
+                            if (!empty($normalized['id_number'])) {
+                                $q->orWhere('id_number', $normalized['id_number']);
+                            }
+                            if (!empty($normalized['tsc_number'])) {
+                                $q->orWhere('tsc_number', $normalized['tsc_number']);
+                            }
+                        })
+                        ->first();
 
                     if ($teacher) {
                         $user = $teacher->user;
@@ -82,13 +99,15 @@ class ImportStaffJob implements ShouldQueue
 
                         $teacher->update(collect($normalized)->except(['password', 'department_name', 'staff_category_name', 'staff_designation_name'])->toArray());
                     } else {
+                        $randomPassword = \Illuminate\Support\Str::random(12);
                         $user = User::create([
                             'name' => "{$normalized['first_name']} {$normalized['last_name']}",
                             'email' => $normalized['email'],
                             'phone' => $normalized['phone'],
-                            'password' => Hash::make($normalized['password'] ?? 'Password123'),
+                            'password' => Hash::make($randomPassword),
                             'status' => 'active',
                             'school_id' => $this->schoolId,
+                            'force_password_change' => true,
                         ]);
 
                         $roleName = strtolower($normalized['role'] ?? 'teacher');
@@ -103,7 +122,7 @@ class ImportStaffJob implements ShouldQueue
 
                         Teacher::create($teacherData);
 
-                        Mail::to($user->email)->send(new UserCreatedMail($user, $normalized['password'] ?? 'Password123'));
+                        Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
                     }
                 }
             });
@@ -163,17 +182,35 @@ class ImportStaffJob implements ShouldQueue
 
         $departmentId = null;
         if (!empty($row['department_name'])) {
-            $departmentId = Department::where('name', $row['department_name'])->value('id');
+            $departmentId = Department::query()->firstOrCreate(
+                ['school_id' => $this->schoolId, 'name' => $row['department_name']],
+                [
+                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['department_name'], '')),
+                    'is_active' => true
+                ]
+            )->id;
         }
 
         $categoryId = null;
         if (!empty($row['staff_category_name'])) {
-            $categoryId = StaffCategory::where('name', $row['staff_category_name'])->value('id');
+            $categoryId = StaffCategory::query()->firstOrCreate(
+                ['school_id' => $this->schoolId, 'name' => $row['staff_category_name']],
+                [
+                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['staff_category_name'], '')),
+                    'is_active' => true
+                ]
+            )->id;
         }
 
         $designationId = null;
         if (!empty($row['staff_designation_name'])) {
-            $designationId = StaffDesignation::where('name', $row['staff_designation_name'])->value('id');
+            $designationId = StaffDesignation::query()->firstOrCreate(
+                ['school_id' => $this->schoolId, 'name' => $row['staff_designation_name']],
+                [
+                    'code' => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($row['staff_designation_name'], '')),
+                    'is_active' => true
+                ]
+            )->id;
         }
 
         return [
@@ -196,7 +233,6 @@ class ImportStaffJob implements ShouldQueue
             'employment_type' => $row['employment_type'] ?? null,
             'date_joined' => $row['date_joined'] ?? null,
             'basic_salary' => $row['basic_salary'] ?? null,
-            'password' => $row['password'] ?? null,
         ];
     }
 }

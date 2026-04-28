@@ -616,10 +616,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('settings/school', [SettingsController::class, 'updateSchoolProfile'])->name('settings.school.update');
         Route::put('settings/school/security', [SettingsController::class, 'updateSecuritySettings'])->name('settings.school.security');
 
-        Route::get('settings/academic-year', [SettingsController::class, 'academicSettings'])->name('settings.academic-year');
-        Route::post('settings/academic-year', [SettingsController::class, 'storeAcademicYear'])->name('settings.academic-year.store');
-        Route::put('settings/academic-year/{year}', [SettingsController::class, 'updateAcademicYear'])->name('settings.academic-year.update');
-        Route::post('settings/academic-year/{year}/current', [SettingsController::class, 'setCurrentAcademicYear'])->name('settings.academic-year.current');
+        Route::get('settings/academic-years', [SettingsController::class, 'academicSettings'])->name('settings.academic-year');
+        Route::post('settings/academic-years', [SettingsController::class, 'storeAcademicYear'])->name('settings.academic-year.store');
+        Route::put('settings/academic-years/{year}', [SettingsController::class, 'updateAcademicYear'])->name('settings.academic-year.update');
+        Route::match(['post', 'patch'], 'settings/academic-years/{year}/current', [SettingsController::class, 'setCurrentAcademicYear'])->name('settings.academic-year.current');
 
         Route::get('settings/users', [SettingsController::class, 'users'])->name('settings.users');
         Route::get('settings/system', [SettingsController::class, 'system'])->name('settings.system');

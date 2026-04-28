@@ -65,16 +65,20 @@ class StaffsController extends Controller
             'middle_name' => $teacher->middle_name,
             'last_name' => $teacher->last_name,
             'full_name' => $teacher->full_name,
+            'name' => $teacher->full_name,
+            'email' => $teacher->user->email ?? $teacher->email,
             'staff_number' => $teacher->staff_number,
             'status' => $teacher->status,
             'photo_url' => $teacher->photo_url,
+            'department_name' => $teacher->department ? $teacher->department->name : null,
+            'role' => $teacher->user && $teacher->user->roles->isNotEmpty() ? $teacher->user->roles->first()->name : null,
             'department' => $teacher->department ? [
                 'id' => $teacher->department->id,
                 'name' => $teacher->department->name,
             ] : null,
             'user' => [
                 'id' => $teacher->user->id,
-                'email' => $teacher->user->email,
+                'email' => $teacher->user->email ?? $teacher->email,
                 'roles' => $teacher->user->roles->map(fn($role) => [
                     'id' => $role->id,
                     'name' => $role->name,
@@ -288,7 +292,6 @@ class StaffsController extends Controller
             'employment_type' => ['nullable', 'string'],
             'date_joined' => ['nullable', 'date'],
             'basic_salary' => ['nullable', 'numeric'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
             'role' => ['required', 'string'], // Use role from dropdown templates
@@ -312,21 +315,23 @@ class StaffsController extends Controller
 
         return DB::transaction(function () use ($validated, $request) {
             $schoolId = auth()->user()->school_id;
+            $randomPassword = \Illuminate\Support\Str::random(12);
 
             $user = User::create([
                 'school_id' => $schoolId,
                 'name' => "{$validated['first_name']} {$validated['last_name']}",
                 'email' => $validated['email'],
                 'phone' => $validated['phone'],
-                'password' => Hash::make($validated['password']),
+                'password' => Hash::make($randomPassword),
                 'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
+                'force_password_change' => true,
             ]);
 
             if ($this->roleService->isValidTemplate($validated['role'])) {
                 $user->assignRole($validated['role']);
             }
 
-            $teacherData = collect($validated)->except(['password', 'password_confirmation', 'photo', 'role'])->toArray();
+            $teacherData = collect($validated)->except(['photo', 'role'])->toArray();
             $teacherData['user_id'] = $user->id;
             $teacherData['school_id'] = $schoolId;
 
@@ -336,10 +341,10 @@ class StaffsController extends Controller
 
             Teacher::create($teacherData);
 
-            // Send Welcome Email
-            Mail::to($user->email)->send(new UserCreatedMail($user, $validated['password']));
+            // Send Welcome Email with random password and forcing change
+            Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
 
-            return redirect()->route('staffs.index')->with('success', 'Staff member created successfully.');
+            return redirect()->route('staffs.index')->with('success', 'Staff member created successfully. An invitation email has been sent.');
         });
     }
 
@@ -509,7 +514,6 @@ class StaffsController extends Controller
             'employment_type' => ['nullable', 'string'],
             'date_joined' => ['nullable', 'date'],
             'basic_salary' => ['nullable', 'numeric'],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'status' => ['required', Rule::in(['active', 'inactive', 'on_leave', 'suspended', 'terminated'])],
             'photo' => ['nullable', 'image', 'max:2048'],
             'alternate_phone' => ['nullable', 'string', 'max:20'],
@@ -541,10 +545,6 @@ class StaffsController extends Controller
                 'status' => $validated['status'] === 'active' ? 'active' : 'inactive',
             ];
 
-            if (!empty($validated['password'])) {
-                $userData['password'] = Hash::make($validated['password']);
-            }
-
             if ($user) {
                 // Update existing User record
                 $user->update($userData);
@@ -555,19 +555,24 @@ class StaffsController extends Controller
                 }
             } else {
                 // Auto-create a User account for staff that don't have one
-                if (empty($userData['password'])) {
-                    $userData['password'] = Hash::make($validated['email']);
-                }
+                $randomPassword = \Illuminate\Support\Str::random(12);
+                $userData['password'] = Hash::make($randomPassword);
                 $userData['email_verified_at'] = now();
+                $userData['force_password_change'] = true;
+                $userData['school_id'] = $teacher->school_id;
+
                 $user = User::create($userData);
                 $teacher->user_id = $user->id;
 
                 if ($this->roleService->isValidTemplate($validated['role'])) {
                     $user->assignRole($validated['role']);
                 }
+
+                // Send Welcome Email
+                Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
             }
 
-            $teacherData = collect($validated)->except(['password', 'password_confirmation', 'photo'])->toArray();
+            $teacherData = collect($validated)->except(['photo', 'role'])->toArray();
 
             if ($request->hasFile('photo')) {
                 if ($teacher->photo) {
@@ -660,14 +665,14 @@ class StaffsController extends Controller
             'first_name', 'middle_name', 'last_name', 'staff_number', 'tsc_number',
             'email', 'phone', 'gender', 'role', 'date_of_birth', 'id_number', 'nationality',
             'department_name', 'staff_category_name', 'staff_designation_name',
-            'contract_type', 'employment_type', 'date_joined', 'basic_salary', 'password'
+            'contract_type', 'employment_type', 'date_joined', 'basic_salary'
         ];
 
         $sample = [
             'John', 'Doe', 'Smith', 'TCH1001', 'TSC123456',
             'john.smith@example.com', '+254700000001', 'male', 'teacher', '1985-05-20', '12345678', 'Kenyan',
             'Mathematics', 'Teaching Staff', 'Senior Teacher',
-            'Permanent', 'Full-time', '2020-01-01', '50000', 'Password123'
+            'Permanent', 'Full-time', '2020-01-01', '50000'
         ];
 
         $callback = function () use ($columns, $sample) {

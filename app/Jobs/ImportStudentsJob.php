@@ -77,18 +77,29 @@ class ImportStudentsJob implements ShouldQueue
                     }
                     $normalized = $this->normalizeLearnerImportRow($row, $line);
                     
-                    $createdGrades = 0; // Local tracking doesn't matter for the job result yet
+                    $createdGrades = 0;
                     $createdStreams = 0;
                     $createdClasses = 0;
                     $guardianAccounts = 0;
 
+                    // Ensure lookup is strictly scoped to this school
                     $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized, $createdGrades);
                     $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized, $createdStreams);
                     $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized, $createdClasses);
 
+                    // Find student by identifying fields WITHIN THIS SCHOOL to support multi-tenancy
                     $learner = Student::query()
+                        ->withoutGlobalScopes() // Handle manually for background job
                         ->where('school_id', $this->schoolId)
-                        ->where('admission_number', $normalized['admission_number'])
+                        ->where(function ($q) use ($normalized) {
+                            $q->where('admission_number', $normalized['admission_number']);
+                            if (!empty($normalized['upi'])) {
+                                $q->orWhere('upi', $normalized['upi']);
+                            }
+                            if (!empty($normalized['birth_certificate_number'])) {
+                                $q->orWhere('birth_certificate_number', $normalized['birth_certificate_number']);
+                            }
+                        })
                         ->first();
 
                     $studentPayload = [
@@ -97,20 +108,32 @@ class ImportStudentsJob implements ShouldQueue
                         'middle_name' => $normalized['middle_name'],
                         'last_name' => $normalized['last_name'],
                         'admission_number' => $normalized['admission_number'],
+                        'upi' => $normalized['upi'],
                         'gender' => $normalized['gender'],
                         'date_of_birth' => $normalized['date_of_birth'],
-                        'admission_date' => now()->toDateString(),
-                        'admission_class_id' => $class?->id,
-                        'current_class_id' => $class?->id,
+                        'birth_certificate_number' => $normalized['birth_certificate_number'],
+                        'nationality' => $normalized['nationality'] ?: 'Kenyan',
+                        'religion' => $normalized['religion'],
+                        'primary_language' => $normalized['primary_language'],
+                        'secondary_language' => $normalized['secondary_language'],
+                        'home_address' => $normalized['home_address'],
                         'county' => $normalized['county'],
+                        'sub_county' => $normalized['sub_county'],
+                        'ward' => $normalized['ward'],
+                        'blood_group' => $normalized['blood_group'],
+                        'medical_conditions' => $normalized['medical_conditions'],
+                        'allergies' => $normalized['allergies'],
+                        'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
+                        'admission_class_id' => $learner?->admission_class_id ?: ($class?->id),
+                        'current_class_id' => $class?->id ?: $learner?->current_class_id,
                         'boarding_status' => $normalized['boarding_status'],
-                        'status' => $normalized['status'],
-                        'nationality' => 'Kenyan',
+                        'status' => $normalized['status'] ?: 'active',
                     ];
 
                     if ($learner) {
                         $learner->update($studentPayload);
                     } else {
+                        // Create new student record with explicit school_id
                         $learner = Student::create($studentPayload);
                     }
 
@@ -118,7 +141,7 @@ class ImportStudentsJob implements ShouldQueue
                         $this->syncEnrollmentForImportedLearner($learner, $class->id, $this->academicYearId);
                     }
 
-                    if ($normalized['guardian_name'] && $normalized['guardian_email'] && $normalized['guardian_phone'] && $normalized['guardian_password']) {
+                    if ($normalized['guardian_email']) {
                         $this->upsertImportedGuardian($learner, $normalized, $guardianAccounts);
                     }
                 }
@@ -188,8 +211,21 @@ class ImportStudentsJob implements ShouldQueue
             'middle_name' => $this->nullableValue($row['middle_name'] ?? null),
             'last_name' => $lastName,
             'admission_number' => $admissionNumber,
+            'upi' => $this->nullableValue($row['upi'] ?? null),
             'gender' => $gender,
             'date_of_birth' => $dateOfBirth,
+            'birth_certificate_number' => $this->nullableValue($row['birth_certificate_number'] ?? null),
+            'nationality' => $this->nullableValue($row['nationality'] ?? null),
+            'religion' => $this->nullableValue($row['religion'] ?? null),
+            'primary_language' => $this->nullableValue($row['primary_language'] ?? null),
+            'secondary_language' => $this->nullableValue($row['secondary_language'] ?? null),
+            'home_address' => $this->nullableValue($row['home_address'] ?? null),
+            'county' => $this->nullableValue($row['county'] ?? null),
+            'sub_county' => $this->nullableValue($row['sub_county'] ?? null),
+            'ward' => $this->nullableValue($row['ward'] ?? null),
+            'blood_group' => $this->nullableValue($row['blood_group'] ?? null),
+            'medical_conditions' => $this->nullableValue($row['medical_conditions'] ?? null),
+            'allergies' => $this->nullableValue($row['allergies'] ?? null),
             'grade_name' => $this->nullableValue($gradeName),
             'grade_code' => $this->nullableValue($row['grade_code'] ?? null),
             'grade_level_order' => is_numeric($row['grade_level_order'] ?? null) ? (int) $row['grade_level_order'] : null,
@@ -198,13 +234,12 @@ class ImportStudentsJob implements ShouldQueue
             'stream_code' => $this->nullableValue($row['stream_code'] ?? null),
             'class_name' => $this->nullableValue($className),
             'class_code' => $this->nullableValue($row['class_code'] ?? null),
-            'county' => $this->nullableValue($row['county'] ?? null),
             'boarding_status' => $boardingStatus,
+            'admission_date' => $this->nullableValue($row['admission_date'] ?? null),
             'status' => $status,
             'guardian_name' => $this->nullableValue($row['guardian_name'] ?? null),
             'guardian_email' => $this->nullableValue($row['guardian_email'] ?? null),
             'guardian_phone' => $this->nullableValue($row['guardian_phone'] ?? null),
-            'guardian_password' => $this->nullableValue($row['guardian_password'] ?? null),
         ];
     }
 
@@ -213,12 +248,19 @@ class ImportStudentsJob implements ShouldQueue
         if (!$data['grade_name']) return null;
 
         $grade = GradeLevel::query()
+            ->where('school_id', $schoolId)
             ->where(function ($query) use ($data) {
                 $query->where('name', $data['grade_name']);
                 if ($data['grade_code']) $query->orWhere('code', $data['grade_code']);
             })->first();
 
-        if ($grade) return $grade;
+        if ($grade) {
+            // Update optional details if they were missing
+            if (!$grade->category && $data['grade_category']) {
+                $grade->update(['category' => $data['grade_category']]);
+            }
+            return $grade;
+        }
 
         $createdGrades++;
         return GradeLevel::create([
@@ -236,12 +278,18 @@ class ImportStudentsJob implements ShouldQueue
         if (!$data['stream_name']) return null;
 
         $stream = Stream::query()
+            ->where('school_id', $schoolId)
             ->where(function ($query) use ($data) {
                 $query->where('name', $data['stream_name']);
                 if ($data['stream_code']) $query->orWhere('code', $data['stream_code']);
             })->first();
 
-        if ($stream) return $stream;
+        if ($stream) {
+            if ($data['stream_code'] && $stream->code !== $data['stream_code']) {
+                $stream->update(['code' => $data['stream_code']]);
+            }
+            return $stream;
+        }
 
         $createdStreams++;
         return Stream::create([
@@ -258,6 +306,7 @@ class ImportStudentsJob implements ShouldQueue
         if (!$grade || !$data['class_name']) return null;
 
         $query = SchoolClass::query()
+            ->where('school_id', $schoolId)
             ->where('academic_year_id', $academicYearId)
             ->where('grade_level_id', $grade->id)
             ->where('name', $data['class_name']);
@@ -265,7 +314,12 @@ class ImportStudentsJob implements ShouldQueue
         if ($stream) $query->where('stream_id', $stream->id);
 
         $class = $query->first();
-        if ($class) return $class;
+        if ($class) {
+            if ($data['class_code'] && $class->code !== $data['class_code']) {
+                $class->update(['code' => $data['class_code']]);
+            }
+            return $class;
+        }
 
         $createdClasses++;
         return SchoolClass::create([
@@ -282,9 +336,13 @@ class ImportStudentsJob implements ShouldQueue
 
     protected function syncEnrollmentForImportedLearner(Student $student, int $classId, int $academicYearId): void
     {
-        $currentTermId = DB::table('academic_terms')->where('is_current', true)->value('id');
+        $currentTermId = DB::table('academic_terms')
+            ->where('school_id', $this->schoolId)
+            ->where('is_current', true)
+            ->value('id');
 
-        DB::table('student_enrollments')
+        // Deactivate other active enrollments for this year if the class has changed
+        \App\Models\StudentEnrollment::query()
             ->where('student_id', $student->id)
             ->where('academic_year_id', $academicYearId)
             ->where('status', 'active')
@@ -292,37 +350,61 @@ class ImportStudentsJob implements ShouldQueue
             ->update([
                 'status' => 'transferred',
                 'end_date' => now()->toDateString(),
-                'updated_at' => now(),
             ]);
 
-        $exists = DB::table('student_enrollments')
-            ->where('student_id', $student->id)
-            ->where('class_id', $classId)
-            ->where('academic_year_id', $academicYearId)
-            ->exists();
-
-        if (!$exists) {
-            DB::table('student_enrollments')->insert([
+        // Use updateOrCreate on the model to ensure school_id and other traits are handled correctly
+        \App\Models\StudentEnrollment::updateOrCreate(
+            [
+                'school_id' => $this->schoolId,
                 'student_id' => $student->id,
-                'class_id' => $classId,
                 'academic_year_id' => $academicYearId,
+            ],
+            [
+                'class_id' => $classId,
                 'academic_term_id' => $currentTermId,
                 'enrollment_date' => now()->toDateString(),
                 'enrollment_type' => 'new',
                 'status' => 'active',
                 'enrolled_by' => $this->userId,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+                'boarding_status' => $student->boarding_status,
+            ]
+        );
+
+        // Ensure student model's current_class_id is updated (redundant but safe)
+        $student->update(['current_class_id' => $classId]);
     }
 
     protected function upsertImportedGuardian(Student $student, array $data, int &$guardianAccounts): void
     {
         $guardianAccounts++;
-        $existingGuardian = Guardian::query()->where('email', $data['guardian_email'])->first();
+        // Explicitly scope by school_id to support multi-tenancy
+        $existingGuardian = Guardian::query()
+            ->where('school_id', $this->schoolId)
+            ->where('email', $data['guardian_email'])
+            ->first();
 
         if ($existingGuardian && $existingGuardian->user_id) {
+            $nameParts = preg_split('/\s+/', trim((string) ($data['guardian_name'] ?: $existingGuardian->full_name))) ?: [];
+            $firstName = array_shift($nameParts) ?: $existingGuardian->first_name;
+            $lastName = count($nameParts) ? array_pop($nameParts) : $existingGuardian->last_name;
+            $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
+
+            // Update user with school scoping safety
+            User::query()
+                ->where('school_id', $this->schoolId)
+                ->where('id', $existingGuardian->user_id)
+                ->update([
+                    'name' => $data['guardian_name'] ?: $existingGuardian->full_name,
+                    'phone' => $data['guardian_phone'] ?: $existingGuardian->phone,
+                ]);
+
+            $existingGuardian->update([
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+                'phone' => $data['guardian_phone'] ?: $existingGuardian->phone,
+            ]);
+
             $student->guardians()->syncWithoutDetaching([
                 $existingGuardian->id => [
                     'relationship' => 'guardian',
@@ -342,7 +424,6 @@ class ImportStudentsJob implements ShouldQueue
             'name' => $data['guardian_name'],
             'email' => $data['guardian_email'],
             'phone' => $data['guardian_phone'],
-            'password' => $data['guardian_password'],
         ]);
     }
 
@@ -351,7 +432,11 @@ class ImportStudentsJob implements ShouldQueue
         $existingGuardian = $student->guardians()->whereNotNull('user_id')->first();
 
         if ($existingGuardian) {
-            $user = $existingGuardian->user;
+            $user = User::query()
+                ->where('school_id', $this->schoolId)
+                ->where('id', $existingGuardian->user_id)
+                ->first();
+            
             $nameParts = preg_split('/\s+/', trim((string) ($data['name'] ?: $existingGuardian->full_name))) ?: [];
             $firstName = array_shift($nameParts) ?: $existingGuardian->first_name;
             $lastName = count($nameParts) ? array_pop($nameParts) : $existingGuardian->last_name;
@@ -361,7 +446,6 @@ class ImportStudentsJob implements ShouldQueue
                 'name' => $data['name'] ?: $existingGuardian->full_name,
                 'email' => $data['email'] ?: $existingGuardian->email,
                 'phone' => $data['phone'] ?: $existingGuardian->phone,
-                'password' => $data['password'] ? Hash::make($data['password']) : null,
             ], fn ($value) => $value !== null && $value !== ''));
 
             $existingGuardian->update([
@@ -370,16 +454,16 @@ class ImportStudentsJob implements ShouldQueue
                 'last_name' => $lastName,
                 'email' => $data['email'] ?: $existingGuardian->email,
                 'phone' => $data['phone'] ?: $existingGuardian->phone,
+                'is_active' => true,
             ]);
 
-            return Guardian::query()->findOrFail($existingGuardian->id);
+            return $existingGuardian;
         }
 
         return $this->createGuardianAccountForStudent($student, [
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
-            'password' => $data['password'],
         ]);
     }
 
@@ -390,12 +474,15 @@ class ImportStudentsJob implements ShouldQueue
         $lastName = count($nameParts) ? array_pop($nameParts) : $firstName;
         $middleName = count($nameParts) ? implode(' ', $nameParts) : null;
 
+        $randomPassword = \Illuminate\Support\Str::random(12);
         $user = User::create([
             'name' => trim((string) $data['name']),
             'email' => $data['email'],
             'phone' => $data['phone'],
-            'password' => Hash::make($data['password']),
+            'password' => Hash::make($randomPassword),
             'status' => 'active',
+            'school_id' => $student->school_id,
+            'force_password_change' => true,
             'locale' => config('app.locale'),
             'timezone' => config('app.timezone'),
         ]);
@@ -431,7 +518,7 @@ class ImportStudentsJob implements ShouldQueue
             'updated_at' => now(),
         ]);
 
-        Mail::to($user->email)->send(new UserCreatedMail($user, $data['password']));
+        Mail::to($user->email)->send(new UserCreatedMail($user, $randomPassword));
 
         return $guardian;
     }

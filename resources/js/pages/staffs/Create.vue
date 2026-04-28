@@ -81,8 +81,6 @@ const form = useForm({
     employment_type: 'Full-time',
     date_joined: new Date().toISOString().split('T')[0],
     basic_salary: '',
-    password: '',
-    password_confirmation: '',
     status: 'active',
     photo: null as File | null,
     role: props.preselectedRole || '',
@@ -115,7 +113,7 @@ const submit = () => {
 
 const confirmSubmit = () => {
     confirmOpen.value = false;
-    form.post('/teachers', {
+    form.post('/staffs', {
         onSuccess: (page) => {
             const flash = (page.props as any).flash;
             if (flash?.success) {
@@ -361,7 +359,7 @@ const resetForm = () => {
                         </div>
                         <div class="p-8">
                             <div class="grid gap-6 md:grid-cols-2">
-                                <div class="space-y-2">
+                                 <div class="space-y-2">
                                     <Label class="text-xs font-medium text-muted-foreground">Email Address *</Label>
                                     <Input v-model="form.email" type="email" placeholder="staff@school.com" required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
                                     <InputError :message="form.errors.email" />
@@ -371,14 +369,15 @@ const resetForm = () => {
                                     <Input v-model="form.phone" placeholder="+254..." required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
                                     <InputError :message="form.errors.phone" />
                                 </div>
-                                <div class="space-y-2">
-                                    <Label class="text-xs font-medium text-muted-foreground">Password *</Label>
-                                    <Input v-model="form.password" type="password" required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
-                                    <InputError :message="form.errors.password" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label class="text-xs font-medium text-muted-foreground">Confirm Password *</Label>
-                                    <Input v-model="form.password_confirmation" type="password" required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
+                            </div>
+                            <div class="mt-6 flex items-start gap-4 rounded-lg bg-primary/5 p-4 border border-primary/10">
+                                <ShieldCheck class="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                <div class="space-y-1">
+                                    <p class="text-xs font-bold text-primary uppercase">Automated Onboarding</p>
+                                    <p class="text-[10px] font-medium text-muted-foreground leading-relaxed">
+                                        A secure password will be automatically generated and sent to the staff member's email. 
+                                        They will be required to change it upon their first login.
+                                    </p>
                                 </div>
                             </div>
                         </div>

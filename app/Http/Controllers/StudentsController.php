@@ -331,6 +331,7 @@ class StudentsController extends Controller
                 'photo_url' => $student->photo_url,
                 'admission_date' => optional($student->admission_date)->format('Y-m-d'),
                 'admission_class_id' => $student->admission_class_id,
+                'admission_class_name' => $student->admissionClass?->name,
                 'current_class_id' => $student->current_class_id,
                 'boarding_status' => $student->boarding_status,
                 'hostel_room' => $student->hostel_room,
@@ -1065,8 +1066,21 @@ class StudentsController extends Controller
             'middle_name',
             'last_name',
             'admission_number',
+            'upi',
             'gender',
             'date_of_birth',
+            'birth_certificate_number',
+            'nationality',
+            'religion',
+            'primary_language',
+            'secondary_language',
+            'home_address',
+            'county',
+            'sub_county',
+            'ward',
+            'blood_group',
+            'medical_conditions',
+            'allergies',
             'grade_name',
             'grade_code',
             'grade_level_order',
@@ -1075,13 +1089,12 @@ class StudentsController extends Controller
             'stream_code',
             'class_name',
             'class_code',
-            'county',
             'boarding_status',
+            'admission_date',
             'status',
             'guardian_name',
             'guardian_email',
             'guardian_phone',
-            'guardian_password',
         ];
 
         $sample = [
@@ -1125,24 +1138,53 @@ class StudentsController extends Controller
             'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
         ]);
 
-        $schoolId = auth()->user()->school_id ?: session('viewing_school_id');
+        $user = auth()->user();
+        $schoolId = $user->school_id ?: session('viewing_school_id');
 
-        // If still no school_id and the user is an admin, they might need to select a school first or we pick the first one as fallback for super admin
-        if (!$schoolId && auth()->user()->hasRole('super_admin')) {
+        \Log::info('Bulk Upload Initiated', [
+            'user_id' => $user->id,
+            'user_school_id' => $user->school_id,
+            'session_school_id' => session('viewing_school_id'),
+            'resolved_school_id' => $schoolId
+        ]);
+
+        // Fallback for Super Admin: find first school if none selected
+        if (!$schoolId && $user->hasRole('super_admin')) {
             $schoolId = \App\Models\School::first()?->id;
+            \Log::info('Super Admin Fallback School', ['fallback_school_id' => $schoolId]);
         }
 
-        $academicYearId = DB::table('academic_years')
-            ->where('status', 'active') // Changed from is_current to status = 'active'
+        // Use correct model for Academic Year
+        // Use withoutGlobalScopes() to ensure we find an active year even if the current school context is broken
+        $academicYear = \App\Models\Academic\AcademicYear::withoutGlobalScopes()
+            ->where('status', 'active')
             ->when($schoolId, fn($q) => $q->where('school_id', $schoolId))
-            ->value('id')
-            ?? DB::table('academic_years')
-            ->when($schoolId, fn($q) => $q->where('school_id', $schoolId))
-            ->orderByDesc('start_date')->value('id');
+            ->first();
 
-        if (!$schoolId || !$academicYearId) {
-            return back()->with('error', 'School context (ID) or academic year setup is missing. Please ensure an active academic year exists for the current school.');
+        // Second fallback: find ANY active academic year and use its school if schoolId was missing
+        if (!$academicYear) {
+            \Log::warning('No active academic year found for school, trying global fallback', ['school_id' => $schoolId]);
+            $academicYear = \App\Models\Academic\AcademicYear::withoutGlobalScopes()
+                ->where('status', 'active')
+                ->first();
+            
+            if ($academicYear && (!$schoolId || $user->hasRole('super_admin'))) {
+                $schoolId = $academicYear->school_id;
+                \Log::info('Global Academic Year Fallback', ['new_school_id' => $schoolId, 'academic_year_id' => $academicYear->id]);
+            }
         }
+
+        if (!$schoolId || !$academicYear) {
+            \Log::error('Import failed: Final context resolution failed', ['school_id' => $schoolId, 'academic_year' => $academicYear ? $academicYear->id : 'null']);
+            
+            // diagnostic check for terms if school is found
+            $termCount = $schoolId ? \DB::table('academic_terms')->where('school_id', $schoolId)->count() : 0;
+            $extra = $termCount === 0 && $schoolId ? " No academic terms found for this school." : "";
+            
+            return back()->with('error', "Import failed: Missing school context (ID: " . ($schoolId ?? 'None') . ") or active academic year.{$extra} Please ensure an active academic year exists.");
+        }
+
+        $academicYearId = $academicYear->id;
 
         try {
             $path = $validated['file']->store('temp/imports');

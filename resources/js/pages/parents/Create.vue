@@ -76,8 +76,6 @@ const form = useForm({
     sub_county: '',
     relationship_type: 'Father',
     student_ids: [] as number[],
-    password: '',
-    password_confirmation: '',
 });
 
 const studentSearch = ref('');
@@ -533,30 +531,15 @@ const selectedStudentsCount = computed(() => form.student_ids.length);
                         </div>
 
                         <div class="space-y-4">
-                            <div class="space-y-2">
-                                <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
-                                    >Account Password</Label
-                                >
-                                <Input
-                                    v-model="form.password"
-                                    type="password"
-                                    placeholder="Min 8 characters"
-                                    class="h-11 rounded-xl border-border bg-muted/20"
-                                />
-                                <InputError :message="form.errors.password" />
-                            </div>
-                            <div class="space-y-2">
-                                <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground/70 uppercase"
-                                    >Confirm Password</Label
-                                >
-                                <Input
-                                    v-model="form.password_confirmation"
-                                    type="password"
-                                    placeholder="Confirm password"
-                                    class="h-11 rounded-xl border-border bg-muted/20"
-                                />
+                            <div class="flex items-start gap-4 rounded-xl bg-indigo-50/50 p-4 border border-indigo-100">
+                                <ShieldCheck class="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                                <div class="space-y-1">
+                                    <p class="text-xs font-bold text-indigo-700 uppercase">Auto-Generated Password</p>
+                                    <p class="text-[10px] font-medium text-slate-600 leading-relaxed">
+                                        A secure password will be automatically generated and sent to the parent's email. 
+                                        They will be required to reset it on their first login.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

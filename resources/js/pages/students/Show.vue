@@ -111,8 +111,6 @@ const form = useForm({
     guardian_name: props.learner.guardians?.[0]?.name ?? '',
     guardian_email: props.learner.guardians?.[0]?.email ?? '',
     guardian_phone: props.learner.guardians?.[0]?.phone ?? '',
-    guardian_password: '',
-    guardian_password_confirmation: '',
 
     _method: 'PUT',
 });
@@ -623,7 +621,11 @@ const getStatusColor = (status: string) => {
                                             <p class="text-xs font-bold text-foreground uppercase">{{ learner.religion || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
-                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Legacy Language</p>
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Primary Language</p>
+                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.primary_language || 'ENGLISH' }}</p>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Secondary Language</p>
                                             <p class="text-xs font-bold text-foreground uppercase">{{ learner.secondary_language || '--' }}</p>
                                         </div>
                                     </template>
@@ -655,6 +657,16 @@ const getStatusColor = (status: string) => {
                                         <div class="space-y-4 lg:col-span-3">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Allergy Protocols</p>
                                             <p class="text-xs font-bold text-foreground whitespace-pre-wrap">{{ learner.allergies || 'NONE REPORTED' }}</p>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Special Needs</p>
+                                            <Badge :variant="learner.has_special_needs ? 'destructive' : 'outline'" class="h-6 rounded-lg px-2 text-[9px] font-bold uppercase transition-all">
+                                                {{ learner.has_special_needs ? 'YES' : 'NO' }}
+                                            </Badge>
+                                        </div>
+                                        <div v-if="learner.has_special_needs" class="space-y-4 lg:col-span-2">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Special Needs Details</p>
+                                            <p class="text-xs font-bold text-foreground leading-relaxed">{{ learner.special_needs_details || 'N/A' }}</p>
                                         </div>
                                     </template>
 

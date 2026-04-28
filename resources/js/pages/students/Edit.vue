@@ -52,6 +52,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const form = useForm({
+    _method: 'PUT',
     first_name: props.learner.first_name,
     middle_name: props.learner.middle_name ?? '',
     last_name: props.learner.last_name,
@@ -82,7 +83,7 @@ const filteredClasses = computed(() => {
 });
 
 const submit = () => {
-    form.post(`/students/${props.learner.id}/update`, {
+    form.post(`/students/${props.learner.id}`, {
         preserveScroll: true,
     });
 };

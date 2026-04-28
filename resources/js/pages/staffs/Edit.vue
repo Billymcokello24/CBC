@@ -101,8 +101,6 @@ const form = useForm({
     employment_type: props.teacher.employment_type ?? 'Full-time',
     date_joined: props.teacher.date_joined ?? '',
     basic_salary: props.teacher.basic_salary ?? '',
-    password: '',
-    password_confirmation: '',
     status: props.teacher.status,
     role: props.teacher.user?.roles?.[0]?.name ?? '',
     photo: null as File | null,
@@ -342,19 +340,10 @@ const fullName = computed(() => `${props.teacher.first_name} ${props.teacher.las
                                     <Input v-model="form.email" type="email" required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
                                     <InputError :message="form.errors.email" />
                                 </div>
-                                <div class="space-y-2">
+                                 <div class="space-y-2">
                                     <Label class="text-xs font-medium text-muted-foreground">Phone Number *</Label>
                                     <Input v-model="form.phone" required class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
                                     <InputError :message="form.errors.phone" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label class="text-xs font-medium text-muted-foreground">New Password (Optional)</Label>
-                                    <Input v-model="form.password" type="password" placeholder="Leave blank to keep current" class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
-                                    <InputError :message="form.errors.password" />
-                                </div>
-                                <div class="space-y-2">
-                                    <Label class="text-xs font-medium text-muted-foreground">Confirm New Password</Label>
-                                    <Input v-model="form.password_confirmation" type="password" class="h-10 rounded-lg border-border bg-muted/10 px-4 text-sm font-semibold focus:bg-background" />
                                 </div>
                             </div>
                         </div>
