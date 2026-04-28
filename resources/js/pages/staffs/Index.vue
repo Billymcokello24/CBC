@@ -30,6 +30,7 @@ import {
     ShieldAlert,
     ExternalLink,
     Upload,
+    FileText,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -96,6 +97,17 @@ const confirmDelete = (id: number) => {
     }
 };
 
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        status: statusFilter.value,
+        department_id: departmentFilter.value,
+        role: roleFilter.value,
+    }).toString();
+    
+    window.location.href = `/staffs/export-pdf?${params}`;
+};
+
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
         case 'active':
@@ -134,6 +146,14 @@ const getStatusColor = (status: string) => {
                     >
                         <Upload class="mr-2 h-4 w-4 text-primary" />
                         Bulk Upload
+                    </Button>
+                    <Button
+                        variant="outline"
+                        @click="downloadPdf"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
                     </Button>
                     <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm transition-all hover:opacity-90">
                         <Link href="/staffs/create">

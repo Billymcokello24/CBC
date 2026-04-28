@@ -228,6 +228,17 @@ const getStatusColor = (status: string) => {
             return 'bg-primary text-white shadow-sm';
     }
 };
+
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+        status: selectedStatus.value,
+        class_id: selectedClassId.value ? String(selectedClassId.value) : '',
+        gender: selectedGender.value,
+    }).toString();
+    
+    window.location.href = `/students/export-pdf?${params}`;
+};
 </script>
 
 <template>
@@ -254,6 +265,14 @@ const getStatusColor = (status: string) => {
                     >
                         <Upload class="mr-2 h-4 w-4 text-primary" />
                         Add Many Students
+                    </Button>
+                    <Button
+                        variant="outline"
+                        @click="downloadPdf"
+                        class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
                     </Button>
                     <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
                         <Link href="/students/create">

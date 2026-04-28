@@ -18,6 +18,8 @@ use App\Mail\UserCreatedMail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
+use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\School;
 use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -185,7 +187,49 @@ class StaffsController extends Controller
                 'department_id' => $departmentId === '' ? 'all' : $departmentId,
                 'view' => $request->string('view', 'grid'),
             ],
+            'can_export' => true
         ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = is_array($request->input('search')) ? '' : trim((string) ($request->input('search') ?? ''));
+        $status = is_array($request->input('status')) ? 'all' : (string) ($request->input('status') ?? 'all');
+        $departmentId = is_array($request->input('department_id')) ? 'all' : (string) ($request->input('department_id') ?? 'all');
+        $roleName = is_array($request->input('role')) ? 'all' : (string) ($request->input('role') ?? 'all');
+
+        $user = auth()->user();
+        $isRestrictedHOD = $user->hasRole('hod') && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin']);
+        
+        if ($isRestrictedHOD) {
+            $hodDeptId = DB::table('teachers')->where('user_id', $user->id)->value('department_id');
+            $departmentId = (string) $hodDeptId;
+        }
+
+        $items = Teacher::query()
+            ->with(['department:id,name', 'user'])
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($departmentId !== '' && $departmentId !== 'all', fn ($q) => $q->where('department_id', $departmentId))
+            ->when($roleName !== '' && $roleName !== 'all', function($q) use ($roleName) {
+                $q->whereHas('user', fn($sq) => $sq->withRole($roleName));
+            })
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.staffs', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('staff_directory_' . date('Y_m_d_His') . '.pdf');
     }
 
     public function index(Request $request): Response

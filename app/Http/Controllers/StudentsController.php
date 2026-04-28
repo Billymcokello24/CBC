@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Mail\UserCreatedMail;
+use App\Models\School;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -168,7 +169,56 @@ class StudentsController extends Controller
                 ['value' => 'day', 'label' => 'Day'],
                 ['value' => 'boarding', 'label' => 'Boarding'],
             ],
+            'can_export' => true,
         ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+        $classId = $request->integer('class_id');
+        $gender = (string) $request->string('gender');
+        $boardingStatus = (string) $request->string('boarding_status');
+
+        $user = auth()->user();
+        $query = Student::query()->with([
+            'currentClass' => fn($q) => $q->select('id', 'name', 'code', 'grade_level_id', 'stream_id'),
+            'currentClass.gradeLevel', 
+            'currentClass.stream'
+        ]);
+
+        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
+            $isRestricted = true;
+            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
+            $subjectClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->where('is_active', true)->pluck('class_id')->toArray();
+            $classTeacherIds = DB::table('classes')->where('class_teacher_id', $teacher?->id)->pluck('id')->toArray();
+            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherIds));
+            $query->whereIn('current_class_id', $myClassIds);
+        }
+
+        $items = $query
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
+            ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))
+            ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
+            ->when($boardingStatus !== '' && $boardingStatus !== 'all', fn ($q) => $q->where('boarding_status', $boardingStatus))
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.students', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('student_enrollment_' . date('Y_m_d_His') . '.pdf');
     }
 
     public function create(): Response
@@ -564,55 +614,6 @@ class StudentsController extends Controller
         return redirect()->route('students.index')->with('success', count($validated['learner_ids']) . ' learners deleted successfully.');
     }
 
-    public function exportPdf(Request $request)
-    {
-        $search = trim((string) $request->string('search'));
-        $status = (string) $request->string('status');
-        $classId = $request->integer('class_id');
-        $gender = (string) $request->string('gender');
-        $boardingStatus = (string) $request->string('boarding_status');
-        $county = trim((string) $request->string('county'));
-
-        $user = auth()->user();
-        $query = Student::query()
-            ->with(['currentClass:id,name,code']);
-
-        // Scope to teacher's classes if not an admin/manager
-        if ($user && !$user->hasAnyRole(['super_admin', 'school_admin', 'principal', 'deputy_principal', 'admin'])) {
-            $teacher = DB::table('teachers')->where('user_id', $user->id)->first();
-            
-            $subjectClassIds = DB::table('teacher_subjects')->where('teacher_id', $teacher?->id)->where('is_active', true)->pluck('class_id')->toArray();
-            $classTeacherClassIds = DB::table('classes')->where('class_teacher_id', $user->id)->pluck('id')->toArray();
-            $hodClassIds = [];
-            if ($user->hasRole('hod') && $teacher?->department_id) {
-                $subjectIds = DB::table('subjects')->where('department_id', $teacher->department_id)->pluck('id');
-                $hodClassIds = DB::table('teacher_subjects')->whereIn('subject_id', $subjectIds)->pluck('class_id')->toArray();
-            }
-
-            $myClassIds = array_unique(array_merge($subjectClassIds, $classTeacherClassIds, $hodClassIds));
-            
-            if (empty($myClassIds)) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->whereIn('current_class_id', $myClassIds);
-            }
-        }
-
-        $students = $query
-            ->when($search !== '', fn ($q) => $q->search($search))
-            ->when($status !== '' && $status !== 'all', fn ($q) => $q->where('status', $status))
-            ->when($classId > 0, fn ($q) => $q->where('current_class_id', $classId))
-            ->when($gender !== '' && $gender !== 'all', fn ($q) => $q->where('gender', $gender))
-            ->when($boardingStatus !== '' && $boardingStatus !== 'all', fn ($q) => $q->where('boarding_status', $boardingStatus))
-            ->when($county !== '', fn ($q) => $q->where('county', $county))
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get();
-
-        $pdf = Pdf::loadView('reports.students-pdf', compact('students'));
-        
-        return $pdf->download('students-list-' . now()->format('Y-m-d') . '.pdf');
-    }
 
     public function promote(Request $request): RedirectResponse
     {

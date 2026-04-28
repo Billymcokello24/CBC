@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
-
+use App\Models\School;
+use Barryvdh\DomPDF\Facade\Pdf;
 class ParentsController extends Controller
 {
     /**
@@ -38,8 +39,34 @@ class ParentsController extends Controller
                 'total' => Guardian::count(),
                 'active' => Guardian::where('is_active', true)->count(),
                 'new_this_month' => Guardian::whereMonth('created_at', now()->month)->count(),
-            ]
+            ],
+            'can_export' => true
         ]);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $search = trim((string) ($request->input('search') ?? ''));
+
+        $items = Guardian::query()
+            ->with(['students:id,first_name,last_name,current_class_id', 'students.currentClass:id,name,grade_level_id', 'students.currentClass.gradeLevel'])
+            ->when($search !== '', fn ($q) => $q->search($search))
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $school = School::find(auth()->user()->school_id);
+        $themeColor = DB::table('school_settings')
+            ->where('school_id', $school?->id)
+            ->where('key', 'pdf_theme_color')
+            ->value('value') ?? '#1e40af';
+
+        $pdf = Pdf::loadView('pdf.parents', [
+            'items' => $items,
+            'school' => $school,
+            'themeColor' => $themeColor
+        ]);
+
+        return $pdf->download('parent_registry_' . date('Y_m_d_His') . '.pdf');
     }
 
     /**

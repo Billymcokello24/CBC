@@ -175,6 +175,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['check_permission:staffs.view,staffs.view_own'])->group(function () {
+        Route::get('staffs/export-pdf', [StaffsController::class, 'exportPdf'])->name('staffs.export-pdf');
         Route::get('staffs', [StaffsController::class, 'index'])->name('staffs.index');
         Route::get('staffs/{teacher}', [StaffsController::class, 'show'])->name('staffs.show');
     });
@@ -193,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // PARENTS
     // ──────────────────────────────────────────────
     Route::middleware(['check_permission:guardians.view'])->group(function () {
+        Route::get('parents/export-pdf', [ParentsController::class, 'exportPdf'])->name('parents.export-pdf');
         Route::resource('parents', ParentsController::class);
     });
 

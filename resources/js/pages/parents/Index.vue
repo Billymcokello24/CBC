@@ -24,6 +24,7 @@ import {
     Edit,
     Trash2,
     ChevronRight,
+    FileText,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -100,6 +101,14 @@ const deleteParent = (id: number) => {
         router.delete(`/parents/${id}`);
     }
 };
+
+const downloadPdf = () => {
+    const params = new URLSearchParams({
+        search: searchQuery.value,
+    }).toString();
+    
+    window.location.href = `/parents/export-pdf?${params}`;
+};
 </script>
 
 <template>
@@ -139,6 +148,14 @@ const deleteParent = (id: number) => {
                             class="mr-2 h-4 w-4 opacity-70"
                         />
                         {{ viewMode === 'grid' ? 'Table View' : 'Grid View' }}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        @click="downloadPdf"
+                        class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase hover:bg-muted"
+                    >
+                        <FileText class="mr-2 h-4 w-4 text-rose-500" />
+                        Download PDF
                     </Button>
                     <Link
                         href="/parents/create"
