@@ -35,6 +35,8 @@ class ImportStudentsJob implements ShouldQueue
     protected $streamCache = [];
     protected $classCache = [];
 
+    public $timeout = 600; // Longer for students
+
     public function __construct(string $filePath, int $schoolId, int $academicYearId, int $userId, int $importProcessId = null)
     {
         $this->filePath = $filePath;
@@ -64,278 +66,183 @@ class ImportStudentsJob implements ShouldQueue
                 return;
             }
 
-            $guardianUsersToUpsert = [];
-            $guardiansToUpsert = [];
-            $studentsToUpsert = [];
             $emailsToDispatch = [];
-            $enrollmentMap = [];
+            $chunkSize = 100;
+            $chunks = array_chunk($rows, $chunkSize);
 
-            // 1. PHASE ONE: Normalization & Map Creation
-            foreach ($rows as $index => $row) {
-                $line = $index + 2;
-                $normalized = $this->normalizeLearnerImportRow($row, $line);
-                
-                // Track for Grade/Class mapping
-                $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized);
-                $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized);
-                $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized);
+            foreach ($chunks as $chunkIndex => $chunk) {
+                // 1. Check Cancellation & Update Progress
+                if ($this->importProcessId) {
+                    $process = \App\Models\ImportProcess::find($this->importProcessId);
+                    if ($process && $process->status === 'canceled') {
+                    throw new \RuntimeException('Canceled');
+                    }
+                    $process->update(['processed_rows' => ($chunkIndex * $chunkSize)]);
+                }
 
-                if ($normalized['guardian_email']) {
-                    $guardianUsersToUpsert[] = [
-                        'name' => $normalized['guardian_name'] ?: 'Guardian',
-                        'email' => $normalized['guardian_email'],
-                        'phone' => $normalized['guardian_phone'],
-                        'password' => Hash::make(Str::random(12)),
-                        'status' => 'active',
-                        'school_id' => $this->schoolId,
-                        'force_password_change' => true,
-                        'created_at' => now(),
-                        'updated_at' => now(),
+                $guardianUsersToUpsert = [];
+                $studentsToUpsert = [];
+                $enrollmentMap = [];
+
+                // 2. Normalize Chunk
+                foreach ($chunk as $index => $row) {
+                    $line = ($chunkIndex * $chunkSize) + $index + 2;
+                    $normalized = $this->normalizeLearnerImportRow($row, $line);
+                    
+                    $grade = $this->firstOrCreateImportGrade($this->schoolId, $normalized);
+                    $stream = $this->firstOrCreateImportStream($this->schoolId, $normalized);
+                    $class = $this->firstOrCreateImportClass($this->schoolId, $this->academicYearId, $grade, $stream, $normalized);
+
+                    if ($normalized['guardian_email']) {
+                        $guardianUsersToUpsert[] = [
+                            'name' => $normalized['guardian_name'] ?: 'Guardian',
+                            'email' => $normalized['guardian_email'],
+                            'phone' => $normalized['guardian_phone'],
+                            'password' => Hash::make(Str::random(12)),
+                            'status' => 'active', 'school_id' => $this->schoolId, 'force_password_change' => true,
+                            'created_at' => now(), 'updated_at' => now(),
+                        ];
+                    }
+
+                    $studentsToUpsert[] = [
+                        'school_id' => $this->schoolId, 'first_name' => $normalized['first_name'], 'middle_name' => $normalized['middle_name'],
+                        'last_name' => $normalized['last_name'], 'admission_number' => $normalized['admission_number'],
+                        'upi' => $normalized['upi'], 'gender' => $normalized['gender'], 'date_of_birth' => $normalized['date_of_birth'],
+                        'birth_certificate_number' => $normalized['birth_certificate_number'], 'nationality' => $normalized['nationality'] ?: 'Kenyan',
+                        'religion' => $normalized['religion'], 'primary_language' => $normalized['primary_language'], 'secondary_language' => $normalized['secondary_language'],
+                        'home_address' => $normalized['home_address'], 'county' => $normalized['county'], 'sub_county' => $normalized['sub_county'],
+                        'ward' => $normalized['ward'], 'blood_group' => $normalized['blood_group'], 'medical_conditions' => $normalized['medical_conditions'],
+                        'allergies' => $normalized['allergies'], 'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
+                        'boarding_status' => $normalized['boarding_status'], 'status' => $normalized['status'] ?: 'active',
+                        'current_class_id' => $class?->id, 'admission_class_id' => $class?->id,
+                        'created_at' => now(), 'updated_at' => now(),
+                    ];
+
+                    $enrollmentMap[$normalized['admission_number']] = [
+                        'class_id' => $class?->id, 'boarding_status' => $normalized['boarding_status'],
+                        'guardian_email' => $normalized['guardian_email'], 'guardian_name' => $normalized['guardian_name'],
                     ];
                 }
 
-                $studentsToUpsert[] = [
-                    'school_id' => $this->schoolId,
-                    'first_name' => $normalized['first_name'],
-                    'middle_name' => $normalized['middle_name'],
-                    'last_name' => $normalized['last_name'],
-                    'admission_number' => $normalized['admission_number'],
-                    'upi' => $normalized['upi'],
-                    'gender' => $normalized['gender'],
-                    'date_of_birth' => $normalized['date_of_birth'],
-                    'birth_certificate_number' => $normalized['birth_certificate_number'],
-                    'nationality' => $normalized['nationality'] ?: 'Kenyan',
-                    'religion' => $normalized['religion'],
-                    'primary_language' => $normalized['primary_language'],
-                    'secondary_language' => $normalized['secondary_language'],
-                    'home_address' => $normalized['home_address'],
-                    'county' => $normalized['county'],
-                    'sub_county' => $normalized['sub_county'],
-                    'ward' => $normalized['ward'],
-                    'blood_group' => $normalized['blood_group'],
-                    'medical_conditions' => $normalized['medical_conditions'],
-                    'allergies' => $normalized['allergies'],
-                    'admission_date' => $normalized['admission_date'] ?: now()->toDateString(),
-                    'boarding_status' => $normalized['boarding_status'],
-                    'status' => $normalized['status'] ?: 'active',
-                    'current_class_id' => $class?->id,
-                    'admission_class_id' => $class?->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                // 3. DB Batch for Chunk
+                DB::transaction(function () use ($guardianUsersToUpsert, $studentsToUpsert, $enrollmentMap, &$emailsToDispatch) {
+                    if (!empty($guardianUsersToUpsert)) {
+                        User::upsert($guardianUsersToUpsert, ['email'], ['name', 'phone']);
+                        $fUsers = User::whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
+                        $roleP = Role::where('name', 'parent')->first();
+                        $gUpsert = [];
+                        foreach ($fUsers as $email => $u) {
+                            if ($roleP) $u->assignRole($roleP);
+                            $emailsToDispatch[] = ['user' => $u, 'email' => $email];
+                            $gUpsert[] = [
+                                'user_id' => $u->id, 'school_id' => $this->schoolId, 'first_name' => $u->name, 'last_name' => 'Guardian',
+                                'email' => $email, 'phone' => $u->phone, 'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+                            ];
+                        }
+                        Guardian::upsert($gUpsert, ['email', 'school_id'], ['user_id', 'phone']);
+                    }
 
-                $enrollmentMap[$normalized['admission_number']] = [
-                    'class_id' => $class?->id,
-                    'boarding_status' => $normalized['boarding_status'],
-                    'guardian_email' => $normalized['guardian_email'],
-                    'guardian_name' => $normalized['guardian_name'],
-                ];
+                    Student::upsert($studentsToUpsert, ['admission_number', 'school_id'], [
+                        'first_name', 'middle_name', 'last_name', 'upi', 'date_of_birth', 'birth_certificate_number', 'current_class_id', 'boarding_status'
+                    ]);
 
-                if ($this->importProcessId && $index % 50 === 0) {
-                    \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['processed_rows' => $index]);
-                }
+                    $stds = Student::whereIn('admission_number', collect($studentsToUpsert)->pluck('admission_number'))->where('school_id', $this->schoolId)->get()->keyBy('admission_number');
+                    $grds = Guardian::where('school_id', $this->schoolId)->whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
+                    
+                    $enrolls = [];
+                    $termId = DB::table('academic_terms')->where('school_id', $this->schoolId)->where('is_current', true)->value('id');
+
+                    foreach ($stds as $adm => $s) {
+                        $m = $enrollmentMap[$adm];
+                        if ($m['class_id']) {
+                        $enrolls[] = [
+                            'school_id' => $this->schoolId, 'student_id' => $s->id, 'academic_year_id' => $this->academicYearId,
+                            'class_id' => $m['class_id'], 'academic_term_id' => $termId, 'enrollment_date' => now()->toDateString(),
+                            'enrollment_type' => 'new', 'status' => 'active', 'enrolled_by' => $this->userId, 'boarding_status' => $m['boarding_status'],
+                            'created_at' => now(), 'updated_at' => now(),
+                        ];
+                        }
+                        if ($m['guardian_email'] && isset($grds[$m['guardian_email']])) {
+                        DB::table('student_guardian')->updateOrInsert(['student_id' => $s->id, 'guardian_id' => $grds[$m['guardian_email']]->id], ['relationship' => 'guardian', 'is_primary_contact' => true, 'updated_at' => now()]);
+                        }
+                    }
+                    \App\Models\StudentEnrollment::upsert($enrolls, ['student_id', 'academic_year_id', 'school_id'], ['class_id', 'status', 'boarding_status']);
+                });
             }
 
-            // 2. PHASE TWO: DB Execution
-            DB::transaction(function () use ($guardianUsersToUpsert, $studentsToUpsert, $enrollmentMap, &$emailsToDispatch) {
-                // Bulk Users (Guardian Accounts)
-                if (!empty($guardianUsersToUpsert)) {
-                    User::upsert($guardianUsersToUpsert, ['email'], ['name', 'phone']);
-                    $foundUsers = User::whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
-                    
-                    $roleParent = Role::where('name', 'parent')->first();
-                    
-                    $gToUpsert = [];
-                    foreach ($foundUsers as $email => $user) {
-                        if ($roleParent) $user->assignRole($roleParent);
-                        $emailsToDispatch[] = ['user' => $user, 'email' => $email];
-
-                        $gToUpsert[] = [
-                            'user_id' => $user->id,
-                            'school_id' => $this->schoolId,
-                            'first_name' => $user->name,
-                            'last_name' => 'Guardian',
-                            'email' => $email,
-                            'phone' => $user->phone,
-                            'is_active' => true,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
-                    Guardian::upsert($gToUpsert, ['email', 'school_id'], ['user_id', 'phone']);
-                }
-
-                // Bulk Students
-                Student::upsert($studentsToUpsert, ['admission_number', 'school_id'], [
-                    'first_name', 'middle_name', 'last_name', 'upi', 'gender', 'date_of_birth', 
-                    'birth_certificate_number', 'current_class_id', 'boarding_status'
-                ]);
-
-                // Retrieve for Enrollments & Relationships
-                $adms = collect($studentsToUpsert)->pluck('admission_number')->toArray();
-                $foundStudents = Student::whereIn('admission_number', $adms)->where('school_id', $this->schoolId)->get()->keyBy('admission_number');
-                $foundGuardians = Guardian::where('school_id', $this->schoolId)->whereIn('email', collect($guardianUsersToUpsert)->pluck('email'))->get()->keyBy('email');
-                
-                $enrollments = [];
-                $currentTermId = DB::table('academic_terms')->where('school_id', $this->schoolId)->where('is_current', true)->value('id');
-
-                foreach ($foundStudents as $adm => $student) {
-                    $map = $enrollmentMap[$adm];
-                    if ($map['class_id']) {
-                        $enrollments[] = [
-                            'school_id' => $this->schoolId,
-                            'student_id' => $student->id,
-                            'academic_year_id' => $this->academicYearId,
-                            'class_id' => $map['class_id'],
-                            'academic_term_id' => $currentTermId,
-                            'enrollment_date' => now()->toDateString(),
-                            'enrollment_type' => 'new',
-                            'status' => 'active',
-                            'enrolled_by' => $this->userId,
-                            'boarding_status' => $map['boarding_status'],
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
-
-                    // Attach Guardian
-                    if ($map['guardian_email'] && isset($foundGuardians[$map['guardian_email']])) {
-                        $guardianId = $foundGuardians[$map['guardian_email']]->id;
-                        DB::table('guardian_student')->updateOrInsert(
-                            ['student_id' => $student->id, 'guardian_id' => $guardianId],
-                            [
-                                'relationship' => 'guardian',
-                                'is_primary_contact' => true,
-                                'is_emergency_contact' => true,
-                                'can_pickup' => true,
-                                'receives_reports' => true,
-                                'receives_fees_notification' => true,
-                                'is_fee_payer' => true,
-                                'updated_at' => now()
-                            ]
-                        );
-                    }
-                }
-                \App\Models\StudentEnrollment::upsert($enrollments, ['student_id', 'academic_year_id', 'school_id'], ['class_id', 'status', 'boarding_status']);
-            });
-
-            // 3. PHASE THREE: Deferred Emails
-            foreach ($emailsToDispatch as $index => $item) {
+            // 4. POST-SYNC EMAILS
+            foreach ($emailsToDispatch as $idx => $item) {
                 try {
-                    Mail::to($item['email'])->later(now()->addSeconds($index * 0.5), new UserCreatedMail($item['user'], 'Set your password via login screen'));
-                } catch (\Exception $e) {
-                    \Log::warning("Delayed email failed for guardian {$item['email']}: " . $e->getMessage());
-                }
+                Mail::to($item['email'])->later(now()->addSeconds($idx * 0.5), new UserCreatedMail($item['user'], 'Set password via login'));
+                } catch (\Exception $e) {}
             }
 
             Storage::delete($this->filePath);
             if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'completed', 'processed_rows' => $totalRows]);
 
         } catch (\Exception $e) {
-            \Log::error('ImportStudentsJob Error: ' . $e->getMessage());
+            \Log::error('Import Error: ' . $e->getMessage());
             if ($this->importProcessId) \App\Models\ImportProcess::where('id', $this->importProcessId)->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
         }
     }
 
     protected function parseLearnerCsv(string $path): array
     {
-        $handle = fopen($path, 'r');
-        if (!$handle) throw new \RuntimeException('Unable to read CSV.');
-        $header = fgetcsv($handle) ?: [];
-        $header = array_map(fn ($v) => Str::slug(trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $v)), '_'), $header);
+        $h = fopen($path, 'r');
+        $header = array_map(fn ($v) => Str::slug(trim((string) preg_replace('/^\xEF\xBB\xBF/', '', (string) $v)), '_'), fgetcsv($h) ?: []);
         $rows = [];
-        while (($data = fgetcsv($handle)) !== false) {
-            if ($data === [null] || count(array_filter($data, fn ($v) => trim((string) $v) !== '')) === 0) continue;
-            $row = [];
-            foreach ($header as $index => $column) {
-                $row[$column] = isset($data[$index]) ? trim((string) $data[$index]) : null;
-            }
-            $rows[] = $row;
+        while (($d = fgetcsv($h)) !== false) {
+            if ($d === [null] || count(array_filter($d, fn ($v) => trim((string) $v) !== '')) === 0) continue;
+            $r = []; foreach ($header as $i => $c) $r[$c] = isset($d[$i]) ? trim((string) $d[$i]) : null;
+            $rows[] = $r;
         }
-        fclose($handle);
-        return $rows;
+        fclose($h); return $rows;
     }
 
     protected function normalizeLearnerImportRow(array $row, int $line): array
     {
         return [
-            'first_name' => trim($row['first_name'] ?? ''),
-            'middle_name' => $this->nullableValue($row['middle_name'] ?? null),
-            'last_name' => trim($row['last_name'] ?? ''),
-            'admission_number' => trim($row['admission_number'] ?? ''),
-            'upi' => $this->nullableValue($row['upi'] ?? null),
-            'gender' => strtolower(trim($row['gender'] ?? 'male')),
-            'date_of_birth' => trim($row['date_of_birth'] ?? ''),
-            'birth_certificate_number' => $this->nullableValue($row['birth_certificate_number'] ?? null),
-            'nationality' => $this->nullableValue($row['nationality'] ?? null),
-            'religion' => $this->nullableValue($row['religion'] ?? null),
-            'primary_language' => $this->nullableValue($row['primary_language'] ?? null),
-            'secondary_language' => $this->nullableValue($row['secondary_language'] ?? null),
-            'home_address' => $this->nullableValue($row['home_address'] ?? null),
-            'county' => $this->nullableValue($row['county'] ?? null),
-            'sub_county' => $this->nullableValue($row['sub_county'] ?? null),
-            'ward' => $this->nullableValue($row['ward'] ?? null),
-            'blood_group' => $this->nullableValue($row['blood_group'] ?? null),
-            'medical_conditions' => $this->nullableValue($row['medical_conditions'] ?? null),
-            'allergies' => $this->nullableValue($row['allergies'] ?? null),
-            'grade_name' => $this->nullableValue($row['grade_name'] ?? null),
-            'grade_code' => $this->nullableValue($row['grade_code'] ?? null),
-            'grade_level_order' => is_numeric($row['grade_level_order'] ?? null) ? (int) $row['grade_level_order'] : null,
-            'grade_category' => $row['grade_category'] ?? 'General',
-            'stream_name' => $this->nullableValue($row['stream_name'] ?? null),
-            'stream_code' => $this->nullableValue($row['stream_code'] ?? null),
-            'class_name' => $this->nullableValue($row['class_name'] ?? null),
-            'class_code' => $this->nullableValue($row['class_code'] ?? null),
-            'boarding_status' => strtolower(trim($row['boarding_status'] ?? 'day')),
-            'admission_date' => $this->nullableValue($row['admission_date'] ?? null),
-            'status' => strtolower(trim($row['status'] ?? 'active')),
-            'guardian_name' => $this->nullableValue($row['guardian_name'] ?? null),
-            'guardian_email' => $this->nullableValue($row['guardian_email'] ?? null),
+            'first_name' => trim($row['first_name'] ?? ''), 'middle_name' => $this->nullableValue($row['middle_name'] ?? null), 'last_name' => trim($row['last_name'] ?? ''),
+            'admission_number' => trim($row['admission_number'] ?? ''), 'upi' => $this->nullableValue($row['upi'] ?? null), 'gender' => strtolower(trim($row['gender'] ?? 'male')),
+            'date_of_birth' => trim($row['date_of_birth'] ?? ''), 'birth_certificate_number' => $this->nullableValue($row['birth_certificate_number'] ?? null),
+            'nationality' => $this->nullableValue($row['nationality'] ?? null), 'religion' => $this->nullableValue($row['religion'] ?? null),
+            'primary_language' => $this->nullableValue($row['primary_language'] ?? null), 'secondary_language' => $this->nullableValue($row['secondary_language'] ?? null),
+            'home_address' => $this->nullableValue($row['home_address'] ?? null), 'county' => $this->nullableValue($row['county'] ?? null),
+            'sub_county' => $this->nullableValue($row['sub_county'] ?? null), 'ward' => $this->nullableValue($row['ward'] ?? null),
+            'blood_group' => $this->nullableValue($row['blood_group'] ?? null), 'medical_conditions' => $this->nullableValue($row['medical_conditions'] ?? null),
+            'allergies' => $this->nullableValue($row['allergies'] ?? null), 'grade_name' => $this->nullableValue($row['grade_name'] ?? null),
+            'grade_code' => $this->nullableValue($row['grade_code'] ?? null), 'grade_level_order' => is_numeric($row['grade_level_order'] ?? null) ? (int) $row['grade_level_order'] : null,
+            'grade_category' => $row['grade_category'] ?? 'General', 'stream_name' => $this->nullableValue($row['stream_name'] ?? null),
+            'stream_code' => $this->nullableValue($row['stream_code'] ?? null), 'class_name' => $this->nullableValue($row['class_name'] ?? null),
+            'class_code' => $this->nullableValue($row['class_code'] ?? null), 'boarding_status' => strtolower(trim($row['boarding_status'] ?? 'day')),
+            'admission_date' => $this->nullableValue($row['admission_date'] ?? null), 'status' => strtolower(trim($row['status'] ?? 'active')),
+            'guardian_name' => $this->nullableValue($row['guardian_name'] ?? null), 'guardian_email' => $this->nullableValue($row['guardian_email'] ?? null),
             'guardian_phone' => $this->nullableValue($row['guardian_phone'] ?? null),
         ];
     }
 
-    protected function firstOrCreateImportGrade(int $schoolId, array $data): ?GradeLevel
+    protected function firstOrCreateImportGrade(int $sId, array $d): ?GradeLevel
     {
-        if (!$data['grade_name']) return null;
-        $ck = $data['grade_name'] . ($data['grade_code'] ?? '');
+        if (!$d['grade_name']) return null; $ck = $d['grade_name'] . ($d['grade_code'] ?? '');
         if (isset($this->gradeCache[$ck])) return $this->gradeCache[$ck];
-        $grade = GradeLevel::firstOrCreate(['school_id' => $schoolId, 'name' => $data['grade_name']], [
-            'code' => $data['grade_code'] ?: Str::upper(Str::slug($data['grade_name'], '')),
-            'level_order' => $data['grade_level_order'] ?? ((int) GradeLevel::max('level_order') + 1),
-            'category' => $data['grade_category'], 'is_active' => true
-        ]);
-        return $this->gradeCache[$ck] = $grade;
+        return $this->gradeCache[$ck] = GradeLevel::firstOrCreate(['school_id' => $sId, 'name' => $d['grade_name']], ['code' => $d['grade_code'] ?: Str::upper(Str::slug($d['grade_name'], '')), 'level_order' => $d['grade_level_order'] ?? ((int) GradeLevel::max('level_order') + 1), 'category' => $d['grade_category'], 'is_active' => true]);
     }
 
-    protected function firstOrCreateImportStream(int $schoolId, array $data): ?Stream
+    protected function firstOrCreateImportStream(int $sId, array $d): ?Stream
     {
-        if (!$data['stream_name']) return null;
-        $ck = $data['stream_name'] . ($data['stream_code'] ?? '');
+        if (!$d['stream_name']) return null; $ck = $d['stream_name'] . ($d['stream_code'] ?? '');
         if (isset($this->streamCache[$ck])) return $this->streamCache[$ck];
-        $stream = Stream::firstOrCreate(['school_id' => $schoolId, 'name' => $data['stream_name']], [
-            'code' => $data['stream_code'] ?: Str::upper(Str::substr($data['stream_name'], 0, 3)), 'capacity' => 40, 'is_active' => true
-        ]);
-        return $this->streamCache[$ck] = $stream;
+        return $this->streamCache[$ck] = Stream::firstOrCreate(['school_id' => $sId, 'name' => $d['stream_name']], ['code' => $d['stream_code'] ?: Str::upper(Str::substr($d['stream_name'], 0, 3)), 'capacity' => 40, 'is_active' => true]);
     }
 
-    protected function firstOrCreateImportClass(int $schoolId, int $yearId, ?GradeLevel $g, ?Stream $s, array $data): ?SchoolClass
+    protected function firstOrCreateImportClass(int $sId, int $yId, ?GradeLevel $g, ?Stream $s, array $d): ?SchoolClass
     {
-        if (!$g || !$data['class_name']) return null;
-        $ck = $yearId . '_' . $g->id . '_' . ($s?->id ?? 0) . '_' . $data['class_name'];
+        if (!$g || !$d['class_name']) return null; $ck = $yId . '_' . $g->id . '_' . ($s?->id ?? 0) . '_' . $d['class_name'];
         if (isset($this->classCache[$ck])) return $this->classCache[$ck];
-        $q = SchoolClass::where('school_id', $schoolId)->where('academic_year_id', $yearId)->where('grade_level_id', $g->id)->where('name', $data['class_name']);
+        $q = SchoolClass::where('school_id', $sId)->where('academic_year_id', $yId)->where('grade_level_id', $g->id)->where('name', $d['class_name']);
         if ($s) $q->where('stream_id', $s->id);
-        $class = $q->first() ?: SchoolClass::create([
-            'school_id' => $schoolId, 'grade_level_id' => $g->id, 'stream_id' => $s?->id, 'academic_year_id' => $yearId,
-            'name' => $data['class_name'], 'code' => $data['class_code'] ?: Str::upper(Str::slug($data['class_name'], '')), 'capacity' => 40, 'is_active' => true
-        ]);
-        return $this->classCache[$ck] = $class;
+        return $this->classCache[$ck] = $q->first() ?: SchoolClass::create(['school_id' => $sId, 'grade_level_id' => $g->id, 'stream_id' => $s?->id, 'academic_year_id' => $yId, 'name' => $d['class_name'], 'code' => $d['class_code'] ?: Str::upper(Str::slug($d['class_name'], '')), 'capacity' => 40, 'is_active' => true]);
     }
 
-    protected function nullableValue(mixed $value): ?string
-    {
-        $trimmed = trim((string) $value);
-        return $trimmed === '' ? null : $trimmed;
-    }
+    protected function nullableValue(mixed $v): ?string { $t = trim((string) $v); return $t === '' ? null : $t; }
 }
