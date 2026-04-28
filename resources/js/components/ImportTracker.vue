@@ -8,6 +8,7 @@ const polling = ref(false);
 const intervalId = ref<number | null>(null);
 const showFinished = ref(false);
 const showError = ref(false);
+const watchedIds = ref<number[]>([]);
 
 const activeImports = computed(() => (page.props.auth as any).active_imports || []);
 const recentImports = computed(() => (page.props.auth as any).recent_imports || []);
@@ -23,13 +24,22 @@ const startPolling = () => {
             onSuccess: () => {
                 if (activeImports.value.length === 0) {
                     stopPolling();
-                    if (failedImports.value.length > 0) {
+                    
+                    // Check if any of the IDs we were watching ended up as failures
+                    const batchFailures = recentImports.value.filter((i: any) => 
+                        watchedIds.value.includes(i.id) && i.status === 'failed'
+                    );
+
+                    if (batchFailures.length > 0) {
                         showError.value = true;
-                        setTimeout(() => showError.value = false, 3000);
+                        // For errors, maybe keep them a bit longer than 3s if multiple?
+                        setTimeout(() => showError.value = false, 8000);
                     } else {
                         showFinished.value = true;
                         setTimeout(() => showFinished.value = false, 5000);
                     }
+                    
+                    watchedIds.value = []; // Reset
                     setTimeout(() => router.reload(), 500);
                 }
             }
@@ -46,19 +56,28 @@ const stopPolling = () => {
 };
 
 onMounted(() => {
-    if (activeImports.value.length > 0) startPolling();
+    if (activeImports.value.length > 0) {
+        watchedIds.value = activeImports.value.map((i: any) => i.id);
+        startPolling();
+    }
 });
 
 watch(activeImports, (newImports) => {
-    if (newImports.length > 0) startPolling();
-    else if (polling.value) stopPolling();
+    if (newImports.length > 0) {
+        newImports.forEach((i: any) => {
+            if (!watchedIds.value.includes(i.id)) watchedIds.value.push(i.id);
+        });
+        startPolling();
+    } else if (polling.value) {
+        stopPolling();
+    }
 }, { deep: true });
 
-// Show error if a direct page load has recent failures
-watch(failedImports, (newVal, oldVal) => {
+// Show error if a direct page load (non-polling) detects a NEW failure
+watch(failedImports, (newVal: any[], oldVal: any[]) => {
     if (newVal.length > (oldVal?.length || 0)) {
         showError.value = true;
-        setTimeout(() => showError.value = false, 3000);
+        setTimeout(() => showError.value = false, 8000);
     }
 }, { deep: true });
 
@@ -81,7 +100,7 @@ onUnmounted(() => stopPolling());
             </div>
         </div>
 
-        <!-- Recent Failures -->
+        <!-- Recent Failures (Showing error_message) -->
         <div v-if="showError" v-for="imp in failedImports" :key="'fail-' + imp.id" class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl shadow-2xl p-4 flex flex-col gap-3 animate-in fade-in slide-in-from-right-5">
             <div class="flex items-center gap-4">
                 <div class="h-10 w-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-shrink-0">
