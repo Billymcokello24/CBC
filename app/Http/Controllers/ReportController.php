@@ -912,7 +912,7 @@ class ReportController extends Controller
         $deptBreakdown = [];
         $deptGroups = $allTeachers->groupBy(fn($t) => $t->department?->name ?? 'Unassigned');
         foreach($deptGroups as $dept => $group) {
-            $deptBreakdown[] = ['department' => $dept, 'count' => $group->count()];
+            $deptBreakdown[] = ['department' => $dept, 'count' => count($group)];
         }
 
         // Status distribution

@@ -255,7 +255,7 @@ const triggerPrint = () => {
                                 class="flex items-center justify-between p-3 rounded-xl bg-muted/5 border border-border/40 hover:bg-muted/20 transition-colors">
                                 <div class="flex items-center gap-3">
                                     <div class="h-6 w-6 rounded-md bg-amber-500/10 text-amber-600 flex items-center justify-center font-black text-[9px] border border-amber-500/20">
-                                        {{ i + 1 }}
+                                        {{ Number(i) + 1 }}
                                     </div>
                                     <div class="space-y-0.5">
                                         <p class="text-xs font-black text-foreground">{{ p.name }}</p>
@@ -277,11 +277,11 @@ const triggerPrint = () => {
                         <div class="space-y-4">
                             <div class="flex justify-between items-end">
                                 <div class="space-y-1">
-                                    <span class="text-[10px] font-black uppercase text-blue-500">Boys</span>
+                                    <span class="text-[10px] font-black uppercase text-blue-500">Male</span>
                                     <p class="text-xl font-black">{{ analysisData.stats.boys }}</p>
                                 </div>
                                 <div class="space-y-1 text-right">
-                                    <span class="text-[10px] font-black uppercase text-rose-500">Girls</span>
+                                    <span class="text-[10px] font-black uppercase text-rose-500">Female</span>
                                     <p class="text-xl font-black">{{ analysisData.stats.girls }}</p>
                                 </div>
                             </div>

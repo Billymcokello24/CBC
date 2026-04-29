@@ -96,8 +96,8 @@ const lineOpts = { ...chartOpts, plugins: { legend: { display: true, position: '
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard title="Total Students" :value="String(analysis.stats.total_learners)" subTitle="All registered" :icon="Users" variant="primary" />
                     <StatCard title="Active" :value="String(analysis.stats.active)" subTitle="Currently attending" :icon="UserCheck" variant="success" />
-                    <StatCard title="Boys" :value="String(analysis.stats.boys)" subTitle="Male students" :icon="UserPlus" variant="info" />
-                    <StatCard title="Girls" :value="String(analysis.stats.girls)" subTitle="Female students" :icon="UserPlus" variant="warning" />
+                    <StatCard title="Male" :value="String(analysis.stats.boys)" subTitle="Male population" :icon="UserPlus" variant="info" />
+                    <StatCard title="Female" :value="String(analysis.stats.girls)" subTitle="Female population" :icon="UserPlus" variant="warning" />
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -106,7 +106,7 @@ const lineOpts = { ...chartOpts, plugins: { legend: { display: true, position: '
                         <CardContent class="h-[260px]"><Line :data="growthLineChart" :options="lineOpts" /></CardContent>
                     </Card>
                     <Card class="rounded-2xl border bg-card shadow-sm">
-                        <CardHeader class="pb-2"><CardTitle class="text-sm font-black">Gender Split</CardTitle><CardDescription class="text-xs">Boys vs Girls</CardDescription></CardHeader>
+                        <CardHeader class="pb-2"><CardTitle class="text-sm font-black">Demographic Parity</CardTitle><CardDescription class="text-xs">Male vs Female distribution</CardDescription></CardHeader>
                         <CardContent class="h-[260px] flex items-center justify-center">
                             <Doughnut v-if="analysis.stats.total_learners > 0" :data="genderChart" :options="doughnutOpts" />
                             <p v-else class="text-xs text-muted-foreground font-bold">No students enrolled yet</p>
@@ -130,7 +130,7 @@ const lineOpts = { ...chartOpts, plugins: { legend: { display: true, position: '
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-muted/30 text-muted-foreground text-[10px] uppercase tracking-widest font-black">
-                                    <tr><th class="px-5 py-3">Class</th><th class="px-5 py-3">Grade</th><th class="px-5 py-3 text-center">Boys</th><th class="px-5 py-3 text-center">Girls</th><th class="px-5 py-3 text-center">Total</th><th class="px-5 py-3 text-right">Status</th></tr>
+                                    <tr><th class="px-5 py-3">Class</th><th class="px-5 py-3">Grade</th><th class="px-5 py-3 text-center">Male</th><th class="px-5 py-3 text-center">Female</th><th class="px-5 py-3 text-center">Total</th><th class="px-5 py-3 text-right">Status</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-border/30">
                                     <tr v-for="c in analysis.classes" :key="c.class" class="hover:bg-muted/20 transition-colors">

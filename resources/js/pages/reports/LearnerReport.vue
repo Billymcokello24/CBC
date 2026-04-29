@@ -109,8 +109,8 @@ const getStatusBadge = (status) => {
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <StatCard title="Total Students" :value="String(analysis.stats.total)" subTitle="All registered" :icon="Users" variant="primary" />
                     <StatCard title="Active" :value="String(analysis.stats.active)" subTitle="Currently attending" :icon="UserCircle" variant="success" />
-                    <StatCard title="Boys" :value="String(analysis.stats.male)" subTitle="Male students" :icon="UserCircle" variant="info" />
-                    <StatCard title="Girls" :value="String(analysis.stats.female)" subTitle="Female students" :icon="UserCircle" variant="warning" />
+                    <StatCard title="Male" :value="String(analysis.stats.male)" subTitle="Male population" :icon="UserCircle" variant="info" />
+                    <StatCard title="Female" :value="String(analysis.stats.female)" subTitle="Female population" :icon="UserCircle" variant="warning" />
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -151,8 +151,8 @@ const getStatusBadge = (status) => {
                                 </select>
                                 <select v-model="selectedGender" class="rounded-xl border border-border bg-card text-[10px] font-bold h-8 px-2">
                                     <option value="">All Genders</option>
-                                    <option value="Male">Boys</option>
-                                    <option value="Female">Girls</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
                                 </select>
                                 <select v-model="selectedStatus" class="rounded-xl border border-border bg-card text-[10px] font-bold h-8 px-2">
                                     <option value="">All Status</option>

@@ -42,7 +42,7 @@ class GenerateInstitutionalReportJob implements ShouldQueue
             $filters = $process->filters;
             /** @var \App\Models\School $school */
             $school = School::where('id', $process->school_id)->first();
-            $themeColor = $school ? $school->getSetting('theme_color', '#1e40af') : '#1e40af';
+            $themeColor = $school ? $school->getSetting('pdf_theme_color', '#1e40af') : '#1e40af';
 
             $view = '';
             $data = [];
@@ -54,11 +54,13 @@ class GenerateInstitutionalReportJob implements ShouldQueue
                     $view = 'reports.attendance-pdf';
                     $fileName = 'Attendance_Report_' . now()->format('YmdHis') . '.pdf';
                     $data = $this->getAttendanceData($process->school_id, $filters, $school, $themeColor);
+                    $orientation = 'landscape';
                     break;
                 case 'enrollment_report':
                     $view = 'reports.enrollment-pdf';
                     $fileName = 'Enrollment_Report_' . now()->format('YmdHis') . '.pdf';
                     $data = $this->getEnrollmentData($process->school_id, $filters, $school, $themeColor);
+                    $orientation = 'landscape';
                     break;
                 case 'assessment_report':
                     $view = 'reports.assessment-pdf';
@@ -76,11 +78,13 @@ class GenerateInstitutionalReportJob implements ShouldQueue
                     $view = 'reports.learner-pdf';
                     $fileName = 'Learner_Directory_' . now()->format('YmdHis') . '.pdf';
                     $data = $this->getLearnerData($process->school_id, $filters, $school, $themeColor);
+                    $orientation = 'landscape';
                     break;
                 case 'teacher_report':
                     $view = 'reports.teacher-pdf';
                     $fileName = 'Teacher_Directory_' . now()->format('YmdHis') . '.pdf';
                     $data = $this->getTeacherData($process->school_id, $filters, $school, $themeColor);
+                    $orientation = 'landscape';
                     break;
                 case 'finance_report':
                     $view = 'reports.finance-pdf';
@@ -127,10 +131,8 @@ class GenerateInstitutionalReportJob implements ShouldQueue
             ->groupBy('student_id')
             ->get()->keyBy('student_id');
 
-        $maleCount = 0;
-        $femaleCount = 0;
-        $malePresent = 0;
-        $femalePresent = 0;
+        $maleTotalPossible = 0;
+        $femaleTotalPossible = 0;
 
         foreach($students as $s) {
             $att = $attRecords->get($s->id);
@@ -141,9 +143,11 @@ class GenerateInstitutionalReportJob implements ShouldQueue
             if (strtolower($s->gender) === 'male') {
                 $maleCount++;
                 $malePresent += $s->att_present;
-            } else {
+                $maleTotalPossible += $s->att_total;
+            } else if (strtolower($s->gender) === 'female') {
                 $femaleCount++;
                 $femalePresent += $s->att_present;
+                $femaleTotalPossible += $s->att_total;
             }
         }
 
@@ -154,8 +158,8 @@ class GenerateInstitutionalReportJob implements ShouldQueue
                 'male' => $maleCount,
                 'female' => $femaleCount,
                 'avg_rate' => $students->avg('att_rate') ?? 0,
-                'male_rate' => $maleCount > 0 ? round(($malePresent / ($students->where('gender', 'Male')->sum('att_total') ?: 1)) * 100) : 0,
-                'female_rate' => $femaleCount > 0 ? round(($femalePresent / ($students->where('gender', 'Female')->sum('att_total') ?: 1)) * 100) : 0,
+                'male_rate' => $maleTotalPossible > 0 ? round(($malePresent / $maleTotalPossible) * 100) : 0,
+                'female_rate' => $femaleTotalPossible > 0 ? round(($femalePresent / $femaleTotalPossible) * 100) : 0,
             ],
             'classTitle' => $classId ? SchoolClass::find($classId)?->name : 'All Classes',
             'school' => $school,
@@ -173,8 +177,10 @@ class GenerateInstitutionalReportJob implements ShouldQueue
 
         foreach($classes as $c) {
             $studentsCount = DB::table('students')->where('current_class_id', $c->id)->count();
-            $male = DB::table('students')->where('current_class_id', $c->id)->where('gender', 'Male')->count();
-            $female = DB::table('students')->where('current_class_id', $c->id)->where('gender', 'Female')->count();
+            $male = DB::table('students')->where('current_class_id', $c->id)
+                ->where(fn($q) => $q->where('gender', 'Male')->orWhere('gender', 'male'))->count();
+            $female = DB::table('students')->where('current_class_id', $c->id)
+                ->where(fn($q) => $q->where('gender', 'Female')->orWhere('gender', 'female'))->count();
             
             $totalMale += $male;
             $totalFemale += $female;
@@ -246,8 +252,12 @@ class GenerateInstitutionalReportJob implements ShouldQueue
 
     protected function getCompetencyData($schoolId, $filters, $school, $themeColor)
     {
-        $ratings = \App\Models\Assessment\StudentCompetencyRating::whereHas('student', fn($q) => $q->where('school_id', $schoolId))
-            ->with(['competency', 'subject'])
+        $classId = $filters['class_id'] ?? null;
+        $ratings = \App\Models\Assessment\StudentCompetencyRating::whereHas('student', function($q) use ($schoolId, $classId) {
+                $q->where('school_id', $schoolId);
+                if ($classId) $q->where('current_class_id', $classId);
+            })
+            ->with(['competency', 'subject', 'student'])
             ->get();
             
         $groups = $ratings->groupBy('competency_id');
@@ -257,6 +267,7 @@ class GenerateInstitutionalReportJob implements ShouldQueue
              $comp = $group->first()->competency;
              $subj = $group->first()->subject;
              $levelArray = $group->pluck('rating_level');
+             
              $competencies[] = (object)[
                  'competency' => $comp?->name ?? 'Core Competency',
                  'subject' => $subj?->name ?? 'General',
@@ -264,12 +275,18 @@ class GenerateInstitutionalReportJob implements ShouldQueue
                  'me' => $levelArray->filter(fn($l) => $l == 3)->count(),
                  'ae' => $levelArray->filter(fn($l) => $l == 2)->count(),
                  'be' => $levelArray->filter(fn($l) => $l <= 1)->count(),
+                 'male_avg' => $group->filter(fn($r) => strtolower($r->student->gender) === 'male')->avg('rating_level'),
+                 'female_avg' => $group->filter(fn($r) => strtolower($r->student->gender) === 'female')->avg('rating_level'),
                  'total' => $group->count()
              ];
         }
 
         return [
             'competencyData' => $competencies,
+            'stats' => (object)[
+                'total_ratings' => $ratings->count(),
+                'competencies_count' => $groups->count()
+            ],
             'school' => $school,
             'themeColor' => $themeColor
         ];
@@ -278,13 +295,24 @@ class GenerateInstitutionalReportJob implements ShouldQueue
     protected function getLearnerData($schoolId, $filters, $school, $themeColor)
     {
         $classId = $filters['class_id'] ?? null;
+        $gender = $filters['gender'] ?? null;
+        $status = $filters['status'] ?? null;
+
         $learners = Student::where('school_id', $schoolId)
             ->when($classId, fn($q) => $q->where('current_class_id', $classId))
+            ->when($gender, fn($q) => $q->where('gender', $gender))
+            ->when($status, fn($q) => $q->where('status', $status))
             ->with('currentClass:id,name')
             ->get();
 
         return [
             'learners' => $learners,
+            'stats' => (object)[
+                'total' => $learners->count(),
+                'male' => $learners->filter(fn($s) => strtolower($s->gender) === 'male')->count(),
+                'female' => $learners->filter(fn($s) => strtolower($s->gender) === 'female')->count(),
+                'active' => $learners->where('status', 'active')->count()
+            ],
             'school' => $school,
             'themeColor' => $themeColor
         ];
@@ -296,6 +324,12 @@ class GenerateInstitutionalReportJob implements ShouldQueue
 
         return [
             'teachers' => $teachers,
+            'stats' => (object)[
+                'total' => $teachers->count(),
+                'male' => $teachers->filter(fn($t) => strtolower($t->gender) === 'male')->count(),
+                'female' => $teachers->filter(fn($t) => strtolower($t->gender) === 'female')->count(),
+                'departments' => $teachers->pluck('department_id')->unique()->count()
+            ],
             'school' => $school,
             'themeColor' => $themeColor
         ];
@@ -303,12 +337,17 @@ class GenerateInstitutionalReportJob implements ShouldQueue
 
     protected function getFinanceData($schoolId, $filters, $school, $themeColor)
     {
-        $invoices = Invoice::where('school_id', $schoolId)->with('student:id,full_name,admission_number')->get();
+        $invoices = Invoice::where('school_id', $schoolId)->with('student:id,full_name,admission_number,gender')->get();
         $payments = FeePayment::where('school_id', $schoolId)->where('status', 'successful')->get();
 
         $studentsData = [];
         $totalBilled = 0;
         $totalPaid = 0;
+        
+        $maleBilled = 0;
+        $femaleBilled = 0;
+        $malePaid = 0;
+        $femalePaid = 0;
 
         foreach($invoices->groupBy('student_id') as $sid => $invs) {
             $student = $invs->first()->student;
@@ -318,10 +357,19 @@ class GenerateInstitutionalReportJob implements ShouldQueue
             
             $totalBilled += $billed;
             $totalPaid += $paid;
+
+            if ($student && strtolower($student->gender) === 'male') {
+                $maleBilled += $billed;
+                $malePaid += $paid;
+            } else {
+                $femaleBilled += $billed;
+                $femalePaid += $paid;
+            }
             
             $studentsData[] = (object)[
                 'student' => $student?->full_name ?? 'Unknown Student',
                 'adm' => $student?->admission_number ?? 'N/A',
+                'gender' => $student?->gender ?? 'N/A',
                 'billed' => $billed,
                 'paid' => $paid,
                 'balance' => $balance,
@@ -331,8 +379,16 @@ class GenerateInstitutionalReportJob implements ShouldQueue
 
         return [
             'records' => $studentsData,
-            'totalBilled' => $totalBilled,
-            'totalPaid' => $totalPaid,
+            'summary' => (object)[
+                'totalBilled' => $totalBilled,
+                'totalPaid' => $totalPaid,
+                'outstanding' => max(0, $totalBilled - $totalPaid),
+                'maleBilled' => $maleBilled,
+                'malePaid' => $malePaid,
+                'femaleBilled' => $femaleBilled,
+                'femalePaid' => $femalePaid,
+                'collection_rate' => $totalBilled > 0 ? round(($totalPaid / $totalBilled) * 100, 1) : 0
+            ],
             'school' => $school,
             'themeColor' => $themeColor
         ];
