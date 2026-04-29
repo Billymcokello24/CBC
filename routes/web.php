@@ -621,6 +621,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::inertia('reports/financial', 'reports/Financial')->name('reports.financial');
         Route::inertia('reports/attendance', 'reports/Attendance')->name('reports.attendance');
         Route::inertia('reports/analytics', 'reports/Analytics')->name('reports.analytics');
+        
+        // Audit Logs (Dedicated Page)
+        Route::get('audit-logs', [\App\Http\Controllers\Audit\AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('audit-logs/{activity}', [\App\Http\Controllers\Audit\AuditLogController::class, 'show'])->name('audit-logs.show');
     });
 
     // ──────────────────────────────────────────────

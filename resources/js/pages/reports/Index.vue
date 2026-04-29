@@ -1,359 +1,265 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import {
-    BarChart3,
-    Download,
-    FileText,
-    TrendingUp,
-    Users,
-    GraduationCap,
-    DollarSign,
-    CalendarCheck,
-    PieChart,
-    LineChart,
-    Activity,
-    Home,
-    ChevronRight,
-    ArrowUpRight,
-    Search,
-    Filter,
-} from 'lucide-vue-next';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { 
+    BarChart3, FileText, Users, CalendarDays, 
+    Zap, ShieldCheck, UserCircle, Briefcase, 
+    DollarSign, UserPlus, ArrowRight, TrendingUp,
+    CheckCircle2, AlertCircle, PieChart, Info
+} from 'lucide-vue-next';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import type { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Intelligence', href: '/reports' },
+    { title: 'Home', href: '/dashboard' },
+    { title: 'Intelligence & Reports', href: '#' },
 ];
 
 const reportCategories = [
     {
         title: 'Academic Intelligence',
-        icon: GraduationCap,
-        color: 'blue',
-        stats: '4 Matrices',
+        description: 'Competency-based evaluation and performance tracking',
         reports: [
             {
-                name: 'Performance Variance',
-                description: 'Individual and class performance analysis',
+                title: 'Student Progress Report',
+                subtitle: 'CBC Official Report Card',
+                href: '/reports/report-cards',
+                icon: FileText,
+                status: 'CBC Ready',
+                color: 'text-blue-600',
+                bg: 'bg-blue-50',
+                description: 'Detailed competency levels, learner traits, and teacher remarks.'
             },
             {
-                name: 'Area Breakdown',
-                description: 'Subject-wise performance distribution',
+                title: 'Subject Performance Hub',
+                subtitle: 'Subject-wise Analytics',
+                href: '/reports/subject-performance',
+                icon: TrendingUp,
+                status: 'Analytics',
+                color: 'text-emerald-600',
+                bg: 'bg-emerald-50',
+                description: 'Performance levels per learning area with class averages.'
             },
             {
-                name: 'Digital Report Cards',
-                description: 'Generate student performance journals',
+                title: 'Class Performance Summary',
+                subtitle: 'High-level Overview',
+                href: '/reports/class-summary',
+                icon: PieChart,
+                status: 'Summary',
+                color: 'text-indigo-600',
+                bg: 'bg-indigo-50',
+                description: 'Aggregate trends and distribution of performance levels.'
             },
             {
-                name: 'Competency Mapping',
-                description: 'CBC achievement synchronization',
-            },
-        ],
+                title: 'Competency Mastery',
+                subtitle: 'Skills & Traits Tracking',
+                href: '/reports/competency-mastery',
+                icon: CheckCircle2,
+                status: 'Core CBC',
+                color: 'text-amber-600',
+                bg: 'bg-amber-50',
+                description: 'Longitudinal tracking of creativity, critical thinking, etc.'
+            }
+        ]
     },
     {
-        title: 'Attendance Flux',
-        icon: CalendarCheck,
-        color: 'green',
-        stats: '12 Logs',
+        title: 'Operational Tracking',
+        description: 'Daily activity and institutional management',
         reports: [
             {
-                name: 'Daily Register',
-                description: 'Daily attendance synchronization',
+                title: 'Attendance Analytics',
+                subtitle: 'Presence & Punctuality',
+                href: '/reports/attendance',
+                icon: CalendarDays,
+                status: 'Operational',
+                color: 'text-rose-600',
+                bg: 'bg-rose-50',
+                description: 'Daily/monthly attendance percentages and chronic absenteeism alerts.'
             },
             {
-                name: 'Monthly Trends',
-                description: 'Longitudinal attendance vectors',
+                title: 'Continuous Assessment',
+                subtitle: 'Task-level Progress',
+                href: '/reports/assessments',
+                icon: Zap,
+                status: 'Live Data',
+                color: 'text-cyan-600',
+                bg: 'bg-cyan-50',
+                description: 'Tracking assignments, projects, and activities in real-time.'
             },
             {
-                name: 'Anomaly Detection',
-                description: 'High absenteeism detection',
+                title: 'Individual Learner Profile',
+                subtitle: '360° Student View',
+                href: '/reports/learner-profile',
+                icon: UserCircle,
+                status: 'Comprehensive',
+                color: 'text-purple-600',
+                bg: 'bg-purple-50',
+                description: 'Consolidated view of academics, attendance, and observations.'
             },
             {
-                name: 'Staff Registry',
-                description: 'Faculty attendance oversight',
-            },
-        ],
+                title: 'Institutional Enrollment',
+                subtitle: 'Admissions & Demographics',
+                href: '/reports/enrollment',
+                icon: UserPlus,
+                status: 'Admin',
+                color: 'text-slate-600',
+                bg: 'bg-slate-50',
+                description: 'Grade-wise student counts, admissions, and transfers.'
+            }
+        ]
     },
     {
-        title: 'Financial Liquidity',
-        icon: DollarSign,
-        color: 'amber',
-        stats: '8 Ledgers',
-        reports: [
-            { name: 'Collection Pulse', description: 'Fee collection summary' },
-            { name: 'Residual Balances', description: 'Outstanding fee ledgers' },
-            {
-                name: 'Transaction History',
-                description: 'Audit-ready payment records',
-            },
-            {
-                name: 'Outflow Analysis',
-                description: 'School institutional expenses',
-            },
-        ],
-    },
-    {
-        title: 'Administrative Density',
-        icon: Users,
-        color: 'purple',
-        stats: '6 Nodes',
+        title: 'Resource & Fiscal Management',
+        description: 'Staff performance and financial oversight',
         reports: [
             {
-                name: 'Enrollment Growth',
-                description: 'Institutional expansion stats',
+                title: 'Teacher Input Metrics',
+                subtitle: 'Compliance & Trends',
+                href: '/reports/teacher-metrics',
+                icon: Briefcase,
+                status: 'Insights',
+                color: 'text-orange-600',
+                bg: 'bg-orange-50',
+                description: 'Monitoring lesson plan submissions and grading frequency.'
             },
-            { name: 'Faculty Directory', description: 'Complete staff mapping' },
-            { name: 'Node Statistics', description: 'Class-wise metric analysis' },
             {
-                name: 'Demographic Scoping',
-                description: 'Student population distribution',
-            },
-        ],
-    },
+                title: 'Fee & Financial Audit',
+                subtitle: 'Collection Intelligence',
+                href: '/reports/finance',
+                icon: DollarSign,
+                status: 'Fiscal',
+                color: 'text-green-600',
+                bg: 'bg-green-50',
+                description: 'In-depth fee payment trends, balances, and collection summaries.'
+            }
+        ]
+    }
 ];
 
-const getColorClasses = (color: string) => {
-    const colors: Record<string, { bg: string; text: string; iconBg: string; border: string }> =
-        {
-            blue: {
-                bg: 'bg-blue-500/5 hover:bg-blue-500/10',
-                text: 'text-blue-600',
-                iconBg: 'bg-blue-500/10 text-blue-600',
-                border: 'border-blue-500/20',
-            },
-            green: {
-                bg: 'bg-green-500/5 hover:bg-green-500/10',
-                text: 'text-green-600',
-                iconBg: 'bg-green-500/10 text-green-600',
-                border: 'border-green-500/20',
-            },
-            amber: {
-                bg: 'bg-amber-500/5 hover:bg-amber-500/10',
-                text: 'text-amber-600',
-                iconBg: 'bg-amber-500/10 text-amber-600',
-                border: 'border-amber-500/20',
-            },
-            purple: {
-                bg: 'bg-purple-500/5 hover:bg-purple-500/10',
-                text: 'text-purple-600',
-                iconBg: 'bg-purple-500/10 text-purple-600',
-                border: 'border-purple-500/20',
-            },
-        };
-    return colors[color] || colors.blue;
-};
+const stats = [
+    { label: 'Total Archives', value: '1,248', icon: ShieldCheck, change: '+12% this term' },
+    { label: 'Active Reports', value: '10+', icon: BarChart3, change: 'Fully Calibrated' },
+    { label: 'System Health', value: 'Optimal', icon: Info, change: 'All nodes active' }
+];
+
 </script>
 
 <template>
-    <Head title="Intelligence & Analytics" />
+    <Head title="Intelligence & Reports Hub" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="mx-auto max-w-[1600px] animate-in space-y-6 p-4 pb-10 duration-700 fade-in slide-in-from-bottom-4 sm:space-y-8 sm:p-6 sm:pb-20 md:p-8"
-        >
-            <!-- Page Header -->
-            <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between px-1">
-                <div class="flex flex-col gap-1">
-                    <div class="mb-1 flex items-center gap-2 text-[10px] font-bold tracking-tight text-muted-foreground uppercase">
-                        <Home class="h-3 w-3" />
-                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
-                        <span>Analysis</span>
-                        <ChevronRight class="h-2.5 w-2.5 opacity-50" />
-                        <span class="text-foreground">Intelligence Hub</span>
+        <div class="mx-auto max-w-[1400px] space-y-8 p-4 sm:p-6 lg:p-8 fade-in">
+            
+            <!-- HERO HEADER -->
+            <div class="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-indigo-950 p-8 text-white shadow-2xl">
+                <div class="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-primary/20 blur-[100px]"></div>
+                <div class="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-blue-500/10 blur-[100px]"></div>
+                
+                <div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <Badge variant="outline" class="border-primary/50 text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-white/10 backdrop-blur-md">
+                                Institutional Oversight
+                            </Badge>
+                            <span class="h-1 w-1 rounded-full bg-primary animate-pulse"></span>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-primary-foreground/60">Live Analytics</span>
+                        </div>
+                        <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-none">Intelligence Hub</h1>
+                        <p class="text-sm sm:text-lg text-primary-foreground/70 font-medium max-w-xl">
+                            Consolidated data-driven reporting system optimized for the Competency Based Curriculum (CBC) framework.
+                        </p>
                     </div>
-                    <h1 class="text-2xl leading-tight font-bold tracking-tight text-foreground sm:text-3xl">
-                        Intelligence & Analytics
-                    </h1>
-                    <p class="text-sm text-muted-foreground">
-                        Synthesize institutional data into actionable performance insights.
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full md:w-auto">
+                        <div v-for="stat in stats" :key="stat.label" class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10">
+                            <div class="flex items-center gap-3 mb-1">
+                                <stat.icon class="h-4 w-4 text-primary" />
+                                <span class="text-2xl font-black tabular-nums">{{ stat.value }}</span>
+                            </div>
+                            <p class="text-[10px] uppercase font-black tracking-widest text-primary-foreground/40">{{ stat.label }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPORTS GRID -->
+            <div class="space-y-12">
+                <section v-for="category in reportCategories" :key="category.title" class="space-y-6">
+                    <div class="flex flex-col gap-1">
+                        <h2 class="text-2xl font-black text-foreground">{{ category.title }}</h2>
+                        <p class="text-sm font-medium text-muted-foreground">{{ category.description }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <Link v-for="report in category.reports" :key="report.title" :href="report.href" class="group h-full">
+                            <Card class="h-full rounded-3xl border-border/40 bg-card/60 backdrop-blur-sm transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1 group-hover:border-primary/30 relative overflow-hidden flex flex-col">
+                                <div class="absolute top-0 right-0 p-4 opacity-10 transition-transform group-hover:scale-110 group-hover:opacity-20">
+                                    <report.icon class="h-24 w-24" />
+                                </div>
+                                <CardHeader class="pb-2">
+                                    <div :class="['h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-all group-hover:scale-110', report.bg]">
+                                        <report.icon :class="['h-6 w-6', report.color]" />
+                                    </div>
+                                    <div class="flex justify-between items-start">
+                                        <div class="space-y-0.5">
+                                            <CardTitle class="text-[15px] font-black leading-tight">{{ report.title }}</CardTitle>
+                                            <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{{ report.subtitle }}</p>
+                                        </div>
+                                        <Badge variant="outline" class="text-[8px] font-black uppercase tracking-widest border-border/40">{{ report.status }}</Badge>
+                                    </div>
+                                </CardHeader>
+                                <CardContent class="mt-auto pt-4 border-t border-border/10 flex flex-col justify-between flex-1">
+                                    <p class="text-[11px] leading-relaxed text-muted-foreground font-medium mb-4">{{ report.description }}</p>
+                                    <div class="flex items-center justify-between mt-auto">
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            Launch Report <ArrowRight class="h-3 w-3" />
+                                        </span>
+                                        <div class="h-8 w-8 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
+                                            <ArrowRight class="h-4 w-4" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    </div>
+                </section>Section -->
+            </div>
+
+            <!-- FOOTER INFO -->
+            <div class="rounded-3xl bg-muted/30 border border-dashed border-border/60 p-6 flex items-center gap-6">
+                <div class="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                    <Info class="h-6 w-6 text-indigo-500" />
+                </div>
+                <div>
+                    <h4 class="text-sm font-black text-foreground">Institutional Compliance Notice</h4>
+                    <p class="text-xs text-muted-foreground font-medium max-w-2xl">
+                        These reports are automatically generated based on live teacher submissions and classroom activities. All templates comply with the Ministry of Education standards for CBC implementation.
                     </p>
                 </div>
-
-                <div class="flex items-center gap-3">
-                    <div class="relative hidden sm:block">
-                        <Search class="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
-                        <Input placeholder="Search matrices..." class="h-10 w-64 rounded-xl border-border bg-muted/20 pl-9 text-xs font-bold transition-all focus:ring-2 focus:ring-primary/10" />
-                    </div>
-                    <Button variant="outline" class="h-10 rounded-xl border-border bg-background px-4 text-xs font-bold tracking-tight uppercase shadow-sm">
-                        <Filter class="mr-2 h-4 w-4 opacity-40" /> Refine
-                    </Button>
-                </div>
             </div>
 
-            <!-- Dashboard Pulse Nodes -->
-            <div class="grid grid-cols-2 gap-4 px-1 sm:gap-6 lg:grid-cols-4">
-                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/20">
-                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-blue-500/5 blur-3xl group-hover:bg-blue-500/10 transition-all"></div>
-                    <div class="relative z-10 flex flex-col gap-4">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
-                            <TrendingUp class="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Academic Yield</p>
-                            <h3 class="text-2xl font-bold text-foreground tabular-nums">72.5%</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-emerald-500/20">
-                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-emerald-500/5 blur-3xl group-hover:bg-emerald-500/10 transition-all"></div>
-                    <div class="relative z-10 flex flex-col gap-4">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-sm transition-all group-hover:bg-emerald-600 group-hover:text-white">
-                            <CalendarCheck class="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Attendance Ratio</p>
-                            <h3 class="text-2xl font-bold text-foreground tabular-nums">94.5%</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-amber-500/20">
-                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/5 blur-3xl group-hover:bg-amber-500/10 transition-all"></div>
-                    <div class="relative z-10 flex flex-col gap-4">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 shadow-sm transition-all group-hover:bg-amber-600 group-hover:text-white">
-                            <DollarSign class="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Collection Index</p>
-                            <h3 class="text-2xl font-bold text-foreground tabular-nums">86%</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-purple-500/20">
-                    <div class="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-purple-500/5 blur-3xl group-hover:bg-purple-500/10 transition-all"></div>
-                    <div class="relative z-10 flex flex-col gap-4">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-600 shadow-sm transition-all group-hover:bg-purple-600 group-hover:text-white">
-                            <Users class="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase">Population Density</p>
-                            <h3 class="text-2xl font-bold text-foreground tabular-nums">1,250</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Intelligence Map -->
-            <div class="grid gap-6 px-1 lg:grid-cols-2">
-                <div
-                    v-for="category in reportCategories"
-                    :key="category.title"
-                    class="flex flex-col overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:shadow-lg"
-                >
-                    <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
-                        <div class="flex items-center gap-4">
-                            <div
-                                :class="[
-                                    'flex h-10 w-10 items-center justify-center rounded-xl shadow-inner transition-all',
-                                    getColorClasses(category.color).iconBg,
-                                ]"
-                            >
-                                <component :is="category.icon" class="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h2 class="text-sm font-bold tracking-tight text-foreground uppercase">
-                                    {{ category.title }}
-                                </h2>
-                                <p class="text-[10px] font-bold text-muted-foreground/40 uppercase">{{ category.stats }} Synchronized</p>
-                            </div>
-                        </div>
-                        <Badge variant="outline" class="h-6 rounded-lg text-[9px] font-bold tracking-tighter opacity-40">SYSTEM READY</Badge>
-                    </div>
-
-                    <div class="grid gap-4 p-8 sm:grid-cols-2">
-                        <div
-                            v-for="report in category.reports"
-                            :key="report.name"
-                            class="group/report relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-border/50 bg-muted/10 p-5 transition-all hover:border-primary/20 hover:bg-background hover:shadow-md"
-                        >
-                            <div class="relative z-10 flex flex-col gap-2">
-                                <h3 class="text-xs font-bold text-foreground transition-colors group-hover/report:text-primary uppercase">
-                                    {{ report.name }}
-                                </h3>
-                                <p class="text-[10px] font-bold leading-relaxed text-muted-foreground/50 uppercase">
-                                    {{ report.description }}
-                                </p>
-                            </div>
-                            <div class="mt-4 flex items-center justify-between opacity-0 transition-opacity group-hover/report:opacity-100">
-                                <span class="text-[9px] font-bold tracking-widest text-primary uppercase">Execute Matrix</span>
-                                <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg bg-primary/10 text-primary">
-                                    <ArrowUpRight class="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Historical Sync Log -->
-            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm px-1">
-                <div class="flex items-center justify-between border-b border-border/50 bg-muted/10 px-8 py-6">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                            <FileText class="h-5 w-5" />
-                        </div>
-                        <h3 class="text-sm font-bold tracking-tight text-foreground uppercase">Recent Intelligence Bursts</h3>
-                    </div>
-                    <Button variant="ghost" size="sm" class="h-9 rounded-xl text-[10px] font-bold tracking-tight uppercase hover:bg-muted">
-                        Archive Feed
-                    </Button>
-                </div>
-
-                <div class="divide-y divide-border/30">
-                    <div class="group flex items-center justify-between p-6 transition-all hover:bg-muted/10">
-                        <div class="flex items-center gap-5">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-500/10 bg-blue-500/5 text-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white">
-                                <BarChart3 class="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-foreground group-hover:text-blue-600 transition-colors uppercase">
-                                    Term 1 Performance Distribution <span class="mx-2 opacity-10">/</span> <span class="text-[10px] text-muted-foreground/40">Grade 5 Map</span>
-                                </h4>
-                                <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-0.5">
-                                    Generated 12 Hours Ago <span class="mx-1 opacity-30">•</span> System UID: R-88219
-                                </p>
-                            </div>
-                        </div>
-                        <Button variant="outline" class="h-9 rounded-xl border-border bg-background px-4 text-[10px] font-bold tracking-tight uppercase shadow-sm hover:bg-primary hover:text-white transition-all">
-                            <Download class="mr-2 h-3.5 w-3.5" /> Synchronize PDF
-                        </Button>
-                    </div>
-
-                    <div class="group flex items-center justify-between p-6 transition-all hover:bg-muted/10">
-                        <div class="flex items-center gap-5">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-2xl border-emerald-500/10 bg-emerald-500/5 text-emerald-600 transition-all group-hover:bg-emerald-600 group-hover:text-white">
-                                <Activity class="h-6 w-6" />
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-foreground group-hover:text-emerald-600 transition-colors uppercase">
-                                    Institutional Attendance Flux <span class="mx-2 opacity-10">/</span> <span class="text-[10px] text-muted-foreground/40">Monthly Drift</span>
-                                </h4>
-                                <p class="text-[10px] font-bold tracking-tight text-muted-foreground/40 uppercase mt-0.5">
-                                    Generated 2 Days Ago <span class="mx-1 opacity-30">•</span> System UID: R-88102
-                                </p>
-                            </div>
-                        </div>
-                        <Button variant="outline" class="h-9 rounded-xl border-border bg-background px-4 text-[10px] font-bold tracking-tight uppercase shadow-sm hover:bg-primary hover:text-white transition-all">
-                            <Download class="mr-2 h-3.5 w-3.5" /> Synchronize PDF
-                        </Button>
-                    </div>
-                </div>
-            </div>
         </div>
     </AppLayout>
 </template>
 
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+.fade-in {
+    animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
 }
 </style>

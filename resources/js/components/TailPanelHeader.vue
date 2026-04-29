@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Search,
@@ -26,8 +26,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-const { props } = usePage();
-const user = props.auth.user;
+const page = usePage();
+const user = computed(() => (page.props.auth as any)?.user);
 
 const isDark = ref(false);
 
@@ -53,11 +53,11 @@ const searchFocused = ref(false);
         class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
     >
         <div
-            class="flex h-14 items-center gap-1 px-4 sm:h-16 sm:gap-2 sm:px-6 md:h-20 md:px-10 lg:px-12"
+            class="flex h-14 items-center justify-between gap-1 px-4 sm:h-16 sm:gap-2 sm:px-6 md:h-20 md:px-10 lg:px-12"
         >
             <div class="flex shrink-0 items-center gap-1 sm:gap-4">
                 <SidebarTrigger
-                    class="-ml-2 h-9 w-9 rounded-xl p-0 transition-all hover:bg-muted"
+                    class="-ml-2 h-10 w-10 rounded-xl p-0 transition-all hover:bg-muted md:h-12 md:w-12"
                 />
             </div>
 
@@ -118,11 +118,11 @@ const searchFocused = ref(false);
                                 class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-xs font-black text-primary transition-all group-hover:scale-110 sm:h-10 sm:w-10 sm:text-sm"
                             >
                                 {{
-                                    user.name
+                                    user?.name
                                         ?.split(' ')
-                                        .map((n) => n[0])
+                                        .map((n: any) => n[0])
                                         .join('')
-                                        .toUpperCase()
+                                        .toUpperCase() || 'U'
                                 }}
                             </div>
                             <div

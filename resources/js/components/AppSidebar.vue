@@ -68,11 +68,12 @@ import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarGroupContent,
+    useSidebar,
 } from '@/components/ui/sidebar';
 
-const { props } = usePage();
-const user = computed(() => props.auth.user);
-const permissions = computed(() => props.auth.permissions || []);
+const page = usePage();
+const user = computed(() => (page.props.auth as any)?.user);
+const permissions = computed(() => (page.props.auth as any)?.permissions || []);
 
 const hasPermission = (permission: string) => {
     if (permissions.value.includes('super_admin')) return true;
@@ -83,8 +84,8 @@ const canAny = (perms: string[]) => {
     return perms.some((p) => hasPermission(p));
 };
 
-const isSuperAdmin = computed(() => props.auth.is_super_admin);
-const isImpersonating = computed(() => props.auth.impersonating?.active);
+const isSuperAdmin = computed(() => (page.props.auth as any)?.is_super_admin);
+const isImpersonating = computed(() => (page.props.auth as any)?.impersonating?.active);
 
 const saasNavigation = [
     {
@@ -490,11 +491,6 @@ const navigation = [
                         icon: ClipboardList,
                     },
                     {
-                        title: 'Analytics & Trends',
-                        href: '/assessments/analytics',
-                        icon: BarChart3,
-                    },
-                    {
                         title: 'Report Cards',
                         href: '/assessments/report-cards',
                         icon: FileText,
@@ -535,7 +531,6 @@ const navigation = [
                         href: '/attendance/mark',
                         permissions: ['attendance.mark'],
                     },
-                    { title: 'Reports', href: '/attendance/reports' },
                 ],
             },
             {
@@ -562,6 +557,25 @@ const navigation = [
         title: 'Management',
         items: [
             {
+                title: 'Reports',
+                href: '/reports',
+                icon: BarChart3,
+                permissions: ['reports.view'],
+                children: [
+                    { title: 'Progress Report', href: '/reports/report-cards' },
+                    { title: 'Subject Report', href: '/reports/subject-performance Report' },
+                    { title: 'Class Report', href: '/reports/class-summary' },
+                    { title: 'Attendance Report', href: '/reports/attendance Report' },
+                    { title: 'Assessment Report', href: '/reports/assessments Report' },
+                    { title: 'Competency Report', href: '/reports/competency-mastery Report' },
+                    { title: 'Learner Report', href: '/reports/learner-profile Report' },
+                    { title: 'Teacher Report', href: '/reports/teacher-metrics Reports' },
+                    { title: 'Finance Report', href: '/reports/finance Report' },
+                    { title: 'Enrollment Report', href: '/reports/enrollment Report' },
+                    { title: 'Activity Report', href: '/audit-logs' },
+                ],
+            },
+            {
                 title: 'Finance',
                 href: '/finance',
                 icon: DollarSign,
@@ -581,16 +595,6 @@ const navigation = [
                         title: 'Payments',
                         href: '/finance/payments',
                         permissions: ['finance.view_own'],
-                    },
-                    {
-                        title: 'Fee Reports',
-                        href: '/finance/reports',
-                        permissions: ['finance.reports'],
-                    },
-                    {
-                        title: 'Expenses',
-                        href: '/finance/expenses',
-                        permissions: ['finance.create'],
                     },
                 ],
             },
@@ -780,7 +784,7 @@ const navigation = [
 const bottomNavigation: any[] = [];
 
 const isParent = computed(() => {
-    const roles = (props.auth as any).roles || [];
+    const roles = (page.props.auth as any)?.roles || [];
     return roles.includes('parent') || roles.includes('guardian');
 });
 
@@ -860,9 +864,9 @@ const parentNavigation = [
     },
 ];
 
-const teacherRoles = computed(() => (props.auth as any).teacher_roles || {});
+const teacherRoles = computed(() => (page.props.auth as any)?.teacher_roles || {});
 const isTeacherRole = computed(() => {
-    const roles = (props.auth as any).roles || [];
+    const roles = (page.props.auth as any)?.roles || [];
     return (
         roles.includes('teacher') ||
         roles.includes('class_teacher') ||
@@ -1113,6 +1117,13 @@ const activeItem = ref<string | null>(null);
 const toggleItem = (title: string) => {
     activeItem.value = activeItem.value === title ? null : title;
 };
+
+const { isMobile, setOpenMobile } = useSidebar();
+const handleNavClick = () => {
+    if (isMobile.value) {
+        setOpenMobile(false);
+    }
+};
 </script>
 
 <template>
@@ -1140,23 +1151,12 @@ const toggleItem = (title: string) => {
             <Link
                 href="/dashboard"
                 v-else
-                class="group flex w-full flex-col items-center gap-3 font-bold text-sidebar-foreground"
+                class="group flex flex-col items-center justify-center gap-4 transition-all duration-300"
             >
-                <div class="mb-1 flex w-full min-w-0 flex-col items-center">
-                    <span
-                        class="w-full truncate text-center text-sm leading-tight font-bold tracking-[0.15em] uppercase"
-                        >{{
-                            $page.props.auth.school?.name || 'TailPanel'
-                        }}</span
-                    >
-                    <div
-                        class="mt-2 h-0.5 w-8 rounded-full bg-primary/20"
-                    ></div>
-                </div>
-
+                <!-- TOP: LOGO -->
                 <div
                     v-if="$page.props.auth.school?.logo"
-                    class="h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 border-sidebar-border bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/20"
+                    class="h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 border-sidebar-border bg-white shadow-xl shadow-slate-200/50 transition-all duration-300 group-hover:scale-105 group-hover:border-primary/20 sm:h-20 sm:w-20"
                 >
                     <img
                         :src="$page.props.auth.school.logo"
@@ -1166,11 +1166,23 @@ const toggleItem = (title: string) => {
                 </div>
                 <div
                     v-else
-                    class="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all duration-300 group-hover:scale-105"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-xl shadow-primary/20 transition-all duration-300 group-hover:scale-105 sm:h-16 sm:w-16"
                 >
-                    <span class="text-2xl font-bold">{{
+                    <span class="text-xl font-black sm:text-2xl">{{
                         $page.props.auth.school?.name?.[0] || 'T'
                     }}</span>
+                </div>
+
+                <!-- BOTTOM: SCHOOL NAME (Smaller) -->
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-center text-[10px] font-black uppercase tracking-[0.25em] text-foreground transition-colors group-hover:text-primary sm:text-[11px]"
+                    >
+                        {{ $page.props.auth.school?.name || 'Institutional Admin' }}
+                    </span>
+                    <div
+                        class="mt-2 h-0.5 w-6 rounded-full bg-primary/20 transition-all group-hover:w-10 group-hover:bg-primary/40"
+                    ></div>
                 </div>
             </Link>
         </SidebarHeader>
@@ -1224,6 +1236,7 @@ const toggleItem = (title: string) => {
                                         v-for="child in item.children"
                                         :key="child.title"
                                         :href="child.href"
+                                        @click="handleNavClick"
                                         class="block rounded-lg px-3 py-2 text-xs font-bold text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                     >
                                         {{ child.title }}
@@ -1233,6 +1246,7 @@ const toggleItem = (title: string) => {
                             <Link
                                 v-else
                                 :href="item.href"
+                                @click="handleNavClick"
                                 class="group flex items-center gap-3 rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                                 :class="{
                                     'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm':
@@ -1294,6 +1308,7 @@ const toggleItem = (title: string) => {
                     <Link
                         v-else
                         :href="item.href"
+                        @click="handleNavClick"
                         class="group flex items-center gap-3 rounded-md px-4 py-3 text-sm font-bold text-sidebar-foreground/60 transition-all hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     >
                         <component :is="item.icon" class="h-4 w-4 opacity-70" />

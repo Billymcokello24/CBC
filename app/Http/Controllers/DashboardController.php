@@ -79,11 +79,18 @@ class DashboardController extends Controller
             
             return Inertia::render('Dashboard', [
                 'dashboardType' => 'admin',
-                'stats' => $stats,
+                'stats' => [
+                    'total_learners' => $stats['total_learners'],
+                    'total_teachers' => $stats['total_teachers'],
+                    'total_classes' => $stats['total_classes'],
+                    'attendance_rate' => $stats['attendance_rate'],
+                    'total_subjects' => $stats['total_subjects'],
+                ],
                 'classCapacity' => $this->getClassCapacity(),
                 'weeklyAttendance' => $this->getWeeklyAttendance(),
                 'enrollmentTrends' => $this->getEnrollmentTrends(),
                 'recentActivities' => $this->getRecentActivities(),
+                'auditLogs' => $this->getAuditLogs(),
                 'subjectAnalytics' => $this->getSubjectAnalytics(),
                 'streamAnalytics' => $this->getStreamAnalytics(),
                 'learnerQuickAccess' => $this->getLearnerQuickAccess(),
@@ -94,10 +101,18 @@ class DashboardController extends Controller
             Log::error('Dashboard error: ' . $e->getMessage());
             return Inertia::render('Dashboard', [
                 'dashboardType' => 'admin',
-                'stats' => $this->getDefaultStats(),
+                'stats' => [
+                    'total_learners' => 0,
+                    'total_teachers' => 0,
+                    'total_classes' => 0,
+                    'attendance_rate' => 0,
+                    'total_subjects' => 0,
+                ],
                 'classCapacity' => ['labels' => [], 'actual' => [], 'expected' => []],
                 'weeklyAttendance' => $this->getDefaultWeeklyAttendance(),
+                'enrollmentTrends' => ['labels' => [], 'datasets' => []],
                 'recentActivities' => $this->getDefaultRecentActivities(),
+                'auditLogs' => [],
                 'subjectAnalytics' => [],
                 'streamAnalytics' => [],
                 'learnerQuickAccess' => [],
@@ -112,8 +127,9 @@ class DashboardController extends Controller
         try {
             return Student::where('status', 'active')
                 ->with('currentClass:id,name')
-                ->latest()
-                ->limit(6)
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->limit(5)
                 ->get()
                 ->map(fn($s) => [
                     'id' => $s->id,
@@ -123,6 +139,42 @@ class DashboardController extends Controller
                     'admission_number' => $s->admission_number
                 ])
                 ->toArray();
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    private function getAuditLogs(): array
+    {
+        try {
+            $user = Auth::user();
+            $schoolId = $user->school_id ?? session('viewing_school_id');
+
+            // Fetch from activity_log and filter by school via causer relationship
+            if (class_exists(\Spatie\Activitylog\Models\Activity::class)) {
+                $logs = \Spatie\Activitylog\Models\Activity::with('causer')
+                    ->whereHasMorph('causer', [\App\Models\User::class], function($query) use ($schoolId) {
+                        if ($schoolId) $query->where('school_id', $schoolId);
+                    })
+                    ->latest()
+                    ->limit(5)
+                    ->get()
+                    ->map(fn($activity) => [
+                        'id' => $activity->id,
+                        'event' => $activity->event ?? 'action',
+                        'description' => $activity->description,
+                        'who' => $activity->causer?->name ?? 'System',
+                        'role' => $activity->causer?->getRoleNames()->first() ?? 'Staff',
+                        'gadget' => $activity->properties['user_agent'] ?? 'Web Interface',
+                        'ip' => $activity->properties['ip_address'] ?? 'Internal',
+                        'where' => $activity->properties['url'] ?? $activity->subject_type,
+                        'when' => $activity->created_at->format('M d, H:i:s'),
+                        'time_ago' => $activity->created_at->diffForHumans(),
+                    ]);
+                
+                return $logs->toArray();
+            }
+            return [];
         } catch (\Exception $e) {
             return [];
         }
