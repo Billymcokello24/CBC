@@ -613,13 +613,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('career/pathways', 'career/Pathways')->name('career.pathways');
 
     // ──────────────────────────────────────────────
-    // REPORTS & ANALYTICS
+    // REPORTS & ANALYTICS (CBC Ready)
     // ──────────────────────────────────────────────
     Route::middleware(['check_permission:reports.view,reports.view_own'])->group(function () {
-        Route::inertia('reports', 'reports/Index')->name('reports.index');
+        Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+        Route::get('reports/report-cards', [\App\Http\Controllers\ReportController::class, 'progressReport'])->name('reports.report-cards');
+        Route::get('reports/subject-performance', [\App\Http\Controllers\ReportController::class, 'subjectReport'])->name('reports.subject-performance');
+        Route::get('reports/class-summary', [\App\Http\Controllers\ReportController::class, 'classSummary'])->name('reports.class-summary');
+        
+        Route::get('api/reports/progress/{student}', [\App\Http\Controllers\ReportController::class, 'getStudentProgress'])->name('api.reports.progress');
+        Route::get('api/reports/subject-analysis', [\App\Http\Controllers\ReportController::class, 'getSubjectAnalysis'])->name('api.reports.subject-analysis');
+        Route::get('api/reports/class-analysis', [\App\Http\Controllers\ReportController::class, 'getClassAnalysis'])->name('api.reports.class-analysis');
+        
+        // Generic placeholders for remaining reports
+        Route::inertia('reports/attendance', 'reports/AttendanceReport')->name('reports.attendance');
+        Route::inertia('reports/assessments', 'reports/AssessmentReport')->name('reports.assessments');
+        Route::inertia('reports/competency-mastery', 'reports/CompetencyReport')->name('reports.competency-mastery');
+        Route::inertia('reports/learner-profile', 'reports/LearnerReport')->name('reports.learner-profile');
+        Route::inertia('reports/teacher-metrics', 'reports/TeacherReport')->name('reports.teacher-metrics');
+        Route::inertia('reports/finance', 'reports/FinanceReport')->name('reports.finance');
+        Route::inertia('reports/enrollment', 'reports/EnrollmentReport')->name('reports.enrollment');
+        
+        // Legacy/Archive reports
         Route::inertia('reports/academic', 'reports/Academic')->name('reports.academic');
         Route::inertia('reports/financial', 'reports/Financial')->name('reports.financial');
-        Route::inertia('reports/attendance', 'reports/Attendance')->name('reports.attendance');
         Route::inertia('reports/analytics', 'reports/Analytics')->name('reports.analytics');
         
         // Audit Logs (Dedicated Page)
