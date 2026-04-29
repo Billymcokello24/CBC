@@ -625,14 +625,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('api/reports/subject-analysis', [\App\Http\Controllers\ReportController::class, 'getSubjectAnalysis'])->name('api.reports.subject-analysis');
         Route::get('api/reports/class-analysis', [\App\Http\Controllers\ReportController::class, 'getClassAnalysis'])->name('api.reports.class-analysis');
         
-        // Generic placeholders for remaining reports
-        Route::inertia('reports/attendance', 'reports/AttendanceReport')->name('reports.attendance');
-        Route::inertia('reports/assessments', 'reports/AssessmentReport')->name('reports.assessments');
-        Route::inertia('reports/competency-mastery', 'reports/CompetencyReport')->name('reports.competency-mastery');
-        Route::inertia('reports/learner-profile', 'reports/LearnerReport')->name('reports.learner-profile');
-        Route::inertia('reports/teacher-metrics', 'reports/TeacherReport')->name('reports.teacher-metrics');
-        Route::inertia('reports/finance', 'reports/FinanceReport')->name('reports.finance');
-        Route::inertia('reports/enrollment', 'reports/EnrollmentReport')->name('reports.enrollment');
+        // Generic placeholders transformed into actual endpoints
+        Route::get('reports/attendance', [\App\Http\Controllers\ReportController::class, 'attendanceReport'])->name('reports.attendance');
+        Route::get('reports/assessments', [\App\Http\Controllers\ReportController::class, 'assessmentReport'])->name('reports.assessments');
+        Route::get('reports/competency-mastery', [\App\Http\Controllers\ReportController::class, 'competencyReport'])->name('reports.competency-mastery');
+        Route::get('reports/learner-profile', [\App\Http\Controllers\ReportController::class, 'learnerReport'])->name('reports.learner-profile');
+        Route::get('reports/teacher-metrics', [\App\Http\Controllers\ReportController::class, 'teacherReport'])->name('reports.teacher-metrics');
+        Route::get('reports/finance', [\App\Http\Controllers\ReportController::class, 'financeReport'])->name('reports.finance');
+        Route::get('reports/enrollment', [\App\Http\Controllers\ReportController::class, 'enrollmentReport'])->name('reports.enrollment');
+        
+        // Data Pipelines & Export Actions
+        Route::get('api/reports/attendance-analysis', [\App\Http\Controllers\ReportController::class, 'getAttendanceAnalysis'])->name('api.reports.attendance-analysis');
+        Route::get('reports/attendance/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportAttendancePdf'])->name('reports.attendance.export-pdf');
+        
+        Route::get('api/reports/assessment-analysis', [\App\Http\Controllers\ReportController::class, 'getAssessmentAnalysis'])->name('api.reports.assessment-analysis');
+        Route::get('reports/assessments/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportAssessmentPdf'])->name('reports.assessments.export-pdf');
+        
+        Route::get('api/reports/competency-analysis', [\App\Http\Controllers\ReportController::class, 'getCompetencyAnalysis'])->name('api.reports.competency-analysis');
+        Route::get('reports/competency-mastery/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportCompetencyPdf'])->name('reports.competency-mastery.export-pdf');
+        
+        Route::get('api/reports/learner-analysis', [\App\Http\Controllers\ReportController::class, 'getLearnerAnalysis'])->name('api.reports.learner-analysis');
+        Route::get('reports/learner-profile/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportLearnerPdf'])->name('reports.learner-profile.export-pdf');
+        
+        Route::get('api/reports/teacher-analysis', [\App\Http\Controllers\ReportController::class, 'getTeacherAnalysis'])->name('api.reports.teacher-analysis');
+        Route::get('reports/teacher-metrics/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportTeacherPdf'])->name('reports.teacher-metrics.export-pdf');
+        
+        Route::get('api/reports/finance-analysis', [\App\Http\Controllers\ReportController::class, 'getFinanceAnalysis'])->name('api.reports.finance-analysis');
+        Route::get('reports/finance/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportFinancePdf'])->name('reports.finance.export-pdf');
+        
+        Route::get('api/reports/enrollment-analysis', [\App\Http\Controllers\ReportController::class, 'getEnrollmentAnalysis'])->name('api.reports.enrollment-analysis');
+        Route::get('reports/enrollment/export-pdf', [\App\Http\Controllers\ReportController::class, 'exportEnrollmentPdf'])->name('reports.enrollment.export-pdf');
+
         
         // Legacy/Archive reports
         Route::inertia('reports/academic', 'reports/Academic')->name('reports.academic');

@@ -12,7 +12,7 @@ class ExportController extends Controller
     public function start(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:staff,students,parents',
+            'type' => 'required|string|in:staff,students,parents,attendance_report,enrollment_report,assessment_report,competency_report,learner_report,teacher_report,finance_report',
             'filters' => 'nullable|array'
         ]);
 
@@ -24,7 +24,13 @@ class ExportController extends Controller
             'filters' => $request->filters ?? []
         ]);
 
-        GeneratePdfExportJob::dispatch($process->id);
+        $reportTypes = ['attendance_report', 'enrollment_report', 'assessment_report', 'competency_report', 'learner_report', 'teacher_report', 'finance_report'];
+        
+        if (in_array($process->type, $reportTypes)) {
+            \App\Jobs\GenerateInstitutionalReportJob::dispatch($process->id);
+        } else {
+            GeneratePdfExportJob::dispatch($process->id);
+        }
 
         return response()->json([
             'id' => $process->id,
