@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search, ChevronDown } from 'lucide-vue-next';
+import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
@@ -242,10 +242,11 @@ const rightNavItems: NavItem[] = [
                         <DropdownMenuTrigger :as-child="true">
                             <Button
                                 variant="ghost"
-                                class="relative flex h-10 items-center gap-3 rounded-xl px-2 py-1.5 transition-all hover:bg-muted/50 focus-within:ring-2 focus-within:ring-primary focus-within:ring-offset-2"
+                                size="icon"
+                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
                             >
                                 <Avatar
-                                    class="h-8 w-8 overflow-hidden rounded-lg shadow-sm"
+                                    class="size-8 overflow-hidden rounded-full"
                                 >
                                     <AvatarImage
                                         v-if="auth.user.avatar"
@@ -253,19 +254,14 @@ const rightNavItems: NavItem[] = [
                                         :alt="auth.user.name"
                                     />
                                     <AvatarFallback
-                                        class="rounded-lg bg-primary/10 font-bold text-primary dark:bg-primary/20"
+                                        class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
                                     >
                                         {{ getInitials(auth.user?.name) }}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div class="hidden flex-col items-start transition-all md:flex">
-                                    <span class="text-xs font-bold tracking-tight text-foreground">{{ auth.user.name }}</span>
-                                    <span class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Super Admin</span>
-                                </div>
-                                <ChevronDown class="h-3 w-3 text-muted-foreground opacity-50" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-64 rounded-2xl border-border bg-card p-2 shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <DropdownMenuContent align="end" class="w-64 min-w-[240px]">
                             <UserMenuContent :user="auth.user" />
                         </DropdownMenuContent>
                     </DropdownMenu>

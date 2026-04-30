@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings, User as UserIcon } from 'lucide-vue-next';
+import { LogOut, Settings } from 'lucide-vue-next';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -32,29 +32,23 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="flex w-full items-center cursor-pointer px-3 py-2.5 transition-colors hover:bg-muted/50" :href="edit()" prefetch>
-                <UserIcon class="mr-3 h-4 w-4 text-primary" />
-                <span class="text-[10px] font-bold tracking-widest uppercase">Profile</span>
-            </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem :as-child="true">
-            <Link class="flex w-full items-center cursor-pointer px-3 py-2.5 transition-colors hover:bg-muted/50" :href="edit()" prefetch>
-                <Settings class="mr-3 h-4 w-4 text-slate-400" />
-                <span class="text-[10px] font-bold tracking-widest uppercase">Settings</span>
+            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+                <Settings class="mr-2 h-4 w-4" />
+                Settings
             </Link>
         </DropdownMenuItem>
     </DropdownMenuGroup>
     <DropdownMenuSeparator />
-    <DropdownMenuItem :as-child="true" class="p-0">
+    <DropdownMenuItem :as-child="true" class="text-rose-500 focus:bg-rose-50 focus:text-rose-600 dark:focus:bg-rose-950/20">
         <Link
-            class="flex w-full items-center cursor-pointer px-3 py-3 text-rose-500 transition-all hover:bg-rose-50 hover:text-rose-600 active:scale-[0.98]"
+            class="block w-full cursor-pointer flex items-center"
             :href="logout()"
             @click="handleLogout"
             as="button"
             data-test="logout-button"
         >
-            <LogOut class="mr-3 h-4 w-4" />
-            <span class="text-[10px] font-black tracking-widest uppercase">Sign Out</span>
+            <LogOut class="mr-2 h-4 w-4" />
+            Sign Out
         </Link>
     </DropdownMenuItem>
 </template>

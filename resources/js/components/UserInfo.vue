@@ -29,12 +29,10 @@ const showAvatar = computed(
         </AvatarFallback>
     </Avatar>
 
-    <div class="flex flex-col flex-1 min-w-0 text-left leading-none">
-        <span class="truncate text-sm font-bold tracking-tight text-foreground">
-            {{ user.name }}
-        </span>
-        <span v-if="showEmail" class="truncate text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60 mt-1">
-            {{ user.email }}
-        </span>
+    <div class="grid flex-1 text-left leading-tight overflow-hidden">
+        <span class="truncate text-sm font-semibold text-foreground tracking-tight">{{ user.name }}</span>
+        <span v-if="showEmail" class="truncate text-[10px] font-medium text-muted-foreground/80 tracking-tight">{{
+            user.email.toLowerCase()
+        }}</span>
     </div>
 </template>
