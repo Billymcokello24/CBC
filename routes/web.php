@@ -702,6 +702,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('settings/academic-years', [SettingsController::class, 'storeAcademicYear'])->name('settings.academic-year.store');
         Route::put('settings/academic-years/{year}', [SettingsController::class, 'updateAcademicYear'])->name('settings.academic-year.update');
         Route::match(['post', 'patch'], 'settings/academic-years/{year}/current', [SettingsController::class, 'setCurrentAcademicYear'])->name('settings.academic-year.current');
+        Route::put('settings/academic-terms/{term}', [SettingsController::class, 'updateAcademicTerm'])->name('settings.academic-term.update');
 
         Route::get('settings/users', [SettingsController::class, 'users'])->name('settings.users');
         Route::get('settings/system', [SettingsController::class, 'system'])->name('settings.system');

@@ -59,7 +59,9 @@ class AcademicPlannerController extends Controller
             'schemes' => $query->latest()->get(),
             'subjects' => $subjectsQuery->get(['id', 'name']),
             'grades' => $gradesQuery,
-            'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
+            'terms' => AcademicTerm::where('school_id', Auth::user()->school_id)
+                ->whereHas('academicYear', fn($q) => $q->where('is_current', true))
+                ->get(),
         ]);
     }
 
@@ -185,7 +187,9 @@ class AcademicPlannerController extends Controller
             'allGrades' => $allGradesQuery,
             'subjects' => $allSubjectsQuery->get(['id', 'name']),
             'classes' => $allClassesQuery->get(['id', 'name', 'grade_level_id']),
-            'terms' => AcademicTerm::whereHas('academicYear', fn($q) => $q->where('is_current', true))->get(),
+            'terms' => AcademicTerm::where('school_id', Auth::user()->school_id)
+                ->whereHas('academicYear', fn($q) => $q->where('is_current', true))
+                ->get(),
             'strands' => \App\Models\Curriculum\Strand::all(['id', 'name', 'subject_id', 'grade_level_id']),
             'sub_strands' => \App\Models\Curriculum\SubStrand::all(['id', 'name', 'strand_id']),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(['id', 'name']),

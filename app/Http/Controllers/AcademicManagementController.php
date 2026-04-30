@@ -73,7 +73,7 @@ class AcademicManagementController extends Controller
             ])
             ->values();
 
-        $academicYears = DB::table('academic_years')->orderByDesc('start_date')->get(['id', 'name']);
+        $academicYears = DB::table('academic_years')->where('school_id', auth()->user()->school_id)->orderByDesc('start_date')->get(['id', 'name']);
 
         $assignments = DB::table('teacher_subjects')
             ->join('teachers', 'teachers.id', '=', 'teacher_subjects.teacher_id')
@@ -286,7 +286,7 @@ class AcademicManagementController extends Controller
                 'per_page' => $perPage,
             ],
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name']),
-            'academicYears' => DB::table('academic_years')->orderByDesc('start_date')->get(['id', 'name']),
+            'academicYears' => DB::table('academic_years')->where('school_id', auth()->user()->school_id)->orderByDesc('start_date')->get(['id', 'name']),
             'availableTeachers' => Teacher::where('status', 'active')
                 ->whereNotNull('user_id')
                 ->get()
@@ -340,7 +340,7 @@ class AcademicManagementController extends Controller
         return Inertia::render('classes/Create', [
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
             'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
-            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
+            'academicYears' => DB::table('academic_years')->where('school_id', auth()->user()->school_id)->select('id', 'name')->orderByDesc('start_date')->get(),
         ]);
     }
 
@@ -394,7 +394,12 @@ class AcademicManagementController extends Controller
             'classroom' => $class,
             'grades' => GradeLevel::query()->orderBy('level_order')->get(['id', 'name', 'code']),
             'streams' => Stream::query()->orderBy('name')->get(['id', 'name', 'code']),
-            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
+            'academicYears' => DB::table('academic_years')->where('school_id', auth()->user()->school_id)->select('id', 'name')->orderByDesc('start_date')->get(),
+            'availableTeachers' => Teacher::where('status', 'active')
+                ->whereNotNull('user_id')
+                ->get()
+                ->map(fn($t) => ['id' => $t->user_id, 'name' => $t->full_name])
+                ->values(),
         ]);
     }
 
@@ -1286,8 +1291,14 @@ class AcademicManagementController extends Controller
     public function autoCreateClasses(): RedirectResponse
     {
         $schoolId = auth()->user()->school_id;
-        $academicYearId = DB::table('academic_years')->where('is_current', true)->value('id')
-            ?? DB::table('academic_years')->orderByDesc('start_date')->value('id');
+        $academicYearId = DB::table('academic_years')
+            ->where('school_id', auth()->user()->school_id)
+            ->where('is_current', true)
+            ->value('id')
+            ?? DB::table('academic_years')
+                ->where('school_id', auth()->user()->school_id)
+                ->orderByDesc('start_date')
+                ->value('id');
 
         if (!$academicYearId) {
             return back()->with('error', 'No academic year found. Please create one first.');

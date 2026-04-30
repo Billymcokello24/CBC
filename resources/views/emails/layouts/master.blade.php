@@ -176,16 +176,17 @@
             <!-- Footer -->
             <div class="footer">
                 <div class="social-links">
-                    <!-- Standard Social Placeholders -->
-                    <a href="#">Twitter</a>
-                    <a href="#">LinkedIn</a>
-                    <a href="#">Facebook</a>
+                    <a href="#">Official Website</a> &bull;
+                    <a href="#">Staff Portal</a> &bull;
+                    <a href="#">Support</a>
                 </div>
                 <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-                <p>Distributed by Benard's Vision School Platform.</p>
-                <p style="font-size: 12px; margin-top: 16px;">
-                    You are receiving this email because you are a registered user of {{ config('app.name') }}.
-                </p>
+                <div style="margin-top: 16px; font-size: 11px; color: #94a3b8; line-height: 1.4;">
+                    <p><strong>{{ config('app.name') }} HQ</strong><br>
+                    Institutional Administration Complex, Kenya<br>
+                    This is a transactional notification regarding your professional account.</p>
+                    <p>To manage your notification preferences, please visit your account settings.</p>
+                </div>
             </div>
         </div>
         <div style="height: 40px;"></div>

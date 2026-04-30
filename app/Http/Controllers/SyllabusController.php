@@ -83,8 +83,14 @@ class SyllabusController extends Controller
         $grades = $gradesQuery->get(['id', 'name']);
         $learningAreas = LearningArea::active()->ordered()->get(['id', 'name']);
 
-        $academicYear = DB::table('academic_years')->where('is_current', true)->first() 
-            ?? DB::table('academic_years')->orderByDesc('start_date')->first();
+        $academicYear = DB::table('academic_years')
+            ->where('school_id', auth()->user()->school_id)
+            ->where('is_current', true)
+            ->first() 
+            ?? DB::table('academic_years')
+                ->where('school_id', auth()->user()->school_id)
+                ->orderByDesc('start_date')
+                ->first();
 
         $teachers = Teacher::where('status', 'active')
             ->orderBy('first_name')
@@ -123,8 +129,14 @@ class SyllabusController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        $academicYear = DB::table('academic_years')->where('is_current', true)->first() 
-            ?? DB::table('academic_years')->orderByDesc('start_date')->first();
+        $academicYear = DB::table('academic_years')
+            ->where('school_id', auth()->user()->school_id)
+            ->where('is_current', true)
+            ->first() 
+            ?? DB::table('academic_years')
+                ->where('school_id', auth()->user()->school_id)
+                ->orderByDesc('start_date')
+                ->first();
 
         $teachers = Teacher::where('status', 'active')
             ->orderBy('first_name')

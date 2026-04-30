@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\Settings\SchoolSetting;
+use App\Models\Academic\AcademicYear;
+use App\Models\Academic\AcademicTerm;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,7 +23,8 @@ class SettingsController extends Controller
         $schoolId = auth()->user()->school_id;
         $school = School::with(['schoolType', 'schoolLevel'])->findOrFail($schoolId);
         $settings = SchoolSetting::where('school_id', $schoolId)->get();
-        $academicYears = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)
+        $academicYears = AcademicYear::where('school_id', $schoolId)
+            ->with(['terms' => fn($q) => $q->orderBy('term_number')])
             ->orderByDesc('start_date')
             ->get();
 
@@ -118,12 +121,7 @@ class SettingsController extends Controller
             'status' => 'required|in:active,inactive,closed',
         ]);
 
-        // Ensure fixed January cycle if name matches a year? 
-        // Actually, the user wants us to ensure it shifts in January.
-        // We'll enforce that the start_date must be January 1st if possible, or just trust the UI.
-        // The UI will default to Jan 1st.
-
-        $year = \App\Models\Academic\AcademicYear::create(array_merge($validated, [
+        $year = AcademicYear::create(array_merge($validated, [
             'school_id' => $schoolId,
         ]));
 
@@ -131,10 +129,34 @@ class SettingsController extends Controller
             $year->makeCurrent();
         }
 
-        return back()->with('success', 'Academic year created successfully.');
+        // Auto-create 3 terms for this academic year
+        $startDate = \Carbon\Carbon::parse($validated['start_date']);
+        $endDate = \Carbon\Carbon::parse($validated['end_date']);
+        $totalDays = $startDate->diffInDays($endDate);
+        $termLength = (int) floor($totalDays / 3);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $termStart = $startDate->copy()->addDays(($i - 1) * $termLength);
+            $termEnd = $i < 3
+                ? $termStart->copy()->addDays($termLength - 1)
+                : $endDate->copy();
+
+            AcademicTerm::create([
+                'school_id' => $schoolId,
+                'academic_year_id' => $year->id,
+                'name' => "Term {$i}",
+                'term_number' => $i,
+                'start_date' => $termStart->toDateString(),
+                'end_date' => $termEnd->toDateString(),
+                'is_current' => $i === 1 && $request->boolean('is_current'),
+                'status' => $validated['status'] === 'active' ? ($i === 1 ? 'active' : 'upcoming') : 'upcoming',
+            ]);
+        }
+
+        return back()->with('success', 'Academic year created with 3 terms.');
     }
 
-    public function updateAcademicYear(Request $request, \App\Models\Academic\AcademicYear $year): \Illuminate\Http\RedirectResponse
+    public function updateAcademicYear(Request $request, AcademicYear $year): \Illuminate\Http\RedirectResponse
     {
         if ($year->school_id !== auth()->user()->school_id) {
             abort(403);
@@ -153,7 +175,30 @@ class SettingsController extends Controller
         return back()->with('success', 'Academic year updated successfully.');
     }
 
-    public function setCurrentAcademicYear(Request $request, \App\Models\Academic\AcademicYear $year): \Illuminate\Http\RedirectResponse
+    public function updateAcademicTerm(Request $request, AcademicTerm $term): \Illuminate\Http\RedirectResponse
+    {
+        if ($term->school_id !== auth()->user()->school_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'is_current' => 'boolean',
+            'status' => 'required|in:upcoming,active,completed,archived',
+        ]);
+
+        $term->update($validated);
+
+        if ($request->boolean('is_current')) {
+            $term->makeCurrent();
+        }
+
+        return back()->with('success', 'Term updated successfully.');
+    }
+
+    public function setCurrentAcademicYear(Request $request, AcademicYear $year): \Illuminate\Http\RedirectResponse
     {
         if ($year->school_id !== auth()->user()->school_id) {
             abort(403);

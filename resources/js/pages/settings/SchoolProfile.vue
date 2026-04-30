@@ -16,6 +16,10 @@ import {
     CheckCircle2,
     AlertTriangle,
     Clock,
+    Key,
+    Shield,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -232,6 +236,64 @@ const getStatusColor = (status: string) => {
             return 'bg-rose-50 text-rose-700 border-rose-100';
         default:
             return 'bg-slate-50 text-slate-700 border-slate-100';
+    }
+};
+
+// Term Management
+const showTermDialog = ref(false);
+const editingTerm = ref<any>(null);
+const expandedYears = ref<Set<number>>(new Set());
+
+const termForm = useForm({
+    name: '',
+    start_date: '',
+    end_date: '',
+    is_current: false,
+    status: 'upcoming' as 'upcoming' | 'active' | 'completed' | 'archived',
+});
+
+const toggleYearExpand = (yearId: number) => {
+    const s = new Set(expandedYears.value);
+    if (s.has(yearId)) {
+        s.delete(yearId);
+    } else {
+        s.add(yearId);
+    }
+    expandedYears.value = s;
+};
+
+const openEditTerm = (term: any) => {
+    editingTerm.value = term;
+    termForm.name = term.name;
+    termForm.start_date = term.start_date?.split('T')[0] || term.start_date;
+    termForm.end_date = term.end_date?.split('T')[0] || term.end_date;
+    termForm.is_current = !!term.is_current;
+    termForm.status = term.status || 'upcoming';
+    showTermDialog.value = true;
+};
+
+const submitTerm = () => {
+    if (!editingTerm.value) return;
+    termForm.put(`/settings/academic-terms/${editingTerm.value.id}`, {
+        onSuccess: () => {
+            showTermDialog.value = false;
+            editingTerm.value = null;
+            termForm.reset();
+        },
+        preserveScroll: true,
+    });
+};
+
+const getTermStatusColor = (status: string) => {
+    switch (status) {
+        case 'active':
+            return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'completed':
+            return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'archived':
+            return 'bg-slate-50 text-slate-500 border-slate-200';
+        default:
+            return 'bg-amber-50 text-amber-700 border-amber-200';
     }
 };
 </script>
@@ -779,6 +841,57 @@ const getStatusColor = (status: string) => {
                                         Switch to this Year
                                     </Button>
                                 </div>
+
+                                <!-- Terms Section -->
+                                <div class="border-t border-slate-100 pt-4">
+                                    <button
+                                        @click="toggleYearExpand(year.id)"
+                                        class="flex w-full items-center justify-between text-xs font-bold tracking-tight text-slate-500 uppercase hover:text-indigo-600 transition-colors"
+                                    >
+                                        <span>Terms ({{ year.terms?.length || 0 }})</span>
+                                        <ChevronUp v-if="expandedYears.has(year.id)" class="h-4 w-4" />
+                                        <ChevronDown v-else class="h-4 w-4" />
+                                    </button>
+                                    <div v-if="expandedYears.has(year.id)" class="mt-3 space-y-2">
+                                        <div
+                                            v-for="term in year.terms"
+                                            :key="term.id"
+                                            class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2.5 transition-all hover:border-indigo-100 hover:bg-indigo-50/30"
+                                        >
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-xs font-bold text-slate-800">{{ term.name }}</span>
+                                                    <Badge
+                                                        v-if="term.is_current"
+                                                        class="border-none bg-emerald-500 px-1.5 py-0 text-[10px] font-bold uppercase shadow-sm hover:bg-emerald-600"
+                                                    >
+                                                        Current
+                                                    </Badge>
+                                                    <Badge
+                                                        variant="outline"
+                                                        :class="[getTermStatusColor(term.status || 'upcoming'), 'border px-1.5 py-0 text-[10px] font-bold uppercase']"
+                                                    >
+                                                        {{ term.status || 'upcoming' }}
+                                                    </Badge>
+                                                </div>
+                                                <p class="mt-0.5 text-[10px] font-medium text-slate-400">
+                                                    {{ term.start_date?.split('T')[0] }} — {{ term.end_date?.split('T')[0] }}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-7 w-7 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                                @click="openEditTerm(term)"
+                                            >
+                                                <Edit class="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                        <p v-if="!year.terms || year.terms.length === 0" class="text-[10px] font-medium text-slate-400 text-center py-2">
+                                            No terms defined for this year.
+                                        </p>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -1204,6 +1317,107 @@ const getStatusColor = (status: string) => {
                                     ? 'Confirm Refinement'
                                     : 'Deploy Cycle'
                             }}
+                        </Button>
+                    </DialogFooter>
+                </div>
+            </DialogContent>
+        </Dialog>
+
+        <!-- Edit Term Dialog -->
+        <Dialog
+            :open="showTermDialog"
+            @update:open="showTermDialog = $event"
+        >
+            <DialogContent
+                class="overflow-hidden rounded-xl border-slate-100 p-0 shadow-lg sm:max-w-[420px]"
+            >
+                <div class="h-2 w-full bg-emerald-600"></div>
+                <div class="p-8">
+                    <DialogHeader>
+                        <DialogTitle class="text-xl font-bold text-slate-900">
+                            Edit Term
+                        </DialogTitle>
+                        <DialogDescription class="mt-2 text-xs font-medium text-slate-500">
+                            Update the dates and status for {{ editingTerm?.name }}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div class="grid gap-5 py-6">
+                        <div class="grid gap-2">
+                            <Label class="text-xs font-bold text-slate-400 uppercase">Term Name</Label>
+                            <Input
+                                v-model="termForm.name"
+                                class="h-10 rounded-lg font-bold"
+                                disabled
+                            />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Start Date</Label>
+                                <div class="relative">
+                                    <Input
+                                        type="date"
+                                        v-model="termForm.start_date"
+                                        class="h-10 rounded-lg pl-8 text-xs font-bold"
+                                    />
+                                    <Calendar class="absolute top-3 left-2.5 h-4 w-4 text-slate-300" />
+                                </div>
+                            </div>
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">End Date</Label>
+                                <div class="relative">
+                                    <Input
+                                        type="date"
+                                        v-model="termForm.end_date"
+                                        class="h-10 rounded-lg pl-8 text-xs font-bold"
+                                    />
+                                    <Calendar class="absolute top-3 left-2.5 h-4 w-4 text-slate-300" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Status</Label>
+                                <Select v-model="termForm.status">
+                                    <SelectTrigger class="h-10 rounded-lg border-slate-200 px-4 text-xs font-bold">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent class="rounded-xl border-slate-100">
+                                        <SelectItem value="upcoming" class="text-xs font-bold">Upcoming</SelectItem>
+                                        <SelectItem value="active" class="text-xs font-bold">Active</SelectItem>
+                                        <SelectItem value="completed" class="text-xs font-bold">Completed</SelectItem>
+                                        <SelectItem value="archived" class="text-xs font-bold">Archived</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Current Term</Label>
+                                <div class="flex h-10 items-center">
+                                    <Switch
+                                        :checked="termForm.is_current"
+                                        @update:checked="(val: boolean) => (termForm.is_current = val)"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter class="gap-3 pt-4 sm:justify-between">
+                        <Button
+                            variant="ghost"
+                            @click="showTermDialog = false"
+                            class="text-sm font-medium tracking-tight text-slate-400 uppercase hover:text-slate-600"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            @click="submitTerm"
+                            :disabled="termForm.processing"
+                            class="h-11 rounded-2xl bg-emerald-600 px-8 text-xs font-bold tracking-tight uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
+                        >
+                            Save Term
                         </Button>
                     </DialogFooter>
                 </div>

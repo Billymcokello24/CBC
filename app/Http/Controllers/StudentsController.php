@@ -224,12 +224,16 @@ class StudentsController extends Controller
 
     public function create(): Response
     {
+        $schoolId = auth()->user()->school_id;
+        
         $grades = GradeLevel::query()
+            ->where('school_id', $schoolId)
             ->select('id', 'name', 'code', 'level_order')
             ->orderBy('level_order')
             ->get();
 
         $classes = SchoolClass::query()
+            ->where('classes.school_id', $schoolId)
             ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
             ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
             ->select(
@@ -294,8 +298,8 @@ class StudentsController extends Controller
 
             // Create initial enrollment if class is provided
             if ($validated['class_id']) {
-                $activeYear = \App\Models\Academic\AcademicYear::where('status', 'active')->first();
-                $activeTerm = \App\Models\Academic\AcademicTerm::where('status', 'active')->first();
+                $activeYear = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->where('status', 'active')->first();
+                $activeTerm = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('status', 'active')->first();
                 
                 if ($activeYear) {
                     \App\Models\StudentEnrollment::create([
@@ -455,8 +459,9 @@ class StudentsController extends Controller
                 'performance_value' => $performanceValue,
                 'enrollments' => $enrollments,
             ],
-            'grades' => GradeLevel::query()->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'grades' => GradeLevel::query()->where('school_id', $user->school_id)->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
             'classes' => SchoolClass::query()
+                ->where('classes.school_id', $user->school_id)
                 ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
                 ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
                 ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
@@ -514,8 +519,9 @@ class StudentsController extends Controller
                     'has_login' => (bool) $linkedGuardian->user_id,
                 ] : null,
             ],
-            'grades' => GradeLevel::query()->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
+            'grades' => GradeLevel::query()->where('school_id', $user->school_id)->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
             'classes' => SchoolClass::query()
+                ->where('classes.school_id', $user->school_id)
                 ->leftJoin('grade_levels', 'grade_levels.id', '=', 'classes.grade_level_id')
                 ->leftJoin('streams', 'streams.id', '=', 'classes.stream_id')
                 ->select('classes.id', 'classes.name', 'classes.grade_level_id', 'grade_levels.name as grade_name', 'streams.name as stream_name')
@@ -737,7 +743,10 @@ class StudentsController extends Controller
 
         $promoted = 0;
         $skipped = 0;
-        $currentTermId = DB::table('academic_terms')->where('is_current', true)->value('id');
+        $currentTermId = DB::table('academic_terms')
+            ->where('school_id', auth()->user()->school_id)
+            ->where('is_current', true)
+            ->value('id');
         $actorId = auth()->id();
 
         DB::transaction(function () use ($students, $currentTermId, $actorId, &$promoted, &$skipped) {

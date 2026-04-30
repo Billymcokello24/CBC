@@ -201,8 +201,14 @@ class CurriculumManagementController extends Controller
             });
 
         $grades = \App\Models\Academic\GradeLevel::orderBy('level_order')->get(['id', 'name']);
-        $academicYear = DB::table('academic_years')->where('is_current', true)->first() 
-            ?? DB::table('academic_years')->orderByDesc('start_date')->first();
+        $academicYear = DB::table('academic_years')
+            ->where('school_id', auth()->user()->school_id)
+            ->where('is_current', true)
+            ->first() 
+            ?? DB::table('academic_years')
+                ->where('school_id', auth()->user()->school_id)
+                ->orderByDesc('start_date')
+                ->first();
 
         $teachers = \App\Models\Teacher::where('status', 'active')
             ->orderBy('first_name')

@@ -48,6 +48,7 @@ class StaffAssignmentMail extends Mailable implements ShouldQueue
     {
         return new Content(
             view: 'emails.staff.assignment',
+            text: 'emails.staff.assignment_plain',
         );
     }
 

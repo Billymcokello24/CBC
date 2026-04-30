@@ -92,7 +92,7 @@ class StudentEnrollmentController extends Controller
                 'view' => in_array($view, ['grid', 'list'], true) ? $view : 'grid',
             ],
             'classes' => DB::table('classes')->select('id', 'name')->orderBy('name')->get(),
-            'academicYears' => DB::table('academic_years')->select('id', 'name')->orderByDesc('start_date')->get(),
+            'academicYears' => DB::table('academic_years')->where('school_id', auth()->user()->school_id)->select('id', 'name')->orderByDesc('start_date')->get(),
             'statusOptions' => [
                 ['value' => 'all', 'label' => 'All Statuses'],
                 ['value' => 'active', 'label' => 'Active'],
