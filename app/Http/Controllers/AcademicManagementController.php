@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\School;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\StaffAssignmentMail;
+use App\Jobs\SendStaffAssignmentNotification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -155,6 +158,16 @@ class AcademicManagementController extends Controller
             ]
         );
 
+        // Dispatch Notification
+        $teacher = Teacher::find($validated['teacher_id']);
+        if ($teacher) {
+            $class = SchoolClass::find($validated['class_id']);
+            $subject = DB::table('subjects')->where('id', $validated['subject_id'])->value('name');
+            $title = "Subject Allocation Notification";
+            $body = "You have been assigned to teach '{$subject}' for {$class?->name}. This allocation is for the current academic session.";
+            SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
+        }
+
         return back()->with('success', 'Subject allocation saved successfully.');
     }
 
@@ -170,6 +183,16 @@ class AcademicManagementController extends Controller
         ]);
 
         DB::table('teacher_subjects')->where('id', $id)->update(array_merge($validated, ['updated_at' => now()]));
+
+        // Dispatch Notification
+        $teacher = Teacher::find($validated['teacher_id']);
+        if ($teacher) {
+            $class = SchoolClass::find($validated['class_id']);
+            $subject = DB::table('subjects')->where('id', $validated['subject_id'])->value('name');
+            $title = "Workload Update Notification";
+            $body = "Your subject allocation for '{$subject}' in {$class?->name} has been updated. Please check your dashboard for the latest timetable details.";
+            SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
+        }
 
         return back()->with('success', 'Subject allocation updated successfully.');
     }
@@ -350,6 +373,16 @@ class AcademicManagementController extends Controller
             'is_active' => $validated['is_active'],
         ]);
 
+        // Dispatch Notifications for teachers
+        if ($class->class_teacher_id) {
+            $teacher = Teacher::where('user_id', $class->class_teacher_id)->first();
+            if ($teacher) {
+                $title = "Primary Class Teacher Assignment";
+                $body = "You have been assigned as the Primary Class Teacher for the new class: {$class->name}.";
+                SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
+            }
+        }
+
         return redirect()->route('classes.show', $class->id)->with('success', 'Class created successfully.');
     }
 
@@ -422,6 +455,16 @@ class AcademicManagementController extends Controller
         ]);
 
         $class->update($validated);
+
+        // Dispatch notification to primary teacher if changed or assigned
+        if (isset($validated['class_teacher_id']) && $validated['class_teacher_id']) {
+            $teacher = Teacher::where('user_id', $validated['class_teacher_id'])->first();
+            if ($teacher) {
+                $title = "Class Teacher Assignment";
+                $body = "You have been assigned as the teacher for {$class->name}. Please review your class registry for student details.";
+                SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
+            }
+        }
 
         return back()->with('success', 'Teacher assigned successfully.');
     }

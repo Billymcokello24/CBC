@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use App\Mail\UserCreatedMail;
+use App\Mail\StaffAssignmentMail;
+use App\Jobs\SendStaffAssignmentNotification;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -509,9 +511,16 @@ class StaffsController extends Controller
         
         if ($validated['assignment_role'] === 'primary') {
             $class->update(['class_teacher_id' => $teacher->user_id]);
+            $title = "Primary Class Teacher Assignment";
+            $body = "You have been assigned as the Primary Class Teacher for {$class->name}. This role involves overseeing academic progress and welfare for learners in this registry node.";
         } else {
             $class->update(['assistant_teacher_id' => $teacher->user_id]);
+            $title = "Assistant Class Teacher Assignment";
+            $body = "You have been assigned as the Assistant Class Teacher for {$class->name}. You will be supporting the primary educator in managing institutional protocols for this class.";
         }
+
+        // Dispatch Notification Job
+        SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
 
         return back()->with('success', "Staff member assigned as {$validated['assignment_role']} teacher for {$class->name}.");
     }
@@ -544,6 +553,11 @@ class StaffsController extends Controller
             $teacher->user->assignRole('hod');
         }
 
+        // Dispatch Notification Job
+        $title = "HOD Assignment Notification";
+        $body = "You have been officially assigned as the Head of Department (HOD) for the {$department->name}. You now have administrative oversight for faculty and resources within this academic unit.";
+        SendStaffAssignmentNotification::dispatch($teacher, $title, $body);
+
         return back()->with('success', "Staff assigned as HOD for {$department->name}.");
     }
 
@@ -560,6 +574,7 @@ class StaffsController extends Controller
             // For now, let's assume we are adding or replacing
             $teacher->subjectAssignments()->delete();
             
+            $subjectCount = count($validated['assignments']);
             foreach ($validated['assignments'] as $assign) {
                 $teacher->subjectAssignments()->create([
                     'school_id' => $teacher->school_id,
@@ -569,6 +584,11 @@ class StaffsController extends Controller
                     'status' => 'active',
                 ]);
             }
+
+            // Dispatch Notification Job
+            $title = "Subject Allocation Update";
+            $body = "Your professional workload has been updated. You have been assigned to teach {$subjectCount} subjects/learning areas for the current academic session.";
+            SendStaffAssignmentNotification::dispatch($teacher, $title, $body, route('staffs.show', $teacher->id), 'View Assignments');
         });
 
         return back()->with('success', "Subject assignments updated successfully.");
@@ -692,7 +712,26 @@ class StaffsController extends Controller
                 $teacherData['photo'] = $request->file('photo')->store('staffs/photos', 'public');
             }
 
+            // Check if email was changed
+            $emailChanged = $user->wasChanged('email');
+            
             $teacher->update($teacherData);
+
+            // Dispatch Notification for Updates
+            $title = "Institutional Profile Updated";
+            $body = "Your professional profile at " . config('app.name') . " has been recently updated by the administration.";
+            
+            if ($emailChanged) {
+                $body .= " Note: Your account email has been updated to this address ({$user->email}).";
+            }
+
+            $token = \Illuminate\Support\Facades\Password::createToken($user);
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $user->email,
+            ], false));
+
+            SendStaffAssignmentNotification::dispatch($teacher, $title, $body, $resetUrl, 'Secure Your Account');
 
             return back()->with('success', 'Staff member updated successfully.');
         });
