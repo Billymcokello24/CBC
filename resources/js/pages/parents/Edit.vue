@@ -35,6 +35,7 @@ const successOpen = ref(false);
 
 const form = useForm({
     first_name: props.parent.first_name,
+    middle_name: props.parent.middle_name || '',
     last_name: props.parent.last_name,
     email: props.parent.email,
     phone: props.parent.phone,
@@ -151,7 +152,7 @@ const breadcrumbs = [
                                 </h2>
                             </div>
                             <div class="space-y-8 p-10">
-                                <div class="grid gap-8 md:grid-cols-2">
+                                <div class="grid gap-8 md:grid-cols-3">
                                     <div class="space-y-3">
                                         <Label
                                             for="first_name"
@@ -170,6 +171,21 @@ const breadcrumbs = [
                                     </div>
                                     <div class="space-y-3">
                                         <Label
+                                            for="middle_name"
+                                            class="ml-1 text-xs font-bold tracking-tight text-slate-500 uppercase"
+                                            >Middle Name</Label
+                                        >
+                                        <Input
+                                            id="middle_name"
+                                            v-model="form.middle_name"
+                                            class="h-14 rounded-2xl border-slate-200 bg-slate-50/50 px-5 font-bold text-slate-900 transition-all focus:ring-2 focus:ring-indigo-600/10"
+                                        />
+                                        <InputError
+                                            :message="form.errors.middle_name"
+                                        />
+                                    </div>
+                                    <div class="space-y-3">
+                                        <Label
                                             for="last_name"
                                             class="ml-1 text-xs font-bold tracking-tight text-slate-500 uppercase"
                                             >Last Name</Label
@@ -184,6 +200,8 @@ const breadcrumbs = [
                                             :message="form.errors.last_name"
                                         />
                                     </div>
+                                </div>
+                                <div class="grid gap-8 md:grid-cols-2">
                                     <div class="space-y-3">
                                         <Label
                                             for="email"

@@ -13,6 +13,11 @@ use Inertia\Inertia;
 use Inertia\Response;
 use App\Models\School;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ParentNotificationMail;
+use Illuminate\Support\Str;
+
 class ParentsController extends Controller
 {
     /**
@@ -147,7 +152,14 @@ class ParentsController extends Controller
             }
 
             // 4. Send Welcome Email
-            \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\UserCreatedMail($user, $randomPassword));
+            $students = $guardian->students()->get();
+            $token = Password::createToken($user);
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $user->email,
+            ], false));
+
+            Mail::to($user->email)->send(new ParentNotificationMail($guardian, $students, $randomPassword, $resetUrl));
 
             DB::commit();
 
@@ -197,6 +209,7 @@ class ParentsController extends Controller
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|unique:guardians,email,' . $parent->id . '|unique:users,email,' . $parent->user_id,
             'phone' => 'required|string|max:20',
@@ -210,19 +223,20 @@ class ParentsController extends Controller
         try {
             DB::beginTransaction();
 
+            $parent->load('user');
+            $parentUser = $parent->user;
+
             // 1. Update User Account
-            // Use withoutGlobalScopes() because the user might have been originally created for a different school
-            $parentUser = $parent->user()->withoutGlobalScopes()->first();
             if ($parentUser) {
                 $parentUser->update([
-                    'name' => "{$validated['first_name']} {$validated['last_name']}",
+                    'name' => trim("{$validated['first_name']} " . ($validated['middle_name'] ? "{$validated['middle_name']} " : "") . $validated['last_name']),
                     'email' => $validated['email'],
                     'phone' => $validated['phone'],
                 ]);
             }
 
             // 2. Update Guardian Profile
-            $parent->update($request->except(['student_ids', 'password', 'password_confirmation']));
+            $parent->update(collect($validated)->except(['student_ids'])->toArray());
 
             // 3. Sync Students
             $syncData = [];
@@ -235,10 +249,30 @@ class ParentsController extends Controller
             }
             $parent->students()->sync($syncData);
 
+            // 4. Send Update Email with credentials and reset link
+            $randomPassword = Str::random(12);
+            if ($parentUser) {
+                // Check if email was changed before we potentially update it again with password
+                $emailChanged = $parentUser->wasChanged('email');
+                
+                $parentUser->update(['password' => Hash::make($randomPassword)]);
+                
+                $students = $parent->students()->get();
+                $token = Password::createToken($parentUser);
+                $resetUrl = url(route('password.reset', [
+                    'token' => $token,
+                    'email' => $parentUser->email,
+                ], false));
+
+                $note = $emailChanged ? "Your account email has been updated to this address ({$parentUser->email})." : null;
+
+                Mail::to($parentUser->email)->send(new ParentNotificationMail($parent, $students, $randomPassword, $resetUrl, $note));
+            }
+
             DB::commit();
 
             return redirect()->route('parents.index')
-                ->with('success', 'Parent account updated successfully.');
+                ->with('success', 'Parent account updated and notification sent successfully.');
 
         } catch (\Exception $e) {
             DB::rollBack();

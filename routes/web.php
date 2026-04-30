@@ -140,6 +140,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['check_permission:students.delete'])->group(function () {
         Route::post('students/bulk-delete', [StudentsController::class, 'bulkDelete'])->name('students.bulk-delete');
         Route::post('students/enrollments/bulk-delete', [StudentEnrollmentController::class, 'bulkDelete'])->name('students.enrollments.bulk-delete');
+        Route::get('students/enrollments/create', [StudentEnrollmentController::class, 'create'])->name('students.enrollments.create');
+        Route::post('students/enrollments', [StudentEnrollmentController::class, 'store'])->name('students.enrollments.store');
     });
 
     // Wildcard routes AFTER specific routes
@@ -147,6 +149,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('students', [StudentsController::class, 'index'])->name('students.index');
         Route::get('students/enrollments', [StudentEnrollmentController::class, 'index'])->name('students.enrollments');
         Route::get('students/enrollments/groups/{class}', [StudentEnrollmentController::class, 'show'])->name('students.enrollments.groups.show');
+        Route::get('students/fees/{student}', [\App\Http\Controllers\Finance\FinanceController::class, 'studentFees'])->name('students.fees.show');
         Route::get('students/{student}', [StudentsController::class, 'show'])->name('students.show');
     });
 
@@ -160,6 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('students/{student}/suspend', [StudentsController::class, 'suspend'])->name('students.suspend');
         Route::patch('students/{student}/activate', [StudentsController::class, 'activate'])->name('students.activate');
         Route::patch('students/{student}/demote', [StudentsController::class, 'demote'])->name('students.demote');
+        Route::patch('students/{student}/withdraw', [StudentsController::class, 'withdraw'])->name('students.withdraw');
         Route::post('students/{student}/photo', [StudentsController::class, 'updatePhoto'])->name('students.photo.update');
     });
 

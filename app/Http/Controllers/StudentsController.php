@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use App\Mail\UserCreatedMail;
+use App\Mail\ParentNotificationMail;
+use Illuminate\Support\Facades\Password;
 use App\Models\School;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -345,7 +346,46 @@ class StudentsController extends Controller
             abort_unless(in_array($student->current_class_id, $myClassIds), 403, 'You do not have permission to view this student.');
         }
 
-        $student->load(['currentClass:id,name,code', 'admissionClass:id,name,code', 'guardians:id,user_id,first_name,last_name,phone,email']);
+        $student->load([
+            'currentClass:id,name,code,grade_level_id', 
+            'admissionClass:id,name,code', 
+            'guardians:id,user_id,first_name,last_name,phone,email'
+        ]);
+
+        // Calculate real attendance stats
+        $attendanceStats = $student->attendance()
+            ->selectRaw('count(*) as total, sum(case when status = "present" then 1 else 0 end) as present')
+            ->first();
+        
+        $attendancePercentage = $attendanceStats && $attendanceStats->total > 0 
+            ? round(($attendanceStats->present / $attendanceStats->total) * 100, 1) 
+            : 0;
+
+        // Calculate performance level
+        $avgRating = $student->assessmentRatings()->avg('rating_level');
+        $ratingLabel = 'NOT ASSESSED';
+        $performanceValue = 'N/A';
+        if ($avgRating) {
+            $performanceValue = number_format($avgRating, 1);
+            if ($avgRating >= 3.5) $ratingLabel = 'Exceeding Expectation';
+            elseif ($avgRating >= 2.5) $ratingLabel = 'Meeting Expectation';
+            elseif ($avgRating >= 1.5) $ratingLabel = 'Approaching Expectation';
+            else $ratingLabel = 'Below Expectation';
+        }
+
+        // Fetch enrollment history
+        $enrollments = $student->enrollments()
+            ->with(['class', 'academicYear', 'academicTerm'])
+            ->orderBy('id', 'desc')
+            ->get()
+            ->map(fn($enrollment) => [
+                'id' => $enrollment->id,
+                'class_name' => $enrollment->class?->name,
+                'academic_year' => $enrollment->academicYear?->name,
+                'academic_term' => $enrollment->academicTerm?->name,
+                'enrollment_date' => optional($enrollment->enrollment_date)->format('Y-m-d'),
+                'status' => $enrollment->status,
+            ]);
 
         // Define available counties (Kenya)
         $counties = [
@@ -400,14 +440,20 @@ class StudentsController extends Controller
                 'withdrawal_reason' => $student->withdrawal_reason,
                 'age' => $student->age,
                 'class_name' => $student->currentClass?->name,
-                'grade_id' => DB::table('classes')->where('id', $student->current_class_id)->value('grade_level_id'),
+                'grade_name' => DB::table('grade_levels')->where('id', $student->currentClass?->grade_level_id)->value('name'),
+                'grade_id' => $student->currentClass?->grade_level_id,
                 'guardians' => $student->guardians->map(fn ($guardian) => [
                     'id' => $guardian->id,
                     'name' => trim($guardian->first_name . ' ' . $guardian->last_name),
                     'phone' => $guardian->phone,
                     'email' => $guardian->email,
+                    'relationship' => $guardian->pivot->relationship,
                     'has_login' => (bool) $guardian->user_id,
                 ])->values(),
+                'attendance_percentage' => $attendancePercentage,
+                'performance_rating' => $ratingLabel,
+                'performance_value' => $performanceValue,
+                'enrollments' => $enrollments,
             ],
             'grades' => GradeLevel::query()->select('id', 'name', 'code', 'level_order')->orderBy('level_order')->get(),
             'classes' => SchoolClass::query()
@@ -593,6 +639,22 @@ class StudentsController extends Controller
         $student->update(['status' => 'active']);
 
         return back()->with('success', 'Learner activated successfully.');
+    }
+
+    public function withdraw(Request $request, Student $student): RedirectResponse
+    {
+        $validated = $request->validate([
+            'withdrawal_date' => 'required|date',
+            'withdrawal_reason' => 'required|string|max:255',
+        ]);
+
+        $student->update([
+            'status' => 'withdrawn',
+            'withdrawal_date' => $validated['withdrawal_date'],
+            'withdrawal_reason' => $validated['withdrawal_reason'],
+        ]);
+
+        return back()->with('success', 'Learner withdrawn successfully.');
     }
 
     public function destroy(Student $student): RedirectResponse
@@ -1016,7 +1078,14 @@ class StudentsController extends Controller
         ]);
 
         // Send Welcome Email
-        Mail::to($user->email)->send(new UserCreatedMail($user, $data['password']));
+        $students = $guardian->students()->get();
+        $token = Password::createToken($user);
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $user->email,
+        ], false));
+
+        Mail::to($user->email)->send(new ParentNotificationMail($guardian, $students, $data['password'], $resetUrl));
 
         return $guardian;
     }
@@ -1046,6 +1115,26 @@ class StudentsController extends Controller
                 'email' => $data['email'] ?: $existingGuardian->email,
                 'phone' => $data['phone'] ?: $existingGuardian->phone,
             ]);
+
+            // Send Update Email
+            if ($user) {
+                $emailChanged = $user->wasChanged('email');
+                $passwordToSend = $data['password'] ?: Str::random(12);
+                if (!$data['password']) {
+                    $user->update(['password' => Hash::make($passwordToSend)]);
+                }
+                
+                $students = $existingGuardian->students()->get();
+                $token = Password::createToken($user);
+                $resetUrl = url(route('password.reset', [
+                    'token' => $token,
+                    'email' => $user->email,
+                ], false));
+
+                $note = $emailChanged ? "Your account email has been updated to this address ({$user->email})." : null;
+
+                Mail::to($user->email)->send(new ParentNotificationMail($existingGuardian, $students, $passwordToSend, $resetUrl, $note));
+            }
 
             return Guardian::query()->findOrFail($existingGuardian->id);
         }

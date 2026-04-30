@@ -49,7 +49,7 @@ const submit = () => {
                 <Label
                     for="email"
                     class="text-xs font-semibold tracking-wider text-slate-500 uppercase"
-                    >Email address</Label
+                    >Email / Admission Number</Label
                 >
                 <div class="group relative">
                     <Mail
@@ -58,8 +58,8 @@ const submit = () => {
                     <Input
                         id="email"
                         v-model="form.email"
-                        type="email"
-                        placeholder="name@school.com"
+                        type="text"
+                        placeholder="Email address or child admission number"
                         class="h-11 border-slate-200 pl-10 transition-all focus:border-[#3B63F6] focus:ring-[#3B63F6]/20 dark:border-slate-800"
                         required
                         autofocus

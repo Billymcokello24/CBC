@@ -30,12 +30,36 @@ import {
     Settings,
     CheckCircle2,
     Clock,
+    AlertCircle,
+    Trash2,
+    UserMinus,
+    UserCheck,
+    Fingerprint,
 } from 'lucide-vue-next';
 import { ref, computed, watch } from 'vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ProfilePhotoUpload from '@/components/forms/ProfilePhotoUpload.vue';
@@ -159,14 +183,41 @@ const getStatusColor = (status: string) => {
         case 'active':
             return 'bg-emerald-500 text-white shadow-sm';
         case 'suspended':
-            return 'bg-rose-500 text-white shadow-sm';
+            return 'bg-amber-500 text-white shadow-sm';
         case 'inactive':
         case 'withdrawn':
-            return 'bg-slate-400 text-white shadow-sm';
+            return 'bg-rose-500 text-white shadow-sm';
         case 'graduated':
             return 'bg-blue-600 text-white shadow-sm';
         default:
-            return 'bg-primary text-white shadow-sm';
+            return 'bg-slate-400 text-white shadow-sm';
+    }
+};
+
+const showWithdrawDialog = ref(false);
+const withdrawForm = useForm({
+    withdrawal_date: new Date().toISOString().split('T')[0],
+    withdrawal_reason: '',
+});
+
+const handleWithdraw = () => {
+    withdrawForm.patch(`/students/${props.learner.id}/withdraw`, {
+        onSuccess: () => {
+            showWithdrawDialog.value = false;
+            withdrawForm.reset();
+        },
+    });
+};
+
+const handleStatusChange = (action: 'suspend' | 'activate') => {
+    router.patch(`/students/${props.learner.id}/${action}`, {}, {
+        preserveScroll: true,
+    });
+};
+
+const handleDelete = () => {
+    if (confirm('Are you absolutely sure you want to delete this student record? This action cannot be undone.')) {
+        router.delete(`/students/${props.learner.id}`);
     }
 };
 </script>
@@ -240,19 +291,34 @@ const getStatusColor = (status: string) => {
                         </div>
                         <div>
                             <div class="hidden items-center gap-3 md:flex">
+                                <div v-if="isEditing" class="flex items-center gap-2 overflow-x-auto pb-1 max-w-md">
+                                    <Input v-model="form.first_name" class="h-10 min-w-[120px] text-lg font-bold rounded-lg border-primary/20" placeholder="First Name" />
+                                    <Input v-model="form.middle_name" class="h-10 min-w-[120px] text-lg font-bold rounded-lg border-primary/20" placeholder="Middle" />
+                                    <Input v-model="form.last_name" class="h-10 min-w-[120px] text-lg font-bold rounded-lg border-primary/20" placeholder="Last Name" />
+                                </div>
                                 <h1
+                                    v-else
                                     class="text-3xl font-bold tracking-tight text-foreground"
                                 >
                                     {{ learner.name }}
                                 </h1>
                                 <Badge
+                                    v-if="!isEditing"
                                     :class="getStatusColor(learner.status)"
                                     class="rounded-lg border-0 px-3 py-1 text-[10px] font-bold tracking-tight uppercase"
                                 >
                                     {{ learner.status }}
                                 </Badge>
                             </div>
+                            <div v-if="isEditing" class="leading-tight md:hidden mb-2">
+                                <Input v-model="form.first_name" class="h-9 mb-1 text-sm font-bold rounded-lg" placeholder="First Name" />
+                                <div class="flex gap-1">
+                                    <Input v-model="form.middle_name" class="h-9 text-xs" placeholder="Middle" />
+                                    <Input v-model="form.last_name" class="h-9 text-xs" placeholder="Last Name" />
+                                </div>
+                            </div>
                             <h2
+                                v-else
                                 class="text-2xl leading-tight font-bold tracking-tight text-foreground uppercase md:hidden"
                             >
                                 {{ learner.name }}
@@ -331,6 +397,49 @@ const getStatusColor = (status: string) => {
                                 <span class="hidden sm:inline">Finance</span>
                             </Link>
                         </Button>
+
+                        <div class="flex items-center gap-2" v-if="hasPermission('students.update') && !isEditing">
+                            <Button
+                                v-if="learner.status === 'active'"
+                                variant="outline"
+                                @click="handleStatusChange('suspend')"
+                                class="h-10 w-10 shrink-0 rounded-lg border-amber-200 bg-amber-50 p-0 text-amber-600 hover:bg-amber-100 sm:w-auto sm:px-4"
+                                title="Suspend"
+                            >
+                                <UserMinus class="h-4 w-4 sm:mr-2" />
+                                <span class="hidden sm:inline text-[10px]">Suspend</span>
+                            </Button>
+                            <Button
+                                v-if="learner.status === 'suspended'"
+                                variant="outline"
+                                @click="handleStatusChange('activate')"
+                                class="h-10 w-10 shrink-0 rounded-lg border-emerald-200 bg-emerald-50 p-0 text-emerald-600 hover:bg-emerald-100 sm:w-auto sm:px-4"
+                                title="Activate"
+                            >
+                                <UserCheck class="h-4 w-4 sm:mr-2" />
+                                <span class="hidden sm:inline text-[10px]">Activate</span>
+                            </Button>
+                            <Button
+                                v-if="learner.status !== 'withdrawn' && learner.status !== 'graduated'"
+                                variant="outline"
+                                @click="showWithdrawDialog = true"
+                                class="h-10 w-10 shrink-0 rounded-lg border-rose-200 bg-rose-50 p-0 text-rose-600 hover:bg-rose-100 sm:w-auto sm:px-4"
+                                title="Withdraw"
+                            >
+                                <AlertCircle class="h-4 w-4 sm:mr-2" />
+                                <span class="hidden sm:inline text-[10px]">Withdraw</span>
+                            </Button>
+                            <Button
+                                v-if="hasPermission('students.delete')"
+                                variant="outline"
+                                @click="handleDelete"
+                                class="h-10 w-10 shrink-0 rounded-lg border-slate-200 bg-slate-50 p-0 text-slate-400 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 sm:w-auto sm:px-4"
+                                title="Delete Registry"
+                            >
+                                <Trash2 class="h-4 w-4 sm:mr-2" />
+                                <span class="hidden sm:inline text-[10px]">Delete</span>
+                            </Button>
+                        </div>
                     </template>
                 </div>
             </div>
@@ -397,15 +506,17 @@ const getStatusColor = (status: string) => {
                             <div>
                                 <div class="mb-2 flex items-center justify-between">
                                     <span class="text-[10px] font-bold text-slate-400 uppercase">Attendance</span>
-                                    <span class="text-xs font-bold tabular-nums">98.4%</span>
+                                    <span class="text-xs font-bold tabular-nums">{{ learner.attendance_percentage }}%</span>
                                 </div>
                                 <div class="h-1 w-full overflow-hidden rounded-full bg-white/10">
-                                    <div class="h-full w-[98.4%] rounded-full bg-primary"></div>
+                                    <div class="h-full rounded-full bg-primary" :style="{ width: `${learner.attendance_percentage}%` }"></div>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between pt-2">
                                 <span class="text-[10px] font-bold text-slate-400 uppercase">Rating</span>
-                                <Badge class="rounded-lg border-primary/20 bg-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase">Excellent</Badge>
+                                <Badge class="rounded-lg border-primary/20 bg-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase">
+                                    {{ learner.performance_rating }}
+                                </Badge>
                             </div>
                         </div>
                     </div>
@@ -448,7 +559,8 @@ const getStatusColor = (status: string) => {
                                             <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Admission No</span>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold tracking-tight text-foreground uppercase">
+                                            <Input v-if="isEditing" v-model="form.admission_number" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold tracking-tight text-foreground uppercase">
                                                 {{ learner.admission_number || '--' }}
                                             </p>
                                         </div>
@@ -460,7 +572,29 @@ const getStatusColor = (status: string) => {
                                             <GraduationCap class="h-4 w-4" />
                                             <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Grade & Class</span>
                                         </div>
-                                        <div class="space-y-1">
+                                        <div class="space-y-1" v-if="isEditing">
+                                            <Select v-model="form.grade_id">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Grade" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem v-for="grade in grades" :key="grade.id" :value="String(grade.id)">
+                                                        {{ grade.name }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Select v-model="form.current_class_id" class="mt-2" v-if="form.grade_id">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Class" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem v-for="cls in filteredClasses" :key="cls.id" :value="String(cls.id)">
+                                                        {{ cls.name }}
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div class="space-y-1" v-else>
                                             <p class="text-xs font-bold tracking-tight text-foreground uppercase">
                                                 {{ learner.grade_name || 'UNASSIGNED' }} / {{ learner.class_name || 'N/A' }}
                                             </p>
@@ -474,7 +608,19 @@ const getStatusColor = (status: string) => {
                                             <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Status</span>
                                         </div>
                                         <div class="space-y-1">
-                                            <Badge :class="getStatusColor(learner.status)" class="h-6 rounded-lg px-2 text-[9px] font-bold uppercase transition-all">
+                                            <Select v-if="isEditing" v-model="form.status">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Status" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="active">Active</SelectItem>
+                                                    <SelectItem value="suspended">Suspended</SelectItem>
+                                                    <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                                                    <SelectItem value="graduated">Graduated</SelectItem>
+                                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Badge v-else :class="getStatusColor(learner.status)" class="h-6 rounded-lg px-2 text-[9px] font-bold uppercase transition-all">
                                                 {{ learner.status }}
                                             </Badge>
                                         </div>
@@ -484,13 +630,19 @@ const getStatusColor = (status: string) => {
                                     <div class="space-y-4">
                                         <div class="flex items-center gap-3 text-muted-foreground">
                                             <Clock class="h-4 w-4" />
-                                            <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Age</span>
+                                            <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Birth Date / Age</span>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold tracking-tight text-foreground">
-                                                {{ learner.age }} Years
-                                            </p>
-                                            <p class="text-[10px] font-medium text-muted-foreground">Born: {{ learner.date_of_birth }}</p>
+                                            <div v-if="isEditing" class="space-y-1">
+                                                <Input type="date" v-model="form.date_of_birth" class="h-9 rounded-lg" />
+                                                <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">Correction Protocol</p>
+                                            </div>
+                                            <template v-else>
+                                                <p class="text-xs font-bold tracking-tight text-foreground">
+                                                    {{ learner.age }} Years
+                                                </p>
+                                                <p class="text-[10px] font-medium text-muted-foreground">Born: {{ learner.date_of_birth }}</p>
+                                            </template>
                                         </div>
                                     </div>
 
@@ -501,7 +653,8 @@ const getStatusColor = (status: string) => {
                                             <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Protocol</span>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold tracking-tight text-foreground uppercase">
+                                            <Input v-if="isEditing" v-model="form.primary_language" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold tracking-tight text-foreground uppercase">
                                                 {{ learner.primary_language || 'ENGLISH' }}
                                             </p>
                                             <p class="text-[10px] font-medium text-muted-foreground">Primary Communication</p>
@@ -515,7 +668,8 @@ const getStatusColor = (status: string) => {
                                             <span class="text-[10px] font-bold tracking-widest uppercase opacity-60">Global UPI</span>
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-bold tracking-tight text-primary">
+                                            <Input v-if="isEditing" v-model="form.upi" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold tracking-tight text-primary">
                                                 {{ learner.upi || 'NOT_FOUND' }}
                                             </p>
                                             <p class="text-[10px] font-medium text-muted-foreground">Institutional Identifier</p>
@@ -562,8 +716,8 @@ const getStatusColor = (status: string) => {
                                         <path d="M0 80 Q 100 20 200 80 T 400 50 L 400 100 L 0 100 Z" fill="currentColor" class="text-primary" />
                                     </svg>
                                     <div class="absolute inset-x-8 top-8 flex flex-col items-center justify-center">
-                                        <span class="text-4xl font-black tracking-tight text-foreground">A+</span>
-                                        <span class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Predicted Proficiency</span>
+                                        <span class="text-4xl font-black tracking-tight text-foreground">{{ learner.performance_value }}</span>
+                                        <span class="text-[9px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Avg Rating Intensity</span>
                                     </div>
                                 </div>
                                 <div class="mt-6 flex items-center justify-between border-t border-border/50 pt-6">
@@ -606,127 +760,286 @@ const getStatusColor = (status: string) => {
                                     <template v-if="activeTab === 'personal'">
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Legal Gender</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.gender || '--' }}</p>
+                                            <Select v-if="isEditing" v-model="form.gender">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Gender" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="male">Male</SelectItem>
+                                                    <SelectItem value="female">Female</SelectItem>
+                                                    <SelectItem value="other">Other</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.gender || '--' }}</p>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Temporal Node (DOB)</p>
+                                            <Input v-if="isEditing" type="date" v-model="form.date_of_birth" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.date_of_birth || '--' }}</p>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Global UPI</p>
+                                            <Input v-if="isEditing" v-model="form.upi" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-primary">{{ learner.upi || 'NOT SET' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Birth Certificate</p>
-                                            <p class="text-xs font-bold text-foreground">{{ learner.birth_certificate_number || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.birth_certificate_number" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground">{{ learner.birth_certificate_number || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Nationality</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.nationality || 'KENYAN' }}</p>
+                                            <Input v-if="isEditing" v-model="form.nationality" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.nationality || 'KENYAN' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Religion</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.religion || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.religion" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.religion || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Primary Language</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.primary_language || 'ENGLISH' }}</p>
+                                            <Input v-if="isEditing" v-model="form.primary_language" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.primary_language || 'ENGLISH' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Secondary Language</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.secondary_language || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.secondary_language" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.secondary_language || '--' }}</p>
                                         </div>
                                     </template>
 
                                     <template v-if="activeTab === 'academic'">
                                         <div class="space-y-4">
-                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Admission Epoch</p>
-                                            <p class="text-xs font-bold text-foreground">{{ learner.admission_date || '--' }}</p>
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Admission Registry Node</p>
+                                            <div v-if="isEditing" class="space-y-2">
+                                                <Select v-model="form.grade_id">
+                                                    <SelectTrigger class="h-9 rounded-lg">
+                                                        <SelectValue placeholder="Grade" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem v-for="grade in grades" :key="grade.id" :value="String(grade.id)">
+                                                            {{ grade.name }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Select v-model="form.current_class_id" v-if="form.grade_id">
+                                                    <SelectTrigger class="h-9 rounded-lg">
+                                                        <SelectValue placeholder="Class" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem v-for="cls in filteredClasses" :key="cls.id" :value="String(cls.id)">
+                                                            {{ cls.name }}
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">
+                                                {{ learner.grade_name || 'UNASSIGNED' }} / {{ learner.class_name || 'N/A' }}
+                                            </p>
                                         </div>
                                         <div class="space-y-4">
-                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Entry Class</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.admission_class_name || '--' }}</p>
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Admission Date</p>
+                                            <Input v-if="isEditing" type="date" v-model="form.admission_date" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground">{{ learner.admission_date || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Graduation Predicted</p>
-                                            <p class="text-xs font-bold text-foreground">{{ learner.graduation_date || 'TBD' }}</p>
+                                            <Input v-if="isEditing" type="date" v-model="form.graduation_date" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground">{{ learner.graduation_date || 'TBD' }}</p>
+                                        </div>
+
+                                        <!-- Enrollment History Matrix -->
+                                        <div class="lg:col-span-3 pt-6">
+                                            <div class="flex items-center gap-3 mb-6">
+                                                <div class="h-1.5 w-8 rounded-full bg-primary"></div>
+                                                <h4 class="text-[10px] font-bold tracking-widest text-foreground uppercase">Enrollment History</h4>
+                                            </div>
+                                            
+                                            <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                                                <table class="w-full text-left">
+                                                    <thead>
+                                                        <tr class="border-b border-border bg-muted/20">
+                                                            <th class="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Academic Context</th>
+                                                            <th class="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Grade & Class</th>
+                                                            <th class="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
+                                                            <th class="px-6 py-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="divide-y divide-border/50">
+                                                        <tr v-for="enrollment in learner.enrollments" :key="enrollment.id" class="hover:bg-muted/10 transition-colors">
+                                                            <td class="px-6 py-4">
+                                                                <p class="text-xs font-bold text-foreground">{{ enrollment.academic_year }}</p>
+                                                                <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">{{ enrollment.academic_term }}</p>
+                                                            </td>
+                                                            <td class="px-6 py-4 text-xs font-bold text-foreground uppercase">
+                                                                {{ enrollment.class_name }}
+                                                            </td>
+                                                            <td class="px-6 py-4 text-xs font-bold text-muted-foreground tabular-nums">
+                                                                {{ enrollment.enrollment_date }}
+                                                            </td>
+                                                            <td class="px-6 py-4">
+                                                                <Badge :class="enrollment.status === 'active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-slate-100 text-slate-500'" 
+                                                                    class="rounded-lg border-0 px-2 py-0.5 text-[9px] font-bold uppercase">
+                                                                    {{ enrollment.status }}
+                                                                </Badge>
+                                                            </td>
+                                                        </tr>
+                                                        <tr v-if="!learner.enrollments?.length">
+                                                            <td colspan="4" class="px-6 py-12 text-center text-[10px] font-bold text-muted-foreground uppercase opacity-50">
+                                                                No prior enrollment cycles documented.
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         </div>
                                     </template>
 
                                     <template v-if="activeTab === 'health'">
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Blood Matrix</p>
-                                            <p class="text-xs font-bold text-rose-500">{{ learner.blood_group || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.blood_group" class="h-9 rounded-lg" placeholder="e.g. A+" />
+                                            <p v-else class="text-xs font-bold text-rose-500">{{ learner.blood_group || '--' }}</p>
                                         </div>
                                         <div class="space-y-4 lg:col-span-2">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Medical Status</p>
-                                            <p class="text-xs font-bold text-foreground leading-relaxed">{{ learner.medical_conditions || 'NO ANOMALIES DETECTED' }}</p>
+                                            <Textarea v-if="isEditing" v-model="form.medical_conditions" class="min-h-[60px] rounded-lg" placeholder="List any medical conditions..." />
+                                            <p v-else class="text-xs font-bold text-foreground leading-relaxed">{{ learner.medical_conditions || 'NO ANOMALIES DETECTED' }}</p>
                                         </div>
                                         <div class="space-y-4 lg:col-span-3">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Allergy Protocols</p>
-                                            <p class="text-xs font-bold text-foreground whitespace-pre-wrap">{{ learner.allergies || 'NONE REPORTED' }}</p>
+                                            <Textarea v-if="isEditing" v-model="form.allergies" class="min-h-[60px] rounded-lg" placeholder="List any allergies..." />
+                                            <p v-else class="text-xs font-bold text-foreground whitespace-pre-wrap">{{ learner.allergies || 'NONE REPORTED' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Special Needs</p>
-                                            <Badge :variant="learner.has_special_needs ? 'destructive' : 'outline'" class="h-6 rounded-lg px-2 text-[9px] font-bold uppercase transition-all">
+                                            <Select v-if="isEditing" v-model="form.has_special_needs" @update:model-value="(val) => form.has_special_needs = val === 'true'">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Special Needs?" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="true">Yes</SelectItem>
+                                                    <SelectItem value="false">No</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Badge v-else :variant="learner.has_special_needs ? 'destructive' : 'outline'" class="h-6 rounded-lg px-2 text-[9px] font-bold uppercase transition-all">
                                                 {{ learner.has_special_needs ? 'YES' : 'NO' }}
                                             </Badge>
                                         </div>
-                                        <div v-if="learner.has_special_needs" class="space-y-4 lg:col-span-2">
+                                        <div v-if="isEditing || learner.has_special_needs" class="space-y-4 lg:col-span-2">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Special Needs Details</p>
-                                            <p class="text-xs font-bold text-foreground leading-relaxed">{{ learner.special_needs_details || 'N/A' }}</p>
+                                            <Textarea v-if="isEditing" v-model="form.special_needs_details" class="min-h-[60px] rounded-lg" placeholder="Provide details if any..." />
+                                            <p v-else class="text-xs font-bold text-foreground leading-relaxed">{{ learner.special_needs_details || 'N/A' }}</p>
                                         </div>
                                     </template>
 
                                     <template v-if="activeTab === 'location'">
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">County Node</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.county || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.county" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.county || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Sub-County Node</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.sub_county || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.sub_county" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.sub_county || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Ward Identifier</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.ward || '--' }}</p>
+                                            <Input v-if="isEditing" v-model="form.ward" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.ward || '--' }}</p>
                                         </div>
                                         <div class="space-y-4 lg:col-span-2">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Habitat Coordinate (Address)</p>
-                                            <p class="text-xs font-bold text-foreground uppercase leading-relaxed">{{ learner.home_address || 'NOT LOGGED' }}</p>
+                                            <Input v-if="isEditing" v-model="form.home_address" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase leading-relaxed">{{ learner.home_address || 'NOT LOGGED' }}</p>
                                         </div>
                                     </template>
 
                                     <template v-if="activeTab === 'logistics'">
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Boarding Config</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.boarding_status || '--' }}</p>
+                                            <Select v-if="isEditing" v-model="form.boarding_status">
+                                                <SelectTrigger class="h-9 rounded-lg">
+                                                    <SelectValue placeholder="Boarding?" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="day">Day</SelectItem>
+                                                    <SelectItem value="boarding">Boarding</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.boarding_status || '--' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Hostel Allocation</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.hostel_room || 'N/A' }}</p>
+                                            <Input v-if="isEditing" v-model="form.hostel_room" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.hostel_room || 'N/A' }}</p>
                                         </div>
                                         <div class="space-y-4">
                                             <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Transport Protocol</p>
-                                            <p class="text-xs font-bold text-foreground uppercase">{{ learner.transport_route || 'NONE' }}</p>
+                                            <Input v-if="isEditing" v-model="form.transport_route" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.transport_route || 'NONE' }}</p>
+                                        </div>
+                                        <div class="space-y-4">
+                                            <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Pickup Point</p>
+                                            <Input v-if="isEditing" v-model="form.pickup_point" class="h-9 rounded-lg" />
+                                            <p v-else class="text-xs font-bold text-foreground uppercase">{{ learner.pickup_point || 'NONE' }}</p>
                                         </div>
                                     </template>
 
                                     <template v-if="activeTab === 'family'">
-                                        <div v-for="guardian in learner.guardians" :key="guardian.id" class="space-y-6 lg:col-span-3">
-                                            <div class="flex items-center gap-6 rounded-2xl border border-border bg-muted/20 p-5">
-                                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
-                                                    <UserRound class="h-6 w-6" />
+                                        <div v-if="isEditing" class="space-y-6 lg:col-span-3">
+                                            <div class="rounded-2xl border border-border bg-card p-6 space-y-4 shadow-sm">
+                                                <div class="flex items-center gap-3">
+                                                    <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                                        <UserRound class="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-[10px] font-bold tracking-widest text-foreground uppercase">Primary Guardian</p>
+                                                        <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50">Edit Linkage Records</p>
+                                                    </div>
                                                 </div>
-                                                <div class="space-y-1">
-                                                    <p class="text-xs font-bold tracking-tight text-foreground uppercase">{{ guardian.name }}</p>
-                                                    <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-50">{{ guardian.relationship || 'GUARDIAN' }}</p>
-                                                </div>
-                                                <div class="ml-auto flex items-center gap-3">
-                                                    <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl" as-child>
-                                                        <a :href="`tel:${guardian.phone}`"><Phone class="h-4 w-4 text-primary" /></a>
-                                                    </Button>
-                                                    <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl" as-child>
-                                                        <a :href="`mailto:${guardian.email}`"><Mail class="h-4 w-4 text-indigo-500" /></a>
-                                                    </Button>
+                                                <div class="grid gap-4 sm:grid-cols-2">
+                                                    <div class="space-y-1.5">
+                                                        <Label class="text-[9px] font-bold uppercase opacity-60">Full Name</Label>
+                                                        <Input v-model="form.guardian_name" class="h-9 rounded-lg" />
+                                                    </div>
+                                                    <div class="space-y-1.5">
+                                                        <Label class="text-[9px] font-bold uppercase opacity-60">Mobile Node</Label>
+                                                        <Input v-model="form.guardian_phone" class="h-9 rounded-lg" />
+                                                    </div>
+                                                    <div class="space-y-1.5 sm:col-span-2">
+                                                        <Label class="text-[9px] font-bold uppercase opacity-60">Postal Coordinate (Email)</Label>
+                                                        <Input v-model="form.guardian_email" class="h-9 rounded-lg" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <p v-if="!learner.guardians?.length" class="text-xs font-bold text-muted-foreground uppercase opacity-60 lg:col-span-3 text-center py-8">
-                                            No family linkage detected in registry.
-                                        </p>
+                                        <template v-else>
+                                            <div v-for="guardian in learner.guardians" :key="guardian.id" class="space-y-6 lg:col-span-3">
+                                                <div class="flex items-center gap-6 rounded-2xl border border-border bg-muted/20 p-5">
+                                                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+                                                        <UserRound class="h-6 w-6" />
+                                                    </div>
+                                                    <div class="space-y-1">
+                                                        <p class="text-xs font-bold tracking-tight text-foreground uppercase">{{ guardian.name }}</p>
+                                                        <p class="text-[10px] font-bold text-muted-foreground uppercase opacity-50">{{ guardian.relationship || 'GUARDIAN' }}</p>
+                                                    </div>
+                                                    <div class="ml-auto flex items-center gap-3">
+                                                        <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl" as-child>
+                                                            <a :href="`tel:${guardian.phone}`"><Phone class="h-4 w-4 text-primary" /></a>
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" class="h-10 w-10 rounded-xl" as-child>
+                                                            <a :href="`mailto:${guardian.email}`"><Mail class="h-4 w-4 text-indigo-500" /></a>
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p v-if="!learner.guardians?.length" class="text-xs font-bold text-muted-foreground uppercase opacity-60 lg:col-span-3 text-center py-8">
+                                                No family linkage detected in registry.
+                                            </p>
+                                        </template>
                                     </template>
                                 </div>
                             </div>
@@ -735,5 +1048,48 @@ const getStatusColor = (status: string) => {
                 </div>
             </div>
         </div>
+
+        <Dialog v-model:open="showWithdrawDialog">
+            <DialogContent class="sm:max-w-[425px] rounded-3xl border-border bg-card p-6 shadow-2xl">
+                <DialogHeader>
+                    <DialogTitle class="text-lg font-bold tracking-tight text-foreground">Withdraw Learner</DialogTitle>
+                    <DialogDescription class="text-xs font-medium text-muted-foreground">
+                        Formalize the withdrawal of {{ learner.name }} from the institution.
+                    </DialogDescription>
+                </DialogHeader>
+                
+                <form @submit.prevent="handleWithdraw" class="mt-6 space-y-5">
+                    <div class="space-y-2">
+                        <Label for="withdrawal_date" class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Withdrawal Date</Label>
+                        <Input 
+                            id="withdrawal_date" 
+                            type="date" 
+                            v-model="withdrawForm.withdrawal_date"
+                            class="h-11 rounded-xl border-border bg-muted/20 focus:ring-primary/20"
+                            required
+                        />
+                    </div>
+
+                    <div class="space-y-2">
+                        <Label for="withdrawal_reason" class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">Reason for Withdrawal</Label>
+                        <Textarea 
+                            id="withdrawal_reason" 
+                            v-model="withdrawForm.withdrawal_reason"
+                            placeholder="Provide a formal reason for this withdrawal..."
+                            class="min-h-[100px] rounded-xl border-border bg-muted/20 focus:ring-primary/20"
+                            required
+                        />
+                    </div>
+
+                    <DialogFooter class="pt-2">
+                        <Button type="button" variant="outline" @click="showWithdrawDialog = false" class="rounded-xl">Cancel</Button>
+                        <Button type="submit" :disabled="withdrawForm.processing" class="rounded-xl px-8 shadow-lg shadow-primary/20">
+                            <Loader2 v-if="withdrawForm.processing" class="mr-2 h-4 w-4 animate-spin" />
+                            Confirm Withdrawal
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>

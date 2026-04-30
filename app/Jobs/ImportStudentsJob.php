@@ -8,7 +8,8 @@ use App\Models\Academic\Stream;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Guardian;
-use App\Mail\UserCreatedMail;
+use App\Mail\ParentNotificationMail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -170,10 +171,22 @@ class ImportStudentsJob implements ShouldQueue
                 });
             }
 
-            // 4. POST-SYNC EMAILS
-            foreach ($emailsToDispatch as $idx => $item) {
+            // 4. POST-SYNC EMAILS (Send one unique email per guardian)
+            $uniqueEmailsToDispatch = collect($emailsToDispatch)->unique('email');
+            foreach ($uniqueEmailsToDispatch as $idx => $item) {
                 try {
-                Mail::to($item['email'])->later(now()->addSeconds($idx * 0.5), new UserCreatedMail($item['user'], 'Set password via login'));
+                    $u = $item['user'];
+                    $guardian = Guardian::where('user_id', $u->id)->first();
+                    if ($guardian) {
+                        $students = $guardian->students()->get();
+                        $token = Password::createToken($u);
+                        $resetUrl = url(route('password.reset', [
+                            'token' => $token,
+                            'email' => $u->email,
+                        ], false));
+
+                        Mail::to($u->email)->later(now()->addSeconds($idx * 0.5), new ParentNotificationMail($guardian, $students, 'As provided during system onboarding', $resetUrl));
+                    }
                 } catch (\Exception $e) {}
             }
 

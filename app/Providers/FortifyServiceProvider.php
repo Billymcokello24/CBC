@@ -38,8 +38,39 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureActions(): void
     {
-        Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
-        Fortify::createUsersUsing(CreateNewUser::class);
+        Fortify::resetUserPasswordsUsing(\App\Actions\Fortify\ResetUserPassword::class);
+        Fortify::createUsersUsing(\App\Actions\Fortify\CreateNewUser::class);
+
+        \Laravel\Fortify\Fortify::authenticateUsing(function (\Illuminate\Http\Request $request) {
+            $login = $request->input('email');
+            $password = $request->input('password');
+
+            // 1. Try directly by email
+            $user = \App\Models\User::where('email', $login)->first();
+
+            // 2. If not found, try by student admission number
+            if (!$user) {
+                $student = \App\Models\Student::withoutGlobalScopes()->where('admission_number', $login)->first();
+                if ($student) {
+                    // Find the primary guardian's user
+                    $guardian = $student->guardians()->wherePivot('is_primary_contact', true)->first() 
+                                ?? $student->guardians()->first();
+                    
+                    if ($guardian && $guardian->user_id) {
+                        $user = \App\Models\User::withoutGlobalScopes()->find($guardian->user_id);
+                    }
+                }
+            }
+
+            if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+                if ($user->status !== 'active') {
+                    return null;
+                }
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**

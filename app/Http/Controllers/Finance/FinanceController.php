@@ -83,4 +83,36 @@ class FinanceController extends Controller
             'payments' => $payments,
         ]);
     }
+
+    public function studentFees(\App\Models\Student $student): Response
+    {
+        $student->load(['fees.academicTerm', 'currentClass']);
+
+        $totalFees = (float)$student->fees()->sum('total_amount');
+        $paidFees = (float)$student->fees()->sum('paid_amount');
+        $balance = (float)$student->fees()->sum('balance');
+
+        return Inertia::render('finance/StudentFees', [
+            'learner' => [
+                'id' => $student->id,
+                'name' => $student->full_name,
+                'admission_number' => $student->admission_number,
+                'class' => $student->currentClass?->name,
+            ],
+            'fees' => $student->fees->map(fn($f) => [
+                'id' => $f->id,
+                'term' => $f->academicTerm?->name,
+                'total' => (float)$f->total_amount,
+                'paid' => (float)$f->paid_amount,
+                'balance' => (float)$f->balance,
+                'status' => $f->status,
+                'due_date' => $f->due_date?->format('Y-m-d'),
+            ]),
+            'summary' => [
+                'total' => $totalFees,
+                'paid' => $paidFees,
+                'balance' => $balance,
+            ]
+        ]);
+    }
 }
