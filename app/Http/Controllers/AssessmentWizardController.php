@@ -19,12 +19,14 @@ class AssessmentWizardController extends Controller
 {
     public function index(): Response
     {
+        $schoolId = auth()->user()->school_id;
+        
         return Inertia::render('assessments/Setup', [
-            'gradeLevels' => GradeLevel::with('classes')->get(),
-            'subjects' => Subject::all(),
-            'assessmentTypes' => \App\Models\Assessment\AssessmentType::all(),
-            'academicTerms' => AcademicTerm::active()->get(),
-            'competencies' => Competency::all(),
+            'gradeLevels' => GradeLevel::where('school_id', $schoolId)->with('classes')->get(),
+            'subjects' => Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId)->where('is_offered', true))->get(),
+            'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get(),
+            'academicTerms' => AcademicTerm::where('school_id', $schoolId)->where('status', 'active')->get(),
+            'competencies' => Competency::where('school_id', $schoolId)->get(),
             'ratingScales' => [
                 ['id' => 'EE', 'name' => 'Exceeding Expectation (4)'],
                 ['id' => 'ME', 'name' => 'Meeting Expectation (3)'],
@@ -90,9 +92,9 @@ class AssessmentWizardController extends Controller
                 'subject_id' => $validated['subject_id'],
                 'assessment_type_id' => $validated['type_id'], // Map to ID
                 'teacher_id' => $request->user()->id,
-                'school_id' => $request->user()->teacher?->school_id ?? \App\Models\School::first()->id,
-                'academic_year_id' => \App\Models\Academic\AcademicYear::where('is_current', true)->first()?->id,
-                'academic_term_id' => \App\Models\Academic\AcademicTerm::where('is_current', true)->first()?->id,
+                'school_id' => $request->user()->school_id,
+                'academic_year_id' => \App\Models\Academic\AcademicYear::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
+                'academic_term_id' => \App\Models\Academic\AcademicTerm::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
                 'assessment_date' => now(),
                 'status' => 'draft',
             ]);

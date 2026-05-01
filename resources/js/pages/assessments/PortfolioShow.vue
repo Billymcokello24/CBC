@@ -135,50 +135,36 @@ const getBadgeColor = (type: string) => {
 <template>
     <Head :title="student.first_name + ' - Portfolio'" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex h-full max-w-7xl flex-1 flex-col gap-6 p-6">
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
             <!-- Header -->
-            <div
-                class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
-            >
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-center gap-4">
-                    <Button
-                        variant="ghost"
-                        as-child
-                        class="h-10 w-10 rounded-xl p-0"
-                    >
+                    <Button variant="outline" size="icon" as-child class="h-8 w-8 rounded-lg">
                         <Link href="/assessments/portfolio">
-                            <ChevronLeft class="h-6 w-6" />
+                            <ChevronLeft class="h-4 w-4" />
                         </Link>
                     </Button>
-                    <div>
-                        <h1
-                            class="text-3xl font-bold tracking-tight text-slate-900 uppercase"
-                        >
-                            Learner Evidence Portfolio
-                        </h1>
-                        <p class="mt-1 font-bold text-slate-500">
-                            Collecting evidence of learning for
-                            {{ student.first_name }} {{ student.last_name }}.
-                        </p>
+                    <div class="space-y-1">
+                        <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Learner Evidence Portfolio</h1>
+                        <p class="text-xs text-muted-foreground">Collecting evidence of learning for {{ student.first_name }} {{ student.last_name }}.</p>
                     </div>
                 </div>
-                <Dialog v-model:open="showAddModal">
-                    <DialogTrigger as-child>
-                        <Button
-                            class="h-11 gap-2 rounded-2xl bg-indigo-600 px-6 font-bold hover:bg-indigo-700"
-                        >
-                            <Plus class="h-5 w-5" /> Add Evidence
-                        </Button>
-                    </DialogTrigger>
+                <div class="flex flex-wrap items-center gap-3">
+                     <Dialog v-model:open="showAddModal">
+                        <DialogTrigger as-child>
+                            <Button class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:bg-primary/90 transition-all">
+                                <Plus class="mr-2 h-4 w-4" /> Add Evidence
+                            </Button>
+                        </DialogTrigger>
                     <DialogContent
                         class="max-h-[90vh] overflow-y-auto rounded-xl border-0 p-8 shadow-lg sm:max-w-[600px]"
                     >
                         <DialogHeader>
                             <DialogTitle
-                                class="text-2xl font-bold tracking-tight uppercase"
+                                class="text-2xl font-bold tracking-tight "
                                 >Add New Evidence</DialogTitle
                             >
-                            <DialogDescription class="font-bold text-slate-500"
+                            <DialogDescription class="font-bold text-muted-foreground"
                                 >Capture a new learning outcome or
                                 achievement.</DialogDescription
                             >
@@ -186,25 +172,25 @@ const getBadgeColor = (type: string) => {
                         <form @submit.prevent="submit" class="grid gap-6 py-4">
                             <div class="grid gap-2">
                                 <label
-                                    class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >Evidence Title</label
                                 >
                                 <Input
                                     v-model="form.title"
                                     placeholder="e.g., Solar System Model Project"
-                                    class="h-11 rounded-2xl border-slate-200"
+                                    class="h-11 rounded-2xl border-border/50"
                                     required
                                 />
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="grid gap-2">
                                     <label
-                                        class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                        class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                         >Type</label
                                     >
                                     <Select v-model="form.item_type">
                                         <SelectTrigger
-                                            class="h-11 rounded-2xl border-slate-200"
+                                            class="h-11 rounded-2xl border-border/50"
                                         >
                                             <SelectValue />
                                         </SelectTrigger>
@@ -229,20 +215,20 @@ const getBadgeColor = (type: string) => {
                                 </div>
                                 <div class="grid gap-2">
                                     <label
-                                        class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                        class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                         >Date</label
                                     >
                                     <Input
                                         v-model="form.item_date"
                                         type="date"
-                                        class="h-11 rounded-2xl border-slate-200"
+                                        class="h-11 rounded-2xl border-border/50"
                                         required
                                     />
                                 </div>
                             </div>
                             <div class="grid gap-2">
                                 <label
-                                    class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >Learning Area (Subject)</label
                                 >
                                 <Select
@@ -250,7 +236,7 @@ const getBadgeColor = (type: string) => {
                                     @update:model-value="onSubjectChange"
                                 >
                                     <SelectTrigger
-                                        class="h-11 rounded-2xl border-slate-200"
+                                        class="h-11 rounded-2xl border-border/50"
                                     >
                                         <SelectValue
                                             placeholder="Select Subject"
@@ -274,10 +260,10 @@ const getBadgeColor = (type: string) => {
                                     form.subject_id &&
                                     filteredCompetencies.length > 0
                                 "
-                                class="grid gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4"
+                                class="grid gap-3 rounded-2xl border border-dashed border-border/50 bg-muted/10 p-4"
                             >
                                 <label
-                                    class="text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >Target Competencies / Indicators</label
                                 >
                                 <div
@@ -289,7 +275,7 @@ const getBadgeColor = (type: string) => {
                                         class="space-y-2"
                                     >
                                         <p
-                                            class="text-xs font-bold text-indigo-600 uppercase"
+                                            class="text-xs font-bold text-indigo-600 "
                                         >
                                             {{ comp.title }}
                                         </p>
@@ -309,7 +295,7 @@ const getBadgeColor = (type: string) => {
                                                         indicator.id,
                                                     )
                                                         ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg'
-                                                        : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-300',
+                                                        : 'border-border/50 bg-white text-slate-600 hover:border-indigo-300',
                                                 ]"
                                             >
                                                 {{ indicator.title }}
@@ -328,7 +314,7 @@ const getBadgeColor = (type: string) => {
                                 "
                             >
                                 <label
-                                    class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >File Upload</label
                                 >
                                 <Input
@@ -338,7 +324,7 @@ const getBadgeColor = (type: string) => {
                                             ($event.target as HTMLInputElement)
                                                 .files?.[0] || null
                                     "
-                                    class="h-11 rounded-2xl border-slate-200 pt-2"
+                                    class="h-11 rounded-2xl border-border/50 pt-2"
                                 />
                             </div>
                             <div
@@ -346,30 +332,30 @@ const getBadgeColor = (type: string) => {
                                 v-if="form.item_type === 'link'"
                             >
                                 <label
-                                    class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >URL</label
                                 >
                                 <Input
                                     v-model="form.url"
                                     placeholder="https://"
-                                    class="h-11 rounded-2xl border-slate-200"
+                                    class="h-11 rounded-2xl border-border/50"
                                 />
                             </div>
                             <div class="grid gap-2">
                                 <label
-                                    class="pl-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="pl-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                     >Observations / Description</label
                                 >
                                 <Textarea
                                     v-model="form.description"
-                                    class="min-h-[100px] rounded-2xl border-slate-200"
+                                    class="min-h-[100px] rounded-2xl border-border/50"
                                     placeholder="What competency was demonstrated?"
                                 />
                             </div>
                             <DialogFooter>
                                 <Button
                                     type="submit"
-                                    class="h-12 w-full rounded-2xl bg-indigo-600 font-medium tracking-tight uppercase hover:bg-indigo-700"
+                                    class="h-12 w-full rounded-2xl bg-indigo-600 font-medium tracking-tight  hover:bg-indigo-700"
                                     :disabled="form.processing"
                                 >
                                     Save to Portfolio
@@ -378,22 +364,23 @@ const getBadgeColor = (type: string) => {
                         </form>
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
 
             <!-- Evidence Grid -->
             <div
                 v-if="portfolio.items.length === 0"
-                class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-24"
+                class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 bg-white py-24"
             >
                 <div
-                    class="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-50 text-slate-300"
+                    class="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/10 text-slate-300"
                 >
                     <FileText class="h-10 w-10" />
                 </div>
-                <h3 class="text-xl font-bold text-slate-900">
+                <h3 class="text-xl font-bold text-foreground">
                     No Evidence Found
                 </h3>
-                <p class="mt-1 font-bold text-slate-500">
+                <p class="mt-1 font-bold text-muted-foreground">
                     Start adding learner achievements to build their portfolio.
                 </p>
             </div>
@@ -405,7 +392,7 @@ const getBadgeColor = (type: string) => {
                 <Card
                     v-for="item in portfolio.items"
                     :key="item.id"
-                    class="group flex flex-col overflow-hidden rounded-xl border-slate-100 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
+                    class="group flex flex-col overflow-hidden rounded-xl border-border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
                 >
                     <!-- Media Preview -->
                     <div
@@ -431,7 +418,7 @@ const getBadgeColor = (type: string) => {
                         </div>
                         <Badge
                             :class="getBadgeColor(item.item_type)"
-                            class="absolute top-4 left-4 border-0 px-3 py-1 text-xs font-bold tracking-tight uppercase shadow-sm"
+                            class="absolute top-4 left-4 border-0 px-3 py-1 text-xs font-bold tracking-tight  shadow-sm"
                         >
                             {{ item.item_type }}
                         </Badge>
@@ -465,19 +452,19 @@ const getBadgeColor = (type: string) => {
                         <div class="mb-3 flex items-center gap-2">
                             <BookOpen class="h-3.5 w-3.5 text-indigo-500" />
                             <span
-                                class="text-xs font-bold tracking-tight text-indigo-600 uppercase"
+                                class="text-xs font-bold tracking-tight text-indigo-600 "
                                 >{{
                                     item.subject?.name || 'General Achievement'
                                 }}</span
                             >
                         </div>
                         <h4
-                            class="mb-2 text-lg leading-tight font-bold tracking-tight text-slate-900"
+                            class="mb-2 text-lg leading-tight font-bold tracking-tight text-foreground"
                         >
                             {{ item.title }}
                         </h4>
                         <p
-                            class="mb-4 line-clamp-2 text-xs font-medium text-slate-500"
+                            class="mb-4 line-clamp-2 text-xs font-medium text-muted-foreground"
                         >
                             {{ item.description || 'No description provided.' }}
                         </p>
@@ -501,7 +488,7 @@ const getBadgeColor = (type: string) => {
                             class="mt-auto flex items-center justify-between border-t border-slate-50 pt-4"
                         >
                             <div
-                                class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-slate-400 uppercase"
+                                class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground/80 "
                             >
                                 <CalendarDays class="h-3.5 w-3.5" />
                                 {{

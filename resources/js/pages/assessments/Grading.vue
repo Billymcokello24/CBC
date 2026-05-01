@@ -183,27 +183,27 @@ const autoSave = (index: number) => {
                         <thead>
                             <tr class="border-b bg-muted/50">
                                 <th
-                                    class="px-6 py-4 text-left text-sm font-bold tracking-wider text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-left text-sm font-bold tracking-wider text-muted-foreground "
                                 >
                                     Student
                                 </th>
                                 <th
-                                    class="w-32 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground uppercase"
+                                    class="w-32 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground "
                                 >
                                     Marks / {{ assessment.total_marks }}
                                 </th>
                                 <th
-                                    class="w-24 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground uppercase"
+                                    class="w-24 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground "
                                 >
                                     Level
                                 </th>
                                 <th
-                                    class="px-6 py-4 text-left text-sm font-bold tracking-wider text-muted-foreground uppercase"
+                                    class="px-6 py-4 text-left text-sm font-bold tracking-wider text-muted-foreground "
                                 >
                                     Feedback / Remarks
                                 </th>
                                 <th
-                                    class="w-24 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground uppercase"
+                                    class="w-24 px-6 py-4 text-center text-sm font-bold tracking-wider text-muted-foreground "
                                 >
                                     Status
                                 </th>
@@ -235,7 +235,7 @@ const autoSave = (index: number) => {
                                         </Avatar>
                                         <div>
                                             <div
-                                                class="font-bold text-gray-900 capitalize"
+                                                class="font-bold text-foreground capitalize"
                                             >
                                                 {{ student.first_name }}
                                                 {{ student.last_name }}
@@ -351,7 +351,7 @@ const autoSave = (index: number) => {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            class="h-8 px-2 text-xs font-bold tracking-wider uppercase"
+                                            class="h-8 px-2 text-xs font-bold tracking-wider "
                                             :class="
                                                 getResultByStudentId(
                                                     student.id,
@@ -397,7 +397,7 @@ const autoSave = (index: number) => {
                 <div class="flex items-center gap-6">
                     <div class="flex flex-col">
                         <span
-                            class="text-xs font-bold tracking-tight text-indigo-300 uppercase"
+                            class="text-xs font-bold tracking-tight text-indigo-300 "
                             >Total Students</span
                         >
                         <span class="text-2xl font-bold">{{
@@ -407,7 +407,7 @@ const autoSave = (index: number) => {
                     <div class="h-10 w-px bg-indigo-700"></div>
                     <div class="flex flex-col">
                         <span
-                            class="text-xs font-bold tracking-tight text-green-400 uppercase"
+                            class="text-xs font-bold tracking-tight text-green-400 "
                             >Graded</span
                         >
                         <span class="text-2xl font-bold text-green-400">{{
@@ -419,7 +419,7 @@ const autoSave = (index: number) => {
                     <div class="h-10 w-px bg-indigo-700"></div>
                     <div class="flex flex-col">
                         <span
-                            class="text-xs font-bold tracking-tight text-amber-400 uppercase"
+                            class="text-xs font-bold tracking-tight text-amber-400 "
                             >Remaining</span
                         >
                         <span class="text-2xl font-bold text-amber-400">{{

@@ -31,7 +31,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import axios from 'axios';
 
 const props = defineProps<{
@@ -229,7 +228,7 @@ const submit = () => {
                                 ? 'scale-110 border-indigo-200 bg-indigo-600 text-white'
                                 : currentStep > step.id
                                   ? 'border-indigo-200 bg-indigo-600 text-white'
-                                  : 'border-slate-100 bg-white text-slate-300',
+                                  : 'border-border bg-white text-slate-300',
                         ]"
                     >
                         <CheckCircle2
@@ -241,7 +240,7 @@ const submit = () => {
                         }}</span>
                     </div>
                     <span
-                        class="absolute top-12 text-xs font-medium tracking-tight whitespace-nowrap text-slate-400 uppercase"
+                        class="absolute top-12 text-xs font-medium tracking-tight whitespace-nowrap text-muted-foreground/80 "
                         :class="{ 'text-indigo-600': currentStep === step.id }"
                     >
                         {{ step.name }}
@@ -299,23 +298,23 @@ const submit = () => {
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Assessment Title</label
                                         >
                                         <Input
                                             v-model="form.title"
                                             placeholder="e.g. End of Term Mathematics Evaluation"
-                                            class="h-12 border-slate-200 focus:ring-indigo-500/20"
+                                            class="h-12 border-border/50 focus:ring-indigo-500/20"
                                         />
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Assessment Nature</label
                                         >
                                         <select
                                             v-model="form.type_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
                                         >
                                             <option value="">
                                                 Select Category...
@@ -331,12 +330,12 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Academic Term</label
                                         >
                                         <select
                                             v-model="form.term_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
                                         >
                                             <option value="">
                                                 Select Term...
@@ -352,17 +351,17 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Evaluation Date</label
                                         >
                                         <div class="relative">
                                             <Calendar
-                                                class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                                                class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/80"
                                             />
                                             <Input
                                                 v-model="form.date"
                                                 type="date"
-                                                class="h-12 border-slate-200 pl-10"
+                                                class="h-12 border-border/50 pl-10"
                                             />
                                         </div>
                                     </div>
@@ -399,12 +398,12 @@ const submit = () => {
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Grade Level</label
                                         >
                                         <select
                                             v-model="form.grade_level_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
                                         >
                                             <option value="">
                                                 Select Grade...
@@ -420,13 +419,13 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Target Class</label
                                         >
                                         <select
                                             v-model="form.class_id"
                                             :disabled="!form.grade_level_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:bg-slate-50"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm disabled:bg-muted/10"
                                         >
                                             <option value="">
                                                 Select Class...
@@ -442,12 +441,12 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Subject Area</label
                                         >
                                         <select
                                             v-model="form.subject_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
                                         >
                                             <option value="">
                                                 Select Subject...
@@ -478,7 +477,7 @@ const submit = () => {
                                         class="h-12 w-12 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"
                                     ></div>
                                     <p
-                                        class="mt-4 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="mt-4 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                     >
                                         Accessing Curriculum Repository...
                                     </p>
@@ -486,12 +485,12 @@ const submit = () => {
                                 <div v-else class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Curriculum Strand</label
                                         >
                                         <select
                                             v-model="form.strand_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
                                         >
                                             <option value="">
                                                 Select Strand...
@@ -507,13 +506,13 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >Sub-Strand</label
                                         >
                                         <select
                                             v-model="form.sub_strand_id"
                                             :disabled="!form.strand_id"
-                                            class="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:bg-slate-50"
+                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm disabled:bg-muted/10"
                                         >
                                             <option value="">
                                                 Select Sub-Strand...
@@ -539,13 +538,13 @@ const submit = () => {
                                     class="mb-2 flex items-center justify-between"
                                 >
                                     <h3
-                                        class="text-sm font-bold tracking-tight text-slate-400 uppercase"
+                                        class="text-sm font-bold tracking-tight text-muted-foreground/80 "
                                     >
                                         Available Learning Indicators
                                     </h3>
                                     <Badge
                                         variant="outline"
-                                        class="px-2 text-xs font-bold tracking-tight uppercase"
+                                        class="px-2 text-xs font-bold tracking-tight "
                                         >{{ indicators.length }} Total</Badge
                                     >
                                 </div>
@@ -563,7 +562,7 @@ const submit = () => {
                                                 (i) => i.id === indicator.id,
                                             )
                                                 ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500/10'
-                                                : 'border-slate-100 bg-white hover:border-indigo-200 hover:bg-slate-50'
+                                                : 'border-border bg-white hover:border-indigo-200 hover:bg-muted/10'
                                         "
                                     >
                                         <div class="flex items-start gap-4">
@@ -576,14 +575,14 @@ const submit = () => {
                                                             indicator.id,
                                                     )
                                                         ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-200'
-                                                        : 'border-slate-200 bg-white text-transparent'
+                                                        : 'border-border/50 bg-white text-transparent'
                                                 "
                                             >
                                                 <CheckCircle2 class="h-4 w-4" />
                                             </div>
                                             <div class="flex-1">
                                                 <p
-                                                    class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
+                                                    class="mb-1 text-xs leading-none font-bold tracking-tight text-muted-foreground/80 "
                                                 >
                                                     Indicator Content
                                                 </p>
@@ -611,13 +610,13 @@ const submit = () => {
                                         v-if="
                                             indicators.length === 0 && !loading
                                         "
-                                        class="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-100 py-12"
+                                        class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border py-12"
                                     >
                                         <Layers
                                             class="mb-4 h-10 w-10 text-slate-200"
                                         />
                                         <p
-                                            class="text-sm font-bold tracking-tight text-slate-300 uppercase"
+                                            class="text-sm font-bold tracking-tight text-slate-300 "
                                         >
                                             No indicators mapped for this
                                             sub-strand
@@ -629,18 +628,18 @@ const submit = () => {
                             <!-- Step 5: Review -->
                             <div
                                 v-if="currentStep === 5"
-                                class="animate-in space-y-8 rounded-3xl border bg-slate-50/50 p-8 shadow-inner"
+                                class="animate-in space-y-8 rounded-2xl border bg-background p-8 shadow-inner"
                             >
                                 <div class="grid gap-8 md:grid-cols-2">
                                     <div class="space-y-4">
                                         <div>
                                             <p
-                                                class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                                class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                             >
                                                 Assessment Name
                                             </p>
                                             <p
-                                                class="text-lg leading-tight font-bold text-slate-900"
+                                                class="text-lg leading-tight font-bold text-foreground"
                                             >
                                                 {{ form.title }}
                                             </p>
@@ -648,7 +647,7 @@ const submit = () => {
                                         <div class="grid grid-cols-2 gap-4">
                                             <div>
                                                 <p
-                                                    class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                                    class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                                 >
                                                     Grade
                                                 </p>
@@ -663,7 +662,7 @@ const submit = () => {
                                             </div>
                                             <div>
                                                 <p
-                                                    class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                                    class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                                 >
                                                     Date
                                                 </p>
@@ -679,7 +678,7 @@ const submit = () => {
                                         class="rounded-2xl border border-l-4 border-l-indigo-600 bg-white p-6 shadow-sm"
                                     >
                                         <p
-                                            class="mb-2 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="mb-2 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >
                                             Mapped Indicators
                                         </p>
@@ -701,13 +700,13 @@ const submit = () => {
                                                 v-if="
                                                     form.indicators.length === 0
                                                 "
-                                                class="text-xs font-bold tracking-tight text-rose-500 uppercase"
+                                                class="text-xs font-bold tracking-tight text-rose-500 "
                                             >
                                                 No Indicators Selected!
                                             </p>
                                         </div>
                                         <p
-                                            class="mt-4 text-right text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="mt-4 text-right text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >
                                             {{
                                                 form.indicators.length
@@ -721,13 +720,13 @@ const submit = () => {
 
                         <!-- Footer -->
                         <div
-                            class="flex items-center justify-between border-t bg-slate-50/80 px-8 py-6"
+                            class="flex items-center justify-between border-t bg-muted/10/80 px-8 py-6"
                         >
                             <Button
                                 variant="outline"
                                 @click="prevStep"
                                 :disabled="currentStep === 1"
-                                class="h-11 rounded-xl border-slate-200 px-6 text-xs font-bold tracking-tight uppercase disabled:opacity-30"
+                                class="h-11 rounded-xl border-border/50 px-6 text-xs font-bold tracking-tight  disabled:opacity-30"
                             >
                                 <ChevronLeft class="mr-2 h-4 w-4" /> Go Back
                             </Button>
@@ -740,7 +739,7 @@ const submit = () => {
                                         currentStep === 4 &&
                                         form.indicators.length === 0
                                     "
-                                    class="group h-11 rounded-xl bg-indigo-600 px-8 text-xs font-bold tracking-tight uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700"
+                                    class="group h-11 rounded-xl bg-indigo-600 px-8 text-xs font-bold tracking-tight  shadow-lg shadow-indigo-100 hover:bg-indigo-700"
                                 >
                                     Next Phase
                                     <ChevronRight
@@ -754,7 +753,7 @@ const submit = () => {
                                         form.processing ||
                                         form.indicators.length === 0
                                     "
-                                    class="h-11 rounded-xl bg-emerald-600 px-8 text-xs font-bold tracking-tight uppercase shadow-lg shadow-emerald-100 hover:bg-emerald-700"
+                                    class="h-11 rounded-xl bg-emerald-600 px-8 text-xs font-bold tracking-tight  shadow-lg shadow-emerald-100 hover:bg-emerald-700"
                                 >
                                     <Save
                                         v-if="!form.processing"
@@ -781,7 +780,7 @@ const submit = () => {
                         ></div>
                         <CardHeader>
                             <CardTitle
-                                class="flex items-center gap-2 text-sm font-bold tracking-tight text-white uppercase"
+                                class="flex items-center gap-2 text-sm font-bold tracking-tight text-white "
                             >
                                 <Target class="h-4 w-4 text-indigo-300" />
                                 Assessment Scout
@@ -790,7 +789,7 @@ const submit = () => {
                         <CardContent class="space-y-6 text-indigo-100/80">
                             <div class="space-y-1">
                                 <p
-                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 uppercase"
+                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
                                 >
                                     Current Selection
                                 </p>
@@ -803,13 +802,13 @@ const submit = () => {
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-1">
                                     <p
-                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 uppercase"
+                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
                                     >
                                         Focus Type
                                     </p>
                                     <Badge
                                         variant="outline"
-                                        class="rounded-lg border-indigo-500/50 bg-indigo-500/10 py-0.5 text-xs font-bold tracking-tight whitespace-nowrap text-indigo-200 uppercase"
+                                        class="rounded-lg border-indigo-500/50 bg-indigo-500/10 py-0.5 text-xs font-bold tracking-tight whitespace-nowrap text-indigo-200 "
                                     >
                                         {{
                                             assessmentTypes.find(
@@ -822,7 +821,7 @@ const submit = () => {
                                 </div>
                                 <div class="space-y-1">
                                     <p
-                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 uppercase"
+                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
                                     >
                                         Scale
                                     </p>
@@ -836,7 +835,7 @@ const submit = () => {
                             <Separator class="bg-indigo-800" />
                             <div class="space-y-2">
                                 <p
-                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 uppercase"
+                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
                                 >
                                     Selected Criteria
                                 </p>
@@ -855,7 +854,7 @@ const submit = () => {
                                     </div>
                                     <p
                                         v-if="form.indicators.length === 0"
-                                        class="text-xs font-bold tracking-tight text-indigo-600/50 uppercase"
+                                        class="text-xs font-bold tracking-tight text-indigo-600/50 "
                                     >
                                         No indicators yet
                                     </p>
@@ -865,11 +864,11 @@ const submit = () => {
                     </Card>
 
                     <div
-                        class="flex flex-1 flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center opacity-70"
+                        class="flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/50 bg-muted/10 p-6 text-center opacity-70"
                     >
                         <BookOpen class="mb-3 h-8 w-8 text-slate-300" />
                         <p
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="text-xs font-bold tracking-tight text-muted-foreground/80 "
                         >
                             Contextual Guidance will appear here during setup
                         </p>

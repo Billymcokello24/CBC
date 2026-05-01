@@ -63,13 +63,13 @@ const getPercentage = (count: number) => {
                     <h2 class="text-2xl font-bold text-slate-800">
                         Learning Analytics
                     </h2>
-                    <p class="text-sm text-slate-500">
+                    <p class="text-sm text-muted-foreground">
                         Visualizing student performance and growth trends.
                     </p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button
-                        class="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                        class="flex items-center gap-2 rounded-2xl border border-border/50 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition-colors hover:bg-muted/10"
                     >
                         <Filter class="h-4 w-4" />
                         Filter Data
@@ -83,20 +83,20 @@ const getPercentage = (count: number) => {
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <!-- Performance Distribution Card -->
                 <div
-                    class="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm lg:col-span-2"
+                    class="rounded-2xl border border-border bg-white p-8 shadow-sm lg:col-span-2"
                 >
                     <div class="mb-8 flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-bold text-slate-800">
                                 Performance Distribution
                             </h3>
-                            <p class="text-sm text-slate-500">
+                            <p class="text-sm text-muted-foreground">
                                 Breakdown of student ratings across all
                                 assessments.
                             </p>
                         </div>
                         <div
-                            class="flex items-center gap-2 rounded-2xl bg-slate-50 px-4 py-2"
+                            class="flex items-center gap-2 rounded-2xl bg-muted/10 px-4 py-2"
                         >
                             <Users class="h-4 w-4 text-emerald-500" />
                             <span class="text-xs font-bold text-slate-600"
@@ -129,7 +129,7 @@ const getPercentage = (count: number) => {
                                     >
                                 </div>
                                 <div
-                                    class="h-3 w-full overflow-hidden rounded-full bg-slate-50"
+                                    class="h-3 w-full overflow-hidden rounded-full bg-muted/10"
                                 >
                                     <div
                                         class="h-full transition-all duration-1000"
@@ -144,17 +144,17 @@ const getPercentage = (count: number) => {
 
                         <!-- Stats/Summary -->
                         <div
-                            class="space-y-4 rounded-3xl border border-slate-100 bg-slate-50 p-6"
+                            class="space-y-4 rounded-2xl border border-border bg-muted/10 p-6"
                         >
                             <h4 class="text-sm font-bold text-slate-800">
                                 Overview Summary
                             </h4>
                             <div class="grid grid-cols-2 gap-4">
                                 <div
-                                    class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                                    class="rounded-2xl border border-border bg-white p-4 shadow-sm"
                                 >
                                     <p
-                                        class="mb-1 text-xs font-bold text-slate-400 uppercase"
+                                        class="mb-1 text-xs font-bold text-muted-foreground/80 "
                                     >
                                         Pass Rate
                                     </p>
@@ -170,10 +170,10 @@ const getPercentage = (count: number) => {
                                     </p>
                                 </div>
                                 <div
-                                    class="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                                    class="rounded-2xl border border-border bg-white p-4 shadow-sm"
                                 >
                                     <p
-                                        class="mb-1 text-xs font-bold text-slate-400 uppercase"
+                                        class="mb-1 text-xs font-bold text-muted-foreground/80 "
                                     >
                                         Needs Support
                                     </p>
@@ -182,7 +182,7 @@ const getPercentage = (count: number) => {
                                     </p>
                                 </div>
                             </div>
-                            <p class="text-xs leading-relaxed text-slate-500">
+                            <p class="text-xs leading-relaxed text-muted-foreground">
                                 "Analysis shows that most learners are
                                 {{
                                     getPercentage(
@@ -199,13 +199,13 @@ const getPercentage = (count: number) => {
 
                 <!-- Quick Trends -->
                 <div
-                    class="flex flex-col rounded-3xl border border-slate-100 bg-white p-8 shadow-sm"
+                    class="flex flex-col rounded-2xl border border-border bg-white p-8 shadow-sm"
                 >
                     <div class="mb-8">
                         <h3 class="text-lg font-bold text-slate-800">
                             Performance Trends
                         </h3>
-                        <p class="text-sm text-slate-500">
+                        <p class="text-sm text-muted-foreground">
                             Average score over recent tasks.
                         </p>
                     </div>
@@ -214,7 +214,7 @@ const getPercentage = (count: number) => {
                         <div
                             v-for="trend in trends"
                             :key="trend.title"
-                            class="group flex items-center gap-4 rounded-2xl border border-transparent p-4 transition-colors hover:border-slate-100 hover:bg-slate-50"
+                            class="group flex items-center gap-4 rounded-2xl border border-transparent p-4 transition-colors hover:border-border hover:bg-muted/10"
                         >
                             <div
                                 class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 transition-colors group-hover:bg-blue-600"
@@ -230,7 +230,7 @@ const getPercentage = (count: number) => {
                                     {{ trend.title }}
                                 </h4>
                                 <p
-                                    class="text-xs font-bold tracking-tighter text-slate-400 uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     {{ trend.date }}
                                 </p>
@@ -259,7 +259,7 @@ const getPercentage = (count: number) => {
                         class="flex flex-1 flex-col items-center justify-center text-center"
                     >
                         <TrendingUp class="mb-4 h-12 w-12 text-slate-200" />
-                        <p class="text-sm text-slate-400">
+                        <p class="text-sm text-muted-foreground/80">
                             Not enough data to calculate trends.
                         </p>
                     </div>
@@ -268,14 +268,14 @@ const getPercentage = (count: number) => {
 
             <!-- Subject Breakdown -->
             <div
-                class="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm"
+                class="rounded-2xl border border-border bg-white p-8 shadow-sm"
             >
                 <div class="mb-8 flex items-center justify-between">
                     <div>
                         <h3 class="text-lg font-bold text-slate-800">
                             Subject-wise Mastery
                         </h3>
-                        <p class="text-sm text-slate-500">
+                        <p class="text-sm text-muted-foreground">
                             Average performance levels per subject.
                         </p>
                     </div>
@@ -292,7 +292,7 @@ const getPercentage = (count: number) => {
                     <div
                         v-for="cls in classes"
                         :key="cls.id"
-                        class="rounded-3xl border border-slate-100 bg-slate-50 p-6 transition-shadow hover:shadow-md"
+                        class="rounded-2xl border border-border bg-muted/10 p-6 transition-shadow hover:shadow-md"
                     >
                         <h4 class="mb-4 font-bold text-slate-800">
                             {{ cls.name }}
@@ -312,7 +312,7 @@ const getPercentage = (count: number) => {
                                 class="h-[10%] flex-1 rounded-t-lg bg-rose-200"
                             ></div>
                         </div>
-                        <p class="text-xs text-slate-500">
+                        <p class="text-xs text-muted-foreground">
                             Active engagement across 4 curriculum strands.
                         </p>
                     </div>

@@ -150,7 +150,7 @@ const submit = () => {
             <form @submit.prevent="submit" class="grid gap-6">
                 <!-- General Information -->
                 <Card
-                    class="overflow-hidden rounded-3xl border-orange-100 shadow-sm"
+                    class="overflow-hidden rounded-2xl border-orange-100 shadow-sm"
                 >
                     <CardHeader class="border-b bg-orange-50/30 p-6">
                         <CardTitle class="flex items-center gap-2 text-lg">
@@ -166,7 +166,7 @@ const submit = () => {
                             <div class="space-y-3">
                                 <Label
                                     for="name"
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                     >Rubric Name</Label
                                 >
                                 <Input
@@ -180,7 +180,7 @@ const submit = () => {
                             <div class="space-y-3">
                                 <Label
                                     for="total_points"
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                     >Total Points</Label
                                 >
                                 <Input
@@ -196,7 +196,7 @@ const submit = () => {
                         <div class="grid gap-8 md:grid-cols-2">
                             <div class="space-y-3">
                                 <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                     >Subject (Optional)</Label
                                 >
                                 <SearchableSelect
@@ -215,7 +215,7 @@ const submit = () => {
                             </div>
                             <div class="space-y-3">
                                 <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                     >Assessment Type</Label
                                 >
                                 <Select v-model="form.assessment_type_id">
@@ -242,7 +242,7 @@ const submit = () => {
                         <div class="space-y-3">
                             <Label
                                 for="description"
-                                class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                class="text-xs font-bold tracking-tight text-muted-foreground "
                                 >Description</Label
                             >
                             <Textarea
@@ -272,7 +272,7 @@ const submit = () => {
 
                 <!-- Grading Levels -->
                 <Card
-                    class="overflow-hidden rounded-3xl border-indigo-100 shadow-sm"
+                    class="overflow-hidden rounded-2xl border-indigo-100 shadow-sm"
                 >
                     <CardHeader
                         class="flex flex-row items-center justify-between border-b bg-indigo-50/30 p-6"
@@ -307,32 +307,32 @@ const submit = () => {
                                         class="border-b border-indigo-100 bg-indigo-50/50"
                                     >
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Level Name
                                         </th>
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Grade Code
                                         </th>
                                         <th
-                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Min %
                                         </th>
                                         <th
-                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Max %
                                         </th>
                                         <th
-                                            class="w-20 p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="w-20 p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Points
                                         </th>
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground uppercase"
+                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
                                         >
                                             Feedback Template / Comment
                                         </th>
@@ -356,7 +356,7 @@ const submit = () => {
                                             <Input
                                                 v-model="level.grade_code"
                                                 placeholder="e.g. EE"
-                                                class="h-10 w-20 rounded-lg border-indigo-100 text-center text-sm font-bold uppercase focus:ring-indigo-500"
+                                                class="h-10 w-20 rounded-lg border-indigo-100 text-center text-sm font-bold  focus:ring-indigo-500"
                                             />
                                         </td>
                                         <td class="p-3">
@@ -404,7 +404,7 @@ const submit = () => {
                         </div>
                         <div
                             v-if="form.levels.length === 0"
-                            class="bg-gray-50/50 p-12 text-center text-muted-foreground"
+                            class="bg-muted/10/50 p-12 text-center text-muted-foreground"
                         >
                             No grading levels defined yet. Click "Add Level" to
                             start defining your criteria.
@@ -420,7 +420,7 @@ const submit = () => {
                         variant="outline"
                         type="button"
                         as-child
-                        class="h-12 rounded-xl border-gray-200 px-6 font-bold"
+                        class="h-12 rounded-xl border-border/50 px-6 font-bold"
                     >
                         <Link href="/assessments/rubrics">Discard Changes</Link>
                     </Button>

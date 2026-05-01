@@ -83,7 +83,7 @@ const breadcrumbs = [
                         <ClipboardList class="h-6 w-6 text-violet-600" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight uppercase">
+                        <h1 class="text-2xl font-bold tracking-tight ">
                             Bulk Marks Entry
                         </h1>
                         <p class="text-muted-foreground">
@@ -109,7 +109,7 @@ const breadcrumbs = [
                         class="space-y-6 rounded-xl border bg-card p-6 shadow-sm"
                     >
                         <h3
-                            class="flex items-center gap-2 text-xs font-bold tracking-tight text-gray-400 uppercase"
+                            class="flex items-center gap-2 text-xs font-bold tracking-tight text-muted-foreground/80 "
                         >
                             <Info class="h-4 w-4 text-violet-600" /> IMPORT
                             PROTOCOL
@@ -121,7 +121,7 @@ const breadcrumbs = [
                                     >01</span
                                 >
                                 <p
-                                    class="text-xs leading-relaxed font-bold tracking-tight text-gray-500 uppercase"
+                                    class="text-xs leading-relaxed font-bold tracking-tight text-muted-foreground "
                                 >
                                     Prepare your data using the
                                     <span class="text-violet-700"
@@ -135,10 +135,10 @@ const breadcrumbs = [
                                     >02</span
                                 >
                                 <p
-                                    class="text-xs leading-relaxed font-bold tracking-tight text-gray-500 uppercase"
+                                    class="text-xs leading-relaxed font-bold tracking-tight text-muted-foreground "
                                 >
                                     Ensure
-                                    <span class="text-gray-900"
+                                    <span class="text-foreground"
                                         >Admission Numbers</span
                                     >
                                     match student records.
@@ -150,10 +150,10 @@ const breadcrumbs = [
                                     >03</span
                                 >
                                 <p
-                                    class="text-xs leading-relaxed font-bold tracking-tight text-gray-500 uppercase"
+                                    class="text-xs leading-relaxed font-bold tracking-tight text-muted-foreground "
                                 >
                                     Enter scores without
-                                    <span class="text-gray-900"
+                                    <span class="text-foreground"
                                         >exceeding Max Marks</span
                                     >.
                                 </p>
@@ -169,13 +169,13 @@ const breadcrumbs = [
                         >
                             <AlertCircle class="h-4 w-4" />
                             <h4
-                                class="text-xs font-bold tracking-tight uppercase"
+                                class="text-xs font-bold tracking-tight "
                             >
                                 Validation Warning
                             </h4>
                         </div>
                         <p
-                            class="text-xs leading-relaxed font-bold tracking-tight text-amber-600 text-muted-foreground uppercase"
+                            class="text-xs leading-relaxed font-bold tracking-tight text-amber-600 text-muted-foreground "
                         >
                             The system will automatically validate each row.
                             Invalid admission numbers or out-of-range scores
@@ -192,19 +192,19 @@ const breadcrumbs = [
                         <!-- Assessment Selection -->
                         <div class="space-y-3">
                             <label
-                                class="text-xs font-bold tracking-tight text-gray-400 uppercase"
+                                class="text-xs font-bold tracking-tight text-muted-foreground/80 "
                                 >Target Assessment</label
                             >
                             <Select v-model="form.assessment_id">
                                 <SelectTrigger
-                                    class="h-12 rounded-lg border-gray-100 bg-gray-50/50 text-sm font-bold text-gray-900"
+                                    class="h-12 rounded-lg border-border bg-muted/10/50 text-sm font-bold text-foreground"
                                 >
                                     <SelectValue
                                         placeholder="Select an assessment..."
                                     />
                                 </SelectTrigger>
                                 <SelectContent
-                                    class="rounded-xl border-gray-100 shadow-lg"
+                                    class="rounded-xl border-border shadow-lg"
                                 >
                                     <SelectItem
                                         v-for="asmt in assessments"
@@ -213,11 +213,11 @@ const breadcrumbs = [
                                     >
                                         <div class="flex flex-col py-1">
                                             <span
-                                                class="text-xs font-bold text-gray-900"
+                                                class="text-xs font-bold text-foreground"
                                                 >{{ asmt.title }}</span
                                             >
                                             <span
-                                                class="mt-0.5 text-xs font-bold tracking-tight text-gray-400 uppercase"
+                                                class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                                 >{{ asmt.subject?.name }} ·
                                                 {{ asmt.class?.name }}</span
                                             >
@@ -230,7 +230,7 @@ const breadcrumbs = [
                         <!-- Dropzone (Pulsar Style) -->
                         <div class="space-y-3">
                             <label
-                                class="text-xs font-bold tracking-tight text-gray-400 uppercase"
+                                class="text-xs font-bold tracking-tight text-muted-foreground/80 "
                                 >Source Document</label
                             >
                             <div
@@ -242,7 +242,7 @@ const breadcrumbs = [
                                     'group relative flex h-56 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300',
                                     isDragging
                                         ? 'border-solid border-violet-400 bg-violet-50/50'
-                                        : 'border-gray-100 bg-gray-50/30 hover:border-violet-200 hover:bg-white',
+                                        : 'border-border bg-muted/10/30 hover:border-violet-200 hover:bg-white',
                                 ]"
                             >
                                 <input
@@ -258,7 +258,7 @@ const breadcrumbs = [
                                     class="space-y-4 text-center"
                                 >
                                     <div
-                                        class="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-gray-100 bg-white shadow-sm transition-all duration-300 group-hover:bg-violet-600"
+                                        class="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-border bg-white shadow-sm transition-all duration-300 group-hover:bg-violet-600"
                                     >
                                         <Upload
                                             class="h-6 w-6 text-gray-300 group-hover:text-white"
@@ -266,12 +266,12 @@ const breadcrumbs = [
                                     </div>
                                     <div>
                                         <p
-                                            class="text-sm font-bold text-gray-900 uppercase"
+                                            class="text-sm font-bold text-foreground "
                                         >
                                             Drop CSV File
                                         </p>
                                         <p
-                                            class="mt-1 text-xs font-bold tracking-tight text-gray-400 uppercase"
+                                            class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >
                                             or click to browse database
                                         </p>
@@ -290,12 +290,12 @@ const breadcrumbs = [
                                     </div>
                                     <div class="px-6">
                                         <p
-                                            class="max-w-[200px] truncate text-sm font-bold text-gray-900"
+                                            class="max-w-[200px] truncate text-sm font-bold text-foreground"
                                         >
                                             {{ form.file.name }}
                                         </p>
                                         <p
-                                            class="mt-1 text-xs font-bold tracking-tight text-emerald-600 uppercase"
+                                            class="mt-1 text-xs font-bold tracking-tight text-emerald-600 "
                                         >
                                             {{
                                                 (form.file.size / 1024).toFixed(
@@ -307,7 +307,7 @@ const breadcrumbs = [
                                     </div>
                                     <button
                                         @click.stop="form.file = null"
-                                        class="text-xs font-bold tracking-tight text-rose-600 uppercase hover:underline"
+                                        class="text-xs font-bold tracking-tight text-rose-600  hover:underline"
                                     >
                                         Remove
                                     </button>
@@ -320,7 +320,7 @@ const breadcrumbs = [
                             class="flex items-center justify-between border-t border-gray-50 pt-6"
                         >
                             <p
-                                class="flex items-center gap-2 text-xs font-bold text-gray-400"
+                                class="flex items-center gap-2 text-xs font-bold text-muted-foreground/80"
                             >
                                 <ShieldCheck
                                     class="h-3.5 w-3.5 text-emerald-600"
@@ -334,7 +334,7 @@ const breadcrumbs = [
                                     !form.assessment_id ||
                                     !form.file
                                 "
-                                class="h-12 rounded-lg bg-violet-600 px-8 text-xs font-bold tracking-tight text-white uppercase shadow-lg shadow-violet-100 transition-all duration-300 hover:bg-violet-700 active:scale-95"
+                                class="h-12 rounded-lg bg-violet-600 px-8 text-xs font-bold tracking-tight text-white  shadow-lg shadow-violet-100 transition-all duration-300 hover:bg-violet-700 active:scale-95"
                             >
                                 <ArrowRight class="mr-2 h-4 w-4" /> Finalize
                                 Import

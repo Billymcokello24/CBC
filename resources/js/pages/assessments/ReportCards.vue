@@ -57,101 +57,66 @@ const status = ref('all');
 <template>
     <Head title="Report Cards" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex h-full max-w-6xl flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl border border-purple-200 bg-purple-500/10"
-                    >
-                        <FileText class="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Report Cards
-                        </h1>
-                        <p class="text-muted-foreground">
-                            Generate and manage student termly reports for
-                            {{ activeTerm?.name || 'Current Term' }}
-                        </p>
-                    </div>
+        <div
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
+        >
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Report Cards</h1>
+                    <p class="text-xs text-muted-foreground">Generate and manage student termly reports for {{ activeTerm?.name || 'Current Term' }}</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button variant="outline"
-                        ><Printer class="mr-2 h-4 w-4" />Bulk Print</Button
-                    >
-                    <Button
-                        class="bg-purple-600 shadow-lg shadow-purple-200 hover:bg-purple-700"
-                        ><Send class="mr-2 h-4 w-4" />Send to Parents</Button
-                    >
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted">
+                        <Printer class="mr-2 h-4 w-4 text-primary" />
+                        Bulk Print
+                    </Button>
+                    <Button class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
+                        <Send class="mr-2 h-4 w-4" />
+                        Send to Parents
+                    </Button>
                 </div>
             </div>
 
-            <Card class="border-purple-100 shadow-sm">
-                <CardContent class="p-4">
-                    <div
-                        class="flex flex-col items-center justify-between gap-4 md:flex-row"
-                    >
-                        <div
-                            class="flex w-full flex-1 items-center gap-4 md:w-auto"
-                        >
-                            <div class="w-full md:w-64">
-                                <Select v-model="selectedClass">
-                                    <SelectTrigger
-                                        class="h-10 border-purple-100 bg-purple-50/30"
-                                    >
-                                        <SelectValue
-                                            placeholder="Select Class"
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem
-                                            v-for="cls in classes"
-                                            :key="cls.id"
-                                            :value="cls.id.toString()"
-                                        >
-                                            {{ cls.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div
-                                class="relative hidden max-w-xs flex-1 sm:block"
-                            >
-                                <Search
-                                    class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                                />
-                                <Input
-                                    placeholder="Search student..."
-                                    class="h-10 border-purple-100 pl-9"
-                                />
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                    <div class="flex items-center gap-2">
+                        <FileText class="h-4 w-4 text-primary" />
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Report Registry</span>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-muted-foreground">Class</label>
+                            <Select v-model="selectedClass">
+                                <SelectTrigger class="h-10 w-full rounded-lg border border-border bg-muted/10 px-4 text-sm focus:bg-background focus:ring-2 focus:ring-primary/10">
+                                    <SelectValue placeholder="Select Class" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem v-for="cls in classes" :key="cls.id" :value="cls.id.toString()">{{ cls.name }}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-muted-foreground">Search Student</label>
+                            <div class="relative">
+                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                                <Input placeholder="Search student..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
                             </div>
                         </div>
-                        <Tabs v-model="status" class="w-full md:w-auto">
-                            <TabsList
-                                class="grid h-10 w-full grid-cols-3 bg-purple-50/50 md:w-[400px]"
-                            >
-                                <TabsTrigger
-                                    value="all"
-                                    class="data-[state=active]:bg-white data-[state=active]:text-purple-700"
-                                    >All</TabsTrigger
-                                >
-                                <TabsTrigger
-                                    value="pending"
-                                    class="data-[state=active]:bg-white data-[state=active]:text-purple-700"
-                                    >Pending</TabsTrigger
-                                >
-                                <TabsTrigger
-                                    value="published"
-                                    class="data-[state=active]:bg-white data-[state=active]:text-purple-700"
-                                    >Published</TabsTrigger
-                                >
-                            </TabsList>
-                        </Tabs>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-muted-foreground">Status</label>
+                            <Tabs v-model="status" class="w-full">
+                                <TabsList class="grid h-10 w-full grid-cols-3 bg-muted/20">
+                                    <TabsTrigger value="all" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">All</TabsTrigger>
+                                    <TabsTrigger value="pending" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Pending</TabsTrigger>
+                                    <TabsTrigger value="published" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Published</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             <div
                 v-if="!selectedClass"

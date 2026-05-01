@@ -48,38 +48,17 @@ const searchQuery = ref('');
 <template>
     <Head title="Rubrics" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <!-- 80% width centered container for rubrics page -->
-        <div class="mx-auto flex h-full w-4/5 flex-1 flex-col gap-6 p-6">
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl border border-orange-200 bg-orange-500/10 shadow-sm"
-                    >
-                        <BookMarked class="h-6 w-6 text-orange-600" />
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            Rubrics & Grading Schemes
-                        </h1>
-                        <p class="text-sm text-muted-foreground">
-                            Manage how scores translate to grades and feedback
-                        </p>
-                    </div>
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Rubrics & Grading Schemes</h1>
+                    <p class="text-xs text-muted-foreground">Manage how scores translate to grades and feedback</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        as-child
-                        class="border-gray-200 font-bold"
-                    >
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
                         <Link href="/assessments">Back to Assessments</Link>
                     </Button>
-                    <Button
-                        as-child
-                        class="bg-orange-600 shadow-lg shadow-orange-100 hover:bg-orange-700"
-                    >
+                    <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
                         <Link href="/assessments/rubrics/create">
                             <Plus class="mr-2 h-4 w-4" />Create Rubric
                         </Link>
@@ -88,23 +67,21 @@ const searchQuery = ref('');
             </div>
 
             <!-- Search and Filter -->
-            <div class="flex flex-col items-center gap-4 md:flex-row">
-                <div class="relative w-full flex-1 md:max-w-md">
-                    <Search
-                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                    />
-                    <Input
-                        v-model="searchQuery"
-                        placeholder="Search rubrics..."
-                        class="h-11 rounded-xl border-orange-100 pl-9 focus:ring-orange-500"
-                    />
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                    <div class="flex items-center gap-2">
+                        <BookMarked class="h-4 w-4 text-primary" />
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Rubrics Registry</span>
+                    </div>
                 </div>
-                <Button
-                    variant="outline"
-                    class="h-11 rounded-xl border-orange-100 px-4 font-bold"
-                >
-                    <Filter class="mr-2 h-4 w-4" /> Filter
-                </Button>
+                <div class="p-6">
+                    <div class="flex flex-col items-center gap-4 md:flex-row">
+                        <div class="relative w-full flex-1 md:max-w-md">
+                            <Search class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                            <Input v-model="searchQuery" placeholder="Search rubrics..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div
@@ -112,11 +89,11 @@ const searchQuery = ref('');
                 class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-200/50 bg-orange-50/20 py-20"
             >
                 <div
-                    class="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-xl shadow-orange-100/50"
+                    class="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-xl shadow-orange-100/50"
                 >
                     <Beaker class="h-12 w-12 text-orange-400" />
                 </div>
-                <h3 class="text-xl font-bold text-gray-900">
+                <h3 class="text-xl font-bold text-foreground">
                     No grading rubrics defined
                 </h3>
                 <p
@@ -139,7 +116,7 @@ const searchQuery = ref('');
                 <div
                     v-for="rubric in rubrics.data"
                     :key="rubric.id"
-                    class="group relative overflow-hidden rounded-xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
+                    class="group relative overflow-hidden rounded-xl border border-border bg-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
                 >
                     <div
                         class="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-orange-50 opacity-50 transition-transform duration-700 group-hover:scale-150"
@@ -159,7 +136,7 @@ const searchQuery = ref('');
                                         size="icon"
                                         class="h-10 w-10 rounded-full hover:bg-orange-50"
                                         ><MoreHorizontal
-                                            class="h-5 w-5 text-gray-400"
+                                            class="h-5 w-5 text-muted-foreground/80"
                                     /></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
@@ -190,14 +167,14 @@ const searchQuery = ref('');
                         </div>
 
                         <h3
-                            class="mb-3 text-2xl leading-tight font-bold text-gray-900 transition-colors group-hover:text-orange-600"
+                            class="mb-3 text-2xl leading-tight font-bold text-foreground transition-colors group-hover:text-orange-600"
                         >
                             {{ rubric.name }}
                         </h3>
                         <div class="mb-4 flex flex-wrap items-center gap-2">
                             <Badge
                                 variant="outline"
-                                class="rounded-lg border-0 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 uppercase"
+                                class="rounded-lg border-0 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 "
                             >
                                 {{
                                     rubric.subject?.name ||
@@ -206,7 +183,7 @@ const searchQuery = ref('');
                             </Badge>
                             <Badge
                                 variant="outline"
-                                class="rounded-lg border-0 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600 uppercase"
+                                class="rounded-lg border-0 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600 "
                             >
                                 {{ rubric.total_points }} Max Points
                             </Badge>
@@ -222,14 +199,14 @@ const searchQuery = ref('');
                         </p>
 
                         <div
-                            class="mt-8 flex items-center justify-between border-t border-dashed border-gray-100 pt-6"
+                            class="mt-8 flex items-center justify-between border-t border-dashed border-border pt-6"
                         >
                             <div class="flex items-center gap-2">
                                 <div
                                     class="h-2 w-2 rounded-full bg-green-500"
                                 ></div>
                                 <span
-                                    class="text-xs font-bold tracking-tight text-muted-foreground uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                 >
                                     {{
                                         rubric.criteria?.[0]?.levels?.length ||
@@ -256,7 +233,7 @@ const searchQuery = ref('');
 
             <!-- Pagination -->
             <div
-                class="mt-6 flex items-center justify-between border-t border-gray-100 py-8"
+                class="mt-6 flex items-center justify-between border-t border-border py-8"
             >
                 <p class="text-xs font-bold text-muted-foreground">
                     Showing {{ rubrics.data.length }} rubrics

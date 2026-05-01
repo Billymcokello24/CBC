@@ -214,38 +214,38 @@ const submitAll = () => {
     <Head :title="`Grading Sheet - ${assessment.title}`" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="mx-auto mt-2 flex h-full max-w-[1600px] flex-1 flex-col gap-6 overflow-hidden bg-slate-50/50 p-6 font-sans"
+            class="mx-auto mt-2 flex h-full max-w-[1600px] flex-1 flex-col gap-6 overflow-hidden bg-background p-6 font-sans"
         >
             <!-- Professional Header -->
             <div
-                class="flex flex-col gap-4 rounded-xl border border-slate-100 bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+                class="flex flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
             >
                 <div class="flex items-center gap-6">
                     <Button
                         variant="ghost"
                         size="icon"
                         as-child
-                        class="h-12 w-12 rounded-2xl border border-slate-100 bg-white shadow-sm hover:bg-slate-50"
+                        class="h-12 w-12 rounded-2xl border border-border bg-white shadow-sm hover:bg-muted/10"
                     >
                         <Link href="/assessments"
-                            ><ArrowLeft class="h-6 w-6 text-slate-500"
+                            ><ArrowLeft class="h-6 w-6 text-muted-foreground"
                         /></Link>
                     </Button>
                     <div class="hidden h-12 w-px bg-slate-100 md:block"></div>
                     <div>
                         <div class="mb-1 flex items-center gap-3">
                             <h1
-                                class="text-3xl font-bold tracking-tighter text-slate-900"
+                                class="text-3xl font-bold tracking-tight text-foreground"
                             >
                                 {{ assessment.title }}
                             </h1>
                             <Badge
-                                class="rounded-lg bg-slate-900 px-3 py-1 text-xs font-bold tracking-tight text-white uppercase"
+                                class="rounded-lg bg-primary px-3 py-1 text-xs font-bold tracking-tight text-white "
                                 >OFFICIAL EVALUATION</Badge
                             >
                         </div>
                         <div
-                            class="flex items-center gap-4 text-xs font-bold text-slate-400"
+                            class="flex items-center gap-4 text-xs font-bold text-muted-foreground/80"
                         >
                             <span
                                 class="flex items-center gap-2 rounded-md border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-indigo-600"
@@ -269,10 +269,10 @@ const submitAll = () => {
 
                 <div class="flex items-center gap-4">
                     <div
-                        class="mr-2 hidden border-r border-slate-100 pr-6 text-right sm:block"
+                        class="mr-2 hidden border-r border-border pr-6 text-right sm:block"
                     >
                         <p
-                            class="mb-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                         >
                             Assessment Matrix State
                         </p>
@@ -290,7 +290,7 @@ const submitAll = () => {
                     <Button
                         @click="submitAll"
                         :disabled="saving"
-                        class="h-14 rounded-2xl bg-slate-900 px-10 text-xs font-bold tracking-tight text-white uppercase shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] hover:bg-slate-800 active:scale-95"
+                        class="h-14 rounded-2xl bg-primary px-10 text-xs font-bold tracking-tight text-white  shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] hover:bg-slate-800 active:scale-95"
                     >
                         <Save v-if="!saving" class="mr-3 h-5 w-5" />
                         <div
@@ -306,7 +306,7 @@ const submitAll = () => {
             <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
                 <div class="group relative xl:col-span-3">
                     <Search
-                        class="absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-slate-900"
+                        class="absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-muted-foreground/80 transition-colors group-focus-within:text-foreground"
                     />
                     <Input
                         v-model="searchQuery"
@@ -321,7 +321,7 @@ const submitAll = () => {
                     <div
                         v-for="scale in ratingScales"
                         :key="scale.id"
-                        class="flex shrink-0 items-center gap-4 rounded-2xl border border-b-4 border-slate-100 bg-white px-5 py-3 shadow-sm"
+                        class="flex shrink-0 items-center gap-4 rounded-2xl border border-b-4 border-border bg-white px-5 py-3 shadow-sm"
                         :style="{ borderBottomColor: scale.color }"
                     >
                         <div
@@ -332,7 +332,7 @@ const submitAll = () => {
                         </div>
                         <div>
                             <p
-                                class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
+                                class="mb-1 text-xs leading-none font-bold tracking-tight text-muted-foreground/80 "
                             >
                                 {{ scale.code }}
                             </p>
@@ -355,10 +355,10 @@ const submitAll = () => {
                         <thead class="sticky top-0 z-30 bg-white">
                             <!-- Strand Grouping Row -->
                             <tr
-                                class="bg-slate-900 text-xs font-bold tracking-tight text-white uppercase"
+                                class="bg-primary text-xs font-bold tracking-tight text-white "
                             >
                                 <th
-                                    class="sticky left-0 z-40 w-[320px] min-w-[320px] bg-slate-900 p-6 text-left"
+                                    class="sticky left-0 z-40 w-[320px] min-w-[320px] bg-primary p-6 text-left"
                                 >
                                     LEARNER IDENTIFICATION
                                 </th>
@@ -379,7 +379,7 @@ const submitAll = () => {
                             <!-- Indicators Row -->
                             <tr class="bg-white shadow-sm shadow-slate-100">
                                 <th
-                                    class="sticky left-0 z-40 border-r border-b border-slate-100 bg-white p-6 text-left"
+                                    class="sticky left-0 z-40 border-r border-b border-border bg-white p-6 text-left"
                                 >
                                     <div
                                         class="flex items-center justify-between"
@@ -398,15 +398,15 @@ const submitAll = () => {
                                 <th
                                     v-for="(item, idx) in flatItems"
                                     :key="item.id"
-                                    class="min-w-[220px] border-b border-l border-slate-100 p-4 text-left transition-colors"
+                                    class="min-w-[220px] border-b border-l border-border p-4 text-left transition-colors"
                                     :class="{
-                                        'bg-slate-50 ring-2 ring-slate-900/5 ring-inset':
+                                        'bg-muted/10 ring-2 ring-slate-900/5 ring-inset':
                                             activeCell.itemIndex === idx,
                                     }"
                                 >
                                     <div class="flex items-start gap-3">
                                         <div
-                                            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white"
+                                            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-white"
                                         >
                                             {{ Number(idx) + 1 }}
                                         </div>
@@ -426,10 +426,10 @@ const submitAll = () => {
                                                     </p>
                                                 </TooltipTrigger>
                                                 <TooltipContent
-                                                    class="max-w-[320px] rounded-[1.5rem] border-none bg-slate-900 p-5 text-white shadow-lg"
+                                                    class="max-w-[320px] rounded-[1.5rem] border-none bg-primary p-5 text-white shadow-lg"
                                                 >
                                                     <p
-                                                        class="mb-2 text-xs font-bold tracking-tight text-slate-500 uppercase"
+                                                        class="mb-2 text-xs font-bold tracking-tight text-muted-foreground "
                                                     >
                                                         Detailed Indicator:
                                                     </p>
@@ -452,11 +452,11 @@ const submitAll = () => {
                             <tr
                                 v-for="(student, sIdx) in filteredResults"
                                 :key="student.id"
-                                class="group transition-colors even:bg-slate-50/20 hover:bg-slate-50/50"
+                                class="group transition-colors even:bg-muted/10/20 hover:bg-background"
                             >
                                 <!-- Student Name Column -->
                                 <td
-                                    class="sticky left-0 z-20 border-r border-b border-slate-100 bg-white p-6 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-slate-50"
+                                    class="sticky left-0 z-20 border-r border-b border-border bg-white p-6 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-muted/10"
                                 >
                                     <div class="flex items-center gap-4">
                                         <div class="relative">
@@ -467,7 +467,7 @@ const submitAll = () => {
                                                     :src="student.photo"
                                                 />
                                                 <AvatarFallback
-                                                    class="bg-indigo-600 text-sm font-bold text-white uppercase"
+                                                    class="bg-indigo-600 text-sm font-bold text-white "
                                                 >
                                                     {{
                                                         String(student.name)
@@ -496,12 +496,12 @@ const submitAll = () => {
                                         </div>
                                         <div class="overflow-hidden">
                                             <p
-                                                class="mb-1 truncate text-sm leading-none font-bold tracking-tight text-slate-900 uppercase"
+                                                class="mb-1 truncate text-sm leading-none font-bold tracking-tight text-foreground "
                                             >
                                                 {{ student.name }}
                                             </p>
                                             <p
-                                                class="text-xs leading-none font-bold tracking-tight text-slate-400"
+                                                class="text-xs leading-none font-bold tracking-tight text-muted-foreground/80"
                                             >
                                                 {{ student.admission_number }}
                                             </p>
@@ -513,7 +513,7 @@ const submitAll = () => {
                                 <td
                                     v-for="(rating, iIdx) in student.ratings"
                                     :key="iIdx"
-                                    class="relative border-b border-l border-slate-100 p-4 text-center transition-all"
+                                    class="relative border-b border-l border-border p-4 text-center transition-all"
                                     :class="{
                                         'z-10 scale-[1.05] rounded-xl bg-white shadow-lg ring-4 ring-slate-900':
                                             activeCell.studentIndex ===
@@ -560,7 +560,7 @@ const submitAll = () => {
                                                 :class="[
                                                     val === rating.rating
                                                         ? 'border-transparent'
-                                                        : 'border-slate-50 bg-white text-slate-200 hover:border-slate-200 hover:text-slate-400',
+                                                        : 'border-slate-50 bg-white text-slate-200 hover:border-border/50 hover:text-muted-foreground/80',
                                                 ]"
                                             >
                                                 {{ val }}
@@ -580,7 +580,7 @@ const submitAll = () => {
                                             </div>
                                             <div
                                                 v-else
-                                                class="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-dashed border-slate-100 transition-all group-hover/cell:border-slate-300"
+                                                class="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all group-hover/cell:border-slate-300"
                                             >
                                                 <span
                                                     class="text-sm font-bold text-slate-100 opacity-20 group-hover/cell:text-slate-300"
@@ -596,7 +596,7 @@ const submitAll = () => {
                                             activeCell.studentIndex === sIdx &&
                                             activeCell.itemIndex === iIdx
                                         "
-                                        class="absolute -top-5 left-1/2 z-50 -translate-x-1/2 animate-bounce rounded-full bg-slate-900 px-3 py-1 text-xs font-bold tracking-tight text-white uppercase shadow-xl"
+                                        class="absolute -top-5 left-1/2 z-50 -translate-x-1/2 animate-bounce rounded-full bg-primary px-3 py-1 text-xs font-bold tracking-tight text-white  shadow-xl"
                                     >
                                         Type 1-4
                                     </div>
@@ -608,7 +608,7 @@ const submitAll = () => {
 
                 <!-- Matrix Legend / Global Stats -->
                 <div
-                    class="flex flex-col items-center justify-between gap-8 border-t border-slate-800 bg-slate-900 p-8 text-white md:flex-row"
+                    class="flex flex-col items-center justify-between gap-8 border-t border-slate-800 bg-primary p-8 text-white md:flex-row"
                 >
                     <div class="flex items-center gap-6">
                         <div
@@ -618,12 +618,12 @@ const submitAll = () => {
                         </div>
                         <div class="space-y-1">
                             <h4
-                                class="text-sm font-bold tracking-tight uppercase"
+                                class="text-sm font-bold tracking-tight "
                             >
                                 Evaluation Integrity Matrix
                             </h4>
                             <p
-                                class="text-xs font-bold tracking-wider text-slate-400"
+                                class="text-xs font-bold tracking-wider text-muted-foreground/80"
                             >
                                 Keyboard Bindings: ARROW KEYS to navigate • 1-4
                                 to Rate • BACKSPACE to Clear
@@ -634,7 +634,7 @@ const submitAll = () => {
                     <div class="flex items-center gap-10">
                         <div class="group text-center">
                             <span
-                                class="mb-1 block text-xs font-bold tracking-tight text-slate-500 uppercase"
+                                class="mb-1 block text-xs font-bold tracking-tight text-muted-foreground "
                                 >Total Learners</span
                             >
                             <span class="text-2xl font-bold">{{
@@ -644,7 +644,7 @@ const submitAll = () => {
                         <div class="h-10 w-px bg-white/10"></div>
                         <div class="group text-center">
                             <span
-                                class="mb-1 block text-xs font-bold tracking-tight text-slate-500 uppercase"
+                                class="mb-1 block text-xs font-bold tracking-tight text-muted-foreground "
                                 >Evaluation Points</span
                             >
                             <span class="text-2xl font-bold">{{
@@ -655,7 +655,7 @@ const submitAll = () => {
                         <div class="min-w-[200px] space-y-2">
                             <div class="flex items-end justify-between">
                                 <span
-                                    class="text-xs font-bold tracking-tight text-slate-500 uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground "
                                     >Completion Progress</span
                                 >
                                 <span

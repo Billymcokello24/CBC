@@ -61,7 +61,7 @@ const conductAttributes = [
                 <Button
                     variant="ghost"
                     as-child
-                    class="-ml-4 font-bold uppercase"
+                    class="-ml-4 font-bold "
                 >
                     <Link href="/assessments/report-cards">
                         <ChevronLeft class="mr-2 h-4 w-4" />
@@ -71,13 +71,13 @@ const conductAttributes = [
                 <div class="flex items-center gap-2">
                     <Button
                         variant="outline"
-                        class="rounded-xl border-slate-200 font-bold uppercase shadow-sm"
+                        class="rounded-xl border-border/50 font-bold  shadow-sm"
                     >
                         <Download class="mr-2 h-4 w-4" /> Export PDF
                     </Button>
                     <Button
                         @click="printReport"
-                        class="rounded-xl bg-indigo-600 font-bold uppercase shadow-lg shadow-indigo-100 hover:bg-indigo-700"
+                        class="rounded-xl bg-indigo-600 font-bold  shadow-lg shadow-indigo-100 hover:bg-indigo-700"
                     >
                         <Printer class="mr-2 h-4 w-4" /> Print Report
                     </Button>
@@ -86,7 +86,7 @@ const conductAttributes = [
 
             <!-- Report Card Container -->
             <div
-                class="border border-slate-100 bg-white p-12 font-serif leading-relaxed text-slate-900 shadow-lg print:border-none print:p-4 print:shadow-none"
+                class="border border-border bg-white p-12 font-serif leading-relaxed text-foreground shadow-lg print:border-none print:p-4 print:shadow-none"
             >
                 <!-- Page 1 Header -->
                 <div
@@ -95,18 +95,18 @@ const conductAttributes = [
                     <div class="max-w-xl space-y-4">
                         <div class="flex items-center gap-4">
                             <div
-                                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 p-3"
+                                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary p-3"
                             >
                                 <School class="h-full w-full text-white" />
                             </div>
                             <div>
                                 <h1
-                                    class="text-4xl font-bold tracking-tighter text-slate-900 uppercase"
+                                    class="text-4xl font-bold tracking-tight text-foreground "
                                 >
                                     Education Group
                                 </h1>
                                 <p
-                                    class="text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                    class="text-xs font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     Excellence in Competency Based Learning
                                 </p>
@@ -118,10 +118,10 @@ const conductAttributes = [
                             PUPIL'S TERMLY ASSESSMENT REPORT
                         </h2>
                         <div
-                            class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold tracking-wider uppercase"
+                            class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm font-bold tracking-wider "
                         >
                             <div
-                                class="flex justify-between border-b border-slate-100 pb-1"
+                                class="flex justify-between border-b border-border pb-1"
                             >
                                 <span>NAME:</span>
                                 <span class="text-indigo-600"
@@ -130,7 +130,7 @@ const conductAttributes = [
                                 >
                             </div>
                             <div
-                                class="flex justify-between border-b border-slate-100 pb-1"
+                                class="flex justify-between border-b border-border pb-1"
                             >
                                 <span>YEAR:</span>
                                 <span class="text-indigo-600">{{
@@ -138,7 +138,7 @@ const conductAttributes = [
                                 }}</span>
                             </div>
                             <div
-                                class="flex justify-between border-b border-slate-100 pb-1"
+                                class="flex justify-between border-b border-border pb-1"
                             >
                                 <span>GRADE:</span>
                                 <span class="text-indigo-600">{{
@@ -146,7 +146,7 @@ const conductAttributes = [
                                 }}</span>
                             </div>
                             <div
-                                class="flex justify-between border-b border-slate-100 pb-1"
+                                class="flex justify-between border-b border-border pb-1"
                             >
                                 <span>TERM:</span>
                                 <span class="text-indigo-600">{{
@@ -159,16 +159,16 @@ const conductAttributes = [
                     <!-- Performance Legend Table -->
                     <div class="w-full md:w-80">
                         <h3
-                            class="mb-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                            class="mb-2 text-xs font-medium tracking-tight text-muted-foreground/80 "
                         >
                             1.0 LEARNER'S PERFORMANCE KEY
                         </h3>
                         <table
-                            class="w-full border-collapse border border-slate-200 bg-slate-50 text-xs"
+                            class="w-full border-collapse border border-border/50 bg-muted/10 text-xs"
                         >
                             <thead>
                                 <tr
-                                    class="bg-slate-900 text-xs font-bold tracking-tighter text-white uppercase"
+                                    class="bg-primary text-xs font-bold tracking-tight text-white "
                                 >
                                     <th
                                         class="border border-slate-300 p-1.5 text-left"
@@ -190,23 +190,23 @@ const conductAttributes = [
                                 <tr
                                     v-for="level in performanceLevels"
                                     :key="level.code"
-                                    class="border-b border-slate-200 font-bold"
+                                    class="border-b border-border/50 font-bold"
                                 >
-                                    <td class="border border-slate-200 p-1.5">
+                                    <td class="border border-border/50 p-1.5">
                                         {{ level.label }}
                                     </td>
                                     <td
-                                        class="border border-slate-200 p-1.5 text-center"
+                                        class="border border-border/50 p-1.5 text-center"
                                     >
                                         {{ level.rating || '-' }}
                                     </td>
                                     <td
-                                        class="border border-slate-200 p-1.5 text-center"
+                                        class="border border-border/50 p-1.5 text-center"
                                     >
                                         {{ level.code }}
                                     </td>
                                     <td
-                                        class="border border-slate-200 p-1.5 text-center"
+                                        class="border border-border/50 p-1.5 text-center"
                                     >
                                         {{ level.range }}
                                     </td>
@@ -223,7 +223,7 @@ const conductAttributes = [
                     >
                         <thead>
                             <tr
-                                class="bg-slate-900 text-center font-bold text-white uppercase"
+                                class="bg-primary text-center font-bold text-white "
                             >
                                 <th
                                     rowspan="2"
@@ -242,7 +242,7 @@ const conductAttributes = [
                                 </th>
                             </tr>
                             <tr
-                                class="bg-slate-800 text-xs font-bold tracking-tighter text-white uppercase"
+                                class="bg-slate-800 text-xs font-bold tracking-tight text-white "
                             >
                                 <th colspan="2" class="border border-white p-1">
                                     Opening Exam
@@ -261,29 +261,29 @@ const conductAttributes = [
                                 </th>
                             </tr>
                             <tr
-                                class="bg-slate-50 text-center text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                class="bg-muted/10 text-center text-xs font-bold tracking-tight text-muted-foreground/80 "
                             >
                                 <td
-                                    class="border border-slate-200 p-1 px-4 text-left"
+                                    class="border border-border/50 p-1 px-4 text-left"
                                 >
                                     Subject Title
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Score
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Level
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Score
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Level
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Score
                                 </td>
-                                <td class="border border-slate-200 p-1">
+                                <td class="border border-border/50 p-1">
                                     Level
                                 </td>
                                 <td
@@ -297,7 +297,7 @@ const conductAttributes = [
                                     Level
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-1 px-4 text-left"
+                                    class="border border-border/50 p-1 px-4 text-left"
                                 >
                                     Feedback Summary
                                 </td>
@@ -310,37 +310,37 @@ const conductAttributes = [
                                 class="transition-colors hover:bg-indigo-50/30"
                             >
                                 <td
-                                    class="border border-slate-200 p-3 font-bold"
+                                    class="border border-border/50 p-3 font-bold"
                                 >
                                     {{ result.subject }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                    class="border border-border/50 p-3 text-center font-bold text-muted-foreground"
                                 >
                                     {{ result.opening?.score || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                    class="border border-border/50 p-3 text-center font-bold text-indigo-600"
                                 >
                                     {{ result.opening?.level || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                    class="border border-border/50 p-3 text-center font-bold text-muted-foreground"
                                 >
                                     {{ result.mid?.score || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                    class="border border-border/50 p-3 text-center font-bold text-indigo-600"
                                 >
                                     {{ result.mid?.level || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-slate-500"
+                                    class="border border-border/50 p-3 text-center font-bold text-muted-foreground"
                                 >
                                     {{ result.end?.score || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-center font-bold text-indigo-600"
+                                    class="border border-border/50 p-3 text-center font-bold text-indigo-600"
                                 >
                                     {{ result.end?.level || '-' }}
                                 </td>
@@ -355,7 +355,7 @@ const conductAttributes = [
                                     {{ result.average?.level || '-' }}
                                 </td>
                                 <td
-                                    class="border border-slate-200 p-3 text-xs font-medium text-slate-600"
+                                    class="border border-border/50 p-3 text-xs font-medium text-slate-600"
                                 >
                                     {{
                                         result.comments ||
@@ -366,13 +366,13 @@ const conductAttributes = [
                             <!-- Summary Totals -->
                             <tr class="bg-indigo-50/50 font-bold">
                                 <td
-                                    class="border-2 border-slate-900 p-4 text-sm tracking-tighter uppercase"
+                                    class="border-2 border-slate-900 p-4 text-sm tracking-tight "
                                 >
                                     Total Score / Mean Index
                                 </td>
                                 <td
                                     colspan="6"
-                                    class="border border-slate-200 text-center text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                    class="border border-border/50 text-center text-xs font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     Aggregated Summary
                                 </td>
@@ -387,7 +387,7 @@ const conductAttributes = [
                                     ME
                                 </td>
                                 <td
-                                    class="border-2 border-slate-900 p-4 text-right text-xs tracking-tight text-indigo-600 uppercase underline"
+                                    class="border-2 border-slate-900 p-4 text-right text-xs tracking-tight text-indigo-600  underline"
                                 >
                                     Meeting Expectation
                                 </td>
@@ -402,33 +402,33 @@ const conductAttributes = [
                     <div class="space-y-6">
                         <section>
                             <h3
-                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-muted-foreground/80 "
                             >
                                 <span
-                                    class="flex h-5 w-5 items-center justify-center rounded bg-slate-900 text-xs text-white"
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-primary text-xs text-white"
                                     >2.0</span
                                 >
                                 CONDUCT AND BEHAVIOUR
                             </h3>
                             <table
-                                class="w-full border-collapse border border-slate-200 text-xs"
+                                class="w-full border-collapse border border-border/50 text-xs"
                             >
                                 <thead>
                                     <tr
-                                        class="bg-slate-50 font-bold tracking-tighter uppercase"
+                                        class="bg-muted/10 font-bold tracking-tight "
                                     >
                                         <th
-                                            class="border border-slate-200 p-2 text-left"
+                                            class="border border-border/50 p-2 text-left"
                                         >
                                             Attributes / Area
                                         </th>
-                                        <th class="border border-slate-200 p-2">
+                                        <th class="border border-border/50 p-2">
                                             Term 1
                                         </th>
-                                        <th class="border border-slate-200 p-2">
+                                        <th class="border border-border/50 p-2">
                                             Term 2
                                         </th>
-                                        <th class="border border-slate-200 p-2">
+                                        <th class="border border-border/50 p-2">
                                             Term 3
                                         </th>
                                     </tr>
@@ -439,22 +439,22 @@ const conductAttributes = [
                                         :key="attr.label"
                                     >
                                         <td
-                                            class="border border-slate-200 p-2 text-slate-500 uppercase"
+                                            class="border border-border/50 p-2 text-muted-foreground "
                                         >
                                             {{ attr.label }}
                                         </td>
                                         <td
-                                            class="border border-slate-200 p-2 text-center text-indigo-600"
+                                            class="border border-border/50 p-2 text-center text-indigo-600"
                                         >
                                             {{ attr.t1 }}
                                         </td>
                                         <td
-                                            class="border border-slate-200 p-2 text-center text-slate-300"
+                                            class="border border-border/50 p-2 text-center text-slate-300"
                                         >
                                             {{ attr.t2 || '-' }}
                                         </td>
                                         <td
-                                            class="border border-slate-200 p-2 text-center text-slate-300"
+                                            class="border border-border/50 p-2 text-center text-slate-300"
                                         >
                                             {{ attr.t3 || '-' }}
                                         </td>
@@ -465,7 +465,7 @@ const conductAttributes = [
 
                         <section>
                             <h3
-                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-muted-foreground/80 "
                             >
                                 <span
                                     class="flex h-5 w-5 items-center justify-center rounded bg-indigo-600 text-xs text-white"
@@ -474,10 +474,10 @@ const conductAttributes = [
                                 CORE COMPETENCIES FEEDBACK
                             </h3>
                             <div
-                                class="min-h-[140px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                                class="min-h-[140px] rounded-2xl border border-dashed border-border/50 bg-muted/10 p-4 text-xs font-medium text-slate-600"
                             >
                                 <p
-                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     Acquisition of core competencies
                                     (Communication, Collaboration, Critical
@@ -496,7 +496,7 @@ const conductAttributes = [
                     <div class="space-y-6">
                         <section>
                             <h3
-                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-muted-foreground/80 "
                             >
                                 <span
                                     class="flex h-5 w-5 items-center justify-center rounded bg-indigo-600 text-xs text-white"
@@ -505,10 +505,10 @@ const conductAttributes = [
                                 ACQUISITION OF VALUES
                             </h3>
                             <div
-                                class="min-h-[120px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                                class="min-h-[120px] rounded-2xl border border-dashed border-border/50 bg-muted/10 p-4 text-xs font-medium text-slate-600"
                             >
                                 <p
-                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     (Love, Responsibility, Respect, Unity,
                                     Peace, Patriotism, Integrity):
@@ -521,19 +521,19 @@ const conductAttributes = [
 
                         <section>
                             <h3
-                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                class="mb-3 flex items-center gap-2 text-xs font-medium tracking-tight text-muted-foreground/80 "
                             >
                                 <span
-                                    class="flex h-5 w-5 items-center justify-center rounded bg-slate-900 text-xs text-white"
+                                    class="flex h-5 w-5 items-center justify-center rounded bg-primary text-xs text-white"
                                     >5.0</span
                                 >
                                 COMMUNITY SERVICE LEARNING
                             </h3>
                             <div
-                                class="min-h-[120px] rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-xs font-medium text-slate-600"
+                                class="min-h-[120px] rounded-2xl border border-dashed border-border/50 bg-muted/10 p-4 text-xs font-medium text-slate-600"
                             >
                                 <p
-                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tighter text-slate-400 uppercase"
+                                    class="not- mb-2 font-sans text-xs leading-tight font-bold tracking-tight text-muted-foreground/80 "
                                 >
                                     Participation in community service learning
                                     program:
@@ -548,7 +548,7 @@ const conductAttributes = [
                         <div class="grid grid-cols-2 gap-4 pt-4">
                             <div class="border-2 border-slate-900 bg-white p-4">
                                 <p
-                                    class="mb-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="mb-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                 >
                                     Closing Date
                                 </p>
@@ -558,7 +558,7 @@ const conductAttributes = [
                             </div>
                             <div class="border-2 border-slate-900 bg-white p-4">
                                 <p
-                                    class="mb-1 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                                    class="mb-1 text-xs font-medium tracking-tight text-muted-foreground/80 "
                                 >
                                     Opening Date
                                 </p>
@@ -571,7 +571,7 @@ const conductAttributes = [
                 <!-- Footer Signatures -->
                 <div class="mt-16 border-t-2 border-slate-900 pt-8">
                     <h3
-                        class="mb-8 text-xs font-medium tracking-tight text-slate-400 uppercase"
+                        class="mb-8 text-xs font-medium tracking-tight text-muted-foreground/80 "
                     >
                         6.0 SIGNING & OFFICIAL STAMP
                     </h3>
@@ -580,11 +580,11 @@ const conductAttributes = [
                             <div class="h-10 border-b border-slate-900"></div>
                             <div>
                                 <p
-                                    class="text-xs font-medium tracking-tight uppercase"
+                                    class="text-xs font-medium tracking-tight "
                                 >
                                     Class Teacher
                                 </p>
-                                <p class="text-xs font-bold text-slate-400">
+                                <p class="text-xs font-bold text-muted-foreground/80">
                                     Signature / Date
                                 </p>
                             </div>
@@ -593,11 +593,11 @@ const conductAttributes = [
                             <div class="h-10 border-b border-slate-900"></div>
                             <div>
                                 <p
-                                    class="text-xs font-medium tracking-tight uppercase"
+                                    class="text-xs font-medium tracking-tight "
                                 >
                                     Head Teacher
                                 </p>
-                                <p class="text-xs font-bold text-slate-400">
+                                <p class="text-xs font-bold text-muted-foreground/80">
                                     Signature / Date
                                 </p>
                             </div>
@@ -606,11 +606,11 @@ const conductAttributes = [
                             <div class="h-10 border-b border-slate-900"></div>
                             <div>
                                 <p
-                                    class="text-xs font-medium tracking-tight uppercase"
+                                    class="text-xs font-medium tracking-tight "
                                 >
                                     Parent / Guardian
                                 </p>
-                                <p class="text-xs font-bold text-slate-400">
+                                <p class="text-xs font-bold text-muted-foreground/80">
                                     Signature / Date
                                 </p>
                             </div>
@@ -620,7 +620,7 @@ const conductAttributes = [
 
                 <!-- System Metadata -->
                 <div
-                    class="mt-20 flex items-center justify-between pt-4 text-xs font-medium tracking-tight text-muted-foreground text-slate-300 uppercase"
+                    class="mt-20 flex items-center justify-between pt-4 text-xs font-medium tracking-tight text-muted-foreground text-slate-300 "
                 >
                     <span>Generated by CBC Smart LMS v4.2</span>
                     <span
@@ -634,7 +634,7 @@ const conductAttributes = [
 
             <!-- Print Prompt -->
             <p
-                class="py-6 text-center text-xs font-bold text-slate-400 print:hidden"
+                class="py-6 text-center text-xs font-bold text-muted-foreground/80 print:hidden"
             >
                 Tip: Press
                 <kbd class="rounded border bg-slate-100 px-1 py-0.5"

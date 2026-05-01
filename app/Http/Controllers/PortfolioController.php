@@ -14,7 +14,7 @@ class PortfolioController extends Controller
 {
     private function getSchoolId(): int
     {
-        return auth()->user()->school_id ?? 1;
+        return auth()->user()->school_id;
     }
 
     public function index(): Response

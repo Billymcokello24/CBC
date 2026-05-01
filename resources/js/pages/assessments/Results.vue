@@ -102,231 +102,112 @@ const getPerformanceColor = (average: number) => {
     <Head title="Performance Analytics" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
-            class="font-pulsar mx-auto mt-2 flex h-full max-w-[1400px] flex-1 flex-col gap-6 p-6"
+            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
         >
             <!-- Header -->
-            <div
-                class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-4">
-                    <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-500/10 shadow-inner"
-                    >
-                        <BarChart3 class="h-6 w-6 text-indigo-600" />
-                    </div>
-                    <div>
-                        <h1
-                            class="text-2xl font-bold tracking-tight text-slate-900"
-                        >
-                            Performance Analytics
-                        </h1>
-                        <p
-                            class="flex items-center gap-2 font-medium text-muted-foreground"
-                        >
-                            {{ activeYear?.name || 'Academic Year' }}
-                            <span class="text-slate-300">•</span>
-                            {{ activeTerm?.name || 'Current Term' }}
-                        </p>
-                    </div>
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Performance Analytics</h1>
+                    <p class="text-xs text-muted-foreground">{{ activeYear?.name || 'Academic Year' }} • {{ activeTerm?.name || 'Current Term' }}</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        class="font-pulsar h-10 border-slate-200"
-                        @click="showUploadDialog = true"
-                    >
-                        <Upload class="mr-2 h-4 w-4" />Bulk Import
+                <div class="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" @click="showUploadDialog = true">
+                        <Upload class="mr-2 h-4 w-4 text-primary" />
+                        Bulk Import
                     </Button>
-                    <Button
-                        variant="outline"
-                        class="font-pulsar h-10 border-slate-200"
-                    >
-                        <Download class="mr-2 h-4 w-4" />Full Export
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted">
+                        <Download class="mr-2 h-4 w-4 text-primary" />
+                        Full Export
                     </Button>
                 </div>
             </div>
 
             <!-- Dashboard Stats -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div
-                    class="group flex items-center gap-4 rounded-2xl border border-l-4 border-l-slate-900 bg-card p-5 shadow-sm transition-all hover:shadow-md"
-                >
-                    <div
-                        class="rounded-xl bg-slate-900/5 p-3 text-slate-900 transition-all"
-                    >
-                        <User class="h-5 w-5" />
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <div v-for="(stat, idx) in [
+                    { label: 'Student Body', val: `${students.meta?.total ?? students.data.length} Cohorts`, icon: 'User' },
+                    { label: 'Pass Index', val: '82.4% Efficient', icon: 'CheckCircle2' },
+                    { label: 'Mean Score', val: '68.4 pts', icon: 'TrendingUp' },
+                    { label: 'Engine Load', val: 'Optimized', icon: 'Target' }
+                ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                     <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
+                        <component :is="stat.icon === 'User' ? User : stat.icon === 'CheckCircle2' ? CheckCircle2 : stat.icon === 'TrendingUp' ? TrendingUp : Target" class="h-24 w-24" />
                     </div>
-                    <div>
-                        <p
-                            class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Student Body
-                        </p>
-                        <p class="text-xl font-bold text-slate-900">
-                            {{
-                                students.meta?.total ?? students.data.length
-                            }}
-                            Cohorts
-                        </p>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center gap-4 rounded-2xl border border-l-4 border-l-emerald-500 bg-card p-5 shadow-sm transition-all hover:shadow-md"
-                >
-                    <div
-                        class="rounded-xl bg-emerald-500/10 p-3 text-emerald-600 transition-all"
-                    >
-                        <CheckCircle2 class="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p
-                            class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Pass Index
-                        </p>
-                        <p class="text-xl font-bold text-emerald-600">
-                            82.4% Efficient
-                        </p>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center gap-4 rounded-2xl border border-l-4 border-l-indigo-600 bg-card p-5 shadow-sm transition-all hover:shadow-md"
-                >
-                    <div
-                        class="rounded-xl bg-indigo-500/10 p-3 text-indigo-600 transition-all"
-                    >
-                        <TrendingUp class="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p
-                            class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Mean Score
-                        </p>
-                        <p class="text-xl font-bold text-indigo-600">
-                            68.4 pts
-                        </p>
-                    </div>
-                </div>
-                <div
-                    class="group flex items-center gap-4 rounded-2xl border border-l-4 border-l-purple-600 bg-card p-5 shadow-sm transition-all hover:shadow-md"
-                >
-                    <div
-                        class="rounded-xl bg-purple-500/10 p-3 text-purple-600 transition-all"
-                    >
-                        <Target class="h-5 w-5" />
-                    </div>
-                    <div>
-                        <p
-                            class="mb-1 text-xs leading-none font-bold tracking-tight text-slate-400 uppercase"
-                        >
-                            Engine Load
-                        </p>
-                        <p
-                            class="text-xl font-bold tracking-tighter text-purple-600 uppercase"
-                        >
-                            Optimized
-                        </p>
+                    <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
                     </div>
                 </div>
             </div>
 
             <!-- Filters -->
-            <div
-                class="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm md:flex-row md:items-center"
-            >
-                <div class="relative flex-1 md:max-w-md">
-                    <Search
-                        class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 font-medium text-muted-foreground"
-                    />
-                    <Input
-                        v-model="searchQuery"
-                        placeholder="Filter by name or admission code..."
-                        class="h-11 rounded-xl border-slate-200 pl-9"
-                    />
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                    <div class="flex items-center gap-2">
+                        <BarChart3 class="h-4 w-4 text-primary" />
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Analytics Filter</span>
+                    </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <SearchableSelect
-                        v-model="selectedClass"
-                        :options="[
-                            { id: 'all', name: 'Every Class' },
-                            ...classes,
-                        ]"
-                        placeholder="Cluster Filter"
-                        search-placeholder="Find class..."
-                        class="h-11 w-full md:w-[220px]"
-                    />
-                    <Button
-                        variant="outline"
-                        class="h-11 rounded-xl border-slate-200 px-4 text-xs font-bold tracking-tight uppercase transition-colors hover:bg-slate-50"
-                    >
-                        <Filter class="mr-2 h-4 w-4" /> Advance Filter
-                    </Button>
+                <div class="p-6">
+                    <div class="flex flex-col gap-6 md:flex-row md:items-end">
+                        <div class="flex-1 space-y-2">
+                            <label class="text-xs font-medium text-muted-foreground">Search Profile</label>
+                            <div class="relative">
+                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                                <Input v-model="searchQuery" placeholder="Filter by name or admission code..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
+                            </div>
+                        </div>
+                        <div class="flex-1 space-y-2">
+                            <label class="text-xs font-medium text-muted-foreground">Class Filter</label>
+                            <SearchableSelect
+                                v-model="selectedClass"
+                                :options="[{ id: 'all', name: 'Every Class' }, ...classes]"
+                                placeholder="Cluster Filter"
+                                search-placeholder="Find class..."
+                                class="h-10"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Results Table -->
-            <div
-                class="overflow-hidden overflow-x-auto rounded-xl border border-t-8 border-t-indigo-500 bg-card shadow-sm"
-            >
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="font-pulsar border-b bg-slate-50">
-                            <th
-                                class="px-6 py-5 text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Student Profile
-                            </th>
-                            <th
-                                class="px-6 py-5 text-center text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Cluster
-                            </th>
-                            <th
-                                class="px-6 py-5 text-center text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Load
-                            </th>
-                            <th
-                                class="px-6 py-5 text-center text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Mean (%)
-                            </th>
-                            <th
-                                class="px-6 py-5 text-center text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Pulse Tracking
-                            </th>
-                            <th
-                                class="px-6 py-5 text-right text-xs font-bold tracking-tight text-slate-500 uppercase"
-                            >
-                                Logic
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y text-sm font-medium">
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                <th class="px-6 py-4">Student Profile</th>
+                                <th class="px-6 py-4 text-center">Cluster</th>
+                                <th class="px-6 py-4 text-center">Load</th>
+                                <th class="px-6 py-4 text-center">Mean (%)</th>
+                                <th class="px-6 py-4 text-center">Pulse Tracking</th>
+                                <th class="px-6 py-4 text-right">Logic</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/50">
                         <tr
                             v-for="student in filteredStudents"
                             :key="student.id"
-                            class="group transition-all duration-300 hover:bg-slate-50/70"
+                            class="group transition-all duration-300 hover:bg-muted/10/70"
                         >
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-4">
                                     <div
-                                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-50 bg-indigo-600/10 text-sm font-bold text-indigo-700 uppercase shadow-inner transition-all group-hover:bg-indigo-600 group-hover:text-white"
+                                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-50 bg-indigo-600/10 text-sm font-bold text-indigo-700  shadow-inner transition-all group-hover:bg-indigo-600 group-hover:text-white"
                                     >
                                         {{ (student.first_name || 'U')[0]
                                         }}{{ (student.last_name || 'S')[0] }}
                                     </div>
                                     <div>
                                         <div
-                                            class="leading-tight font-bold text-slate-900 transition-colors group-hover:text-indigo-700"
+                                            class="leading-tight font-bold text-foreground transition-colors group-hover:text-indigo-700"
                                         >
                                             {{ student.first_name }}
                                             {{ student.last_name }}
                                         </div>
                                         <div
-                                            class="mt-1 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                            class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >
                                             ID: {{ student.admission_number }}
                                         </div>
@@ -336,7 +217,7 @@ const getPerformanceColor = (average: number) => {
                             <td class="px-6 py-5 text-center">
                                 <Badge
                                     variant="outline"
-                                    class="rounded-lg border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-bold text-slate-600 uppercase"
+                                    class="rounded-lg border-border/50 bg-muted/10 px-2 py-0.5 text-xs font-bold text-slate-600 "
                                 >
                                     {{
                                         student.current_class?.name ||
@@ -347,11 +228,11 @@ const getPerformanceColor = (average: number) => {
                             <td class="px-6 py-5 text-center">
                                 <div class="inline-flex flex-col items-center">
                                     <span
-                                        class="text-sm font-bold text-slate-900"
+                                        class="text-sm font-bold text-foreground"
                                         >{{ student.tests_count || 0 }}</span
                                     >
                                     <span
-                                        class="mt-0.5 text-xs font-bold tracking-tighter text-slate-400 uppercase"
+                                        class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >Tests Logged</span
                                     >
                                 </div>
@@ -359,7 +240,7 @@ const getPerformanceColor = (average: number) => {
                             <td class="px-6 py-5 text-center">
                                 <div class="inline-flex flex-col items-center">
                                     <span
-                                        class="text-lg font-bold tracking-tighter"
+                                        class="text-lg font-bold tracking-tight"
                                         :class="
                                             getPerformanceColor(
                                                 student.mean_score,
@@ -368,7 +249,7 @@ const getPerformanceColor = (average: number) => {
                                         >{{ student.mean_score }}%</span
                                     >
                                     <span
-                                        class="mt-0.5 text-xs font-bold tracking-tight text-slate-400 uppercase"
+                                        class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
                                         >Consensus</span
                                     >
                                 </div>
@@ -386,7 +267,7 @@ const getPerformanceColor = (average: number) => {
                                         ></div>
                                     </div>
                                     <span
-                                        class="text-xs font-bold tracking-tight text-indigo-600 uppercase transition-transform group-hover:scale-105"
+                                        class="text-xs font-bold tracking-tight text-indigo-600  transition-transform group-hover:scale-105"
                                         >Trajectory
                                         {{ student.trajectory }}</span
                                     >
@@ -421,7 +302,7 @@ const getPerformanceColor = (average: number) => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent
                                             align="end"
-                                            class="font-pulsar w-56 overflow-hidden rounded-xl border-slate-200 p-1 shadow-lg"
+                                            class="font-pulsar w-56 overflow-hidden rounded-xl border-border/50 p-1 shadow-lg"
                                         >
                                             <DropdownMenuItem
                                                 class="rounded-lg font-bold"
@@ -452,7 +333,7 @@ const getPerformanceColor = (average: number) => {
                         <tr v-if="filteredStudents.length === 0">
                             <td colspan="6" class="px-6 py-24 text-center">
                                 <div
-                                    class="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-slate-100 bg-slate-50 shadow-inner"
+                                    class="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-muted/10 shadow-inner"
                                 >
                                     <BarChart3
                                         class="h-10 w-10 text-slate-200"
@@ -464,7 +345,7 @@ const getPerformanceColor = (average: number) => {
                                     Registry Silent
                                 </h3>
                                 <p
-                                    class="mx-auto max-w-sm font-medium text-slate-500"
+                                    class="mx-auto max-w-sm font-medium text-muted-foreground"
                                 >
                                     No student records found matching the
                                     current search parameters for this academic
@@ -477,55 +358,25 @@ const getPerformanceColor = (average: number) => {
             </div>
 
             <!-- Footer Pagination -->
-            <div
-                class="mt-6 flex flex-col gap-6 border-t py-12 md:flex-row md:items-center md:justify-between"
-            >
-                <div class="flex items-center gap-8">
-                    <p
-                        class="text-xs font-medium tracking-tight whitespace-nowrap text-slate-400 uppercase"
-                    >
-                        Node Registry: {{ filteredStudents.length }} Entries
-                    </p>
-                    <div class="flex items-center gap-3">
-                        <span
-                            class="text-xs font-bold tracking-tight text-slate-400 uppercase"
-                            >Density:</span
-                        >
-                        <select
-                            class="h-8 rounded-lg border-slate-200 bg-white px-2 text-xs font-bold text-slate-600 uppercase focus:ring-indigo-500"
-                        >
-                            <option>20 Rows</option>
-                            <option>50 Rows</option>
-                            <option>High Density</option>
-                        </select>
-                    </div>
-                </div>
-                <div
-                    class="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0"
-                >
-                    <Button
-                        v-for="(link, i) in students.links"
-                        :key="i"
-                        variant="ghost"
-                        size="sm"
-                        :disabled="!link.url || link.active"
-                        :class="[
-                            'h-9 min-w-[36px] rounded-xl text-xs font-bold tracking-tighter uppercase',
-                            link.active
-                                ? 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700'
-                                : 'text-slate-400 hover:bg-slate-100 hover:text-indigo-600',
-                        ]"
-                        as-child
-                    >
-                        <Link
-                            v-if="link.url"
-                            :href="link.url"
-                            v-html="link.label"
-                        />
-                        <span v-else v-html="link.label" />
-                    </Button>
+            <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5 rounded-xl border mt-auto">
+                <p class="text-xs text-muted-foreground font-medium">Node Registry: {{ filteredStudents.length }} Entries</p>
+                <div class="flex items-center gap-1.5">
+                    <template v-for="(link, i) in students.links" :key="i">
+                        <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-xs font-medium transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" as-child>
+                            <Link :href="link.url" v-html="link.label"></Link>
+                        </Button>
+                        <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                             <Link v-if="link.url" :href="link.url">Prev</Link>
+                             <span v-else>Prev</span>
+                        </Button>
+                        <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                             <Link v-if="link.url" :href="link.url">Next</Link>
+                             <span v-else>Next</span>
+                        </Button>
+                    </template>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- Bulk Upload Dialog -->

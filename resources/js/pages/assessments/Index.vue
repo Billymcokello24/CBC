@@ -148,8 +148,8 @@ const getStatusIcon = (status: string) => {
                 class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-black uppercase">Assessment matrix</h1>
-                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Coordinating {{ assessments.total }} Academic Evaluation Nodes</p>
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Assessment Matrix</h1>
+                    <p class="text-xs text-muted-foreground">Coordinating {{ assessments.total }} Academic Evaluation Nodes</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -161,10 +161,10 @@ const getStatusIcon = (status: string) => {
                             <Rows3 class="h-4 w-4" />
                         </Button>
                     </div>
-                    <Button as-child class="h-12 rounded-2xl bg-primary px-8 text-[10px] font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+                    <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
                         <Link href="/assessments/create">
-                            <Plus class="mr-2.5 h-4 w-4" />
-                            Initiate test node
+                            <Plus class="mr-2 h-4 w-4" />
+                            Create Assessment
                         </Link>
                     </Button>
                 </div>
@@ -177,65 +177,65 @@ const getStatusIcon = (status: string) => {
                     { label: 'Temporal Due', val: stats.thisWeek, sub: 'Scheduled cycles', icon: Calendar, color: 'amber-500' },
                     { label: 'Pending Grading', val: stats.pendingGrading, sub: 'Active Mutation', icon: History, color: 'purple-500' },
                     { label: 'Mean Efficiency', val: `${stats.avgScore}%`, sub: 'Population Score', icon: TrendingUp, color: 'emerald-500' }
-                ]" :key="idx" class="group relative overflow-hidden rounded-3xl border border-border bg-card p-6 transition-all hover:border-primary/20">
-                     <div class="absolute -right-4 -top-4 opacity-[0.03] transition-transform duration-700 group-hover:scale-110">
+                ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                     <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
                         <component :is="stat.icon" class="h-24 w-24" />
                     </div>
-                    <p class="text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">{{ stat.label }}</p>
+                    <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
                     <div class="mt-2 flex items-baseline gap-2">
-                        <h3 class="text-2xl font-bold tracking-tight text-foreground uppercase">{{ stat.val }}</h3>
-                        <span class="text-[9px] font-bold text-primary uppercase opacity-60">{{ stat.sub }}</span>
+                        <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
+                        <span class="text-[10px] font-semibold text-primary">{{ stat.sub }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Internal Filter Protocol -->
-            <div class="overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all hover:border-primary/10">
-                <div class="flex h-14 items-center justify-between border-b border-border/50 bg-muted/10 px-8">
-                    <div class="flex items-center gap-3">
+            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
+                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                    <div class="flex items-center gap-2">
                         <SearchCode class="h-4 w-4 text-primary" />
-                        <span class="text-[10px] font-bold tracking-widest text-foreground uppercase">Assessment Search Protocol</span>
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Assessment Search Center</span>
                     </div>
                 </div>
                 <div class="p-8">
                      <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Identification</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Search Assessment</Label>
                             <div class="relative">
-                                <Search class="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
-                                <Input v-model="searchQuery" placeholder="Search parameters..." class="h-12 rounded-xl border-border bg-muted/20 pl-11 pr-4 text-xs font-bold uppercase focus:bg-background" />
+                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                                <Input v-model="searchQuery" placeholder="Search parameters..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
                             </div>
                         </div>
-                        <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Learning Group</Label>
+                        <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Learning Group</Label>
                              <div class="relative">
-                                <select v-model="selectedClassId" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                <select v-model="selectedClassId" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
                                     <option value="all">Global Classes</option>
                                     <option v-for="c in classes" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
-                         <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Subject Node</Label>
+                         <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Subject</Label>
                              <div class="relative">
-                                <select v-model="selectedSubjectId" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                <select v-model="selectedSubjectId" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
                                     <option value="all">Global Subjects</option>
                                     <option v-for="s in subjects" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
-                         <div class="space-y-2.5">
-                            <Label class="ml-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase opacity-60">Pulse State</Label>
+                         <div class="space-y-2">
+                            <Label class="text-xs font-medium text-muted-foreground">Status</Label>
                              <div class="relative">
-                                <select v-model="selectedStatus" class="h-12 w-full cursor-pointer appearance-none rounded-xl border border-border bg-muted/20 px-4 text-xs font-bold uppercase outline-none focus:bg-background">
+                                <select v-model="selectedStatus" class="h-10 w-full cursor-pointer appearance-none rounded-lg border border-border bg-muted/10 px-4 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
                                     <option value="all">All States</option>
                                     <option value="published">Published</option>
                                     <option value="grading">Grading</option>
                                     <option value="completed">Completed</option>
                                 </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/30" />
+                                <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
                             </div>
                         </div>
                     </div>
@@ -313,16 +313,16 @@ const getStatusIcon = (status: string) => {
                  </div>
             </div>
 
-            <div v-else class="overflow-hidden rounded-[2.5rem] border border-border bg-card shadow-sm transition-all hover:border-primary/20">
+            <div v-else class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
                  <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="border-b border-border/50 bg-muted/10 text-[10px] font-black tracking-widest text-muted-foreground uppercase">
-                                <th class="px-10 py-6">Evaluation Node</th>
-                                <th class="px-6 py-6">Academic Context</th>
-                                <th class="px-6 py-6">Performance Key</th>
-                                <th class="px-6 py-6">Pulse State</th>
-                                <th class="px-10 py-6 text-right font-black">Actions</th>
+                            <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                <th class="px-6 py-4">Assessment</th>
+                                <th class="px-6 py-4">Context</th>
+                                <th class="px-6 py-4">Max Marks</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border/50">
@@ -377,32 +377,23 @@ const getStatusIcon = (status: string) => {
             </div>
 
             <!-- Analytics & Pagination Container -->
-            <div class="flex flex-col gap-10 border-t border-border/50 pt-10 md:flex-row md:items-center md:justify-between">
-                <div class="flex items-center gap-10">
-                    <div class="space-y-1">
-                        <p class="text-[9px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Matrix Telemetry</p>
-                        <p class="text-[10px] font-black text-foreground uppercase tracking-widest">Showing {{ assessments.from }} - {{ assessments.to }} of {{ assessments.total }} Nodes</p>
-                    </div>
-                     <div class="flex items-center gap-3 bg-muted/20 px-4 py-2 rounded-2xl border border-border/50">
-                        <span class="text-[9px] font-black text-muted-foreground uppercase opacity-60">Density:</span>
-                        <select v-model="perPage" class="bg-transparent text-[10px] font-black uppercase outline-none text-primary">
-                            <option v-for="n in [15, 20, 50, 100]" :key="n" :value="n">{{ n }}</option>
-                        </select>
-                    </div>
-                </div>
+            <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5 rounded-xl border">
+                <p class="text-xs text-muted-foreground font-medium">Showing {{ assessments.from }} - {{ assessments.to }} of {{ assessments.total }} assessments</p>
 
-                <div class="flex flex-wrap items-center gap-2">
-                    <Button v-for="(link, i) in assessments.links" :key="i"
-                        variant="ghost" :disabled="!link.url || link.active"
-                        :class="[
-                            'h-10 min-w-[40px] rounded-xl text-[10px] font-black tracking-widest uppercase transition-all',
-                            link.active ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary' : 'text-muted-foreground hover:bg-muted'
-                        ]"
-                        as-child
-                    >
-                        <Link v-if="link.url" :href="link.url" v-html="link.label"></Link>
-                        <span v-else v-html="link.label"></span>
-                    </Button>
+                <div class="flex items-center gap-1.5">
+                    <template v-for="(link, i) in assessments.links" :key="i">
+                        <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-xs font-medium transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" as-child>
+                            <Link :href="link.url" v-html="link.label"></Link>
+                        </Button>
+                        <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                             <Link v-if="link.url" :href="link.url">Prev</Link>
+                             <span v-else>Prev</span>
+                        </Button>
+                        <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                             <Link v-if="link.url" :href="link.url">Next</Link>
+                             <span v-else>Next</span>
+                        </Button>
+                    </template>
                 </div>
             </div>
         </div>
