@@ -20,86 +20,181 @@ import {
     BarChart3,
     BookOpen,
     Layers,
+    Calendar,
+    Upload,
+    Download,
+    Filter,
+    ArrowRight,
+    LayoutGrid,
+    Rows3,
+    Trophy,
+    Target,
+    SearchCode,
+    History
 } from 'lucide-vue-next';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { route } from 'ziggy-js';
+import { ref, computed, onMounted } from 'vue';
+import BulkUploadDialog from '@/components/assessments/BulkUploadDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import axios from 'axios';
 
 const props = defineProps<{
     assessment: any;
+    allAssessments: Array<any>;
     students: Array<any>;
     existingRatings: Record<number, any[]>;
     ratingScales: Array<any>;
+    stats: any;
 }>();
 
 const breadcrumbs = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Assessments', href: '/assessments' },
-    { title: 'Grading Sheet', href: '#' },
+    { title: 'Intelligence Hub', href: '/dashboard' },
+    { title: 'Assessment Matrix', href: '/assessments' },
+    { title: 'Grading Terminal', href: '#' },
 ];
 
-const searchQuery = ref('');
-const activeCell = ref({ studentIndex: 0, itemIndex: 0 });
+const selectedGrade = ref(props.assessment?.class?.grade_level_id);
+const selectedTerm = ref(props.assessment?.academic_term_id);
+const activeTab = ref('entry');
+const gradingMode = ref<'rubric' | 'marks'>('rubric');
 const saving = ref(false);
 const lastSavedAt = ref<Date | null>(null);
+const bulkUploadOpen = ref(false);
+const searchQuery = ref('');
 
-// Group items by competency (Strand)
-const groupedItems = computed(() => {
-    const groups: Record<string, any[]> = {};
-    props.assessment.items.forEach((item: any) => {
-        const strandName = item.indicator?.competency?.name || 'General';
-        if (!groups[strandName]) groups[strandName] = [];
-        groups[strandName].push(item);
+const availableAssessments = computed(() => {
+    if (!props.allAssessments) return [];
+    return props.allAssessments.filter(a => {
+        const matchesGrade = !selectedGrade.value || a.class?.grade_level_id === selectedGrade.value;
+        const matchesTerm = !selectedTerm.value || a.academic_term_id === selectedTerm.value;
+        return matchesGrade && matchesTerm;
     });
-    return groups;
 });
 
-// Flatten items for linear index mapping
-const flatItems = computed(() => {
-    return Object.values(groupedItems.value).flat();
+const criteria = computed(() => {
+    if (!props.assessment?.items) return [];
+    return props.assessment.items.map((item: any) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        outOf: 100
+    }));
 });
 
-// Initialize results matrix
-const results = ref<any[]>(
-    props.students.map((student) => {
-        const studentRatings = props.existingRatings[student.id] || [];
-        return {
-            id: student.id,
-            name: `${student.first_name} ${student.last_name}`,
-            admission_number: student.admission_number,
-            photo: student.photo,
-            ratings: flatItems.value.map((item: any) => {
-                const existing = studentRatings.find(
-                    (r: any) => r.assessment_item_id === item.id,
-                );
-                return {
-                    assessment_item_id: item.id,
-                    rating: existing ? existing.rating : null,
-                    feedback: existing ? existing.feedback : '',
-                };
-            }),
-        };
-    }),
-);
+const results = ref<any[]>([]);
+
+onMounted(() => {
+    if (props.students) {
+        results.value = props.students.map((student) => {
+            const studentRatings = props.existingRatings?.[student.id] || [];
+            const criteriaRatings: Record<number, any> = {};
+            const criteriaMarks: Record<number, any> = {};
+            
+            props.assessment?.items?.forEach((item: any) => {
+                const existing = studentRatings.find(r => r.assessment_item_id === item.id); 
+                criteriaRatings[item.id] = existing ? existing.score : null;
+                criteriaMarks[item.id] = existing ? existing.marks : null;
+            });
+
+            return {
+                id: student.id,
+                name: `${student.first_name} ${student.last_name}`,
+                admission_number: student.admission_number,
+                photo: student.photo,
+                ratings: criteriaRatings,
+                marks: criteriaMarks,
+                remarks: studentRatings[0]?.remarks || '',
+            };
+        });
+    }
+});
+
+const translateMarksToRubric = (marks: number | null, outOf: number) => {
+    if (marks === null || marks === undefined) return null;
+    const percent = (marks / outOf) * 100;
+    if (percent >= 80) return 4;
+    if (percent >= 60) return 3;
+    if (percent >= 40) return 2;
+    return 1;
+};
+
+const updateRating = async (studentId: number, criterionId: number, value: any) => {
+    const student = results.value.find(s => s.id === studentId);
+    if (!student) return;
+
+    const numValue = value === 'null' ? null : parseInt(value);
+    student.ratings[criterionId] = numValue;
+    student.marks[criterionId] = null;
+
+    try {
+        // @ts-ignore
+        await axios.post(route('assessments.grading.quick-save'), {
+            student_id: studentId,
+            assessment_item_id: criterionId,
+            rating: numValue,
+        });
+        lastSavedAt.value = new Date();
+    } catch (e) {
+        console.error('Auto-save error', e);
+    }
+};
+
+const updateMarks = async (studentId: number, criterionId: number, marks: any) => {
+    const student = results.value.find(s => s.id === studentId);
+    if (!student) return;
+
+    const numMarks = marks === '' ? null : parseFloat(marks);
+    student.marks[criterionId] = numMarks;
+    
+    const score = translateMarksToRubric(numMarks, 100);
+    student.ratings[criterionId] = score;
+
+    try {
+        // @ts-ignore
+        await axios.post(route('assessments.grading.quick-save'), {
+            student_id: studentId,
+            assessment_item_id: criterionId,
+            marks: numMarks,
+            out_of: 100
+        });
+        lastSavedAt.value = new Date();
+    } catch (e) {
+        console.error('Auto-save error', e);
+    }
+};
+
+const getScaleCode = (score: number | null) => {
+    if (!score || !props.ratingScales) return null;
+    return props.ratingScales.find((s: any) => s.id === Math.round(score))?.code || 'BE';
+};
+
+const getScaleColor = (score: number | null) => {
+    if (!score || !props.ratingScales) return '#e2e8f0';
+    return props.ratingScales.find((s: any) => s.id === Math.round(score))?.color || '#ef4444';
+};
+
+const overallStats = computed(() => {
+    const studentOveralls = results.value.map(r => {
+        const values = Object.values(r.ratings).filter(v => v !== null) as number[];
+        if (values.length === 0) return null;
+        return values.reduce((a, b) => a + b, 0) / values.length;
+    }).filter(v => v !== null);
+
+    const counts = { EE: 0, ME: 0, AE: 0, BE: 0 };
+    studentOveralls.forEach(avg => {
+        if (avg >= 3.5) counts.EE++;
+        else if (avg >= 2.5) counts.ME++;
+        else if (avg >= 1.5) counts.AE++;
+        else counts.BE++;
+    });
+
+    return counts;
+});
 
 const filteredResults = computed(() => {
     if (!searchQuery.value) return results.value;
@@ -111,630 +206,292 @@ const filteredResults = computed(() => {
     );
 });
 
-const getRatingStyle = (rating: number | null) => {
-    if (!rating) return {};
-    const scale = props.ratingScales.find((s) => s.id === rating);
-    return scale
-        ? {
-              backgroundColor: scale.color,
-              borderColor: scale.color,
-              color: 'white',
-          }
-        : {};
-};
-
-const updateRating = async (
-    studentIndex: number,
-    itemIndex: number,
-    value: number | null,
-) => {
-    const student = filteredResults.value[studentIndex];
-    const ratingEntry = student.ratings[itemIndex];
-
-    if (ratingEntry.rating === value) {
-        ratingEntry.rating = null;
-    } else {
-        ratingEntry.rating = value;
-    }
-
-    try {
-        await axios.post(route('assessments.grading.quick-save'), {
-            student_id: student.id,
-            assessment_item_id: ratingEntry.assessment_item_id,
-            rating: ratingEntry.rating,
-        });
-        lastSavedAt.value = new Date();
-    } catch (e) {
-        console.error('Failed to auto-save', e);
-    }
-};
-
-const handleKeyDown = (e: KeyboardEvent) => {
-    const { studentIndex, itemIndex } = activeCell.value;
-
-    if (e.key === 'ArrowUp' && studentIndex > 0) {
-        activeCell.value.studentIndex--;
-        e.preventDefault();
-    } else if (
-        e.key === 'ArrowDown' &&
-        studentIndex < filteredResults.value.length - 1
-    ) {
-        activeCell.value.studentIndex++;
-        e.preventDefault();
-    } else if (e.key === 'ArrowLeft' && itemIndex > 0) {
-        activeCell.value.itemIndex--;
-        e.preventDefault();
-    } else if (
-        e.key === 'ArrowRight' &&
-        itemIndex < flatItems.value.length - 1
-    ) {
-        activeCell.value.itemIndex++;
-        e.preventDefault();
-    } else if (['1', '2', '3', '4'].includes(e.key)) {
-        updateRating(studentIndex, itemIndex, parseInt(e.key));
-    } else if (e.key === 'Backspace' || e.key === 'Delete') {
-        updateRating(studentIndex, itemIndex, null);
-    }
-};
-
-onMounted(() => {
-    window.addEventListener('keydown', handleKeyDown);
-});
-
-onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeyDown);
-});
-
 const submitAll = () => {
     saving.value = true;
-    const flatRatings = filteredResults.value.flatMap((student) =>
-        student.ratings.map((r: any) => ({
+    const ratingsArray = results.value.flatMap(student => 
+        Object.entries(student.ratings).map(([itemId, rating]) => ({
             student_id: student.id,
-            assessment_item_id: r.assessment_item_id,
-            rating: r.rating,
-            feedback: r.feedback,
-        })),
-    );
+            assessment_item_id: parseInt(itemId),
+            rating: rating,
+            marks: student.marks[itemId],
+            out_of: 100,
+            feedback: student.remarks
+        }))
+    ).filter(r => r.rating !== null);
 
+    // @ts-ignore
     router.post(
+        // @ts-ignore
         route('assessments.grading.store', { assessment: props.assessment.id }),
-        {
-            ratings: flatRatings,
-        },
-        {
-            onFinish: () => {
-                saving.value = false;
-            },
-        },
+        { ratings: ratingsArray as any },
+        { onFinish: () => (saving.value = false) }
     );
 };
 </script>
 
 <template>
-    <Head :title="`Grading Sheet - ${assessment.title}`" />
+    <Head :title="`Intelligence Terminal - ${assessment?.subject?.name}`" />
+
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="mx-auto mt-2 flex h-full max-w-[1600px] flex-1 flex-col gap-6 overflow-hidden bg-background p-6 font-sans"
-        >
-            <!-- Professional Header -->
-            <div
-                class="flex flex-col gap-4 rounded-xl border border-border bg-white p-6 shadow-sm lg:flex-row lg:items-center lg:justify-between"
-            >
-                <div class="flex items-center gap-6">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        as-child
-                        class="h-12 w-12 rounded-2xl border border-border bg-white shadow-sm hover:bg-muted/10"
-                    >
-                        <Link href="/assessments"
-                            ><ArrowLeft class="h-6 w-6 text-muted-foreground"
-                        /></Link>
-                    </Button>
-                    <div class="hidden h-12 w-px bg-slate-100 md:block"></div>
-                    <div>
-                        <div class="mb-1 flex items-center gap-3">
-                            <h1
-                                class="text-3xl font-bold tracking-tight text-foreground"
-                            >
-                                {{ assessment.title }}
-                            </h1>
-                            <Badge
-                                class="rounded-lg bg-primary px-3 py-1 text-xs font-bold tracking-tight text-white "
-                                >OFFICIAL EVALUATION</Badge
-                            >
-                        </div>
-                        <div
-                            class="flex items-center gap-4 text-xs font-bold text-muted-foreground/80"
-                        >
-                            <span
-                                class="flex items-center gap-2 rounded-md border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-indigo-600"
-                            >
-                                <BookOpen class="h-3 w-3" />
-                                {{ assessment.subject?.name }}
-                            </span>
-                            <span
-                                class="flex items-center gap-2 rounded-md border border-purple-100 bg-purple-50 px-2 py-0.5 text-purple-600"
-                            >
-                                <Layers class="h-3 w-3" />
-                                {{ assessment.class?.name }}
-                            </span>
-                            <span class="flex items-center gap-2">
-                                <Calendar class="h-3 w-3" />
-                                {{ assessment.academic_term?.name }}
-                            </span>
-                        </div>
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col gap-10 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8 bg-background">
+            
+            <!-- Strategic Header -->
+            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-3">
+                         <!-- @ts-ignore -->
+                        <Link :href="route('assessments')" class="group flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-muted transition-all text-muted-foreground mr-1">
+                            <ArrowLeft class="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
+                        </Link>
+                        <h1 class="text-2xl font-black tracking-tighter text-foreground uppercase sm:text-3xl">Grading Terminal</h1>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" class="h-6 border-primary/20 bg-primary/5 text-primary text-[8px] font-black tracking-widest uppercase rounded-md">{{ assessment?.subject?.name }}</Badge>
+                        <Badge variant="outline" class="h-6 border-slate-200 bg-slate-50 text-slate-500 text-[8px] font-black tracking-widest uppercase rounded-md">{{ assessment?.class?.name }}</Badge>
+                        <span class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest ml-2 italic">CBC Phase III Activated</span>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-4">
-                    <div
-                        class="mr-2 hidden border-r border-border pr-6 text-right sm:block"
-                    >
-                        <p
-                            class="mb-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex h-11 items-center rounded-lg border border-border bg-muted/30 p-1 mr-2 shadow-sm">
+                        <button 
+                            @click="gradingMode = 'rubric'"
+                            class="flex items-center gap-2 px-4 h-full rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
+                            :class="gradingMode === 'rubric' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground'"
                         >
-                            Assessment Matrix State
-                        </p>
-                        <p
-                            class="flex items-center justify-end gap-2 text-sm font-bold text-emerald-600"
+                            <Trophy class="h-3.5 w-3.5" /> Rubric logic
+                        </button>
+                        <button 
+                            @click="gradingMode = 'marks'"
+                            class="flex items-center gap-2 px-4 h-full rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
+                            :class="gradingMode === 'marks' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground'"
                         >
-                            <Zap class="h-4 w-4 fill-emerald-600" />
-                            {{
-                                lastSavedAt
-                                    ? `LAST SAVED: ${lastSavedAt.toLocaleTimeString()}`
-                                    : 'LIVE SYNC ACTIVE'
-                            }}
-                        </p>
+                            <Target class="h-3.5 w-3.5" /> Marks mode
+                        </button>
                     </div>
-                    <Button
-                        @click="submitAll"
-                        :disabled="saving"
-                        class="h-14 rounded-2xl bg-primary px-10 text-xs font-bold tracking-tight text-white  shadow-xl shadow-slate-200 transition-all hover:scale-[1.02] hover:bg-slate-800 active:scale-95"
-                    >
-                        <Save v-if="!saving" class="mr-3 h-5 w-5" />
-                        <div
-                            v-else
-                            class="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"
-                        ></div>
-                        Finalize Assessment
+
+                    <Button variant="outline" class="h-11 rounded-lg border-border bg-card px-4 text-[10px] font-black uppercase tracking-widest hover:bg-muted shadow-sm" @click="bulkUploadOpen = true">
+                        <Upload class="mr-2 h-4 w-4 text-primary" />Bulk Import
+                    </Button>
+                    <Button @click="submitAll" :disabled="saving" class="h-11 rounded-lg bg-primary px-8 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                        <Save class="mr-2 h-4 w-4" />
+                        {{ saving ? 'Syncing...' : 'Finalize records' }}
                     </Button>
                 </div>
             </div>
 
-            <!-- Scoring Guide & Filters -->
-            <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-                <div class="group relative xl:col-span-3">
-                    <Search
-                        class="absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-muted-foreground/80 transition-colors group-focus-within:text-foreground"
-                    />
-                    <Input
-                        v-model="searchQuery"
-                        placeholder="Search learner list..."
-                        class="h-14 rounded-2xl border-white bg-white pl-14 font-bold shadow-sm placeholder:text-slate-300 focus:ring-slate-900/10"
-                    />
+            <div class="flex flex-col lg:flex-row gap-8">
+                
+                <!-- Selective Context Sidebar -->
+                <div class="w-full lg:w-80 space-y-6 shrink-0">
+                    <div class="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
+                         <div class="space-y-1.5">
+                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Grade Level</Label>
+                            <div class="relative">
+                                <select v-model="selectedGrade" class="h-12 w-full appearance-none rounded-lg border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
+                                    <option :value="undefined">All Grade Tiers</option>
+                                    <option v-for="g in Array.from(new Set((allAssessments || []).map(a => a.class?.grade_level_id))).filter(id => id)" :key="g" :value="g">
+                                        Grade {{ (allAssessments as any[]).find(a => a.class?.grade_level_id === g)?.class?.grade_level?.name }}
+                                    </option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-40" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 border-t border-border pt-5">
+                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Context Switcher</Label>
+                            <div class="grid gap-2 mt-2">
+                                <button 
+                                    v-for="a in (availableAssessments as any[])" 
+                                    :key="a.id"
+                                    @click="router.visit(route('assessments.grading', { assessment: a.id }))"
+                                    class="w-full text-left p-4 rounded-xl transition-all border group relative overflow-hidden"
+                                    :class="a.id === assessment?.id 
+                                        ? 'bg-primary/5 border-primary/20 shadow-inner' 
+                                        : 'bg-transparent border-transparent hover:bg-muted'"
+                                >
+                                    <div class="flex items-center justify-between relative z-10">
+                                        <div class="space-y-0.5">
+                                            <p class="text-[11px] font-black uppercase tracking-tight text-foreground">{{ a.subject?.name }}</p>
+                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-60">{{ a.class?.name }}</p>
+                                        </div>
+                                        <div v-if="a.id === assessment?.id" class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+                                        <ChevronRight v-else class="h-3 w-3 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
+                                    </div>
+                                    <div v-if="a.id === assessment?.id" class="absolute inset-y-0 left-0 w-1 bg-primary"></div>
+                                </button>
+                                <div v-if="availableAssessments.length === 0" class="py-12 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center space-y-2 opacity-30">
+                                    <SearchCode class="h-6 w-6" />
+                                    <span class="text-[9px] font-black uppercase tracking-widest">No active sessions</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                                <Check class="h-4 w-4" />
+                            </div>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700">Auto-Finalized</span>
+                        </div>
+                        <p class="text-[10px] text-emerald-900/60 leading-relaxed font-bold">Every entry is instantly recorded in the **Sync Hub**. Permanent records update upon finalization.</p>
+                    </div>
                 </div>
 
-                <div
-                    class="scrollbar-none flex items-center gap-4 overflow-x-auto scroll-smooth pb-4 xl:col-span-9"
-                >
-                    <div
-                        v-for="scale in ratingScales"
-                        :key="scale.id"
-                        class="flex shrink-0 items-center gap-4 rounded-2xl border border-b-4 border-border bg-white px-5 py-3 shadow-sm"
-                        :style="{ borderBottomColor: scale.color }"
-                    >
-                        <div
-                            class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white shadow-lg"
-                            :style="{ backgroundColor: scale.color }"
-                        >
-                            {{ scale.id }}
-                        </div>
-                        <div>
-                            <p
-                                class="mb-1 text-xs leading-none font-bold tracking-tight text-muted-foreground/80 "
-                            >
-                                {{ scale.code }}
-                            </p>
-                            <p
-                                class="text-xs font-bold whitespace-nowrap text-slate-800"
-                            >
-                                {{ scale.name }}
-                            </p>
-                        </div>
+                <!-- Central Intelligence Grid -->
+                <div class="flex-1 space-y-6">
+                    
+                    <!-- Performance Diagnostics -->
+                    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                         <div v-for="(s, k) in [
+                            { label: 'Learners', val: stats?.total || 0, color: 'text-foreground' },
+                            { label: 'Exceeding', val: overallStats?.EE || 0, color: 'text-emerald-500' },
+                            { label: 'Meeting', val: overallStats?.ME || 0, color: 'text-blue-500' },
+                            { label: 'Approaching', val: overallStats?.AE || 0, color: 'text-amber-500' },
+                            { label: 'Below', val: overallStats?.BE || 0, color: 'text-rose-500' }
+                         ]" :key="k" class="rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all group">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-primary transition-colors">{{ s.label }}</p>
+                            <p class="mt-2 text-3xl font-black tracking-tight" :class="s.color">{{ s.val }}</p>
+                         </div>
+                    </div>
+
+                     <!-- Intelligence Search -->
+                    <div class="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <Search class="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40" />
+                        <Input
+                            v-model="searchQuery"
+                            placeholder="Identify learner node by name or admission index..."
+                            class="h-14 w-full border-0 bg-transparent pl-16 pr-8 text-sm font-bold focus-visible:ring-0"
+                        />
+                         <div class="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                             <div class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>
+                             <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Live Search</span>
+                         </div>
+                    </div>
+
+                    <!-- Evaluation Matrix Terminal -->
+                    <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                         <div class="flex items-center justify-between border-b border-border bg-muted/5 px-8 pt-4">
+                            <div class="flex items-center gap-8">
+                                <button 
+                                    v-for="tab in ['Entry Sheet', 'Analytics Hub', 'Flags', 'Vault']"
+                                    :key="tab"
+                                    @click="activeTab = tab.toLowerCase().split(' ')[0]"
+                                    class="relative pb-4 text-[10px] font-black uppercase tracking-widest transition-all"
+                                    :class="activeTab === tab.toLowerCase().split(' ')[0] ? 'text-primary' : 'text-muted-foreground/30 hover:text-foreground'"
+                                >
+                                    {{ tab }}
+                                    <div v-if="activeTab === tab.toLowerCase().split(' ')[0]" class="absolute bottom-0 left-0 h-0.5 w-full bg-primary shadow-lg shadow-primary/20"></div>
+                                </button>
+                            </div>
+                         </div>
+
+                         <div class="flex-1 overflow-auto custom-scrollbar">
+                            <table v-if="activeTab.startsWith('entry') && criteria.length > 0" class="w-full border-separate border-spacing-0">
+                                <thead>
+                                    <tr class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 bg-muted/20">
+                                        <th class="sticky left-0 z-30 border-b border-border bg-card p-6 text-left shadow-[4px_0_12px_-8px_rgba(0,0,0,0.1)]">LEARNER NODE</th>
+                                        <th v-for="c in criteria" :key="c.id" class="border-b border-l border-border p-6 text-center">
+                                            <div class="flex flex-col items-center gap-2">
+                                                 <Badge variant="outline" class="rounded-md border-primary/20 bg-primary/5 text-primary text-[8px] font-black tracking-tighter">{{ c.code }}</Badge>
+                                                 <span class="max-w-[100px] truncate text-[9px]">{{ c.name }}</span>
+                                            </div>
+                                        </th>
+                                        <th class="border-b border-l border-border p-6 text-center bg-primary/5 text-primary">STATUS</th>
+                                        <th class="border-b border-l border-border p-6 text-left">OBSERVATION</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border">
+                                    <tr v-for="student in (filteredResults as any[])" :key="student.id" class="group hover:bg-primary/[0.01] transition-all">
+                                        <td class="sticky left-0 z-20 border-border bg-card p-4 group-hover:bg-muted/30 transition-all shadow-[8px_0_12px_-8px_rgba(0,0,0,0.05)]">
+                                            <div class="flex items-center gap-4">
+                                                <Avatar class="h-11 w-11 rounded-xl border border-border shadow-sm">
+                                                    <AvatarImage :src="student.photo" />
+                                                    <AvatarFallback class="bg-primary/5 text-primary text-[10px] font-black">{{ student.name.substring(0,2).toUpperCase() }}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <p class="text-xs font-black text-foreground group-hover:text-primary transition-colors uppercase tracking-tight">{{ student.name }}</p>
+                                                    <p class="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">{{ student.admission_number }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        
+                                        <td v-for="c in criteria" :key="c.id" class="border-l border-border p-4 text-center">
+                                            <div class="flex flex-col items-center gap-2">
+                                                 <div v-if="gradingMode === 'rubric'" class="relative w-full max-w-[80px]">
+                                                    <select 
+                                                        :value="student.ratings[c.id]"
+                                                        @change="updateRating(student.id, c.id, ($event.target as HTMLSelectElement).value)"
+                                                        class="h-10 w-full appearance-none rounded-lg border border-border bg-muted/5 px-2 text-center text-[10px] font-black outline-none transition-all hover:bg-primary/5 focus:ring-1 focus:ring-primary/30"
+                                                        :style="{ color: getScaleColor(student.ratings[c.id]) }"
+                                                    >
+                                                        <option value="null">-</option>
+                                                        <option v-for="s in ratingScales" :key="s.id" :value="s.id">{{ s.code }}</option>
+                                                    </select>
+                                                    <ChevronDown class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-20" />
+                                                 </div>
+
+                                                 <div v-else class="relative w-full max-w-[80px]">
+                                                    <Input 
+                                                        :value="student.marks[c.id]"
+                                                        @input="updateMarks(student.id, c.id, ($event.target as HTMLInputElement).value)"
+                                                        class="h-10 w-full text-center text-[11px] font-black rounded-lg border-border bg-muted/5 focus:bg-background transition-all"
+                                                        placeholder="0.0"
+                                                        type="number"
+                                                    />
+                                                 </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="border-l border-border p-4 text-center bg-primary/[0.01]">
+                                            <Badge 
+                                                v-if="getScaleCode(student.ratings[criteria[0]?.id])"
+                                                class="h-10 w-16 items-center justify-center rounded-lg border-0 text-[10px] font-black shadow-sm text-white"
+                                                :style="{ backgroundColor: getScaleColor(student.ratings[criteria[0]?.id]) }"
+                                            >
+                                                {{ getScaleCode(student.ratings[criteria[0]?.id]) }}
+                                            </Badge>
+                                            <span v-else class="text-[10px] font-black text-muted-foreground opacity-10">TBD</span>
+                                        </td>
+                                        
+                                        <td class="border-l border-border p-4 min-w-[200px]">
+                                            <Input 
+                                                v-model="student.remarks" 
+                                                placeholder="OBSERVATION..." 
+                                                class="h-10 rounded-lg border-border bg-muted/5 text-[9px] font-black uppercase tracking-widest focus:bg-background transition-all"
+                                            />
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div v-else class="flex flex-col items-center justify-center py-40 opacity-20">
+                                <History class="h-14 w-14 mb-4" />
+                                <p class="text-[10px] font-black uppercase tracking-widest">Repository Empty or Section Locked</p>
+                            </div>
+                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Master Grading Matrix -->
-            <Card
-                class="flex flex-1 flex-col overflow-hidden rounded-xl border-none bg-white shadow-lg"
-            >
-                <div class="relative flex-1 overflow-auto">
-                    <table class="w-full border-collapse">
-                        <thead class="sticky top-0 z-30 bg-white">
-                            <!-- Strand Grouping Row -->
-                            <tr
-                                class="bg-primary text-xs font-bold tracking-tight text-white "
-                            >
-                                <th
-                                    class="sticky left-0 z-40 w-[320px] min-w-[320px] bg-primary p-6 text-left"
-                                >
-                                    LEARNER IDENTIFICATION
-                                </th>
-                                <th
-                                    v-for="(items, strand) in groupedItems"
-                                    :key="strand"
-                                    :colspan="items.length"
-                                    class="border-l border-white/10 p-4 text-center"
-                                >
-                                    <span
-                                        class="flex items-center justify-center gap-2"
-                                    >
-                                        <Layers class="h-4 w-4" />
-                                        STRAND: {{ strand }}
-                                    </span>
-                                </th>
-                            </tr>
-                            <!-- Indicators Row -->
-                            <tr class="bg-white shadow-sm shadow-slate-100">
-                                <th
-                                    class="sticky left-0 z-40 border-r border-b border-border bg-white p-6 text-left"
-                                >
-                                    <div
-                                        class="flex items-center justify-between"
-                                    >
-                                        <span
-                                            class="text-sm font-bold text-slate-800"
-                                            >Full Name</span
-                                        >
-                                        <Badge
-                                            variant="outline"
-                                            class="text-xs font-bold"
-                                            >ADMISSION</Badge
-                                        >
-                                    </div>
-                                </th>
-                                <th
-                                    v-for="(item, idx) in flatItems"
-                                    :key="item.id"
-                                    class="min-w-[220px] border-b border-l border-border p-4 text-left transition-colors"
-                                    :class="{
-                                        'bg-muted/10 ring-2 ring-slate-900/5 ring-inset':
-                                            activeCell.itemIndex === idx,
-                                    }"
-                                >
-                                    <div class="flex items-start gap-3">
-                                        <div
-                                            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-white"
-                                        >
-                                            {{ Number(idx) + 1 }}
-                                        </div>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger
-                                                    class="text-left"
-                                                >
-                                                    <p
-                                                        class="line-clamp-2 text-sm leading-tight font-extrabold text-slate-700"
-                                                    >
-                                                        {{
-                                                            item.indicator
-                                                                ?.indicator ||
-                                                            'N/A'
-                                                        }}
-                                                    </p>
-                                                </TooltipTrigger>
-                                                <TooltipContent
-                                                    class="max-w-[320px] rounded-[1.5rem] border-none bg-primary p-5 text-white shadow-lg"
-                                                >
-                                                    <p
-                                                        class="mb-2 text-xs font-bold tracking-tight text-muted-foreground "
-                                                    >
-                                                        Detailed Indicator:
-                                                    </p>
-                                                    <p
-                                                        class="text-xs leading-relaxed font-bold"
-                                                    >
-                                                        "{{
-                                                            item.indicator
-                                                                ?.indicator
-                                                        }}"
-                                                    </p>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="(student, sIdx) in filteredResults"
-                                :key="student.id"
-                                class="group transition-colors even:bg-muted/10/20 hover:bg-background"
-                            >
-                                <!-- Student Name Column -->
-                                <td
-                                    class="sticky left-0 z-20 border-r border-b border-border bg-white p-6 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] group-hover:bg-muted/10"
-                                >
-                                    <div class="flex items-center gap-4">
-                                        <div class="relative">
-                                            <Avatar
-                                                class="h-12 w-12 border-2 border-white shadow-lg ring-4 ring-slate-100/50 transition-all duration-300 group-hover:scale-110"
-                                            >
-                                                <AvatarImage
-                                                    :src="student.photo"
-                                                />
-                                                <AvatarFallback
-                                                    class="bg-indigo-600 text-sm font-bold text-white "
-                                                >
-                                                    {{
-                                                        String(student.name)
-                                                            .split(' ')
-                                                            .map(
-                                                                (n: string) =>
-                                                                    n[0],
-                                                            )
-                                                            .join('')
-                                                    }}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div
-                                                v-if="
-                                                    student.ratings.every(
-                                                        (r: any) =>
-                                                            r.rating !== null,
-                                                    )
-                                                "
-                                                class="absolute -right-2 -bottom-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-emerald-500 shadow-lg"
-                                            >
-                                                <Check
-                                                    class="h-3.5 w-3.5 stroke-[4] text-white"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <p
-                                                class="mb-1 truncate text-sm leading-none font-bold tracking-tight text-foreground "
-                                            >
-                                                {{ student.name }}
-                                            </p>
-                                            <p
-                                                class="text-xs leading-none font-bold tracking-tight text-muted-foreground/80"
-                                            >
-                                                {{ student.admission_number }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Ratings Matrix Cells -->
-                                <td
-                                    v-for="(rating, iIdx) in student.ratings"
-                                    :key="iIdx"
-                                    class="relative border-b border-l border-border p-4 text-center transition-all"
-                                    :class="{
-                                        'z-10 scale-[1.05] rounded-xl bg-white shadow-lg ring-4 ring-slate-900':
-                                            activeCell.studentIndex ===
-                                                Number(sIdx) &&
-                                            activeCell.itemIndex ===
-                                                Number(iIdx),
-                                    }"
-                                    @click="
-                                        activeCell = {
-                                            studentIndex: Number(sIdx),
-                                            itemIndex: Number(iIdx),
-                                        }
-                                    "
-                                >
-                                    <div
-                                        class="group/cell flex h-12 w-full items-center justify-center gap-2 transition-all"
-                                    >
-                                        <!-- Rating Buttons -->
-                                        <template
-                                            v-if="
-                                                activeCell.studentIndex ===
-                                                    sIdx &&
-                                                activeCell.itemIndex === iIdx
-                                            "
-                                        >
-                                            <button
-                                                v-for="val in [1, 2, 3, 4]"
-                                                :key="val"
-                                                @click.stop="
-                                                    updateRating(
-                                                        sIdx,
-                                                        iIdx,
-                                                        val,
-                                                    )
-                                                "
-                                                class="flex h-10 w-10 items-center justify-center rounded-xl border-2 text-sm font-bold shadow-md transition-all hover:scale-110 active:scale-90"
-                                                :style="
-                                                    getRatingStyle(
-                                                        val === rating.rating
-                                                            ? val
-                                                            : null,
-                                                    )
-                                                "
-                                                :class="[
-                                                    val === rating.rating
-                                                        ? 'border-transparent'
-                                                        : 'border-slate-50 bg-white text-slate-200 hover:border-border/50 hover:text-muted-foreground/80',
-                                                ]"
-                                            >
-                                                {{ val }}
-                                            </button>
-                                        </template>
-                                        <template v-else>
-                                            <div
-                                                v-if="rating.rating"
-                                                class="flex h-11 w-11 items-center justify-center rounded-2xl text-base font-bold shadow-xl transition-all duration-300 group-hover/cell:scale-110"
-                                                :style="
-                                                    getRatingStyle(
-                                                        rating.rating,
-                                                    )
-                                                "
-                                            >
-                                                {{ rating.rating }}
-                                            </div>
-                                            <div
-                                                v-else
-                                                class="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-dashed border-border transition-all group-hover/cell:border-slate-300"
-                                            >
-                                                <span
-                                                    class="text-sm font-bold text-slate-100 opacity-20 group-hover/cell:text-slate-300"
-                                                    >PENDING</span
-                                                >
-                                            </div>
-                                        </template>
-                                    </div>
-
-                                    <!-- Keyboard Helper Overlay -->
-                                    <div
-                                        v-if="
-                                            activeCell.studentIndex === sIdx &&
-                                            activeCell.itemIndex === iIdx
-                                        "
-                                        class="absolute -top-5 left-1/2 z-50 -translate-x-1/2 animate-bounce rounded-full bg-primary px-3 py-1 text-xs font-bold tracking-tight text-white  shadow-xl"
-                                    >
-                                        Type 1-4
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Matrix Legend / Global Stats -->
-                <div
-                    class="flex flex-col items-center justify-between gap-8 border-t border-slate-800 bg-primary p-8 text-white md:flex-row"
-                >
-                    <div class="flex items-center gap-6">
-                        <div
-                            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-white shadow-inner backdrop-blur-md"
-                        >
-                            <Zap class="h-7 w-7 animate-pulse fill-white" />
-                        </div>
-                        <div class="space-y-1">
-                            <h4
-                                class="text-sm font-bold tracking-tight "
-                            >
-                                Evaluation Integrity Matrix
-                            </h4>
-                            <p
-                                class="text-xs font-bold tracking-wider text-muted-foreground/80"
-                            >
-                                Keyboard Bindings: ARROW KEYS to navigate • 1-4
-                                to Rate • BACKSPACE to Clear
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-10">
-                        <div class="group text-center">
-                            <span
-                                class="mb-1 block text-xs font-bold tracking-tight text-muted-foreground "
-                                >Total Learners</span
-                            >
-                            <span class="text-2xl font-bold">{{
-                                results.length
-                            }}</span>
-                        </div>
-                        <div class="h-10 w-px bg-white/10"></div>
-                        <div class="group text-center">
-                            <span
-                                class="mb-1 block text-xs font-bold tracking-tight text-muted-foreground "
-                                >Evaluation Points</span
-                            >
-                            <span class="text-2xl font-bold">{{
-                                flatItems.length
-                            }}</span>
-                        </div>
-                        <div class="h-10 w-px bg-white/10"></div>
-                        <div class="min-w-[200px] space-y-2">
-                            <div class="flex items-end justify-between">
-                                <span
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                    >Completion Progress</span
-                                >
-                                <span
-                                    class="text-sm font-bold text-emerald-400"
-                                >
-                                    {{
-                                        Math.round(
-                                            (results
-                                                .flatMap((s: any) => s.ratings)
-                                                .filter(
-                                                    (r: any) =>
-                                                        r.rating !== null,
-                                                ).length /
-                                                (results.length *
-                                                    flatItems.length)) *
-                                                100,
-                                        )
-                                    }}%
-                                </span>
-                            </div>
-                            <div
-                                class="h-2 w-full overflow-hidden rounded-full border border-white/10 bg-white/5 p-0.5"
-                            >
-                                <div
-                                    class="h-full rounded-full bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] transition-all duration-1000"
-                                    :style="{
-                                        width: `${Math.round((results.flatMap((s: any) => s.ratings).filter((r: any) => r.rating !== null).length / (results.length * flatItems.length)) * 100)}%`,
-                                    }"
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Card>
         </div>
+
+        <BulkUploadDialog
+            v-if="bulkUploadOpen"
+            v-model:open="bulkUploadOpen"
+            title="Mass Registration"
+            description="Import grades from the standard CSV template. Auto-sync will persist records upon upload."
+            :template-url="route('assessments.grading.template', { assessment: assessment.id })"
+            :upload-url="route('assessments.grading.import', { assessment: assessment.id })"
+            @success="router.reload()"
+        />
+
     </AppLayout>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,700;0,800;1,400;1,700;1,800&display=swap');
-
-.font-sans {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.scrollbar-none::-webkit-scrollbar {
-    display: none;
-}
-.scrollbar-none {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-table {
-    border-spacing: 0;
-}
-
-th.sticky,
-td.sticky {
-    box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.05);
-}
-
-.animate-in {
-    animation: fadeIn 0.4s ease-out forwards;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Transition for cell scaling */
-td {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary), 0.1); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary), 0.2); }
+th.sticky { box-shadow: 4px 0 12px -8px rgba(0,0,0,0.1); }
 </style>

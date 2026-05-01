@@ -25,13 +25,14 @@ class AssessmentWizardController extends Controller
             'gradeLevels' => GradeLevel::where('school_id', $schoolId)->with('classes')->get(),
             'subjects' => Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId)->where('is_offered', true))->get(),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get(),
-            'academicTerms' => AcademicTerm::where('school_id', $schoolId)->where('status', 'active')->get(),
+            'academicTerms' => AcademicTerm::where('school_id', $schoolId)->get(),
+            'academicYears' => \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->get(),
             'competencies' => Competency::where('school_id', $schoolId)->get(),
             'ratingScales' => [
-                ['id' => 'EE', 'name' => 'Exceeding Expectation (4)'],
-                ['id' => 'ME', 'name' => 'Meeting Expectation (3)'],
-                ['id' => 'AE', 'name' => 'Approaching Expectation (2)'],
-                ['id' => 'BE', 'name' => 'Below Expectation (1)'],
+                ['id' => 4, 'code' => 'EE', 'name' => 'Exceeding Expectation', 'color' => '#10b981'],
+                ['id' => 3, 'code' => 'ME', 'name' => 'Meeting Expectation', 'color' => '#3b82f6'],
+                ['id' => 2, 'code' => 'AE', 'name' => 'Approaching Expectation', 'color' => '#f59e0b'],
+                ['id' => 1, 'code' => 'BE', 'name' => 'Below Expectation', 'color' => '#ef4444'],
             ]
         ]);
     }
@@ -79,36 +80,69 @@ class AssessmentWizardController extends Controller
             'term_id' => 'required|exists:academic_terms,id',
             'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
+            'source' => 'required|in:internal,ministry',
             'indicators' => 'required|array|min:1',
             'indicators.*.id' => 'required|exists:competency_indicators,id',
             'indicators.*.max_score' => 'nullable|numeric',
         ]);
 
-        \DB::transaction(function () use ($validated, $request) {
+        $assessmentId = \DB::transaction(function () use ($validated, $request) {
             $assessment = Assessment::create([
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'class_id' => $validated['class_id'],
                 'subject_id' => $validated['subject_id'],
-                'assessment_type_id' => $validated['type_id'], // Map to ID
+                'assessment_type_id' => $validated['type_id'], 
                 'teacher_id' => $request->user()->id,
                 'school_id' => $request->user()->school_id,
-                'academic_year_id' => \App\Models\Academic\AcademicYear::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
-                'academic_term_id' => \App\Models\Academic\AcademicTerm::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
-                'assessment_date' => now(),
+                'academic_year_id' => $validated['academic_year_id'] ?? \App\Models\Academic\AcademicYear::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
+                'academic_term_id' => $validated['term_id'] ?? \App\Models\Academic\AcademicTerm::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
+                'assessment_date' => $validated['date'],
                 'status' => 'draft',
+                'source' => $validated['source'],
+                'indicators' => $validated['indicators'], // Save indicators to JSON field
+                'created_by' => $request->user()->id,
             ]);
 
-            foreach ($validated['indicators'] as $index => $item) {
-                AssessmentItem::create([
-                    'assessment_id' => $assessment->id,
-                    'competency_indicator_id' => $item['id'],
-                    'max_score' => $item['max_score'] ?? 4,
-                    'display_order' => $index,
-                ]);
+            // If it's a ministry/standard assessment, create the 6 standard criteria items
+            if ($validated['source'] === 'ministry') {
+                $standardCriteria = [
+                    'knowledge' => 'Knowledge & Understanding',
+                    'skills' => 'Skills Application',
+                    'communication' => 'Communication',
+                    'values' => 'Values & Attitudes',
+                    'creativity' => 'Creativity',
+                    'thinking' => 'Critical Thinking'
+                ];
+
+                reset($standardCriteria);
+                $i = 0;
+                foreach ($standardCriteria as $code => $name) {
+                    AssessmentItem::create([
+                        'assessment_id' => $assessment->id,
+                        'name' => $name,
+                        'code' => $code, // I hope AssessmentItem has a code field, if not name is enough
+                        'max_score' => 4,
+                        'display_order' => $i++,
+                    ]);
+                }
+            } else {
+                // For internal assessments, use the selected indicators as items
+                foreach ($validated['indicators'] as $index => $item) {
+                    AssessmentItem::create([
+                        'assessment_id' => $assessment->id,
+                        'competency_indicator_id' => $item['id'],
+                        'name' => $item['indicator'] ?? 'Indicator ' . ($index + 1),
+                        'max_score' => $item['max_score'] ?? 4,
+                        'display_order' => $index,
+                    ]);
+                }
             }
+
+            return $assessment->id;
         });
 
-        return redirect()->route('assessments.index')->with('success', 'Assessment setup completed.');
+        return redirect()->route('assessments.grading', ['assessment' => $assessmentId])
+            ->with('success', 'Assessment setup completed. You can now begin grading.');
     }
 }

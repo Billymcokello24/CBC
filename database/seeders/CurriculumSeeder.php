@@ -2,139 +2,139 @@
 
 namespace Database\Seeders;
 
-use App\Models\Curriculum\Competency;
-use App\Models\Curriculum\LearningArea;
-use App\Models\Curriculum\Subject;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use App\Models\School;
 
 class CurriculumSeeder extends Seeder
 {
-    public function run(): void
+    public function run()
     {
-        // Core CBC Competencies
-        $competencies = [
-            ['name' => 'Communication and Collaboration', 'code' => 'CC', 'category' => 'core', 'description' => 'Ability to communicate effectively and work with others'],
-            ['name' => 'Critical Thinking and Problem Solving', 'code' => 'CTPS', 'category' => 'core', 'description' => 'Ability to think critically and solve problems'],
-            ['name' => 'Creativity and Imagination', 'code' => 'CI', 'category' => 'core', 'description' => 'Ability to think creatively and use imagination'],
-            ['name' => 'Citizenship', 'code' => 'CIT', 'category' => 'core', 'description' => 'Understanding of civic responsibilities and national values'],
-            ['name' => 'Digital Literacy', 'code' => 'DL', 'category' => 'core', 'description' => 'Ability to use digital technologies effectively'],
-            ['name' => 'Learning to Learn', 'code' => 'LTL', 'category' => 'core', 'description' => 'Ability to acquire knowledge and skills independently'],
-            ['name' => 'Self-Efficacy', 'code' => 'SE', 'category' => 'core', 'description' => 'Belief in one\'s ability to succeed'],
+        $school = School::first();
+        if (!$school) return;
+        
+        $curriculum = [
+            'Mathematics' => [
+                'Numbers' => [
+                    'Whole Numbers' => [
+                        'Reads and writes numbers up to 10,000 in symbols and words',
+                        'Identifies place value of digits in numbers up to 10,000',
+                        'Orders and compares whole numbers up to 10,000'
+                    ],
+                    'Addition' => [
+                        'Adds up to two 4-digit numbers with regrouping',
+                        'Solves real life problems involving addition of whole numbers'
+                    ]
+                ],
+                'Measurement' => [
+                    'Length' => [
+                        'Measures length in metres and centimetres correctly',
+                        'Estimates length of common objects'
+                    ]
+                ]
+            ],
+            'English' => [
+                'Listening' => [
+                    'Polite Language' => [
+                        'Uses appropriate polite language like "Please", "Thank you"',
+                        'Responds appropriately to polite requests'
+                    ],
+                    'Listening for Info' => [
+                        'Listen to a short story and answer oral questions',
+                        'Follow multi-step oral instructions'
+                    ]
+                ]
+            ],
+            'Science and Technology' => [
+                'Living Things' => [
+                    'Plants' => [
+                        'Identify different types of plants in the environment',
+                        'Describe functions of roots, stems, and leaves'
+                    ],
+                    'Animals' => [
+                        'Classify animals into vertebrates and invertebrates',
+                        'Describe characteristics of mammals'
+                    ]
+                ]
+            ],
+            'Kiswahili' => [
+                'Kusikiliza na Kuzungumza' => [
+                    'Adabu na Maamkizi' => [
+                        'Anatumia maamkizi mwafaka katika mazingira mbalimbali',
+                        'Anajibu salamu kwa heshima na adabu'
+                    ]
+                ]
+            ],
+            'Social Studies' => [
+                'Our District' => [
+                    'Physical Features' => [
+                        'Identifies physical features in the local environment',
+                        'Importance of conserving physical features'
+                    ]
+                ]
+            ]
         ];
 
-        foreach ($competencies as $index => $competency) {
-            Competency::updateOrCreate(
-                ['code' => $competency['code']],
-                array_merge($competency, ['display_order' => $index + 1])
-            );
-        }
+        foreach ($curriculum as $subjectName => $strandsData) {
+            $subjectCode = strtoupper(substr($subjectName, 0, 4)) . "-STD";
+            
+            $subjectId = DB::table('subjects')->where('code', $subjectCode)->value('id');
+            if (!$subjectId) {
+                $subjectId = DB::table('subjects')->insertGetId([
+                    'school_id' => $school->id,
+                    'name' => $subjectName,
+                    'code' => $subjectCode,
+                    'is_active' => true,
+                    'subject_type' => 'core',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
 
-        // Learning Areas and Subjects
-        $learningAreas = [
-            [
-                'name' => 'Languages',
-                'code' => 'LANG',
-                'category' => 'core',
-                'description' => 'Language and communication skills',
-                'subjects' => [
-                    ['name' => 'English', 'code' => 'ENG', 'subject_type' => 'core', 'is_examinable' => true],
-                    ['name' => 'Kiswahili', 'code' => 'KIS', 'subject_type' => 'core', 'is_examinable' => true],
-                    ['name' => 'Indigenous Languages', 'code' => 'IND', 'subject_type' => 'optional', 'is_examinable' => false],
-                    ['name' => 'Kenya Sign Language', 'code' => 'KSL', 'subject_type' => 'optional', 'is_examinable' => false],
-                    ['name' => 'Foreign Languages', 'code' => 'FL', 'subject_type' => 'optional', 'is_examinable' => true],
-                ]
-            ],
-            [
-                'name' => 'Mathematics',
-                'code' => 'MATH',
-                'category' => 'core',
-                'description' => 'Mathematical concepts and applications',
-                'subjects' => [
-                    ['name' => 'Mathematics', 'code' => 'MAT', 'subject_type' => 'core', 'is_examinable' => true],
-                ]
-            ],
-            [
-                'name' => 'Integrated Science',
-                'code' => 'SCI',
-                'category' => 'core',
-                'description' => 'Scientific inquiry and knowledge',
-                'subjects' => [
-                    ['name' => 'Integrated Science', 'code' => 'ISC', 'subject_type' => 'core', 'is_examinable' => true],
-                    ['name' => 'Health Education', 'code' => 'HE', 'subject_type' => 'core', 'is_examinable' => false],
-                ]
-            ],
-            [
-                'name' => 'Pre-Technical and Pre-Career Education',
-                'code' => 'PTPC',
-                'category' => 'core',
-                'description' => 'Technical and career preparation',
-                'subjects' => [
-                    ['name' => 'Agriculture', 'code' => 'AGR', 'subject_type' => 'optional', 'is_examinable' => true],
-                    ['name' => 'Home Science', 'code' => 'HS', 'subject_type' => 'optional', 'is_examinable' => true],
-                    ['name' => 'Computer Science', 'code' => 'CS', 'subject_type' => 'optional', 'is_examinable' => true],
-                    ['name' => 'Business Studies', 'code' => 'BS', 'subject_type' => 'optional', 'is_examinable' => true],
-                ]
-            ],
-            [
-                'name' => 'Social Studies',
-                'code' => 'SS',
-                'category' => 'core',
-                'description' => 'Social and civic knowledge',
-                'subjects' => [
-                    ['name' => 'Social Studies', 'code' => 'SOC', 'subject_type' => 'core', 'is_examinable' => true],
-                ]
-            ],
-            [
-                'name' => 'Religious Education',
-                'code' => 'RE',
-                'category' => 'core',
-                'description' => 'Religious and moral education',
-                'subjects' => [
-                    ['name' => 'Christian Religious Education', 'code' => 'CRE', 'subject_type' => 'optional', 'is_examinable' => true],
-                    ['name' => 'Islamic Religious Education', 'code' => 'IRE', 'subject_type' => 'optional', 'is_examinable' => true],
-                    ['name' => 'Hindu Religious Education', 'code' => 'HRE', 'subject_type' => 'optional', 'is_examinable' => true],
-                ]
-            ],
-            [
-                'name' => 'Creative Arts',
-                'code' => 'CA',
-                'category' => 'core',
-                'description' => 'Artistic expression and creativity',
-                'subjects' => [
-                    ['name' => 'Art and Craft', 'code' => 'AC', 'subject_type' => 'core', 'is_examinable' => false],
-                    ['name' => 'Music', 'code' => 'MUS', 'subject_type' => 'optional', 'is_examinable' => false],
-                    ['name' => 'Drama', 'code' => 'DRA', 'subject_type' => 'optional', 'is_examinable' => false],
-                ]
-            ],
-            [
-                'name' => 'Physical and Health Education',
-                'code' => 'PHE',
-                'category' => 'core',
-                'description' => 'Physical fitness and health',
-                'subjects' => [
-                    ['name' => 'Physical Education', 'code' => 'PE', 'subject_type' => 'core', 'is_examinable' => false],
-                    ['name' => 'Sports', 'code' => 'SPT', 'subject_type' => 'optional', 'is_examinable' => false],
-                ]
-            ],
-        ];
+            foreach ($strandsData as $strandName => $subStrandsData) {
+                $strandCode = strtoupper(substr($strandName, 0, 3)) . "-" . rand(100, 999);
+                
+                $strandId = DB::table('strands')->insertGetId([
+                    'school_id' => $school->id,
+                    'subject_id' => $subjectId,
+                    'name' => $strandName,
+                    'code' => $strandCode,
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
 
-        foreach ($learningAreas as $areaIndex => $areaData) {
-            $subjects = $areaData['subjects'];
-            unset($areaData['subjects']);
+                foreach ($subStrandsData as $subStrandName => $indicatorsData) {
+                    $subStrandCode = strtoupper(substr($subStrandName, 0, 3)) . "-" . rand(100, 999);
+                    
+                    $subStrandId = DB::table('sub_strands')->insertGetId([
+                        'school_id' => $school->id,
+                        'strand_id' => $strandId,
+                        'name' => $subStrandName,
+                        'code' => $subStrandCode,
+                        'is_active' => true,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
 
-            $learningArea = LearningArea::updateOrCreate(
-                ['code' => $areaData['code']],
-                array_merge($areaData, ['display_order' => $areaIndex + 1])
-            );
-
-            foreach ($subjects as $subIndex => $subject) {
-                Subject::updateOrCreate(
-                    ['code' => $subject['code'], 'learning_area_id' => $learningArea->id],
-                    array_merge($subject, [
-                        'display_order' => $subIndex + 1,
-                    ])
-                );
+                    $gradeLevels = DB::table('grade_levels')->where('school_id', $school->id)->get();
+                    foreach ($gradeLevels as $grade) {
+                        foreach ($indicatorsData as $index => $text) {
+                            DB::table('competency_indicators')->insert([
+                                'school_id' => $school->id,
+                                'grade_level_id' => $grade->id,
+                                'sub_strand_id' => $subStrandId,
+                                'indicator' => $text,
+                                'code' => "IND-".rand(1000, 9999),
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
+                    }
+                }
             }
         }
+        
+        echo "Curriculum Data Provisioned for Standard School Context.\n";
     }
 }

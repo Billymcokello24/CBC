@@ -13,7 +13,9 @@ class CompetencyIndicator extends Model
     protected $fillable = [
         'competency_id',
         'grade_level_id',
+        'sub_strand_id',
         'indicator',
+        'code',
         'description',
         'display_order',
         'is_active',
@@ -22,6 +24,11 @@ class CompetencyIndicator extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function subStrand(): BelongsTo
+    {
+        return $this->belongsTo(SubStrand::class);
+    }
 
     public function competency(): BelongsTo
     {

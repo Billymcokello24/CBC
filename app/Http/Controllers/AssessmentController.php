@@ -583,14 +583,194 @@ class AssessmentController extends Controller
 
     public function importTemplate()
     {
-        // Placeholder for assessment import template
-        return response()->json(['message' => 'Template logic not implemented yet.']);
+        $headers = ['title', 'class_name', 'subject_name', 'assessment_type_code', 'source', 'assessment_date', 'total_marks'];
+        $headers = [
+            'Title', 
+            'Grade Level', 
+            'Class Name', 
+            'Subject Name', 
+            'Strand Name', 
+            'Sub-Strand Name', 
+            'Assessment Type', 
+            'Academic Term', 
+            'Source (Internal/Ministry)', 
+            'Assessment Date (YYYY-MM-DD)', 
+            'Total Marks'
+        ];
+
+        $callback = function () use ($headers) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            
+            // Sample row
+            fputcsv($file, [
+                'End of Term 1 Math Exam',
+                'Grade 4',
+                '4 West',
+                'Mathematics',
+                'Numbers',
+                'Whole Numbers',
+                'Summative',
+                'Term 1',
+                'Internal',
+                date('Y-m-d'),
+                '50'
+            ]);
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="assessment_import_template.csv"',
+        ]);
     }
 
     public function import(Request $request)
     {
-        // Placeholder for assessment import logic
-        return redirect()->back()->with('success', 'Assessments imported successfully (Placeholder).');
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx',
+        ]);
+
+        $schoolId = $this->getSchoolId();
+        $user = auth()->user();
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $data = array_map('str_getcsv', file($path));
+
+        // Remove header row
+        $headers = array_shift($data);
+
+        $successCount = 0;
+        $errorCount = 0;
+        $errors = [];
+
+        foreach ($data as $index => $row) {
+            if (count($row) < 4) {
+                $errorCount++;
+                $errors[] = "Row " . ($index + 2) . ": Insufficient columns.";
+                continue;
+            }
+
+            // Map columns by index
+            $title          = trim($row[0] ?? '');
+            $gradeName      = trim($row[1] ?? '');
+            $className      = trim($row[2] ?? '');
+            $subjectName    = trim($row[3] ?? '');
+            $strandName     = trim($row[4] ?? '');
+            $subStrandName  = trim($row[5] ?? '');
+            $typeName       = trim($row[6] ?? '');
+            $termName       = trim($row[7] ?? '');
+            $source         = in_array(strtolower(trim($row[8] ?? '')), ['internal', 'ministry']) ? strtolower(trim($row[8])) : 'internal';
+            $dateStr        = trim($row[9] ?? date('Y-m-d'));
+            $totalMarks     = (float) ($row[10] ?? 100);
+
+            if (!$title || !$className || !$subjectName) {
+                $errorCount++;
+                $errors[] = "Row " . ($index + 2) . ": Missing title, class, or subject.";
+                continue;
+            }
+
+            // 1. Resolve Grade Level
+            $grade = \App\Models\Academic\GradeLevel::where('school_id', $schoolId)
+                ->where('name', 'like', "%{$gradeName}%")
+                ->first();
+
+            // 2. Resolve Class
+            $classQuery = \App\Models\Academic\SchoolClass::where('school_id', $schoolId)
+                ->where('name', 'like', "%{$className}%");
+            if ($grade) $classQuery->where('grade_level_id', $grade->id);
+            $class = $classQuery->first();
+
+            if (!$class) {
+                $errorCount++;
+                $errors[] = "Row " . ($index + 2) . ": Class '{$className}' not found.";
+                continue;
+            }
+
+            // 3. Resolve Subject
+            $subject = \App\Models\Curriculum\Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId))
+                ->where('name', 'like', "%{$subjectName}%")
+                ->first();
+
+            if (!$subject) {
+                $errorCount++;
+                $errors[] = "Row " . ($index + 2) . ": Subject '{$subjectName}' not found.";
+                continue;
+            }
+
+            // 4. Resolve Assessment Type
+            $assessmentType = AssessmentType::where('school_id', $schoolId)
+                ->where(function ($q) use ($typeName) {
+                    $q->where('code', $typeName)->orWhere('name', 'like', "%{$typeName}%");
+                })
+                ->first()
+                ?? AssessmentType::where('school_id', $schoolId)->where('is_active', true)->first();
+
+            // 5. Resolve Academic Term
+            $term = AcademicTerm::where('school_id', $schoolId)
+                ->where('name', 'like', "%{$termName}%")
+                ->first()
+                ?? AcademicTerm::where('school_id', $schoolId)->where('is_current', true)->first();
+
+            // 6. Resolve Sub-Strand (Optional but recommended for indicators)
+            $subStrand = null;
+            if ($subStrandName && $subject) {
+                $subStrand = \App\Models\Curriculum\SubStrand::whereHas('strand', fn($q) => $q->where('subject_id', $subject->id))
+                    ->where('name', 'like', "%{$subStrandName}%")
+                    ->first();
+            }
+
+            try {
+                \DB::transaction(function () use ($schoolId, $class, $subject, $user, $term, $assessmentType, $title, $dateStr, $totalMarks, $source, $subStrand, &$successCount) {
+                    $assessment = Assessment::create([
+                        'school_id' => $schoolId,
+                        'class_id' => $class->id,
+                        'subject_id' => $subject->id,
+                        'teacher_id' => $user->id,
+                        'academic_year_id' => $term?->academic_year_id,
+                        'academic_term_id' => $term?->id,
+                        'assessment_type_id' => $assessmentType?->id,
+                        'title' => $title,
+                        'assessment_date' => $dateStr,
+                        'total_marks' => $totalMarks,
+                        'passing_marks' => $totalMarks * 0.5,
+                        'weight' => 100,
+                        'status' => 'draft',
+                        'source' => $source,
+                        'created_by' => $user->id,
+                    ]);
+
+                    // 7. Auto-attach indicators if Sub-Strand is mapped
+                    if ($subStrand) {
+                        $indicators = \App\Models\Curriculum\CompetencyIndicator::where('sub_strand_id', $subStrand->id)
+                            ->where('grade_level_id', $class->grade_level_id)
+                            ->get();
+
+                        foreach ($indicators as $index => $indicator) {
+                            \App\Models\Assessment\AssessmentItem::create([
+                                'assessment_id' => $assessment->id,
+                                'competency_indicator_id' => $indicator->id,
+                                'max_score' => 4, // Default rubric max
+                                'display_order' => $index,
+                            ]);
+                        }
+                    }
+
+                    $successCount++;
+                });
+            } catch (\Exception $e) {
+                $errorCount++;
+                $errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
+            }
+        }
+
+        $message = "Import complete: {$successCount} created, {$errorCount} skipped.";
+        if (!empty($errors)) {
+            $message .= " Errors: " . implode('; ', array_slice($errors, 0, 5));
+        }
+
+        return redirect()->back()->with($errorCount > 0 && $successCount === 0 ? 'error' : 'success', $message);
     }
 
     /**

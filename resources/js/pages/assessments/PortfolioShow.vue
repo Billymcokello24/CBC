@@ -368,36 +368,18 @@ const getBadgeColor = (type: string) => {
             </div>
 
             <!-- Evidence Grid -->
-            <div
-                v-if="portfolio.items.length === 0"
-                class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/50 bg-white py-24"
-            >
-                <div
-                    class="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/10 text-slate-300"
-                >
-                    <FileText class="h-10 w-10" />
+            <div v-if="portfolio.items.length === 0" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-24">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
+                    <FileText class="h-8 w-8 text-muted-foreground/30" />
                 </div>
-                <h3 class="text-xl font-bold text-foreground">
-                    No Evidence Found
-                </h3>
-                <p class="mt-1 font-bold text-muted-foreground">
-                    Start adding learner achievements to build their portfolio.
-                </p>
+                <h3 class="text-lg font-bold text-foreground">No Evidence Found</h3>
+                <p class="mt-1 text-xs text-muted-foreground">Start adding learner achievements to build their portfolio.</p>
             </div>
 
-            <div
-                v-else
-                class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
-            >
-                <Card
-                    v-for="item in portfolio.items"
-                    :key="item.id"
-                    class="group flex flex-col overflow-hidden rounded-xl border-border bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
-                >
+            <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Card v-for="item in portfolio.items" :key="item.id" class="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-md hover:border-primary/20">
                     <!-- Media Preview -->
-                    <div
-                        class="relative h-48 shrink-0 overflow-hidden bg-slate-100"
-                    >
+                    <div class="relative h-44 shrink-0 overflow-hidden bg-muted/10">
                         <div
                             v-if="item.item_type === 'image' && item.file_path"
                             class="h-full w-full"
@@ -407,19 +389,13 @@ const getBadgeColor = (type: string) => {
                                 class="h-full w-full object-cover"
                             />
                         </div>
-                        <div
-                            v-else
-                            class="flex h-full w-full items-center justify-center text-slate-300"
-                        >
+                        <div v-else class="flex h-full w-full items-center justify-center text-muted-foreground/30">
                             <component
                                 :is="getItemIcon(item.item_type)"
                                 class="h-12 w-12"
                             />
                         </div>
-                        <Badge
-                            :class="getBadgeColor(item.item_type)"
-                            class="absolute top-4 left-4 border-0 px-3 py-1 text-xs font-bold tracking-tight  shadow-sm"
-                        >
+                        <Badge :class="getBadgeColor(item.item_type)" class="absolute top-3 left-3 border-0 px-2.5 py-0.5 text-[10px] font-semibold shadow-sm capitalize">
                             {{ item.item_type }}
                         </Badge>
                         <div
@@ -429,7 +405,7 @@ const getBadgeColor = (type: string) => {
                                 v-if="item.file_path"
                                 variant="outline"
                                 size="sm"
-                                class="h-10 w-10 rounded-full border-white/30 bg-white/20 p-0 text-white backdrop-blur-md hover:bg-white hover:text-indigo-600"
+                                class="h-9 w-9 rounded-full border-white/30 bg-white/20 p-0 text-white backdrop-blur-md hover:bg-white hover:text-primary"
                                 as-child
                             >
                                 <a
@@ -448,26 +424,13 @@ const getBadgeColor = (type: string) => {
                             </Button>
                         </div>
                     </div>
-                    <CardContent class="flex flex-1 flex-col p-6">
-                        <div class="mb-3 flex items-center gap-2">
-                            <BookOpen class="h-3.5 w-3.5 text-indigo-500" />
-                            <span
-                                class="text-xs font-bold tracking-tight text-indigo-600 "
-                                >{{
-                                    item.subject?.name || 'General Achievement'
-                                }}</span
-                            >
+                    <CardContent class="flex flex-1 flex-col p-5">
+                        <div class="mb-2 flex items-center gap-2">
+                            <BookOpen class="h-3.5 w-3.5 text-primary" />
+                            <span class="text-[10px] font-semibold text-primary">{{ item.subject?.name || 'General Achievement' }}</span>
                         </div>
-                        <h4
-                            class="mb-2 text-lg leading-tight font-bold tracking-tight text-foreground"
-                        >
-                            {{ item.title }}
-                        </h4>
-                        <p
-                            class="mb-4 line-clamp-2 text-xs font-medium text-muted-foreground"
-                        >
-                            {{ item.description || 'No description provided.' }}
-                        </p>
+                        <h4 class="mb-1 text-sm leading-tight font-bold text-foreground">{{ item.title }}</h4>
+                        <p class="mb-3 line-clamp-2 text-xs text-muted-foreground">{{ item.description || 'No description provided.' }}</p>
 
                         <!-- Linked Indicators -->
                         <div
@@ -477,19 +440,15 @@ const getBadgeColor = (type: string) => {
                             <div
                                 v-for="ind in item.indicators"
                                 :key="ind.id"
-                                class="max-w-[150px] truncate rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-xs font-bold text-indigo-600"
+                                class="max-w-[150px] truncate rounded-lg border border-border bg-primary/5 px-2 py-0.5 text-[10px] font-semibold text-primary"
                                 :title="ind.title"
                             >
                                 {{ ind.title }}
                             </div>
                         </div>
 
-                        <div
-                            class="mt-auto flex items-center justify-between border-t border-slate-50 pt-4"
-                        >
-                            <div
-                                class="flex items-center gap-1.5 text-xs font-bold tracking-wider text-muted-foreground/80 "
-                            >
+                        <div class="mt-auto flex items-center justify-between border-t border-border/50 pt-3">
+                            <div class="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
                                 <CalendarDays class="h-3.5 w-3.5" />
                                 {{
                                     new Date(

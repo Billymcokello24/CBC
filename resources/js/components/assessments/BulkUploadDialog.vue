@@ -79,7 +79,7 @@ const submit = () => {
         <DialogContent class="sm:max-w-[500px]">
             <DialogHeader>
                 <DialogTitle class="flex items-center gap-2 text-xl">
-                    <Upload class="h-5 w-5 text-indigo-600" />
+                    <Upload class="h-5 w-5 text-primary" />
                     {{ title }}
                 </DialogTitle>
                 <DialogDescription>
@@ -90,34 +90,39 @@ const submit = () => {
             <div class="grid gap-6 py-4">
                 <!-- Template Download Section -->
                 <div
-                    class="flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50 p-4"
+                    class="flex flex-col gap-4 rounded-xl border border-border bg-muted/10 p-4"
                 >
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
-                        >
-                            <FileSpreadsheet class="h-5 w-5 text-indigo-600" />
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm"
+                            >
+                                <FileSpreadsheet class="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p class="text-sm font-semibold text-foreground">Need a template?</p>
+                                <p class="text-xs text-muted-foreground">Download our CSV/Excel format</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="text-sm font-bold text-indigo-900">
-                                Need a template?
-                            </p>
-                            <p class="text-xs text-indigo-600/70">
-                                Download our CSV/Excel format
-                            </p>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            class="font-semibold text-primary hover:text-primary/80"
+                            as-child
+                        >
+                            <a :href="templateUrl" download>
+                                <Download class="mr-2 h-4 w-4" />
+                                Template
+                            </a>
+                        </Button>
+                    </div>
+
+                    <div class="space-y-2 border-t border-border/50 pt-2">
+                        <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-70">Mandatory Data Points</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <Badge v-for="tag in ['title', 'class_name', 'subject_name', 'assessment_type', 'source', 'date']" :key="tag" variant="outline" class="rounded-lg border-primary/20 bg-primary/5 px-2 py-0.5 text-[8px] font-black tracking-tight text-primary uppercase">{{ tag.replace('_', ' ') }}</Badge>
                         </div>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        class="font-bold text-indigo-600 hover:text-indigo-700"
-                        as-child
-                    >
-                        <a :href="templateUrl" download>
-                            <Download class="mr-2 h-4 w-4" />
-                            Template
-                        </a>
-                    </Button>
                 </div>
 
                 <!-- Dropzone -->
@@ -125,8 +130,8 @@ const submit = () => {
                     class="relative rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200"
                     :class="[
                         isDragging
-                            ? 'scale-[1.02] border-indigo-500 bg-indigo-50/50'
-                            : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50/50',
+                            ? 'scale-[1.02] border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/30 hover:bg-muted/10',
                         selectedFile ? 'border-green-300 bg-green-50/10' : '',
                     ]"
                     @dragover.prevent="isDragging = true"
@@ -146,17 +151,13 @@ const submit = () => {
                         class="flex flex-col items-center gap-3"
                     >
                         <div
-                            class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 transition-colors group-hover:bg-indigo-100 group-hover:text-indigo-600"
+                            class="flex h-12 w-12 items-center justify-center rounded-xl bg-muted text-muted-foreground"
                         >
                             <Upload class="h-6 w-6" />
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-gray-900">
-                                Click or drag file to upload
-                            </p>
-                            <p class="mt-1 text-xs text-gray-500">
-                                Supports CSV, Excel (.xlsx, .xls)
-                            </p>
+                            <p class="text-sm font-semibold text-foreground">Click or drag file to upload</p>
+                            <p class="mt-1 text-xs text-muted-foreground">Supports CSV, Excel (.xlsx, .xls)</p>
                         </div>
                     </div>
 
@@ -167,11 +168,7 @@ const submit = () => {
                             <CheckCircle2 class="h-6 w-6" />
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p
-                                class="max-w-[250px] truncate text-sm font-bold text-gray-900"
-                            >
-                                {{ selectedFile.name }}
-                            </p>
+                            <p class="max-w-[250px] truncate text-sm font-semibold text-foreground">{{ selectedFile.name }}</p>
                             <p class="text-xs font-medium text-green-600">
                                 Ready to import
                             </p>
@@ -208,7 +205,7 @@ const submit = () => {
                 <Button
                     @click="submit"
                     :disabled="!selectedFile || form.processing"
-                    class="bg-indigo-600 px-8 font-bold hover:bg-indigo-700"
+                    class="bg-primary px-8 font-semibold text-white hover:bg-primary/90"
                 >
                     <Loader2
                         v-if="form.processing"

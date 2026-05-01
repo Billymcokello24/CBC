@@ -10,6 +10,8 @@ class AssessmentItem extends Model
 {
     protected $fillable = [
         'assessment_id',
+        'name',
+        'code',
         'competency_indicator_id',
         'total_marks',
         'weight',

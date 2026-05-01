@@ -345,6 +345,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('curriculum/syllabus/topics/{strand}', [SyllabusController::class, 'showTopic'])->name('curriculum.syllabus.topics.show');
         Route::get('curriculum/syllabus/{subject}/{grade}', [SyllabusController::class, 'show'])->name('curriculum.syllabus.show');
         Route::resource('curriculum/competencies', \App\Http\Controllers\Curriculum\CompetencyController::class)->names('curriculum.competencies');
+        Route::get('curriculum/competencies/template', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'downloadTemplate'])->name('curriculum.competencies.template');
+        Route::post('curriculum/competencies/import', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'importIndicators'])->name('curriculum.competencies.import');
         Route::post('curriculum/competencies/indicators', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'storeIndicator'])->name('curriculum.competencies.storeIndicator');
         Route::delete('curriculum/competencies/indicators/{indicator}', [\App\Http\Controllers\Curriculum\CompetencyController::class, 'destroyIndicator'])->name('curriculum.competencies.destroyIndicator');
         Route::get('curriculum/progress/{student}/{subject}', [SyllabusController::class, 'getStudentProgress'])->name('curriculum.progress.show');
@@ -484,18 +486,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ──────────────────────────────────────────────
-    // ASSESSMENTS
+    // ASSESSMENTS & GRADING (CBC MODERN)
     // ──────────────────────────────────────────────
     Route::group(['prefix' => 'assessments', 'as' => 'assessments.'], function () {
+        Route::get('/', [AssessmentController::class, 'index'])->name('index');
         Route::get('/setup', [AssessmentWizardController::class, 'index'])->name('setup');
         Route::post('/setup', [AssessmentWizardController::class, 'store'])->name('setup.store');
         Route::get('/strands', [AssessmentWizardController::class, 'getStrands'])->name('strands');
         Route::get('/sub-strands', [AssessmentWizardController::class, 'getSubStrands'])->name('sub-strands');
         Route::get('/indicators', [AssessmentWizardController::class, 'getIndicators'])->name('indicators');
         
-        Route::get('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading.index');
-        Route::post('/{assessment}/grading', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
+        // High-Fidelity Grading Terminal
+        Route::get('/latest-active', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'latestActive'])->name('latest-active');
+        Route::get('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading');
+        Route::get('/grading/{assessment}/export', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'export'])->name('grading.export');
+        Route::get('/grading/{assessment}/template', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'downloadTemplate'])->name('grading.template');
+        Route::post('/grading/{assessment}/import', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'importMarks'])->name('grading.import');
+        Route::post('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
         Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
+        
+        // Legacy/Overview routes (if needed)
+        Route::get('/grading-overview', [AssessmentController::class, 'gradingIndex'])->name('grading_overview');
     });
 
     Route::middleware(['check_permission:assessments.view,assessments.view_own'])->group(function () {

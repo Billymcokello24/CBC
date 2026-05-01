@@ -32,6 +32,7 @@ import {
     Activity,
     Database,
     Rows3,
+    Upload,
 } from 'lucide-vue-next';
 import { ref, watch, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -39,6 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import BulkUploadDialog from '@/components/assessments/BulkUploadDialog.vue';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -88,6 +90,7 @@ const selectedClassId = ref(props.filters.class_id ?? 'all');
 const selectedSubjectId = ref(props.filters.subject_id ?? 'all');
 const selectedView = ref<'grid' | 'list'>(props.filters.view ?? 'grid');
 const perPage = ref(props.assessments.per_page ?? 20);
+const bulkUploadOpen = ref(false);
 
 const applyFilters = (pageNumber = 1) => {
     router.get(
@@ -153,6 +156,26 @@ const getStatusIcon = (status: string) => {
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
+                        <Link href="/assessments/grading">
+                            <Zap class="mr-2 h-4 w-4 text-primary" />Grading
+                        </Link>
+                    </Button>
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
+                        <Link href="/assessments/rubrics">
+                            <BookMarked class="mr-2 h-4 w-4 text-primary" />Rubrics
+                        </Link>
+                    </Button>
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
+                        <Link href="/assessments/results">
+                            <TrendingUp class="mr-2 h-4 w-4 text-primary" />Results
+                        </Link>
+                    </Button>
+                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
+                        <Link href="/assessments/report-cards">
+                            <FileText class="mr-2 h-4 w-4 text-primary" />Report Cards
+                        </Link>
+                    </Button>
                      <div class="flex items-center gap-1 rounded-2xl border border-border bg-card p-1 shadow-sm">
                         <Button variant="ghost" size="icon" :class="selectedView === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary hover:text-white' : 'text-muted-foreground hover:bg-muted'" @click="selectedView = 'grid'" class="h-10 w-10 rounded-xl transition-all">
                             <LayoutGrid class="h-4 w-4" />
@@ -161,12 +184,31 @@ const getStatusIcon = (status: string) => {
                             <Rows3 class="h-4 w-4" />
                         </Button>
                     </div>
+                    <Button @click="bulkUploadOpen = true" variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted">
+                        <Upload class="mr-2 h-4 w-4 text-primary" />Bulk Upload
+                    </Button>
                     <Button as-child class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
-                        <Link href="/assessments/create">
+                        <Link href="/assessments/setup">
                             <Plus class="mr-2 h-4 w-4" />
                             Create Assessment
                         </Link>
                     </Button>
+                </div>
+            </div>
+
+            <!-- Assessment Usage Guide -->
+            <div class="overflow-hidden rounded-xl border border-primary/20 bg-primary/5 shadow-sm transition-all hover:bg-primary/[0.07]">
+                <div class="flex items-center gap-4 p-6">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+                        <Info class="h-6 w-6" />
+                    </div>
+                    <div class="flex-1 space-y-1">
+                        <h2 class="text-sm font-bold text-primary tracking-tight">Assessment Utility Protocol</h2>
+                        <p class="text-xs text-muted-foreground max-w-3xl">Distinguish between <span class="font-bold text-foreground underline decoration-primary/30">Internal (School-set)</span> and <span class="font-bold text-foreground underline decoration-primary/30">Ministry (KNEC)</span> evaluations. Initiate evaluations via the <span class="font-semibold text-primary">Setup Wizard</span>, map them to CBC learning outcomes, and execute data entry through the <span class="font-semibold text-primary">Grading Sheet</span> terminal. Use bulk upload for high-volume results migration.</p>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-2">
+                        <Button variant="outline" class="h-9 rounded-lg border-primary/20 bg-card text-[10px] font-bold tracking-widest text-primary uppercase transition-all hover:bg-primary hover:text-white">Usage Documentation</Button>
+                    </div>
                 </div>
             </div>
 
@@ -276,7 +318,14 @@ const getStatusIcon = (status: string) => {
 
                          <div class="space-y-2">
                              <h3 class="text-xl font-black tracking-tight text-foreground uppercase group-hover:text-primary transition-colors leading-tight">{{ assessment.title }}</h3>
-                             <p class="text-[9px] font-bold tracking-[0.2em] text-primary uppercase opacity-60">{{ assessment.assessment_type?.name }}</p>
+                             <div class="flex items-center gap-2">
+                                 <p class="text-[9px] font-bold tracking-[0.2em] text-primary uppercase opacity-60">{{ assessment.assessment_type?.name }}</p>
+                                 <Badge v-if="assessment.source" 
+                                       :class="assessment.source === 'ministry' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'"
+                                       class="rounded-lg border px-2 py-0.5 text-[8px] font-black tracking-tight uppercase shadow-sm">
+                                    {{ assessment.source === 'ministry' ? 'Ministry' : 'Internal' }}
+                                 </Badge>
+                             </div>
                          </div>
 
                          <div class="space-y-4 rounded-3xl border border-border/50 bg-muted/20 p-5 group-hover:bg-card transition-colors">
@@ -305,7 +354,7 @@ const getStatusIcon = (status: string) => {
                             <div v-for="i in 3" :key="i" class="h-8 w-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400">UID</div>
                         </div>
                         <Button variant="ghost" class="h-10 rounded-xl px-4 text-[9px] font-black tracking-widest text-primary uppercase hover:bg-primary/10" as-child>
-                            <Link :href="`/assessments/${assessment.id}/grading`" class="flex items-center gap-2">Grading Matrix <ArrowRight class="h-3 w-3" /></Link>
+                            <Link :href="route('assessments.grading', { assessment: assessment.id })" class="flex items-center gap-2">Grading Matrix <ArrowRight class="h-3 w-3" /></Link>
                         </Button>
                     </div>
                     
@@ -333,9 +382,15 @@ const getStatusIcon = (status: string) => {
                                             {{ assessment.code || assessment.title.substring(0, 3) }}
                                         </div>
                                         <div class="space-y-1">
-                                            <p class="text-xs font-black tracking-tight text-foreground uppercase group-hover:text-primary transition-colors">{{ assessment.title }}</p>
-                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-50 tracking-widest">{{ assessment.assessment_date }}</p>
-                                        </div>
+                                            <h4 class="text-base font-bold text-foreground capitalize group-hover:text-primary transition-colors leading-tight line-clamp-1">{{ assessment.title }}</h4>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" class="rounded-lg border-border bg-muted/20 px-2 py-0.5 text-[9px] font-bold tracking-tight text-muted-foreground uppercase transition-all hover:bg-primary/5 hover:text-primary">{{ assessment.subject?.name }}</Badge>
+                            <Badge v-if="assessment.source" 
+                                   :class="assessment.source === 'ministry' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'"
+                                   class="rounded-lg border px-2 py-0.5 text-[9px] font-bold tracking-tight uppercase shadow-sm">
+                                {{ assessment.source === 'ministry' ? 'Ministry/KNEC' : 'Internal' }}
+                            </Badge>
+                        </div>                </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-6">
@@ -352,7 +407,7 @@ const getStatusIcon = (status: string) => {
                                 </td>
                                 <td class="px-10 py-6 text-right">
                                      <div class="flex items-center justify-end gap-2">
-                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"><Link :href="`/assessments/${assessment.id}/grading`"><Zap class="h-4 w-4" /></Link></Button>
+                                        <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"><Link :href="route('assessments.grading', { assessment: assessment.id })"><Zap class="h-4 w-4" /></Link></Button>
                                         <Button variant="ghost" size="icon" as-child class="h-9 w-9 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"><Link :href="`/assessments/${assessment.id}`"><Eye class="h-4 w-4" /></Link></Button>
                                          <DropdownMenu>
                                             <DropdownMenuTrigger as-child>
@@ -397,5 +452,15 @@ const getStatusIcon = (status: string) => {
                 </div>
             </div>
         </div>
+
+        <!-- Bulk Upload Dialog -->
+        <BulkUploadDialog
+            v-model:open="bulkUploadOpen"
+            title="Bulk Import Assessments"
+            description="Upload a CSV or Excel file to create multiple assessments at once."
+            template-url="/assessments/import-template"
+            upload-url="/assessments/import"
+            @success="applyFilters()"
+        />
     </AppLayout>
 </template>

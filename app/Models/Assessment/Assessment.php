@@ -20,7 +20,7 @@ class Assessment extends Model
         'grading_scale_id', 'rubric_id', 'title', 'description',
         'instructions', 'assessment_date', 'start_time', 'end_time',
         'duration_minutes', 'total_marks', 'passing_marks', 'weight',
-        'is_published', 'is_locked', 'status', 'published_at', 'created_by',
+        'is_published', 'is_locked', 'status', 'source', 'published_at', 'created_by',
         'lesson_plan_id', 'sub_strand_id',
         'core_competencies',
         'pci',

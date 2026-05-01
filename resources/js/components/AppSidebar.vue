@@ -472,6 +472,7 @@ const navigation = [
                     },
                 ],
             },
+            
             {
                 title: 'CBC Evaluation',
                 href: '/assessments',
@@ -479,16 +480,16 @@ const navigation = [
                 permissions: ['assessments.view', 'assessments.view_own'],
                 children: [
                     {
-                        title: 'Assessment Tracker',
-                        href: '/assessments/setup',
-                        permissions: ['assessments.create'],
-                        icon: Zap,
-                    },
-                    {
-                        title: 'Grading Sheet',
-                        href: '/assessments/grading',
-                        permissions: ['assessments.grade'],
+                        title: 'Assessments',
+                        href: '/assessments',
+                        permissions: ['assessments.view'],
                         icon: ClipboardList,
+                    },
+                    
+                    {
+                        title: 'Results',
+                        href: '/assessments/results',
+                        icon: TrendingUp,
                     },
                     {
                         title: 'Report Cards',
@@ -499,11 +500,6 @@ const navigation = [
                         title: 'Student Portfolio',
                         href: '/assessments/portfolio',
                         icon: Folder,
-                    },
-                    {
-                        title: 'Rubric Builder',
-                        href: '/assessments/rubrics',
-                        icon: Settings,
                     },
                 ],
             },

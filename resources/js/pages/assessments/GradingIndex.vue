@@ -127,144 +127,56 @@ const getStatusColor = (status: string) => {
             </div>
 
             <!-- Empty State -->
-            <div
-                v-if="assessments.data.length === 0"
-                class="flex flex-col items-center justify-center rounded-2xl border bg-muted/10 py-24 shadow-inner"
-            >
-                <div
-                    class="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border bg-white shadow-sm"
-                >
-                    <LayoutGrid class="h-10 w-10 text-slate-200" />
+            <div v-if="assessments.data.length === 0" class="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-24">
+                <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-muted/20">
+                    <LayoutGrid class="h-8 w-8 text-muted-foreground/30" />
                 </div>
-                <h3 class="mb-2 text-2xl font-bold text-slate-800">
-                    No Assessments to Grade
-                </h3>
-                <p class="max-w-sm text-center font-medium text-muted-foreground">
-                    There are currently no published assessments awaiting data
-                    entry for your assigned cluster.
-                </p>
-                <Button
-                    variant="outline"
-                    as-child
-                    class="mt-8 h-10 rounded-xl border-border/50 px-6 text-xs font-bold tracking-tight  transition-colors hover:bg-slate-100"
-                >
+                <h3 class="mb-2 text-lg font-bold text-foreground">No Assessments to Grade</h3>
+                <p class="max-w-sm text-center text-xs text-muted-foreground">There are currently no published assessments awaiting data entry for your assigned cluster.</p>
+                <Button variant="outline" as-child class="mt-6 h-10 rounded-lg border-border bg-card px-6 text-xs font-semibold hover:bg-muted">
                     <Link href="/assessments">Return to Dashboard</Link>
                 </Button>
             </div>
 
             <!-- Cards Grid -->
             <div v-else class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div
-                    v-for="assessment in assessments.data"
-                    :key="assessment.id"
-                    class="group relative flex flex-col rounded-xl border border-border bg-white p-7 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
-                >
-                    <div class="mb-6 flex items-start justify-between">
-                        <div
-                            class="flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-50 bg-purple-600/10 text-sm font-bold text-purple-700  shadow-inner transition-all group-hover:bg-purple-600 group-hover:text-white"
-                        >
-                            {{ assessment.subject?.name.substring(0, 2) }}
+                <div v-for="assessment in assessments.data" :key="assessment.id" class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-primary/20">
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary transition-all group-hover:bg-primary group-hover:text-white">{{ assessment.subject?.name.substring(0, 2) }}</div>
+                            <Badge :class="[getStatusColor(assessment.status), 'rounded-lg border-0 px-2.5 py-0.5 text-[10px] font-semibold']">
+                                {{ assessment.status }}
+                            </Badge>
                         </div>
-                        <Badge
-                            :class="[
-                                getStatusColor(assessment.status),
-                                'rounded-full border-0 px-3 py-1 text-xs font-medium tracking-tight ',
-                            ]"
-                        >
-                            {{ assessment.status }}
-                        </Badge>
-                    </div>
-
-                    <h3
-                        class="mb-2 text-xl leading-tight font-bold text-foreground capitalize transition-colors group-hover:text-purple-700"
-                    >
-                        {{ assessment.title }}
-                    </h3>
-
-                    <div class="mb-6 flex flex-wrap items-center gap-2">
-                        <Badge
-                            variant="outline"
-                            class="rounded-lg border-indigo-100 bg-indigo-50 px-2 py-0.5 text-xs font-bold text-indigo-700 "
-                            >GRADE {{ assessment.class?.name }}</Badge
-                        >
-                        <Badge
-                            variant="outline"
-                            class="rounded-lg border-amber-100 bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-700 "
-                            >{{ assessment.subject?.name }}</Badge
-                        >
-                    </div>
-
-                    <div
-                        class="mt-auto space-y-4 border-t border-dashed border-slate-50 pt-6"
-                    >
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <Clock class="h-3.5 w-3.5 text-muted-foreground/80" />
-                                <span
-                                    class="text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                    >Entry Progress</span
-                                >
+                        <h3 class="text-sm font-bold text-foreground capitalize transition-colors group-hover:text-primary leading-tight">{{ assessment.title }}</h3>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" class="rounded-lg border-border bg-muted/10 px-2 py-0.5 text-[10px] font-semibold">GRADE {{ assessment.class?.name }}</Badge>
+                            <Badge variant="outline" class="rounded-lg border-border bg-muted/10 px-2 py-0.5 text-[10px] font-semibold">{{ assessment.subject?.name }}</Badge>
+                        </div>
+                        <div class="space-y-2 border-t border-border/50 pt-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[10px] font-medium text-muted-foreground">Entry Progress</span>
+                                <span class="text-[10px] font-semibold text-primary">--%</span>
                             </div>
-                            <span class="text-xs font-bold text-purple-600"
-                                >--%</span
-                            >
+                            <div class="h-1 w-full overflow-hidden rounded-full bg-muted/20">
+                                <div class="h-full rounded-full bg-primary transition-all duration-1000" style="width: 5%"></div>
+                            </div>
                         </div>
-                        <div
-                            class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 shadow-inner"
-                        >
-                            <div
-                                class="h-full rounded-full bg-linear-to-r from-purple-500 to-indigo-500 ring-purple-100 transition-all duration-1000 group-hover:ring-2"
-                                style="width: 5%"
-                            ></div>
-                        </div>
-
-                        <div class="mt-4 grid grid-cols-2 gap-3">
-                            <Button
-                                class="h-10 rounded-2xl border-0 bg-purple-600 text-xs font-bold tracking-tight text-white  shadow-lg shadow-purple-100 hover:bg-purple-700"
-                                as-child
-                            >
-                                <Link
-                                    :href="`/assessments/${assessment.id}/grading`"
-                                >
-                                    Grade
-                                    <Plus
-                                        class="ml-1.5 h-3.5 w-3.5 font-bold"
-                                    />
-                                </Link>
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                class="h-10 rounded-2xl text-xs font-bold tracking-tight text-muted-foreground/80  hover:bg-indigo-50 hover:text-indigo-600"
-                                as-child
-                            >
-                                <Link :href="`/assessments/${assessment.id}`">
-                                    <Eye class="mr-2 h-3.5 w-3.5" />Preview
-                                </Link>
-                            </Button>
-                        </div>
+                    </div>
+                    <div class="mt-auto border-t border-border/50 bg-muted/5 px-6 py-3 flex items-center gap-3">
+                        <Button class="flex-1 h-9 rounded-lg bg-primary text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all" as-child>
+                            <Link :href="route('assessments.grading', { assessment: assessment.id })">Grade <Plus class="ml-1.5 h-3.5 w-3.5" /></Link>
+                        </Button>
+                        <Button variant="outline" class="h-9 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" as-child>
+                            <Link :href="`/assessments/${assessment.id}`"><Eye class="mr-1.5 h-3.5 w-3.5" />Preview</Link>
+                        </Button>
                     </div>
                 </div>
             </div>
 
-            <!-- Footer Meta -->
-            <div
-                class="mt-12 mb-12 flex items-center justify-between border-t py-12"
-            >
-                <div class="flex items-center gap-3">
-                    <div
-                        class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white"
-                    >
-                        <Target class="h-4 w-4" />
-                    </div>
-                    <p
-                        class="text-xs font-medium tracking-tight text-muted-foreground text-muted-foreground/80 "
-                    >
-                        CBC Compliance Layer v2.1
-                    </p>
-                </div>
-                <p class="text-xs font-bold tracking-tight text-muted-foreground/80">
-                    Active Index: {{ assessments.data.length }} Assessments
-                </p>
+            <!-- Footer -->
+            <div class="flex h-14 items-center justify-between rounded-xl border border-border bg-card px-6">
+                <p class="text-xs font-medium text-muted-foreground">Active Index: {{ assessments.data.length }} Assessments</p>
             </div>
         </div>
     </AppLayout>

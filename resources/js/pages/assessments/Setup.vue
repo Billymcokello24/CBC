@@ -37,6 +37,7 @@ const props = defineProps<{
     gradeLevels: Array<any>;
     subjects: Array<any>;
     academicTerms: Array<any>;
+    academicYears: Array<any>;
     assessmentTypes: Array<any>;
     competencies: Array<any>;
     ratingScales: Array<any>;
@@ -73,6 +74,7 @@ const form = useForm({
     description: '',
     type_id: '',
     date: new Date().toISOString().split('T')[0],
+    academic_year_id: '',
     term_id: '',
     grade_level_id: '',
     class_id: '',
@@ -80,6 +82,7 @@ const form = useForm({
     strand_id: '',
     sub_strand_id: '',
     indicators: [] as Indicator[],
+    source: 'internal',
 });
 
 const steps = [
@@ -112,9 +115,7 @@ const selectedGrade = computed(() =>
 );
 const availableClasses = computed(() => selectedGrade.value?.classes || []);
 const availableSubjects = computed(() => {
-    // In a real app, subjects might be filtered by grade level
-    // For now returning from somewhere or assuming it's available
-    return []; // Will need to pass subjects via props
+    return props.subjects || [];
 });
 
 // Watchers for dynamic data fetching
@@ -189,6 +190,14 @@ const toggleIndicator = (indicator: any) => {
     }
 };
 
+const selectAllIndicators = () => {
+    form.indicators = indicators.value.map(i => ({ ...i, max_score: 4 }));
+};
+
+const clearAllIndicators = () => {
+    form.indicators = [];
+};
+
 const submit = () => {
     form.post(route('assessments.setup.store'), {
         onSuccess: () => {
@@ -201,95 +210,37 @@ const submit = () => {
 <template>
     <Head title="Assessment Setup Wizard" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="font-pulsar mx-auto mt-2 flex h-full max-w-[1200px] flex-1 flex-col gap-6 overflow-hidden p-6"
-        >
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 overflow-hidden p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
             <!-- Progress Bar -->
-            <div class="relative mb-8 flex items-center justify-between px-4">
-                <div
-                    class="absolute top-1/2 left-0 z-0 h-1 w-full -translate-y-1/2 bg-slate-100"
-                ></div>
-                <div
-                    class="absolute top-1/2 left-0 z-0 h-1 -translate-y-1/2 bg-indigo-600 transition-all duration-500"
-                    :style="{
-                        width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
-                    }"
-                ></div>
-
-                <div
-                    v-for="step in steps"
-                    :key="step.id"
-                    class="relative z-10 flex flex-col items-center"
-                >
-                    <div
-                        class="flex h-10 w-10 items-center justify-center rounded-full border-4 transition-all duration-300"
-                        :class="[
-                            currentStep === step.id
-                                ? 'scale-110 border-indigo-200 bg-indigo-600 text-white'
-                                : currentStep > step.id
-                                  ? 'border-indigo-200 bg-indigo-600 text-white'
-                                  : 'border-border bg-white text-slate-300',
-                        ]"
-                    >
-                        <CheckCircle2
-                            v-if="currentStep > step.id"
-                            class="h-5 w-5"
-                        />
-                        <span v-else class="text-xs font-bold">{{
-                            step.id
-                        }}</span>
+            <div class="relative flex items-center justify-between px-4">
+                <div class="absolute top-1/2 left-0 z-0 h-0.5 w-full -translate-y-1/2 bg-border"></div>
+                <div class="absolute top-1/2 left-0 z-0 h-0.5 -translate-y-1/2 bg-primary transition-all duration-500" :style="{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }"></div>
+                <div v-for="step in steps" :key="step.id" class="relative z-10 flex flex-col items-center">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-300" :class="[currentStep === step.id ? 'scale-110 border-primary bg-primary text-white shadow-sm' : currentStep > step.id ? 'border-primary bg-primary text-white' : 'border-border bg-card text-muted-foreground']">
+                        <CheckCircle2 v-if="currentStep > step.id" class="h-4 w-4" />
+                        <span v-else class="text-xs font-semibold">{{ step.id }}</span>
                     </div>
-                    <span
-                        class="absolute top-12 text-xs font-medium tracking-tight whitespace-nowrap text-muted-foreground/80 "
-                        :class="{ 'text-indigo-600': currentStep === step.id }"
-                    >
-                        {{ step.name }}
-                    </span>
+                    <span class="absolute top-11 text-[10px] font-medium whitespace-nowrap text-muted-foreground" :class="{ '!text-primary font-semibold': currentStep === step.id }">{{ step.name }}</span>
                 </div>
             </div>
 
-            <div
-                class="mt-8 flex h-full flex-col gap-8 overflow-hidden lg:flex-row"
-            >
+            <div class="mt-4 flex h-full flex-col gap-8 overflow-hidden lg:flex-row">
                 <!-- Main Content Area -->
                 <div class="flex flex-1 flex-col gap-6 overflow-hidden">
-                    <Card
-                        class="flex h-full flex-col overflow-hidden border-t-4 border-t-indigo-600 shadow-xl"
-                    >
-                        <CardHeader class="pb-4">
-                            <div class="mb-1 flex items-center gap-3">
-                                <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm"
-                                >
-                                    <component
-                                        :is="
-                                            steps[currentStep - 1].id === 1
-                                                ? Info
-                                                : steps[currentStep - 1].id ===
-                                                    4
-                                                  ? ListChecks
-                                                  : LayoutGrid
-                                        "
-                                        class="h-5 w-5"
-                                    />
+                    <Card class="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <CardHeader class="border-b border-border/50 bg-muted/5 pb-4 pt-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <component :is="steps[currentStep - 1].id === 1 ? Info : steps[currentStep - 1].id === 4 ? ListChecks : LayoutGrid" class="h-4 w-4" />
                                 </div>
                                 <div>
-                                    <h2
-                                        class="text-xl font-bold tracking-tight text-slate-800"
-                                    >
-                                        {{ steps[currentStep - 1].name }}
-                                    </h2>
-                                    <p
-                                        class="text-xs font-medium text-muted-foreground"
-                                    >
-                                        {{ steps[currentStep - 1].description }}
-                                    </p>
+                                    <h2 class="text-sm font-bold tracking-tight text-foreground">{{ steps[currentStep - 1].name }}</h2>
+                                    <p class="text-xs font-medium text-muted-foreground">{{ steps[currentStep - 1].description }}</p>
                                 </div>
                             </div>
                         </CardHeader>
-                        <Separator />
 
-                        <CardContent class="flex-1 overflow-y-auto p-8">
+                        <CardContent class="flex-1 overflow-y-auto p-6">
                             <!-- Step 1: General Info -->
                             <div
                                 v-if="currentStep === 1"
@@ -297,61 +248,73 @@ const submit = () => {
                             >
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                            >Assessment Title</label
-                                        >
+                                        <label class="text-xs font-medium text-muted-foreground">Assessment Title</label>
                                         <Input
                                             v-model="form.title"
                                             placeholder="e.g. End of Term Mathematics Evaluation"
-                                            class="h-12 border-border/50 focus:ring-indigo-500/20"
+                                            class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background"
                                         />
                                     </div>
                                     <div class="space-y-2">
-                                        <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                            >Assessment Nature</label
+                                        <label class="text-xs font-medium text-muted-foreground">Assessment Source</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <button 
+                                                type="button"
+                                                @click="form.source = 'internal'"
+                                                class="flex h-10 items-center justify-center rounded-lg border px-4 text-xs font-semibold transition-all"
+                                                :class="form.source === 'internal' ? 'border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20' : 'border-border bg-muted/5 text-muted-foreground hover:bg-muted/10'"
+                                            >
+                                                Internal (School)
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                @click="form.source = 'ministry'"
+                                                class="flex h-10 items-center justify-center rounded-lg border px-4 text-xs font-semibold transition-all"
+                                                :class="form.source === 'ministry' ? 'border-primary bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20' : 'border-border bg-muted/5 text-muted-foreground hover:bg-muted/10'"
+                                            >
+                                                Ministry (KNEC)
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Academic Year</label>
+                                        <select
+                                            v-model="form.academic_year_id"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
+                                            <option value="">Select Year...</option>
+                                            <option v-for="year in academicYears" :key="year.id" :value="String(year.id)">
+                                                {{ year.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Assessment Nature</label>
                                         <select
                                             v-model="form.type_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
-                                            <option value="">
-                                                Select Category...
-                                            </option>
-                                            <option
-                                                v-for="type in assessmentTypes"
-                                                :key="type.id"
-                                                :value="String(type.id)"
-                                            >
+                                            <option value="">Select Category...</option>
+                                            <option v-for="type in assessmentTypes" :key="type.id" :value="String(type.id)">
                                                 {{ type.name }}
                                             </option>
                                         </select>
                                     </div>
                                     <div class="space-y-2">
-                                        <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                            >Academic Term</label
-                                        >
+                                        <label class="text-xs font-medium text-muted-foreground">Academic Term</label>
                                         <select
                                             v-model="form.term_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm font-medium shadow-sm transition-all focus:ring-2 focus:ring-indigo-500/20"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
-                                            <option value="">
-                                                Select Term...
-                                            </option>
-                                            <option
-                                                v-for="term in academicTerms"
-                                                :key="term.id"
-                                                :value="String(term.id)"
-                                            >
+                                            <option value="">Select Term...</option>
+                                            <option v-for="term in academicTerms" :key="term.id" :value="String(term.id)">
                                                 {{ term.name }}
                                             </option>
                                         </select>
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                            class="text-xs font-medium text-muted-foreground"
                                             >Evaluation Date</label
                                         >
                                         <div class="relative">
@@ -361,31 +324,17 @@ const submit = () => {
                                             <Input
                                                 v-model="form.date"
                                                 type="date"
-                                                class="h-12 border-border/50 pl-10"
+                                                class="h-10 rounded-lg border-border bg-muted/10 pl-10 text-sm focus:bg-background"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div
-                                    class="flex gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6"
-                                >
-                                    <Info
-                                        class="h-6 w-6 shrink-0 text-indigo-500"
-                                    />
+                                <div class="flex gap-4 rounded-xl border border-border bg-muted/5 p-4">
+                                    <Info class="h-5 w-5 shrink-0 text-primary" />
                                     <div>
-                                        <h4
-                                            class="text-sm font-bold text-indigo-900"
-                                        >
-                                            Pro-Tip: Descriptive Titles
-                                        </h4>
-                                        <p
-                                            class="mt-1 text-xs leading-relaxed text-indigo-700/80"
-                                        >
-                                            Include the term and scope in the
-                                            title to make it easier to search
-                                            later in the Report Card aggregator.
-                                        </p>
+                                        <h4 class="text-xs font-semibold text-foreground">Pro-Tip: Descriptive Titles</h4>
+                                        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">Include the term and scope in the title to make it easier to search later in the Report Card aggregator.</p>
                                     </div>
                                 </div>
                             </div>
@@ -398,12 +347,12 @@ const submit = () => {
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                            class="text-xs font-medium text-muted-foreground"
                                             >Grade Level</label
                                         >
                                         <select
                                             v-model="form.grade_level_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
                                             <option value="">
                                                 Select Grade...
@@ -419,13 +368,13 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                            class="text-xs font-medium text-muted-foreground"
                                             >Target Class</label
                                         >
                                         <select
                                             v-model="form.class_id"
                                             :disabled="!form.grade_level_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm disabled:bg-muted/10"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
                                         >
                                             <option value="">
                                                 Select Class...
@@ -441,12 +390,12 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                            class="text-xs font-medium text-muted-foreground"
                                             >Subject Area</label
                                         >
                                         <select
                                             v-model="form.subject_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
                                             <option value="">
                                                 Select Subject...
@@ -485,12 +434,12 @@ const submit = () => {
                                 <div v-else class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <label
-                                            class="ml-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                            class="text-xs font-medium text-muted-foreground"
                                             >Curriculum Strand</label
                                         >
                                         <select
                                             v-model="form.strand_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
                                         >
                                             <option value="">
                                                 Select Strand...
@@ -512,7 +461,7 @@ const submit = () => {
                                         <select
                                             v-model="form.sub_strand_id"
                                             :disabled="!form.strand_id"
-                                            class="h-12 w-full rounded-md border border-border/50 bg-white px-3 text-sm disabled:bg-muted/10"
+                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
                                         >
                                             <option value="">
                                                 Select Sub-Strand...
@@ -542,11 +491,36 @@ const submit = () => {
                                     >
                                         Available Learning Indicators
                                     </h3>
+                                    <div class="flex items-center gap-2">
+                                        <Button 
+                                            v-if="indicators.length > 0"
+                                            variant="ghost" 
+                                            size="sm" 
+                                            @click="selectAllIndicators"
+                                            class="h-7 px-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50"
+                                        >
+                                            Select All
+                                        </Button>
+                                        <Badge
+                                            variant="outline"
+                                            class="px-2 text-xs font-bold tracking-tight "
+                                            >{{ indicators.length }} Total</Badge
+                                        >
+                                    </div>
+                                </div>
+
+                                <div v-if="form.indicators.length > 0" class="flex flex-wrap gap-2 mb-4 p-3 rounded-xl bg-indigo-50/50 border border-indigo-100/50">
+                                    <p class="w-full text-[9px] font-black uppercase tracking-widest text-indigo-400 mb-1 ml-1">Current Selection ({{ form.indicators.length }})</p>
                                     <Badge
-                                        variant="outline"
-                                        class="px-2 text-xs font-bold tracking-tight "
-                                        >{{ indicators.length }} Total</Badge
+                                        v-for="i in form.indicators"
+                                        :key="i.id"
+                                        variant="secondary"
+                                        class="rounded-lg border border-indigo-100 bg-white px-3 py-1 font-bold text-indigo-700 shadow-sm flex items-center gap-2"
                                     >
+                                        {{ i.indicator.substring(0, 30) }}{{ i.indicator.length > 30 ? '...' : '' }}
+                                        <X class="h-3 w-3 cursor-pointer hover:text-red-500" @click.stop="toggleIndicator(i)" />
+                                    </Badge>
+                                    <button @click="clearAllIndicators" class="text-[9px] font-black uppercase tracking-widest text-red-400 hover:text-red-600 transition-all ml-auto pr-2">Clear All</button>
                                 </div>
 
                                 <div
@@ -719,50 +693,18 @@ const submit = () => {
                         </CardContent>
 
                         <!-- Footer -->
-                        <div
-                            class="flex items-center justify-between border-t bg-muted/10/80 px-8 py-6"
-                        >
-                            <Button
-                                variant="outline"
-                                @click="prevStep"
-                                :disabled="currentStep === 1"
-                                class="h-11 rounded-xl border-border/50 px-6 text-xs font-bold tracking-tight  disabled:opacity-30"
-                            >
+                        <div class="flex items-center justify-between border-t border-border/50 bg-muted/5 px-6 py-4">
+                            <Button variant="outline" @click="prevStep" :disabled="currentStep === 1" class="h-10 rounded-lg border-border bg-card px-6 text-xs font-semibold disabled:opacity-30">
                                 <ChevronLeft class="mr-2 h-4 w-4" /> Go Back
                             </Button>
-
                             <div class="flex items-center gap-3">
-                                <Button
-                                    v-if="currentStep < 5"
-                                    @click="nextStep"
-                                    :disabled="
-                                        currentStep === 4 &&
-                                        form.indicators.length === 0
-                                    "
-                                    class="group h-11 rounded-xl bg-indigo-600 px-8 text-xs font-bold tracking-tight  shadow-lg shadow-indigo-100 hover:bg-indigo-700"
-                                >
+                                <Button v-if="currentStep < 5" @click="nextStep" :disabled="currentStep === 4 && form.indicators.length === 0" class="group h-10 rounded-lg bg-primary px-8 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
                                     Next Phase
-                                    <ChevronRight
-                                        class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"
-                                    />
+                                    <ChevronRight class="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </Button>
-                                <Button
-                                    v-else
-                                    @click="submit"
-                                    :disabled="
-                                        form.processing ||
-                                        form.indicators.length === 0
-                                    "
-                                    class="h-11 rounded-xl bg-emerald-600 px-8 text-xs font-bold tracking-tight  shadow-lg shadow-emerald-100 hover:bg-emerald-700"
-                                >
-                                    <Save
-                                        v-if="!form.processing"
-                                        class="mr-2 h-4 w-4"
-                                    />
-                                    <div
-                                        v-else
-                                        class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
-                                    ></div>
+                                <Button v-else @click="submit" :disabled="form.processing || form.indicators.length === 0" class="h-10 rounded-lg bg-emerald-600 px-8 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all">
+                                    <Save v-if="!form.processing" class="mr-2 h-4 w-4" />
+                                    <div v-else class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                                     Finalize Assessment
                                 </Button>
                             </div>
@@ -772,92 +714,39 @@ const submit = () => {
 
                 <!-- Context Sidebar (Right) -->
                 <div class="flex h-full w-full shrink-0 flex-col gap-6 lg:w-72">
-                    <Card
-                        class="relative overflow-hidden border-none bg-indigo-900 shadow-lg"
-                    >
-                        <div
-                            class="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-indigo-500/20 text-red-500 blur-3xl"
-                        ></div>
-                        <CardHeader>
-                            <CardTitle
-                                class="flex items-center gap-2 text-sm font-bold tracking-tight text-white "
-                            >
-                                <Target class="h-4 w-4 text-indigo-300" />
-                                Assessment Scout
+                    <Card class="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <CardHeader class="border-b border-border/50 bg-muted/5">
+                            <CardTitle class="flex items-center gap-2 text-xs font-semibold text-foreground">
+                                <Target class="h-4 w-4 text-primary" />
+                                Assessment Summary
                             </CardTitle>
                         </CardHeader>
-                        <CardContent class="space-y-6 text-indigo-100/80">
+                        <CardContent class="space-y-5 p-4">
                             <div class="space-y-1">
-                                <p
-                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
-                                >
-                                    Current Selection
-                                </p>
-                                <p
-                                    class="text-xs leading-relaxed font-bold whitespace-pre-wrap"
-                                >
-                                    {{ form.title || 'Untitled Assessment' }}
-                                </p>
+                                <p class="text-[10px] font-medium text-muted-foreground">Current Selection</p>
+                                <p class="text-xs font-semibold text-foreground">{{ form.title || 'Untitled Assessment' }}</p>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-1">
-                                    <p
-                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
-                                    >
-                                        Focus Type
-                                    </p>
-                                    <Badge
-                                        variant="outline"
-                                        class="rounded-lg border-indigo-500/50 bg-indigo-500/10 py-0.5 text-xs font-bold tracking-tight whitespace-nowrap text-indigo-200 "
-                                    >
-                                        {{
-                                            assessmentTypes.find(
-                                                (t) =>
-                                                    String(t.id) ===
-                                                    String(form.type_id),
-                                            )?.name || 'Not Selected'
-                                        }}
+                                    <p class="text-[10px] font-medium text-muted-foreground">Focus Type</p>
+                                    <Badge variant="outline" class="rounded-lg border-border bg-muted/10 py-0.5 text-[10px] font-semibold text-foreground">
+                                        {{ assessmentTypes.find(t => String(t.id) === String(form.type_id))?.name || 'Not Selected' }}
                                     </Badge>
                                 </div>
                                 <div class="space-y-1">
-                                    <p
-                                        class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
-                                    >
-                                        Scale
-                                    </p>
-                                    <p
-                                        class="text-xs font-bold whitespace-nowrap text-white"
-                                    >
-                                        Grade (1-4)
-                                    </p>
+                                    <p class="text-[10px] font-medium text-muted-foreground">Scale</p>
+                                    <p class="text-xs font-semibold text-foreground">Grade (1-4)</p>
                                 </div>
                             </div>
-                            <Separator class="bg-indigo-800" />
+                            <Separator />
                             <div class="space-y-2">
-                                <p
-                                    class="text-xs leading-tight font-bold tracking-tight text-indigo-400 "
-                                >
-                                    Selected Criteria
-                                </p>
+                                <p class="text-[10px] font-medium text-muted-foreground">Selected Criteria</p>
                                 <div class="flex flex-col gap-1.5">
-                                    <div
-                                        v-for="i in form.indicators"
-                                        :key="i.id"
-                                        class="group flex items-center gap-2 text-xs font-bold"
-                                    >
-                                        <div
-                                            class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400"
-                                        ></div>
-                                        <span class="truncate">{{
-                                            i.indicator
-                                        }}</span>
+                                    <div v-for="i in form.indicators" :key="i.id" class="flex items-center gap-2 text-xs">
+                                        <div class="h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></div>
+                                        <span class="truncate text-foreground">{{ i.indicator }}</span>
                                     </div>
-                                    <p
-                                        v-if="form.indicators.length === 0"
-                                        class="text-xs font-bold tracking-tight text-indigo-600/50 "
-                                    >
-                                        No indicators yet
-                                    </p>
+                                    <p v-if="form.indicators.length === 0" class="text-[10px] text-muted-foreground">No indicators yet</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -880,14 +769,6 @@ const submit = () => {
 </template>
 
 <style scoped>
-.font-pulsar {
-    font-family:
-        'Inter',
-        system-ui,
-        -apple-system,
-        sans-serif;
-}
-
 select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");

@@ -56,4 +56,14 @@ class ReportCard extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function subjects()
+    {
+        return $this->hasMany(ReportCardSubject::class);
+    }
+
+    public function competencies()
+    {
+        return $this->hasMany(ReportCardCompetency::class);
+    }
 }
