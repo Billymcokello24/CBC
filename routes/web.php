@@ -541,6 +541,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['check_permission:assessments.update'])->group(function () {
         Route::get('assessments/rubrics/{id}/edit', [AssessmentController::class, 'rubricEdit'])->name('assessments.rubrics.edit');
         Route::put('assessments/rubrics/{id}', [AssessmentController::class, 'rubricUpdate'])->name('assessments.rubrics.update');
+        Route::get('assessments/{assessment}/edit', [AssessmentController::class, 'edit'])->name('assessments.edit');
+        Route::put('assessments/{assessment}', [AssessmentController::class, 'update'])->name('assessments.update');
+    });
+
+    Route::middleware(['check_permission:assessments.delete'])->group(function () {
+        Route::delete('assessments/{assessment}', [AssessmentController::class, 'destroy'])->name('assessments.destroy');
     });
 
     Route::middleware(['check_permission:assessments.grade'])->group(function () {

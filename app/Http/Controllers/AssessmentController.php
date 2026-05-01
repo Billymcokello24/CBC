@@ -62,7 +62,7 @@ class AssessmentController extends Controller
             'stats' => $stats,
             'filters' => $request->only(['search', 'status', 'class_id', 'subject_id', 'per_page', 'view']),
             'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
-            'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId))->get(),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(),
         ]);
     }
 
@@ -75,9 +75,7 @@ class AssessmentController extends Controller
             'assessmentTypes' => AssessmentType::where('school_id', $schoolId)->where('is_active', true)->get(),
             'gradingScales' => GradingScale::where('school_id', $schoolId)->where('is_active', true)->get(),
             'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
-            'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
-                $query->where('school_id', $schoolId)->where('is_offered', true);
-            })->get(),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(),
             'rubrics' => \App\Models\Assessment\Rubric::where('school_id', $schoolId)->where('is_active', true)->with(['assessmentType', 'criteria.levels'])->get(),
         ]);
     }
@@ -123,8 +121,12 @@ class AssessmentController extends Controller
         $assessment->core_competencies = $validated['competencies'] ?? [];
         $assessment->indicators = $validated['indicators'] ?? [];
         $assessment->school_id = $this->getSchoolId();
-        $assessment->teacher_id = auth()->user()->id; // Assuming the logged in user is the teacher
-        $assessment->created_by = auth()->user()->id;
+        $teacherId = \App\Models\Teacher::where('user_id', auth()->id())->value('id')
+            ?? \App\Models\Teacher::where('user_id', \App\Models\Academic\SchoolClass::find($validated['class_id'])?->class_teacher_id)->value('id')
+            ?? \App\Models\Teacher::first()?->id;
+
+        $assessment->teacher_id = $teacherId;
+        $assessment->created_by = auth()->id();
         
         // Default academic year and term - should be fetched from active session
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
@@ -136,6 +138,77 @@ class AssessmentController extends Controller
         $assessment->save();
 
         return redirect()->route('assessments.index')->with('success', 'Assessment created successfully.');
+    }
+
+    public function edit(int $id): Response
+    {
+        $schoolId = $this->getSchoolId();
+        $assessment = Assessment::where('school_id', $schoolId)->findOrFail($id);
+
+        return Inertia::render('assessments/Edit', [
+            'assessment' => $assessment,
+            'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->where('is_active', true)->get(),
+            'gradingScales' => \App\Models\Assessment\GradingScale::where('school_id', $schoolId)->where('is_active', true)->get(),
+            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(),
+            'rubrics' => \App\Models\Assessment\Rubric::where('school_id', $schoolId)->where('is_active', true)->with(['assessmentType', 'criteria.levels'])->get(),
+            'gradeLevels' => \App\Models\Academic\GradeLevel::where('school_id', $schoolId)->with('classes')->get(),
+            'academicTerms' => \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->get(),
+            'academicYears' => \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->get(),
+            'competencies' => \App\Models\Curriculum\Competency::where('school_id', $schoolId)->get(),
+            'ratingScales' => [
+                ['id' => 4, 'code' => 'EE', 'name' => 'Exceeding Expectation', 'color' => '#10b981'],
+                ['id' => 3, 'code' => 'ME', 'name' => 'Meeting Expectation', 'color' => '#3b82f6'],
+                ['id' => 2, 'code' => 'AE', 'name' => 'Approaching Expectation', 'color' => '#f59e0b'],
+                ['id' => 1, 'code' => 'BE', 'name' => 'Below Expectation', 'color' => '#ef4444'],
+            ],
+            'isEdit' => true,
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $assessment = Assessment::where('school_id', $this->getSchoolId())->findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'class_id' => 'required|exists:classes,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'rubric_id' => 'required|exists:rubrics,id',
+            'assessment_type_id' => 'required|exists:assessment_types,id',
+            'grading_scale_id' => 'nullable|exists:grading_scales,id',
+            'assessment_date' => 'required|date',
+            'total_marks' => 'required|numeric|min:0',
+            'passing_marks' => 'required|numeric|min:0',
+            'weight' => 'required|numeric|min:0|max:100',
+            'status' => 'required|in:draft,scheduled,published',
+            'lesson_plan_id' => 'nullable|exists:lesson_plans,id',
+            'sub_strand_id' => 'nullable|exists:sub_strands,id',
+            'indicators' => 'nullable|array',
+            'competencies' => 'nullable|array',
+        ]);
+
+        $assessment->fill($validated);
+        $assessment->core_competencies = $validated['competencies'] ?? [];
+        $assessment->indicators = $validated['indicators'] ?? [];
+        $assessment->save();
+
+        return redirect()->route('assessments.index')->with('success', 'Assessment updated successfully.');
+    }
+
+    public function destroy(int $id)
+    {
+        $assessment = Assessment::where('school_id', $this->getSchoolId())->findOrFail($id);
+        
+        // Prevent deletion if an assessment is already fully graded or locked, unless admin.
+        if ($assessment->status === 'completed' && !auth()->user()->hasRole('super_admin')) {
+             return redirect()->back()->with('error', 'Cannot delete a completed assessment. Please consult administration.');
+        }
+
+        $assessment->delete();
+
+        return redirect()->route('assessments.index')->with('success', 'Assessment removed successfully.');
     }
 
     public function grading(int $id): Response
@@ -243,10 +316,8 @@ class AssessmentController extends Controller
             ->where('academic_year_id', $activeYear?->id)
             ->first();
 
-        // Fetch all subjects offered at the school
-        $subjects = \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
-            $query->where('school_id', $schoolId)->where('is_offered', true);
-        })->get();
+        // Fetch all subjects
+        $subjects = \App\Models\Curriculum\Subject::orderBy('name')->get();
 
         // Fetch all assessment ratings for this student in the current term
         $ratings = \App\Models\Assessment\StudentAssessmentRating::where('student_id', $studentId)
@@ -324,9 +395,7 @@ class AssessmentController extends Controller
             ->latest()
             ->paginate(20);
 
-        $subjects = \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
-            $query->where('school_id', $schoolId)->where('is_offered', true);
-        })->get();
+        $subjects = \App\Models\Curriculum\Subject::orderBy('name')->get();
 
         return Inertia::render('assessments/Rubrics', [
             'rubrics' => $rubrics,
@@ -339,9 +408,7 @@ class AssessmentController extends Controller
         $schoolId = $this->getSchoolId();
 
         return Inertia::render('assessments/RubricForm', [
-            'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
-                $query->where('school_id', $schoolId)->where('is_offered', true);
-            })->get(),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get(),
         ]);
     }
@@ -392,9 +459,7 @@ class AssessmentController extends Controller
 
         return Inertia::render('assessments/RubricForm', [
             'rubric' => $rubric,
-            'subjects' => \App\Models\Curriculum\Subject::whereHas('schoolSubjects', function($query) use ($schoolId) {
-                $query->where('school_id', $schoolId)->where('is_offered', true);
-            })->get(),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get(),
         ]);
     }
@@ -689,9 +754,7 @@ class AssessmentController extends Controller
             }
 
             // 3. Resolve Subject
-            $subject = \App\Models\Curriculum\Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId))
-                ->where('name', 'like', "%{$subjectName}%")
-                ->first();
+            $subject = \App\Models\Curriculum\Subject::where('name', 'like', "%{$subjectName}%")->first();
 
             if (!$subject) {
                 $errorCount++;
@@ -708,10 +771,10 @@ class AssessmentController extends Controller
                 ?? AssessmentType::where('school_id', $schoolId)->where('is_active', true)->first();
 
             // 5. Resolve Academic Term
-            $term = AcademicTerm::where('school_id', $schoolId)
+            $term = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)
                 ->where('name', 'like', "%{$termName}%")
                 ->first()
-                ?? AcademicTerm::where('school_id', $schoolId)->where('is_current', true)->first();
+                ?? \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('is_current', true)->first();
 
             // 6. Resolve Sub-Strand (Optional but recommended for indicators)
             $subStrand = null;
@@ -721,13 +784,18 @@ class AssessmentController extends Controller
                     ->first();
             }
 
+            // 7. Resolve Teacher
+            $teacherId = \App\Models\Teacher::where('user_id', $user->id)->value('id')
+                ?? \App\Models\Teacher::where('user_id', $class->class_teacher_id)->value('id')
+                ?? \App\Models\Teacher::first()?->id;
+
             try {
-                \DB::transaction(function () use ($schoolId, $class, $subject, $user, $term, $assessmentType, $title, $dateStr, $totalMarks, $source, $subStrand, &$successCount) {
+                \DB::transaction(function () use ($schoolId, $class, $subject, $user, $term, $assessmentType, $title, $dateStr, $totalMarks, $source, $subStrand, $teacherId, &$successCount) {
                     $assessment = Assessment::create([
                         'school_id' => $schoolId,
                         'class_id' => $class->id,
                         'subject_id' => $subject->id,
-                        'teacher_id' => $user->id,
+                        'teacher_id' => $teacherId,
                         'academic_year_id' => $term?->academic_year_id,
                         'academic_term_id' => $term?->id,
                         'assessment_type_id' => $assessmentType?->id,

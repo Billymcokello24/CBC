@@ -131,7 +131,7 @@ class AssessmentGradingController extends Controller
         }
 
         $allAssessments = Assessment::where('teacher_id', auth()->id())
-            ->with(['class', 'subject'])
+            ->with(['class.gradeLevel', 'subject'])
             ->latest()
             ->get();
 

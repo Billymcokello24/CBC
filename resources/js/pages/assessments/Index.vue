@@ -137,10 +137,19 @@ const getStatusIcon = (status: string) => {
         default: return AlertCircle;
     }
 };
+
+const deleteAssessment = (id: number) => {
+    if (confirm('Are you sure you want to delete this assessment? This action cannot be undone.')) {
+        router.delete(`/assessments/${id}`, {
+            onSuccess: () => applyFilters(),
+            preserveScroll: true
+        });
+    }
+};
 </script>
 
 <template>
-    <Head title="Assessment Intelligence Matrix" />
+    <Head title="Assessments" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div
@@ -151,8 +160,8 @@ const getStatusIcon = (status: string) => {
                 class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between"
             >
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Assessment Matrix</h1>
-                    <p class="text-xs text-muted-foreground">Coordinating {{ assessments.total }} Academic Evaluation Nodes</p>
+                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Assessments</h1>
+                    <p class="text-xs text-muted-foreground">Managing {{ assessments.total }} Assessments</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -203,22 +212,22 @@ const getStatusIcon = (status: string) => {
                         <Info class="h-6 w-6" />
                     </div>
                     <div class="flex-1 space-y-1">
-                        <h2 class="text-sm font-bold text-primary tracking-tight">Assessment Utility Protocol</h2>
-                        <p class="text-xs text-muted-foreground max-w-3xl">Distinguish between <span class="font-bold text-foreground underline decoration-primary/30">Internal (School-set)</span> and <span class="font-bold text-foreground underline decoration-primary/30">Ministry (KNEC)</span> evaluations. Initiate evaluations via the <span class="font-semibold text-primary">Setup Wizard</span>, map them to CBC learning outcomes, and execute data entry through the <span class="font-semibold text-primary">Grading Sheet</span> terminal. Use bulk upload for high-volume results migration.</p>
+                        <h2 class="text-sm font-bold text-primary tracking-tight">Assessment Guide</h2>
+                        <p class="text-xs text-muted-foreground max-w-3xl">Distinguish between <span class="font-bold text-foreground underline decoration-primary/30">Internal (School-set)</span> and <span class="font-bold text-foreground underline decoration-primary/30">Ministry (KNEC)</span> evaluations. Use the <span class="font-semibold text-primary">Setup Wizard</span> to create assessments mapped to CBC learning outcomes, and enter marks via the <span class="font-semibold text-primary">Grading</span> sheet. Use bulk upload to import many assessments at once.</p>
                     </div>
                     <div class="hidden sm:flex items-center gap-2">
-                        <Button variant="outline" class="h-9 rounded-lg border-primary/20 bg-card text-[10px] font-bold tracking-widest text-primary uppercase transition-all hover:bg-primary hover:text-white">Usage Documentation</Button>
+                        <Button variant="outline" class="h-9 rounded-lg border-primary/20 bg-card text-[10px] font-bold tracking-widest text-primary uppercase transition-all hover:bg-primary hover:text-white">User Guide</Button>
                     </div>
                 </div>
             </div>
 
-            <!-- Intelligence Stats -->
+            <!-- Overview Stats -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div v-for="(stat, idx) in [
-                    { label: 'Global Catalog', val: stats.total, sub: 'Synchronized Tests', icon: ClipboardList, color: 'primary' },
-                    { label: 'Temporal Due', val: stats.thisWeek, sub: 'Scheduled cycles', icon: Calendar, color: 'amber-500' },
-                    { label: 'Pending Grading', val: stats.pendingGrading, sub: 'Active Mutation', icon: History, color: 'purple-500' },
-                    { label: 'Mean Efficiency', val: `${stats.avgScore}%`, sub: 'Population Score', icon: TrendingUp, color: 'emerald-500' }
+                    { label: 'Total Assessments', val: stats.total, sub: 'All recorded tests', icon: ClipboardList, color: 'primary' },
+                    { label: 'Due This Week', val: stats.thisWeek, sub: 'Scheduled this week', icon: Calendar, color: 'amber-500' },
+                    { label: 'Pending Grading', val: stats.pendingGrading, sub: 'Needs marking', icon: History, color: 'purple-500' },
+                    { label: 'Average Score', val: `${stats.avgScore}%`, sub: 'Overall performance', icon: TrendingUp, color: 'emerald-500' }
                 ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
                      <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
                         <component :is="stat.icon" class="h-24 w-24" />
@@ -231,12 +240,12 @@ const getStatusIcon = (status: string) => {
                 </div>
             </div>
 
-            <!-- Internal Filter Protocol -->
+            <!-- Filter Section -->
             <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
                 <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
                     <div class="flex items-center gap-2">
-                        <SearchCode class="h-4 w-4 text-primary" />
-                        <span class="text-xs font-semibold text-foreground tracking-tight">Assessment Search Center</span>
+                        <Search class="h-4 w-4 text-primary" />
+                        <span class="text-xs font-semibold text-foreground tracking-tight">Search & Filter</span>
                     </div>
                 </div>
                 <div class="p-8">
@@ -303,14 +312,14 @@ const getStatusIcon = (status: string) => {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" class="w-56 rounded-2xl border-border bg-card p-2 shadow-2xl">
                                     <DropdownMenuItem class="rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-muted-foreground uppercase focus:bg-muted" as-child>
-                                        <Link :href="`/assessments/${assessment.id}`"><Eye class="mr-3 h-4 w-4 text-primary" /> View Intelligence</Link>
+                                        <Link :href="`/assessments/${assessment.id}`"><Eye class="mr-3 h-4 w-4 text-primary" /> View Details</Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem class="rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-muted-foreground uppercase focus:bg-muted" as-child>
-                                        <Link :href="`/assessments/${assessment.id}/edit`"><Edit class="mr-3 h-4 w-4 text-amber-500" /> Mutate Metadata</Link>
+                                        <Link :href="`/assessments/${assessment.id}/edit`"><Edit class="mr-3 h-4 w-4 text-amber-500" /> Edit Assessment</Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator class="my-1 border-border/50" />
-                                     <DropdownMenuItem class="rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-rose-600 uppercase focus:bg-rose-50">
-                                        <Trash2 class="mr-3 h-4 w-4" /> Purge Node
+                                     <DropdownMenuItem @click="deleteAssessment(assessment.id)" class="rounded-xl px-4 py-3 text-[10px] font-black tracking-widest text-rose-600 uppercase focus:bg-rose-50 cursor-pointer">
+                                        <Trash2 class="mr-3 h-4 w-4" /> Delete Assessment
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                              </DropdownMenu>
@@ -338,11 +347,11 @@ const getStatusIcon = (status: string) => {
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="space-y-1">
-                                    <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Temporal Key</p>
+                                    <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Date</p>
                                     <p class="text-[10px] font-black text-foreground uppercase">{{ assessment.assessment_date }}</p>
                                 </div>
                                 <div class="space-y-1 text-right">
-                                    <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Max marks</p>
+                                    <p class="text-[8px] font-black tracking-widest text-muted-foreground uppercase opacity-40">Max Marks</p>
                                     <p class="text-[10px] font-black text-primary uppercase">{{ assessment.total_marks }} PTS</p>
                                 </div>
                             </div>
@@ -415,11 +424,11 @@ const getStatusIcon = (status: string) => {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" class="w-48 rounded-2xl border-border bg-card p-2 shadow-2xl">
                                                 <DropdownMenuItem class="rounded-xl px-4 py-2.5 text-[10px] font-black tracking-widest text-muted-foreground uppercase focus:bg-muted" as-child>
-                                                    <Link :href="`/assessments/${assessment.id}/edit`"><Edit class="mr-3 h-4 w-4" /> Mutate</Link>
+                                                    <Link :href="`/assessments/${assessment.id}/edit`"><Edit class="mr-3 h-4 w-4" /> Edit</Link>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuSeparator class="my-1 border-border/50" />
-                                                <DropdownMenuItem class="rounded-xl px-4 py-2.5 text-[10px] font-black tracking-widest text-rose-600 uppercase focus:bg-rose-50">
-                                                    <Trash2 class="mr-3 h-4 w-4" /> Purge
+                                                <DropdownMenuItem @click="deleteAssessment(assessment.id)" class="rounded-xl px-4 py-2.5 text-[10px] font-black tracking-widest text-rose-600 uppercase focus:bg-rose-50 cursor-pointer">
+                                                    <Trash2 class="mr-3 h-4 w-4" /> Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

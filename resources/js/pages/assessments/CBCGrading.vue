@@ -32,7 +32,7 @@ import {
     SearchCode,
     History
 } from 'lucide-vue-next';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import BulkUploadDialog from '@/components/assessments/BulkUploadDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,7 @@ const breadcrumbs = [
 ];
 
 const selectedGrade = ref(props.assessment?.class?.grade_level_id);
+const selectedClass = ref(props.assessment?.class_id);
 const selectedTerm = ref(props.assessment?.academic_term_id);
 const activeTab = ref('entry');
 const gradingMode = ref<'rubric' | 'marks'>('rubric');
@@ -71,9 +72,21 @@ const availableAssessments = computed(() => {
     if (!props.allAssessments) return [];
     return props.allAssessments.filter(a => {
         const matchesGrade = !selectedGrade.value || a.class?.grade_level_id === selectedGrade.value;
+        const matchesClass = !selectedClass.value || a.class_id === selectedClass.value;
         const matchesTerm = !selectedTerm.value || a.academic_term_id === selectedTerm.value;
-        return matchesGrade && matchesTerm;
+        return matchesGrade && matchesClass && matchesTerm;
     });
+});
+
+watch(selectedClass, (newVal) => {
+    if (newVal && newVal !== props.assessment?.class_id) {
+        // Automatically switch context to an assessment mapping to the selected class
+        const target = props.allAssessments.find(a => a.class_id === newVal && (!props.assessment || a.subject_id === props.assessment.subject_id)) 
+                    || props.allAssessments.find(a => a.class_id === newVal);
+        if (target && target.id !== props.assessment?.id) {
+            router.visit(route('assessments.grading', { assessment: target.id }));
+        }
+    }
 });
 
 const criteria = computed(() => {
@@ -240,7 +253,7 @@ const submitAll = () => {
                 <div class="space-y-1">
                     <div class="flex items-center gap-3">
                          <!-- @ts-ignore -->
-                        <Link :href="route('assessments')" class="group flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card hover:bg-muted transition-all text-muted-foreground mr-1">
+                        <Link :href="route('assessments.index')" class="group flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-muted transition-all text-muted-foreground mr-1">
                             <ArrowLeft class="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
                         </Link>
                         <h1 class="text-2xl font-black tracking-tighter text-foreground uppercase sm:text-3xl">Grading Terminal</h1>
@@ -253,7 +266,7 @@ const submitAll = () => {
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex h-11 items-center rounded-lg border border-border bg-muted/30 p-1 mr-2 shadow-sm">
+                    <div class="flex h-11 items-center rounded-md border border-border bg-muted/30 p-1 mr-2 shadow-sm">
                         <button 
                             @click="gradingMode = 'rubric'"
                             class="flex items-center gap-2 px-4 h-full rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
@@ -270,10 +283,10 @@ const submitAll = () => {
                         </button>
                     </div>
 
-                    <Button variant="outline" class="h-11 rounded-lg border-border bg-card px-4 text-[10px] font-black uppercase tracking-widest hover:bg-muted shadow-sm" @click="bulkUploadOpen = true">
+                    <Button variant="outline" class="h-11 rounded-md border-border bg-card px-4 text-[10px] font-black uppercase tracking-widest hover:bg-muted shadow-sm" @click="bulkUploadOpen = true">
                         <Upload class="mr-2 h-4 w-4 text-primary" />Bulk Import
                     </Button>
-                    <Button @click="submitAll" :disabled="saving" class="h-11 rounded-lg bg-primary px-8 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
+                    <Button @click="submitAll" :disabled="saving" class="h-11 rounded-md bg-primary px-8 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
                         <Save class="mr-2 h-4 w-4" />
                         {{ saving ? 'Syncing...' : 'Finalize records' }}
                     </Button>
@@ -284,14 +297,27 @@ const submitAll = () => {
                 
                 <!-- Selective Context Sidebar -->
                 <div class="w-full lg:w-80 space-y-6 shrink-0">
-                    <div class="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
+                    <div class="rounded-lg border border-border bg-card p-6 shadow-sm space-y-5">
                          <div class="space-y-1.5">
                             <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Grade Level</Label>
                             <div class="relative">
-                                <select v-model="selectedGrade" class="h-12 w-full appearance-none rounded-lg border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
+                                <select v-model="selectedGrade" class="h-12 w-full appearance-none rounded-md border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
                                     <option :value="undefined">All Grade Tiers</option>
                                     <option v-for="g in Array.from(new Set((allAssessments || []).map(a => a.class?.grade_level_id))).filter(id => id)" :key="g" :value="g">
                                         Grade {{ (allAssessments as any[]).find(a => a.class?.grade_level_id === g)?.class?.grade_level?.name }}
+                                    </option>
+                                </select>
+                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-40" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 mt-4">
+                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Class/Stream</Label>
+                            <div class="relative">
+                                <select v-model="selectedClass" class="h-12 w-full appearance-none rounded-md border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
+                                    <option :value="undefined">All {{ selectedGrade ? `Grade ${allAssessments.find(a => a.class?.grade_level_id === selectedGrade)?.class?.grade_level?.name}` : '' }} Classes</option>
+                                    <option v-for="c in Array.from(new Set((allAssessments || []).filter(a => !selectedGrade || a.class?.grade_level_id === selectedGrade).map(a => a.class_id))).filter(id => id)" :key="c" :value="c">
+                                        {{ (allAssessments as any[]).find(a => a.class_id === c)?.class?.name }}
                                     </option>
                                 </select>
                                 <ChevronDown class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-40" />
@@ -305,7 +331,7 @@ const submitAll = () => {
                                     v-for="a in (availableAssessments as any[])" 
                                     :key="a.id"
                                     @click="router.visit(route('assessments.grading', { assessment: a.id }))"
-                                    class="w-full text-left p-4 rounded-xl transition-all border group relative overflow-hidden"
+                                    class="w-full text-left p-4 rounded-lg transition-all border group relative overflow-hidden"
                                     :class="a.id === assessment?.id 
                                         ? 'bg-primary/5 border-primary/20 shadow-inner' 
                                         : 'bg-transparent border-transparent hover:bg-muted'"
@@ -320,7 +346,7 @@ const submitAll = () => {
                                     </div>
                                     <div v-if="a.id === assessment?.id" class="absolute inset-y-0 left-0 w-1 bg-primary"></div>
                                 </button>
-                                <div v-if="availableAssessments.length === 0" class="py-12 border-2 border-dashed border-border/50 rounded-xl flex flex-col items-center justify-center space-y-2 opacity-30">
+                                <div v-if="availableAssessments.length === 0" class="py-12 border-2 border-dashed border-border/50 rounded-lg flex flex-col items-center justify-center space-y-2 opacity-30">
                                     <SearchCode class="h-6 w-6" />
                                     <span class="text-[9px] font-black uppercase tracking-widest">No active sessions</span>
                                 </div>
@@ -328,9 +354,9 @@ const submitAll = () => {
                         </div>
                     </div>
 
-                    <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
+                    <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
                         <div class="flex items-center gap-3">
-                            <div class="h-8 w-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                            <div class="h-8 w-8 rounded-md bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
                                 <Check class="h-4 w-4" />
                             </div>
                             <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700">Auto-Finalized</span>
@@ -350,14 +376,14 @@ const submitAll = () => {
                             { label: 'Meeting', val: overallStats?.ME || 0, color: 'text-blue-500' },
                             { label: 'Approaching', val: overallStats?.AE || 0, color: 'text-amber-500' },
                             { label: 'Below', val: overallStats?.BE || 0, color: 'text-rose-500' }
-                         ]" :key="k" class="rounded-xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all group">
+                         ]" :key="k" class="rounded-lg border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all group">
                             <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-primary transition-colors">{{ s.label }}</p>
                             <p class="mt-2 text-3xl font-black tracking-tight" :class="s.color">{{ s.val }}</p>
                          </div>
                     </div>
 
                      <!-- Intelligence Search -->
-                    <div class="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <div class="relative overflow-hidden rounded-lg border border-border bg-card shadow-sm">
                         <Search class="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40" />
                         <Input
                             v-model="searchQuery"
@@ -371,7 +397,7 @@ const submitAll = () => {
                     </div>
 
                     <!-- Evaluation Matrix Terminal -->
-                    <div class="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                    <div class="rounded-lg border border-border bg-card shadow-sm overflow-hidden flex flex-col min-h-[600px]">
                          <div class="flex items-center justify-between border-b border-border bg-muted/5 px-8 pt-4">
                             <div class="flex items-center gap-8">
                                 <button 
@@ -406,7 +432,7 @@ const submitAll = () => {
                                     <tr v-for="student in (filteredResults as any[])" :key="student.id" class="group hover:bg-primary/[0.01] transition-all">
                                         <td class="sticky left-0 z-20 border-border bg-card p-4 group-hover:bg-muted/30 transition-all shadow-[8px_0_12px_-8px_rgba(0,0,0,0.05)]">
                                             <div class="flex items-center gap-4">
-                                                <Avatar class="h-11 w-11 rounded-xl border border-border shadow-sm">
+                                                <Avatar class="h-11 w-11 rounded-lg border border-border shadow-sm">
                                                     <AvatarImage :src="student.photo" />
                                                     <AvatarFallback class="bg-primary/5 text-primary text-[10px] font-black">{{ student.name.substring(0,2).toUpperCase() }}</AvatarFallback>
                                                 </Avatar>
@@ -423,7 +449,7 @@ const submitAll = () => {
                                                     <select 
                                                         :value="student.ratings[c.id]"
                                                         @change="updateRating(student.id, c.id, ($event.target as HTMLSelectElement).value)"
-                                                        class="h-10 w-full appearance-none rounded-lg border border-border bg-muted/5 px-2 text-center text-[10px] font-black outline-none transition-all hover:bg-primary/5 focus:ring-1 focus:ring-primary/30"
+                                                        class="h-10 w-full appearance-none rounded-md border border-border bg-muted/5 px-2 text-center text-[10px] font-black outline-none transition-all hover:bg-primary/5 focus:ring-1 focus:ring-primary/30"
                                                         :style="{ color: getScaleColor(student.ratings[c.id]) }"
                                                     >
                                                         <option value="null">-</option>
@@ -436,7 +462,7 @@ const submitAll = () => {
                                                     <Input 
                                                         :value="student.marks[c.id]"
                                                         @input="updateMarks(student.id, c.id, ($event.target as HTMLInputElement).value)"
-                                                        class="h-10 w-full text-center text-[11px] font-black rounded-lg border-border bg-muted/5 focus:bg-background transition-all"
+                                                        class="h-10 w-full text-center text-[11px] font-black rounded-md border-border bg-muted/5 focus:bg-background transition-all"
                                                         placeholder="0.0"
                                                         type="number"
                                                     />
@@ -447,7 +473,7 @@ const submitAll = () => {
                                         <td class="border-l border-border p-4 text-center bg-primary/[0.01]">
                                             <Badge 
                                                 v-if="getScaleCode(student.ratings[criteria[0]?.id])"
-                                                class="h-10 w-16 items-center justify-center rounded-lg border-0 text-[10px] font-black shadow-sm text-white"
+                                                class="h-10 w-16 items-center justify-center rounded-md border-0 text-[10px] font-black shadow-sm text-white"
                                                 :style="{ backgroundColor: getScaleColor(student.ratings[criteria[0]?.id]) }"
                                             >
                                                 {{ getScaleCode(student.ratings[criteria[0]?.id]) }}
@@ -459,7 +485,7 @@ const submitAll = () => {
                                             <Input 
                                                 v-model="student.remarks" 
                                                 placeholder="OBSERVATION..." 
-                                                class="h-10 rounded-lg border-border bg-muted/5 text-[9px] font-black uppercase tracking-widest focus:bg-background transition-all"
+                                                class="h-10 rounded-md border-border bg-muted/5 text-[9px] font-black uppercase tracking-widest focus:bg-background transition-all"
                                             />
                                         </td>
                                     </tr>

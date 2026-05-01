@@ -34,6 +34,7 @@ import { Separator } from '@/components/ui/separator';
 import axios from 'axios';
 
 const props = defineProps<{
+    assessment: any;
     gradeLevels: Array<any>;
     subjects: Array<any>;
     academicTerms: Array<any>;
@@ -46,7 +47,7 @@ const props = defineProps<{
 const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Assessments', href: '/assessments' },
-    { title: 'Setup Wizard', href: '/assessments/setup' },
+    { title: 'Edit Assessment', href: '#' },
 ];
 
 interface Strand {
@@ -79,19 +80,19 @@ const standardMinistryIndicators: Indicator[] = [
 ];
 
 const form = useForm({
-    title: '',
-    description: '',
-    type_id: '',
-    date: new Date().toISOString().split('T')[0],
-    academic_year_id: '',
-    term_id: '',
-    grade_level_id: '',
-    class_id: '',
-    subject_id: '',
+    title: props.assessment?.title || '',
+    description: props.assessment?.description || '',
+    type_id: props.assessment?.assessment_type_id || '',
+    date: props.assessment?.assessment_date ? new Date(props.assessment.assessment_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    academic_year_id: props.assessment?.academic_year_id || '',
+    term_id: props.assessment?.academic_term_id || '',
+    grade_level_id: props.assessment?.grade_level_id || props.gradeLevels.find(g => g.classes?.some((c:any) => c.id === props.assessment?.class_id))?.id || '',
+    class_id: props.assessment?.class_id || '',
+    subject_id: props.assessment?.subject_id || '',
     strand_id: '',
     sub_strand_id: '',
     indicators: [] as Indicator[],
-    source: 'internal',
+    source: props.assessment?.source || 'internal',
 });
 
 const steps = [
@@ -213,7 +214,7 @@ const clearAllIndicators = () => {
 };
 
 const submit = () => {
-    form.post(route('assessments.setup.store'), {
+    form.put(route('assessments.update', props.assessment.id), {
         onSuccess: () => {
             // Success handlng
         },
@@ -222,7 +223,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Assessment Setup Wizard" />
+    <Head title="Edit Assessment" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 overflow-hidden p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
             <!-- Progress Bar -->
@@ -621,7 +622,7 @@ const submit = () => {
                                 <div class="mt-4 bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold border-2 border-red-100" v-if="Object.keys(form.errors).length > 0">
                                     <div class="flex items-center gap-2 mb-2 text-red-700">
                                         <Info class="h-4 w-4" />
-                                        Please correct the following fields to finalize your assessment:
+                                        Please correct the following fields to update your assessment:
                                     </div>
                                     <ul class="list-disc pl-5 mt-2 font-normal text-xs space-y-1">
                                         <li v-for="(error, key) in form.errors" :key="key">{{ error }}</li>
@@ -729,7 +730,7 @@ const submit = () => {
                                 <Button v-else @click="submit" :disabled="form.processing || form.indicators.length === 0" class="h-10 rounded-lg bg-emerald-600 px-8 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition-all">
                                     <Save v-if="!form.processing" class="mr-2 h-4 w-4" />
                                     <div v-else class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                    Finalize Assessment
+                                    Update Assessment
                                 </Button>
                             </div>
                         </div>

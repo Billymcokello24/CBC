@@ -225,7 +225,7 @@ const allCore = computed(() => props.competencies['core'] || []);
                     <Button @click="bulkUploadOpen = true" variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted">
                         <Upload class="mr-2 h-4 w-4 text-primary" />Bulk Upload
                     </Button>
-                    <div class="flex items-center gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
+                    <div class="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-sm">
                         <Button variant="ghost" size="icon" :class="selectedView === 'grid' ? 'bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary hover:text-white' : 'text-muted-foreground hover:bg-muted'" @click="selectedView = 'grid'" class="h-10 w-10 rounded-lg transition-all">
                             <LayoutGrid class="h-4 w-4" />
                         </Button>
@@ -241,7 +241,7 @@ const allCore = computed(() => props.competencies['core'] || []);
             </div>
 
             <!-- Curriculum Utility Guide -->
-            <div class="overflow-hidden rounded-xl border border-primary/20 bg-primary/5 shadow-sm transition-all hover:bg-primary/[0.07]">
+            <div class="overflow-hidden rounded-lg border border-primary/20 bg-primary/5 shadow-sm transition-all hover:bg-primary/[0.07]">
                 <div class="flex items-center gap-4 p-6">
                     <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20">
                         <Info class="h-6 w-6" />
@@ -265,7 +265,7 @@ const allCore = computed(() => props.competencies['core'] || []);
                     { label: 'Learning Areas', val: stats.subjects, sub: 'Active Subjects', icon: BookOpen, color: 'amber-500' },
                     { label: 'Core Standards', val: stats.coreComp, sub: 'National CBC', icon: ShieldCheck, color: 'purple-500' },
                     { label: 'Custom Nodes', val: stats.customComp, sub: 'School Specific', icon: Zap, color: 'emerald-500' }
-                ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                ]" :key="idx" class="group relative overflow-hidden rounded-lg border border-border bg-card p-6 transition-all hover:shadow-md">
                      <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
                         <component :is="stat.icon" class="h-24 w-24" />
                     </div>
@@ -278,7 +278,7 @@ const allCore = computed(() => props.competencies['core'] || []);
             </div>
 
             <!-- Internal Filter Protocol -->
-            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
+            <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all">
                 <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
                     <div class="flex items-center gap-2">
                         <SearchCode class="h-4 w-4 text-primary" />
@@ -325,7 +325,7 @@ const allCore = computed(() => props.competencies['core'] || []);
             <!-- Evaluation Matrix (Content) -->
             <div v-if="selectedView === 'grid'" class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                  <div v-for="indicator in filteredIndicators" :key="indicator.id" 
-                      class="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/20 hover:shadow-lg hover:scale-[1.01]">
+                      class="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all hover:border-primary/20 hover:shadow-lg hover:scale-[1.01]">
                     
                     <div class="p-8 space-y-6">
                          <div class="flex items-start justify-between">
@@ -338,7 +338,7 @@ const allCore = computed(() => props.competencies['core'] || []);
                                         <MoreHorizontal class="h-5 w-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" class="w-56 rounded-xl border-border bg-card p-2 shadow-xl">
+                                <DropdownMenuContent align="end" class="w-56 rounded-lg border-border bg-card p-2 shadow-xl">
                                     <DropdownMenuItem class="rounded-lg px-4 py-2.5 text-[9px] font-black tracking-widest text-muted-foreground uppercase focus:bg-muted">
                                         <Edit class="mr-3 h-3.5 w-3.5 text-amber-500" /> Mutate outcome
                                     </DropdownMenuItem>
@@ -387,8 +387,8 @@ const allCore = computed(() => props.competencies['core'] || []);
                  </div>
 
                  <button @click="openIndicatorModal()" 
-                         class="group relative flex flex-col items-center justify-center min-h-[350px] overflow-hidden rounded-xl border-2 border-dashed border-border bg-muted/5 transition-all hover:bg-white hover:border-primary/20">
-                    <div class="h-16 w-16 rounded-xl bg-white flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-white transition-all shadow-sm group-hover:shadow-lg">
+                         class="group relative flex flex-col items-center justify-center min-h-[350px] overflow-hidden rounded-lg border-2 border-dashed border-border bg-muted/5 transition-all hover:bg-white hover:border-primary/20">
+                    <div class="h-16 w-16 rounded-lg bg-white flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-white transition-all shadow-sm group-hover:shadow-lg">
                         <Plus class="w-8 h-8" />
                     </div>
                     <div class="mt-6 text-center">
@@ -440,7 +440,7 @@ const allCore = computed(() => props.competencies['core'] || []);
                                             <DropdownMenuTrigger as-child>
                                                 <Button variant="ghost" size="icon" class="h-8 w-8 rounded-lg hover:bg-muted transition-all"><MoreHorizontal class="h-4 w-4 text-muted-foreground" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" class="w-48 rounded-xl border-border bg-card p-2 shadow-xl">
+                                            <DropdownMenuContent align="end" class="w-48 rounded-lg border-border bg-card p-2 shadow-xl">
                                                 <DropdownMenuItem @click="deleteIndicator(indicator.id)" class="rounded-lg px-4 py-2.5 text-[9px] font-black tracking-widest text-rose-600 uppercase focus:bg-rose-50">
                                                     <Trash2 class="mr-3 h-4 w-4" /> Purge
                                                 </DropdownMenuItem>
@@ -466,7 +466,7 @@ const allCore = computed(() => props.competencies['core'] || []);
 
         <!-- Modals with smaller radii -->
         <Dialog v-model:open="showCompetencyModal">
-            <DialogContent class="bg-card border-border text-foreground rounded-2xl p-0 overflow-hidden max-w-lg shadow-2xl">
+            <DialogContent class="bg-card border-border text-foreground rounded-xl p-0 overflow-hidden max-w-lg shadow-2xl">
                 <DialogHeader class="p-8 bg-primary text-white relative">
                     <DialogTitle class="text-xl font-bold uppercase tracking-tight">Competency Schema</DialogTitle>
                     <DialogDescription class="text-primary-foreground/70 font-bold text-[9px] uppercase tracking-widest mt-1">Define global pedagogical standard</DialogDescription>
@@ -475,25 +475,25 @@ const allCore = computed(() => props.competencies['core'] || []);
                     <div class="space-y-4">
                         <div class="space-y-1.5">
                              <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Label</Label>
-                             <Input v-model="competencyForm.name" class="bg-muted/10 border-border rounded-xl h-12 text-sm font-bold" placeholder="Critical Thinking" />
+                             <Input v-model="competencyForm.name" class="bg-muted/10 border-border rounded-lg h-12 text-sm font-bold" placeholder="Critical Thinking" />
                         </div>
                          <div class="grid grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Ref Code</Label>
-                                <Input v-model="competencyForm.code" class="bg-muted/10 border-border rounded-xl h-12 text-sm font-bold uppercase text-center" />
+                                <Input v-model="competencyForm.code" class="bg-muted/10 border-border rounded-lg h-12 text-sm font-bold uppercase text-center" />
                             </div>
                             <div class="space-y-1.5">
                                 <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Rank</Label>
-                                <Input v-model="competencyForm.display_order" type="number" class="bg-muted/10 border-border rounded-xl h-12 text-sm font-bold text-center" />
+                                <Input v-model="competencyForm.display_order" type="number" class="bg-muted/10 border-border rounded-lg h-12 text-sm font-bold text-center" />
                             </div>
                         </div>
                         <div class="space-y-1.5">
                              <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Specification</Label>
-                             <Textarea v-model="competencyForm.description" class="bg-muted/10 border-border rounded-xl min-h-[100px] text-xs font-bold" />
+                             <Textarea v-model="competencyForm.description" class="bg-muted/10 border-border rounded-lg min-h-[100px] text-xs font-bold" />
                         </div>
                     </div>
                     <DialogFooter class="p-0">
-                        <Button type="submit" class="w-full h-14 bg-primary text-white font-bold uppercase tracking-widest rounded-xl shadow-lg">
+                        <Button type="submit" class="w-full h-14 bg-primary text-white font-bold uppercase tracking-widest rounded-lg shadow-lg">
                             {{ competencyForm.processing ? 'Syncing...' : 'Register Standard' }}
                         </Button>
                     </DialogFooter>
@@ -502,7 +502,7 @@ const allCore = computed(() => props.competencies['core'] || []);
         </Dialog>
 
         <Dialog v-model:open="showIndicatorModal">
-            <DialogContent class="bg-card border-border text-foreground rounded-2xl p-0 overflow-hidden max-w-xl shadow-2xl">
+            <DialogContent class="bg-card border-border text-foreground rounded-xl p-0 overflow-hidden max-w-xl shadow-2xl">
                 <DialogHeader class="p-8 bg-indigo-600 text-white relative">
                     <DialogTitle class="text-xl font-bold uppercase tracking-tight">Outcome Ingestion</DialogTitle>
                     <DialogDescription class="text-indigo-100/70 font-bold text-[9px] uppercase tracking-widest mt-1">Deploy mapping to curriculum tree</DialogDescription>
@@ -512,10 +512,10 @@ const allCore = computed(() => props.competencies['core'] || []);
                          <div class="space-y-1.5">
                              <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Grade</Label>
                              <Select v-model="indicatorForm.grade_level_id">
-                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-xl text-xs font-bold">
+                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-lg text-xs font-bold">
                                     <SelectValue placeholder="Grade" />
                                 </SelectTrigger>
-                                <SelectContent class="bg-card border-border rounded-xl">
+                                <SelectContent class="bg-card border-border rounded-lg">
                                     <SelectItem v-for="g in (grades as any[])" :key="g.id" :value="g.id.toString()" class="text-xs font-bold py-3">{{ g.name }}</SelectItem>
                                 </SelectContent>
                              </Select>
@@ -523,10 +523,10 @@ const allCore = computed(() => props.competencies['core'] || []);
                         <div class="space-y-1.5">
                              <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Core Link</Label>
                              <Select v-model="indicatorForm.competency_id">
-                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-xl text-xs font-bold">
+                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-lg text-xs font-bold">
                                     <SelectValue placeholder="Competency" />
                                 </SelectTrigger>
-                                <SelectContent class="bg-card border-border rounded-xl">
+                                <SelectContent class="bg-card border-border rounded-lg">
                                     <SelectItem v-for="c in (allCore as any[])" :key="c.id" :value="c.id.toString()" class="text-xs font-bold py-3">{{ c.name }}</SelectItem>
                                 </SelectContent>
                              </Select>
@@ -537,10 +537,10 @@ const allCore = computed(() => props.competencies['core'] || []);
                         <div class="space-y-1.5">
                             <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Subject Area</Label>
                             <Select v-model="indicatorForm.subject_id">
-                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-xl text-xs font-bold">
+                                <SelectTrigger class="bg-muted/10 border-border h-12 rounded-lg text-xs font-bold">
                                     <SelectValue placeholder="Select Subject" />
                                 </SelectTrigger>
-                                <SelectContent class="bg-card border-border rounded-xl">
+                                <SelectContent class="bg-card border-border rounded-lg">
                                     <SelectItem v-for="s in (subjects as any[])" :key="s.id" :value="s.id.toString()" class="text-xs font-bold py-3">{{ s.name }}</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -549,10 +549,10 @@ const allCore = computed(() => props.competencies['core'] || []);
                             <div class="space-y-1.5">
                                 <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Strand</Label>
                                 <Select v-model="indicatorForm.strand_id" :disabled="!indicatorForm.subject_id">
-                                    <SelectTrigger class="bg-muted/10 border-border h-12 rounded-xl text-xs font-bold">
+                                    <SelectTrigger class="bg-muted/10 border-border h-12 rounded-lg text-xs font-bold">
                                         <SelectValue placeholder="Select Strand" />
                                     </SelectTrigger>
-                                    <SelectContent class="bg-card border-border rounded-xl">
+                                    <SelectContent class="bg-card border-border rounded-lg">
                                         <SelectItem v-for="st in (availableStrands as any[])" :key="st.id" :value="st.id.toString()" class="text-xs font-bold py-3">{{ st.name }}</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -560,10 +560,10 @@ const allCore = computed(() => props.competencies['core'] || []);
                             <div class="space-y-1.5">
                                 <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Sub-strand</Label>
                                 <Select v-model="indicatorForm.sub_strand_id" :disabled="!indicatorForm.strand_id">
-                                    <SelectTrigger class="bg-muted/10 border-border h-12 rounded-xl text-xs font-bold">
+                                    <SelectTrigger class="bg-muted/10 border-border h-12 rounded-lg text-xs font-bold">
                                         <SelectValue placeholder="Select Sub" />
                                     </SelectTrigger>
-                                    <SelectContent class="bg-card border-border rounded-xl">
+                                    <SelectContent class="bg-card border-border rounded-lg">
                                         <SelectItem v-for="ss in (availableSubStrands as any[])" :key="ss.id" :value="ss.id.toString()" class="text-xs font-bold py-3">{{ ss.name }}</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -573,11 +573,11 @@ const allCore = computed(() => props.competencies['core'] || []);
 
                     <div class="space-y-1.5 border-t border-border/50 pt-4">
                         <Label class="text-[9px] font-black uppercase text-muted-foreground ml-1">Behavioral Criteria</Label>
-                        <Input v-model="indicatorForm.indicator" class="bg-muted/10 border-border rounded-xl h-14 text-sm font-bold" placeholder="Student describes..." />
+                        <Input v-model="indicatorForm.indicator" class="bg-muted/10 border-border rounded-lg h-14 text-sm font-bold" placeholder="Student describes..." />
                     </div>
 
                     <DialogFooter class="p-0">
-                        <Button type="submit" class="w-full h-14 bg-indigo-600 text-white font-bold uppercase tracking-widest rounded-xl shadow-lg">
+                        <Button type="submit" class="w-full h-14 bg-indigo-600 text-white font-bold uppercase tracking-widest rounded-lg shadow-lg">
                             {{ indicatorForm.processing ? 'Integrating Node...' : 'Deploy Indicator' }}
                         </Button>
                     </DialogFooter>

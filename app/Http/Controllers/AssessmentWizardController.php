@@ -82,7 +82,17 @@ class AssessmentWizardController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'source' => 'required|in:internal,ministry',
             'indicators' => 'required|array|min:1',
-            'indicators.*.id' => 'required|exists:competency_indicators,id',
+            'indicators.*.id' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    if (in_array($value, ['knowledge', 'skills', 'communication', 'values', 'creativity', 'thinking'])) {
+                        return;
+                    }
+                    if (!\App\Models\Curriculum\CompetencyIndicator::where('id', $value)->exists()) {
+                        $fail('The selected learning indicator does not exist.');
+                    }
+                }
+            ],
             'indicators.*.max_score' => 'nullable|numeric',
         ]);
 
@@ -131,8 +141,9 @@ class AssessmentWizardController extends Controller
                 foreach ($validated['indicators'] as $index => $item) {
                     AssessmentItem::create([
                         'assessment_id' => $assessment->id,
-                        'competency_indicator_id' => $item['id'],
+                        'competency_indicator_id' => is_numeric($item['id']) ? $item['id'] : null,
                         'name' => $item['indicator'] ?? 'Indicator ' . ($index + 1),
+                        'code' => !is_numeric($item['id']) ? $item['id'] : null,
                         'max_score' => $item['max_score'] ?? 4,
                         'display_order' => $index,
                     ]);
