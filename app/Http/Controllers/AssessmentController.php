@@ -490,7 +490,7 @@ class AssessmentController extends Controller
         $classAssessments = \App\Models\Assessment\Assessment::where('school_id', $schoolId)
             ->where('class_id', $student->current_class_id)
             ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
-            ->with('subject')
+            ->with(['subject', 'rubric.criteria.levels', 'gradingScale.descriptors'])
             ->get();
 
         $assessmentIds = $classAssessments->pluck('id');
@@ -512,15 +512,19 @@ class AssessmentController extends Controller
             return $assessmentLookup[$sa->assessment_id]->subject_id ?? 0;
         });
 
-        $subjectsData = $bySubject->map(function($group) use ($assessmentLookup, $gradingScale) {
+        $subjectsData = $bySubject->map(function($group) use ($assessmentLookup, $gradingScale, $schoolId) {
             $firstAssessment = $assessmentLookup[$group->first()->assessment_id] ?? null;
             $subjectName = $firstAssessment?->subject?->name ?? 'Unknown';
 
             $totalMarks = 0;
             $totalPossible = 0;
             $teacherRemarks = null;
+            $subjectAssessments = collect();
             foreach ($group as $sa) {
                 $assessment = $assessmentLookup[$sa->assessment_id] ?? null;
+                if ($assessment) {
+                    $subjectAssessments->push($assessment);
+                }
                 $totalMarks += (float) $sa->marks_obtained;
                 $totalPossible += $assessment ? ($assessment->total_marks ?: 100) : 100;
                 // Use the most recent teacher comment as subject remarks
@@ -530,12 +534,13 @@ class AssessmentController extends Controller
             }
 
             $percentage = $totalPossible > 0 ? ($totalMarks / $totalPossible) * 100 : 0;
-
-            // Map to grading scale for rubric code/name only (NOT remarks)
-            $rubric = $gradingScale ? $gradingScale->descriptors
-                ->where('min_score', '<=', $percentage)
-                ->where('max_score', '>=', $percentage)
-                ->first() : null;
+            $performance = $this->resolveReportPerformance(
+                $percentage,
+                $subjectAssessments,
+                $gradingScale,
+                $schoolId,
+                $firstAssessment?->subject_id
+            );
 
             return [
                 'subject_id' => $firstAssessment?->subject_id,
@@ -543,8 +548,8 @@ class AssessmentController extends Controller
                 'score' => $totalMarks,
                 'max' => $totalPossible,
                 'percentage' => round($percentage, 1),
-                'rubric' => $rubric ? $rubric->level_code : $this->mapScoreToLevel($percentage),
-                'rubric_name' => $rubric ? $rubric->level_name : $this->getLevelName($percentage),
+                'rubric' => $performance['level'],
+                'rubric_name' => $performance['descriptor'],
                 'remarks' => $teacherRemarks ?: $this->getAutoComment($percentage),
             ];
         })->values();
@@ -592,6 +597,55 @@ class AssessmentController extends Controller
                 'class_teacher_remark' => $this->getClassTeacherRemark($overallAvg),
                 'head_teacher_remark' => $this->getHeadTeacherRemark($overallAvg),
             ],
+        ];
+    }
+
+    private function resolveReportPerformance(
+        float $percentage,
+        $subjectAssessments,
+        $gradingScale,
+        $schoolId,
+        $subjectId
+    ): array {
+        $assessmentWithRubric = $subjectAssessments
+            ->filter(fn($assessment) => $assessment->rubric && $assessment->rubric->criteria->isNotEmpty())
+            ->sortByDesc(fn($assessment) => $assessment->assessment_date?->timestamp ?? $assessment->id)
+            ->first();
+
+        $rubric = $assessmentWithRubric?->rubric;
+
+        if (!$rubric) {
+            $rubric = \App\Models\Assessment\Rubric::where('school_id', $schoolId)
+                ->where('is_active', true)
+                ->where(function ($query) use ($subjectId) {
+                    $query->where('subject_id', $subjectId)
+                        ->orWhereNull('subject_id');
+                })
+                ->with(['criteria.levels' => fn($query) => $query->orderBy('min_score', 'desc')])
+                ->orderByRaw('subject_id IS NULL ASC')
+                ->latest()
+                ->first();
+        }
+
+        if ($rubric && $rubric->criteria->isNotEmpty()) {
+            foreach ($rubric->criteria->first()->levels as $level) {
+                if ($percentage >= $level->min_score && $percentage <= $level->max_score) {
+                    return [
+                        'level' => $level->grade_code,
+                        'descriptor' => $level->level_name,
+                    ];
+                }
+            }
+        }
+
+        $descriptor = $gradingScale ? $gradingScale->descriptors
+            ->where('min_score', '<=', $percentage)
+            ->where('max_score', '>=', $percentage)
+            ->first() : null;
+
+        return [
+            'level' => $descriptor ? $descriptor->level_code : $this->mapScoreToLevel($percentage),
+            'descriptor' => $descriptor ? $descriptor->level_name : $this->getLevelName($percentage),
         ];
     }
 
@@ -669,12 +723,19 @@ class AssessmentController extends Controller
 
     public function rubricStore(Request $request)
     {
+        $request->merge([
+            'subject_id' => $request->filled('subject_id') ? $request->input('subject_id') : null,
+            'assessment_type_id' => $request->filled('assessment_type_id') ? $request->input('assessment_type_id') : null,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'subject_id' => 'nullable|exists:subjects,id',
-            'assessment_type_id' => 'required|exists:assessment_types,id',
+            'assessment_type_id' => 'nullable|exists:assessment_types,id',
             'total_points' => 'required|numeric|min:0',
+            'is_active' => 'boolean',
             'levels' => 'required|array|min:1',
             'levels.*.level_name' => 'required|string',
             'levels.*.grade_code' => 'required|string',
@@ -689,8 +750,9 @@ class AssessmentController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'],
             'subject_id' => $validated['subject_id'] ?: null,
-            'assessment_type_id' => $validated['assessment_type_id'],
+            'assessment_type_id' => $validated['assessment_type_id'] ?: null,
             'total_points' => $validated['total_points'],
+            'is_active' => $validated['is_active'],
             'created_by' => auth()->user()->id,
         ]);
 
@@ -720,12 +782,19 @@ class AssessmentController extends Controller
 
     public function rubricUpdate(Request $request, int $id)
     {
+        $request->merge([
+            'subject_id' => $request->filled('subject_id') ? $request->input('subject_id') : null,
+            'assessment_type_id' => $request->filled('assessment_type_id') ? $request->input('assessment_type_id') : null,
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'subject_id' => 'nullable|exists:subjects,id',
-            'assessment_type_id' => 'required|exists:assessment_types,id',
+            'assessment_type_id' => 'nullable|exists:assessment_types,id',
             'total_points' => 'required|numeric|min:0',
+            'is_active' => 'boolean',
             'levels' => 'required|array|min:1',
             'levels.*.level_name' => 'required|string',
             'levels.*.grade_code' => 'required|string',
@@ -740,8 +809,9 @@ class AssessmentController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'],
             'subject_id' => $validated['subject_id'] ?: null,
-            'assessment_type_id' => $validated['assessment_type_id'],
+            'assessment_type_id' => $validated['assessment_type_id'] ?: null,
             'total_points' => $validated['total_points'],
+            'is_active' => $validated['is_active'],
         ]);
 
         $criteria = $rubric->criteria()->first();
@@ -1266,4 +1336,3 @@ class AssessmentController extends Controller
         return $user->school_id;
     }
 }
-
