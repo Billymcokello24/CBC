@@ -27,11 +27,14 @@ class SettingsController extends Controller
             ->with(['terms' => fn($q) => $q->orderBy('term_number')])
             ->orderByDesc('start_date')
             ->get();
+            
+        $assessmentTypes = \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get();
 
         return Inertia::render('settings/SchoolProfile', [
             'school' => $school,
             'settings' => $settings,
             'academicYears' => $academicYears,
+            'assessmentTypes' => $assessmentTypes,
         ]);
     }
 
@@ -207,6 +210,47 @@ class SettingsController extends Controller
         $year->makeCurrent();
 
         return back()->with('success', "{$year->name} is now the current academic year.");
+    }
+    
+    public function storeAssessmentType(Request $request): \Illuminate\Http\RedirectResponse
+    {
+        $schoolId = auth()->user()->school_id;
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'code' => 'required|string|max:30',
+            'category' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+            'default_weight' => 'nullable|numeric|min:0|max:100',
+            'requires_rubric' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
+
+        \App\Models\Assessment\AssessmentType::create(array_merge($validated, [
+            'school_id' => $schoolId,
+        ]));
+
+        return back()->with('success', 'Assessment type created successfully.');
+    }
+
+    public function updateAssessmentType(Request $request, $id): \Illuminate\Http\RedirectResponse
+    {
+        $schoolId = auth()->user()->school_id;
+        $type = \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100',
+            'code' => 'required|string|max:30',
+            'category' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+            'default_weight' => 'nullable|numeric|min:0|max:100',
+            'requires_rubric' => 'boolean',
+            'is_active' => 'boolean',
+        ]);
+
+        $type->update($validated);
+
+        return back()->with('success', 'Assessment type updated successfully.');
     }
 
     public function academicSettings(): Response

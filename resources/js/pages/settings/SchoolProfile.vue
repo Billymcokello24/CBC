@@ -67,6 +67,7 @@ const props = defineProps<{
     school: any;
     settings: any[];
     academicYears: any[];
+    assessmentTypes: any[];
     breadcrumbs: BreadcrumbItem[];
 }>();
 
@@ -296,6 +297,59 @@ const getTermStatusColor = (status: string) => {
             return 'bg-amber-50 text-amber-700 border-amber-200';
     }
 };
+
+// Assessment Types Management
+const showAssessmentDialog = ref(false);
+const editingAssessment = ref<any>(null);
+
+const assessmentForm = useForm({
+    name: '',
+    code: '',
+    category: '',
+    description: '',
+    default_weight: 100,
+    requires_rubric: false,
+    is_active: true,
+});
+
+const openAddAssessment = () => {
+    editingAssessment.value = null;
+    assessmentForm.reset();
+    showAssessmentDialog.value = true;
+};
+
+const openEditAssessment = (assessment: any) => {
+    editingAssessment.value = assessment;
+    assessmentForm.name = assessment.name;
+    assessmentForm.code = assessment.code;
+    assessmentForm.category = assessment.category || '';
+    assessmentForm.description = assessment.description || '';
+    assessmentForm.default_weight = assessment.default_weight;
+    assessmentForm.requires_rubric = !!assessment.requires_rubric;
+    assessmentForm.is_active = !!assessment.is_active;
+    showAssessmentDialog.value = true;
+};
+
+const submitAssessment = () => {
+    if (editingAssessment.value) {
+        assessmentForm.put(`/settings/assessment-types/${editingAssessment.value.id}`, {
+            onSuccess: () => {
+                showAssessmentDialog.value = false;
+                editingAssessment.value = null;
+                assessmentForm.reset();
+            },
+            preserveScroll: true,
+        });
+    } else {
+        assessmentForm.post('/settings/assessment-types', {
+            onSuccess: () => {
+                showAssessmentDialog.value = false;
+                assessmentForm.reset();
+            },
+            preserveScroll: true,
+        });
+    }
+};
 </script>
 
 <template>
@@ -339,6 +393,11 @@ const getTermStatusColor = (status: string) => {
                         value="security"
                         class="px-6 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
                         >Security & Access</TabsTrigger
+                    >
+                    <TabsTrigger
+                        value="assessments"
+                        class="px-6 text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                        >Assessment Types</TabsTrigger
                     >
                 </TabsList>
 
@@ -1152,6 +1211,96 @@ const getTermStatusColor = (status: string) => {
                         </div>
                     </div>
                 </TabsContent>
+
+                <TabsContent
+                    value="assessments"
+                    class="animate-in space-y-6 duration-300 fade-in slide-in-from-right-4"
+                >
+                    <div
+                        class="flex items-center justify-between rounded-3xl border border-slate-100 bg-white p-6 shadow-sm"
+                    >
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-100 bg-indigo-50 shadow-inner"
+                            >
+                                <BadgeCheck class="h-6 w-6 text-indigo-600" />
+                            </div>
+                            <div>
+                                <h3
+                                    class="text-lg leading-tight font-bold text-slate-900"
+                                >
+                                    Assessment Types
+                                </h3>
+                                <p class="mt-0.5 text-xs text-slate-500">
+                                    Configure assessment categories for grading.
+                                </p>
+                            </div>
+                        </div>
+                        <Button
+                            @click="openAddAssessment"
+                            class="h-11 bg-indigo-600 px-6 text-sm font-bold tracking-tight uppercase shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+                        >
+                            <Plus class="mr-2 h-4 w-4" /> Add Type
+                        </Button>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <Card
+                            v-for="type in assessmentTypes"
+                            :key="type.id"
+                            class="group relative overflow-hidden border-slate-200 transition-all duration-300 hover:shadow-xl"
+                            :class="{
+                                'border-transparent bg-slate-50 ring-1 ring-slate-200': !type.is_active,
+                            }"
+                        >
+                            <CardHeader class="px-6 pt-6 pb-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle
+                                            class="text-xl font-bold text-slate-900"
+                                            >{{ type.name }}</CardTitle
+                                        >
+                                        <CardDescription
+                                            class="mt-0.5 font-mono text-xs tracking-tight text-slate-400 uppercase"
+                                            >{{ type.code }}
+                                            <span v-if="type.category" class="ml-2 text-indigo-500">&bull; {{ type.category }}</span>
+                                        </CardDescription>
+                                    </div>
+                                    <div
+                                        class="flex items-center gap-1 opacity-100 transition-opacity group-hover:opacity-100 md:opacity-0"
+                                    >
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            class="h-8 w-8 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                                            @click="openEditAssessment(type)"
+                                        >
+                                            <Edit class="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent class="space-y-4 px-6 pt-2 pb-6">
+                                <div
+                                    class="flex items-center justify-between rounded-xl border border-slate-100/50 bg-slate-50 p-3"
+                                >
+                                    <span
+                                        class="flex items-center gap-2 text-xs font-bold tracking-wide text-slate-500 uppercase"
+                                    >
+                                        Status
+                                    </span>
+                                    <Badge
+                                        variant="outline"
+                                        :class="type.is_active ? 'border-emerald-100 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-500'"
+                                        class="text-xs font-bold tracking-tight uppercase"
+                                        >{{ type.is_active ? 'Active' : 'Inactive' }}</Badge
+                                    >
+                                </div>
+                                <p class="text-xs text-slate-500 line-clamp-2">{{ type.description || 'No description provided.' }}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
             </Tabs>
         </div>
 
@@ -1418,6 +1567,84 @@ const getTermStatusColor = (status: string) => {
                             class="h-11 rounded-2xl bg-emerald-600 px-8 text-xs font-bold tracking-tight uppercase shadow-lg shadow-emerald-600/20 hover:bg-emerald-700"
                         >
                             Save Term
+                        </Button>
+                    </DialogFooter>
+                </div>
+            </DialogContent>
+        </Dialog>
+        <!-- Assessment Dialog -->
+        <Dialog
+            :open="showAssessmentDialog"
+            @update:open="showAssessmentDialog = $event"
+        >
+            <DialogContent
+                class="overflow-hidden rounded-xl border-slate-100 p-0 shadow-lg sm:max-w-[500px]"
+            >
+                <div class="h-2 w-full bg-indigo-600"></div>
+                <div class="p-8">
+                    <DialogHeader>
+                        <DialogTitle class="text-xl font-bold text-slate-900">
+                            {{ editingAssessment ? 'Edit Assessment Type' : 'New Assessment Type' }}
+                        </DialogTitle>
+                        <DialogDescription class="mt-2 text-xs font-medium text-slate-500">
+                            {{ editingAssessment ? 'Update config for this assessment type.' : 'Create a new assessment type.' }}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div class="grid gap-5 py-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Name</Label>
+                                <Input v-model="assessmentForm.name" class="h-10 rounded-lg font-bold" placeholder="e.g. End of Term Exam" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Code</Label>
+                                <Input v-model="assessmentForm.code" class="h-10 rounded-lg font-mono text-sm" placeholder="EOT" />
+                            </div>
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label class="text-xs font-bold text-slate-400 uppercase">Category</Label>
+                            <Input v-model="assessmentForm.category" class="h-10 rounded-lg" placeholder="Summative, Formative, etc." />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label class="text-xs font-bold text-slate-400 uppercase">Description</Label>
+                            <Textarea v-model="assessmentForm.description" class="min-h-[80px]" />
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="grid gap-2">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Default Weight (%)</Label>
+                                <Input type="number" v-model="assessmentForm.default_weight" class="h-10 rounded-lg" />
+                            </div>
+                            <div class="flex flex-col justify-center gap-1">
+                                <Label class="text-xs font-bold text-slate-400 uppercase">Active Status</Label>
+                                <div class="flex h-10 items-center">
+                                    <Switch
+                                        :checked="assessmentForm.is_active"
+                                        @update:checked="(val: boolean) => (assessmentForm.is_active = val)"
+                                    />
+                                    <span class="ml-2 text-xs font-bold text-slate-600">{{ assessmentForm.is_active ? 'Active' : 'Inactive' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter class="gap-3 pt-4 sm:justify-between">
+                        <Button
+                            variant="ghost"
+                            @click="showAssessmentDialog = false"
+                            class="text-sm font-medium tracking-tight text-slate-400 uppercase hover:text-slate-600"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            @click="submitAssessment"
+                            :disabled="assessmentForm.processing"
+                            class="h-11 rounded-2xl bg-indigo-600 px-8 text-xs font-bold tracking-tight uppercase shadow-lg shadow-indigo-600/20 hover:bg-indigo-700"
+                        >
+                            Save Assessment
                         </Button>
                     </DialogFooter>
                 </div>

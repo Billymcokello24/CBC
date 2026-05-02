@@ -506,6 +506,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('report-cards.show');
         Route::get('/report-cards/{student}/pdf', [AssessmentController::class, 'exportPdf'])->name('report-cards.pdf');
         Route::get('/rubrics', [AssessmentController::class, 'rubrics'])->name('rubrics');
+        Route::get('/rubrics/create', [AssessmentController::class, 'rubricCreate'])->name('rubrics.create');
+        Route::post('/rubrics', [AssessmentController::class, 'rubricStore'])->name('rubrics.store');
+        Route::get('/rubrics/{rubric}/edit', [AssessmentController::class, 'rubricEdit'])->name('rubrics.edit');
+        Route::put('/rubrics/{rubric}', [AssessmentController::class, 'rubricUpdate'])->name('rubrics.update');
         Route::get('/portfolio', [PortfolioController::class, 'index'])->name('portfolio');
         Route::get('/portfolio/{studentId}', [PortfolioController::class, 'show'])->name('portfolio.show');
         
@@ -704,6 +708,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('settings/academic-years/{year}', [SettingsController::class, 'updateAcademicYear'])->name('settings.academic-year.update');
         Route::match(['post', 'patch'], 'settings/academic-years/{year}/current', [SettingsController::class, 'setCurrentAcademicYear'])->name('settings.academic-year.current');
         Route::put('settings/academic-terms/{term}', [SettingsController::class, 'updateAcademicTerm'])->name('settings.academic-term.update');
+
+        Route::post('settings/assessment-types', [SettingsController::class, 'storeAssessmentType'])->name('settings.assessment-types.store');
+        Route::put('settings/assessment-types/{id}', [SettingsController::class, 'updateAssessmentType'])->name('settings.assessment-types.update');
 
         Route::get('settings/users', [SettingsController::class, 'users'])->name('settings.users');
         Route::get('settings/system', [SettingsController::class, 'system'])->name('settings.system');
