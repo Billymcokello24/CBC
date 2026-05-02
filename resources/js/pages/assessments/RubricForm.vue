@@ -126,23 +126,22 @@ const submit = () => {
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div
-                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10"
+                        class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10"
                     >
-                        <BookMarked class="h-6 w-6 text-orange-600" />
+                        <BookMarked class="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight">
-                            {{ rubric ? 'Edit Rubric' : 'Create Rubric' }}
+                        <h1 class="text-2xl font-black tracking-tight text-foreground uppercase">
+                           Configure {{ rubric ? 'Rubric' : 'Registry' }}
                         </h1>
-                        <p class="text-muted-foreground">
-                            Define how student scores translate to grades and
-                            comments
+                        <p class="text-xs font-bold uppercase tracking-widest text-muted-foreground opacity-60">
+                            Automated Terminal Translation Core
                         </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Button variant="ghost" as-child
-                        ><Link href="/assessments/rubrics">Cancel</Link></Button
+                    <Button variant="ghost" as-child class="text-[10px] font-black uppercase tracking-widest"
+                        ><Link href="/assessments/rubrics">Discard</Link></Button
                     >
                 </div>
             </div>
@@ -150,45 +149,42 @@ const submit = () => {
             <form @submit.prevent="submit" class="grid gap-6">
                 <!-- General Information -->
                 <Card
-                    class="overflow-hidden rounded-2xl border-orange-100 shadow-sm"
+                    class="overflow-hidden rounded-2xl border-border/50 shadow-sm"
                 >
-                    <CardHeader class="border-b bg-orange-50/30 p-6">
-                        <CardTitle class="flex items-center gap-2 text-lg">
-                            <LayoutGrid class="h-5 w-5 text-orange-600" />
-                            General Information
+                    <CardHeader class="border-b bg-muted/5 p-6">
+                        <CardTitle class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-foreground">
+                            <LayoutGrid class="h-4 w-4 text-primary" />
+                            General Registry Information
                         </CardTitle>
-                        <CardDescription
-                            >Basic rubric details and scope</CardDescription
-                        >
                     </CardHeader>
                     <CardContent class="grid gap-8 p-8">
                         <div class="grid gap-8 md:grid-cols-2">
                             <div class="space-y-3">
                                 <Label
                                     for="name"
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                    >Rubric Name</Label
+                                    class="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60"
+                                    >Rubric Identifier</Label
                                 >
                                 <Input
                                     id="name"
                                     v-model="form.name"
-                                    placeholder="e.g., Standard CBC Grading"
+                                    placeholder="e.g., MATHEMATICS STANDARD"
                                     required
-                                    class="h-12 rounded-xl border-orange-100 focus:ring-orange-500"
+                                    class="h-12 rounded-xl border-border/60 uppercase text-[11px] font-bold tracking-widest focus:ring-primary"
                                 />
                             </div>
                             <div class="space-y-3">
                                 <Label
                                     for="total_points"
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                    >Total Points</Label
+                                    class="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60"
+                                    >Max Possible Points</Label
                                 >
                                 <Input
                                     id="total_points"
                                     v-model.number="form.total_points"
                                     type="number"
                                     required
-                                    class="h-12 rounded-xl border-orange-100 text-lg font-bold focus:ring-orange-500"
+                                    class="h-12 rounded-xl border-border/60 text-lg font-black focus:ring-primary"
                                 />
                             </div>
                         </div>
@@ -196,34 +192,34 @@ const submit = () => {
                         <div class="grid gap-8 md:grid-cols-2">
                             <div class="space-y-3">
                                 <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                    >Subject (Optional)</Label
+                                    class="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60"
+                                    >Subject Association</Label
                                 >
                                 <SearchableSelect
                                     v-model="form.subject_id"
                                     :options="[
                                         {
                                             id: '',
-                                            name: 'General / All Subjects',
+                                            name: 'GENERAL / ALL SUBJECTS',
                                         },
                                         ...subjects,
                                     ]"
-                                    placeholder="Select a subject..."
-                                    search-placeholder="Search subjects..."
+                                    placeholder="SELECT SUBJECT..."
+                                    search-placeholder="SEARCH..."
                                     class="h-12"
                                 />
                             </div>
                             <div class="space-y-3">
                                 <Label
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                    >Assessment Type</Label
+                                    class="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60"
+                                    >Context / Type</Label
                                 >
                                 <Select v-model="form.assessment_type_id">
                                     <SelectTrigger
-                                        class="h-12 rounded-xl border-orange-100 focus:ring-orange-500"
+                                        class="h-12 rounded-xl border-border/60 focus:ring-primary"
                                     >
                                         <SelectValue
-                                            placeholder="Select type"
+                                            placeholder="SELECT TYPE"
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -231,6 +227,7 @@ const submit = () => {
                                             v-for="type in assessmentTypes"
                                             :key="type.id"
                                             :value="type.id.toString()"
+                                            class="text-[10px] font-bold uppercase tracking-widest"
                                         >
                                             {{ type.name }}
                                         </SelectItem>
@@ -242,29 +239,28 @@ const submit = () => {
                         <div class="space-y-3">
                             <Label
                                 for="description"
-                                class="text-xs font-bold tracking-tight text-muted-foreground "
-                                >Description</Label
+                                class="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60"
+                                >Protocol Description</Label
                             >
                             <Textarea
                                 id="description"
                                 v-model="form.description"
-                                placeholder="Briefly explain the purpose of this rubric..."
+                                placeholder="BRIEF EXPLANATION..."
                                 rows="3"
-                                class="rounded-2xl border-orange-100 focus:ring-orange-500"
+                                class="rounded-2xl border-border/60 focus:ring-primary text-[11px] font-medium"
                             />
                         </div>
 
                         <div
-                            class="mt-4 flex items-center gap-2 border-t border-orange-100/50 pt-4"
+                            class="mt-4 flex items-center gap-3 border-t border-border/30 pt-6"
                         >
                             <input
                                 type="checkbox"
                                 v-model="form.is_active"
-                                class="h-5 w-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                class="h-5 w-5 rounded-lg border-border/60 text-primary focus:ring-primary"
                             />
-                            <Label class="text-sm font-bold"
-                                >This rubric is active and available for
-                                use</Label
+                            <Label class="text-[10px] font-black uppercase tracking-widest"
+                                >Enable for Grading Terminal Use</Label
                             >
                         </div>
                     </CardContent>
@@ -272,31 +268,27 @@ const submit = () => {
 
                 <!-- Grading Levels -->
                 <Card
-                    class="overflow-hidden rounded-2xl border-indigo-100 shadow-sm"
+                    class="overflow-hidden rounded-2xl border-border/50 shadow-sm"
                 >
                     <CardHeader
-                        class="flex flex-row items-center justify-between border-b bg-indigo-50/30 p-6"
+                        class="flex flex-row items-center justify-between border-b bg-muted/5 p-6"
                     >
                         <div>
-                            <CardTitle class="flex items-center gap-2 text-lg">
+                            <CardTitle class="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-foreground">
                                 <GraduationCap
-                                    class="h-5 w-5 text-indigo-600"
+                                    class="h-4 w-4 text-primary"
                                 />
-                                Grading Levels & Descriptors
+                                Translation Scales
                             </CardTitle>
-                            <CardDescription
-                                >Map score ranges to specific grades and
-                                performance comments</CardDescription
-                            >
                         </div>
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             @click="addLevel"
-                            class="border-indigo-200 font-bold text-indigo-700 hover:bg-indigo-50"
+                            class="h-9 px-6 rounded-xl border-border text-[9px] font-black uppercase tracking-widest hover:bg-muted"
                         >
-                            <Plus class="mr-2 h-4 w-4" /> Add Level
+                            <Plus class="mr-2 h-4 w-4" /> Add Scale
                         </Button>
                     </CardHeader>
                     <CardContent class="p-0">
@@ -304,96 +296,96 @@ const submit = () => {
                             <table class="w-full border-collapse text-left">
                                 <thead>
                                     <tr
-                                        class="border-b border-indigo-100 bg-indigo-50/50"
+                                        class="border-b bg-muted/10"
                                     >
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 w-[240px]"
                                         >
-                                            Level Name
+                                            Scale Name
                                         </th>
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 w-24"
                                         >
-                                            Grade Code
+                                            Code
                                         </th>
                                         <th
-                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 w-28"
                                         >
                                             Min %
                                         </th>
                                         <th
-                                            class="w-24 p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-center text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 w-28"
                                         >
                                             Max %
                                         </th>
                                         <th
-                                            class="w-20 p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-center text-[9px] font-black uppercase tracking-widest text-primary w-24"
                                         >
                                             Points
                                         </th>
                                         <th
-                                            class="p-4 text-xs font-medium tracking-tight text-muted-foreground "
+                                            class="p-6 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60"
                                         >
-                                            Feedback Template / Comment
+                                            Feedback Template
                                         </th>
-                                        <th class="w-12 p-4"></th>
+                                        <th class="w-12 p-6"></th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="divide-y divide-border/20">
                                     <tr
                                         v-for="(level, index) in form.levels"
                                         :key="index"
-                                        class="group border-b transition-colors last:border-0 hover:bg-indigo-50/20"
+                                        class="group hover:bg-muted/5 transition-colors"
                                     >
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model="level.level_name"
-                                                placeholder="e.g. Exceeding Expectation"
-                                                class="h-10 rounded-lg border-indigo-100 text-sm focus:ring-indigo-500"
+                                                placeholder="EXCEEDING..."
+                                                class="h-10 rounded-xl border-border/60 text-[10px] font-bold uppercase tracking-widest focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model="level.grade_code"
-                                                placeholder="e.g. EE"
-                                                class="h-10 w-20 rounded-lg border-indigo-100 text-center text-sm font-bold  focus:ring-indigo-500"
+                                                placeholder="EE"
+                                                class="h-10 text-center rounded-xl border-border/60 text-[10px] font-black group-hover:border-primary/40 focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model.number="level.min_score"
                                                 type="number"
-                                                class="h-10 rounded-lg border-indigo-100 text-center text-sm font-bold focus:ring-indigo-500"
+                                                class="h-10 text-center rounded-xl border-border/60 text-[11px] font-black focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model.number="level.max_score"
                                                 type="number"
-                                                class="h-10 rounded-lg border-indigo-100 text-center text-sm font-bold focus:ring-indigo-500"
+                                                class="h-10 text-center rounded-xl border-border/60 text-[11px] font-black focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model.number="level.points"
                                                 type="number"
-                                                class="h-10 rounded-lg border-indigo-100 text-center text-sm font-bold text-indigo-600 focus:ring-indigo-500"
+                                                class="h-10 text-center rounded-xl border-border/60 text-[11px] font-black text-primary focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Input
                                                 v-model="level.description"
-                                                placeholder="Optional performance comment..."
-                                                class="h-10 rounded-lg border-indigo-100 text-sm focus:ring-indigo-500"
+                                                placeholder="OPTIONAL COMMENT..."
+                                                class="h-10 rounded-xl border-border/60 text-[10px] font-medium focus:ring-primary"
                                             />
                                         </td>
-                                        <td class="p-3">
+                                        <td class="p-4">
                                             <Button
                                                 type="button"
                                                 variant="ghost"
                                                 size="icon"
                                                 @click="removeLevel(index)"
-                                                class="rounded-lg text-red-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+                                                class="rounded-xl text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-50"
                                             >
                                                 <Trash2 class="h-4 w-4" />
                                             </Button>
@@ -404,33 +396,32 @@ const submit = () => {
                         </div>
                         <div
                             v-if="form.levels.length === 0"
-                            class="bg-muted/10/50 p-12 text-center text-muted-foreground"
+                            class="p-12 text-center"
                         >
-                            No grading levels defined yet. Click "Add Level" to
-                            start defining your criteria.
+                           <p class="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-30">No translation scales defined</p>
                         </div>
                     </CardContent>
                 </Card>
 
                 <!-- Action Bar -->
                 <div
-                    class="flex items-center justify-end gap-3 border-t pt-6 pb-10"
+                    class="flex items-center justify-end gap-3 border-t pt-8 pb-20"
                 >
                     <Button
                         variant="outline"
                         type="button"
                         as-child
-                        class="h-12 rounded-xl border-border/50 px-6 font-bold"
+                        class="h-12 rounded-2xl px-8 text-[10px] font-black uppercase tracking-widest border-border/60"
                     >
                         <Link href="/assessments/rubrics">Discard Changes</Link>
                     </Button>
                     <Button
                         type="submit"
                         :disabled="form.processing"
-                        class="h-12 rounded-xl bg-orange-600 px-10 text-lg font-bold shadow-xl shadow-orange-100 hover:bg-orange-700"
+                        class="h-12 rounded-2xl bg-primary px-12 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:opacity-90"
                     >
-                        <Save class="mr-2 h-5 w-5" />
-                        Save Rubric
+                        <Save class="mr-2 h-4 w-4" />
+                        Synchronize Rubric
                     </Button>
                 </div>
             </form>

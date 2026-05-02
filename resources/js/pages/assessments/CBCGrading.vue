@@ -1,102 +1,63 @@
 <script setup lang="ts">
-import { Head, Link, useForm, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
-    ClipboardList,
     Save,
-    ArrowLeft,
-    User,
-    CheckCircle2,
-    AlertCircle,
     Search,
-    Keyboard,
     Zap,
-    Info,
-    MoreHorizontal,
-    ChevronRight,
-    ChevronDown,
-    Check,
     X,
-    Star,
-    BarChart3,
-    BookOpen,
-    Layers,
-    Calendar,
     Upload,
-    Download,
-    Filter,
-    ArrowRight,
-    LayoutGrid,
-    Rows3,
-    Trophy,
-    Target,
-    SearchCode,
-    History
+    Plus,
+    Calendar
 } from 'lucide-vue-next';
 import { ref, computed, onMounted, watch } from 'vue';
 import BulkUploadDialog from '@/components/assessments/BulkUploadDialog.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import axios from 'axios';
+import { route } from 'ziggy-js';
 
 const props = defineProps<{
     assessment: any;
     allAssessments: Array<any>;
     students: Array<any>;
     existingRatings: Record<number, any[]>;
+    studentAssessments: Record<number, any>; // Total marks
+    rubric: any; // Dynamic rubric
     ratingScales: Array<any>;
     stats: any;
+    gradeLevels: Array<any>;
 }>();
 
 const breadcrumbs = [
-    { title: 'Intelligence Hub', href: '/dashboard' },
-    { title: 'Assessment Matrix', href: '/assessments' },
-    { title: 'Grading Terminal', href: '#' },
+    { title: 'Institutional Control', href: '/dashboard' },
+    { title: 'Curriculum Management', href: '/assessments' },
+    { title: 'Assessment Terminal', href: '#' },
 ];
 
-const selectedGrade = ref(props.assessment?.class?.grade_level_id);
-const selectedClass = ref(props.assessment?.class_id);
-const selectedTerm = ref(props.assessment?.academic_term_id);
 const activeTab = ref('entry');
-const gradingMode = ref<'rubric' | 'marks'>('rubric');
 const saving = ref(false);
 const lastSavedAt = ref<Date | null>(null);
 const bulkUploadOpen = ref(false);
 const searchQuery = ref('');
 
-const availableAssessments = computed(() => {
-    if (!props.allAssessments) return [];
-    return props.allAssessments.filter(a => {
-        const matchesGrade = !selectedGrade.value || a.class?.grade_level_id === selectedGrade.value;
-        const matchesClass = !selectedClass.value || a.class_id === selectedClass.value;
-        const matchesTerm = !selectedTerm.value || a.academic_term_id === selectedTerm.value;
-        return matchesGrade && matchesClass && matchesTerm;
-    });
-});
-
-watch(selectedClass, (newVal) => {
-    if (newVal && newVal !== props.assessment?.class_id) {
-        // Automatically switch context to an assessment mapping to the selected class
-        const target = props.allAssessments.find(a => a.class_id === newVal && (!props.assessment || a.subject_id === props.assessment.subject_id)) 
-                    || props.allAssessments.find(a => a.class_id === newVal);
-        if (target && target.id !== props.assessment?.id) {
-            router.visit(route('assessments.grading', { assessment: target.id }));
-        }
-    }
-});
-
 const criteria = computed(() => {
     if (!props.assessment?.items) return [];
-    return props.assessment.items.map((item: any) => ({
-        id: item.id,
-        code: item.code,
-        name: item.name,
-        outOf: 100
-    }));
+    return props.assessment.items.map((item: any) => {
+        let name = item.name;
+        // If the name is null or just generic "Indicator X", try fallback
+        if (!name || name.toLowerCase().startsWith('indicator ')) {
+            name = item.indicator?.indicator || item.indicator?.name || name || `Criterion ${item.display_order + 1}`;
+        }
+        
+        return {
+            id: item.id,
+            name: name,
+            outOf: item.total_marks || 100,
+            competency: item.indicator?.competency?.name || 'General'
+        };
+    });
 });
 
 const results = ref<any[]>([]);
@@ -105,23 +66,22 @@ onMounted(() => {
     if (props.students) {
         results.value = props.students.map((student) => {
             const studentRatings = props.existingRatings?.[student.id] || [];
-            const criteriaRatings: Record<number, any> = {};
             const criteriaMarks: Record<number, any> = {};
             
             props.assessment?.items?.forEach((item: any) => {
                 const existing = studentRatings.find(r => r.assessment_item_id === item.id); 
-                criteriaRatings[item.id] = existing ? existing.score : null;
                 criteriaMarks[item.id] = existing ? existing.marks : null;
             });
+
+            const overall = props.studentAssessments?.[student.id];
 
             return {
                 id: student.id,
                 name: `${student.first_name} ${student.last_name}`,
                 admission_number: student.admission_number,
-                photo: student.photo,
-                ratings: criteriaRatings,
                 marks: criteriaMarks,
-                remarks: studentRatings[0]?.remarks || '',
+                total: overall?.marks_obtained ?? null,
+                remarks: overall?.teacher_comments || (studentRatings.length > 0 ? studentRatings[0].feedback : ''),
             };
         });
     }
@@ -130,51 +90,46 @@ onMounted(() => {
 const translateMarksToRubric = (marks: number | null, outOf: number) => {
     if (marks === null || marks === undefined) return null;
     const percent = (marks / outOf) * 100;
+
+    // Use dynamic rubric if available
+    const levels = props.rubric?.criteria?.[0]?.levels;
+    if (levels && levels.length > 0) {
+        const matchingLevel = levels.find((l: any) => percent >= l.min_score && percent <= l.max_score);
+        if (matchingLevel) return matchingLevel.points;
+    }
+
+    // Default fallback
     if (percent >= 80) return 4;
     if (percent >= 60) return 3;
     if (percent >= 40) return 2;
     return 1;
 };
 
-const updateRating = async (studentId: number, criterionId: number, value: any) => {
-    const student = results.value.find(s => s.id === studentId);
-    if (!student) return;
-
-    const numValue = value === 'null' ? null : parseInt(value);
-    student.ratings[criterionId] = numValue;
-    student.marks[criterionId] = null;
-
-    try {
-        // @ts-ignore
-        await axios.post(route('assessments.grading.quick-save'), {
-            student_id: studentId,
-            assessment_item_id: criterionId,
-            rating: numValue,
-        });
-        lastSavedAt.value = new Date();
-    } catch (e) {
-        console.error('Auto-save error', e);
-    }
-};
-
-const updateMarks = async (studentId: number, criterionId: number, marks: any) => {
+const updateMarks = async (studentId: number, criterionId: number | 'total', marks: any) => {
     const student = results.value.find(s => s.id === studentId);
     if (!student) return;
 
     const numMarks = marks === '' ? null : parseFloat(marks);
-    student.marks[criterionId] = numMarks;
     
-    const score = translateMarksToRubric(numMarks, 100);
-    student.ratings[criterionId] = score;
-
+    if (criterionId === 'total') {
+        student.total = numMarks;
+    } else {
+        student.marks[criterionId] = numMarks;
+    }
+    
     try {
-        // @ts-ignore
-        await axios.post(route('assessments.grading.quick-save'), {
+        const payload: any = {
             student_id: studentId,
-            assessment_item_id: criterionId,
+            assessment_id: props.assessment.id,
             marks: numMarks,
-            out_of: 100
-        });
+        };
+
+        if (criterionId !== 'total') {
+            payload.assessment_item_id = criterionId;
+            payload.out_of = criteria.value.find((c: any) => c.id === criterionId)?.outOf || 100;
+        }
+
+        await axios.post(route('assessments.grading.quick-save'), payload);
         lastSavedAt.value = new Date();
     } catch (e) {
         console.error('Auto-save error', e);
@@ -187,337 +142,383 @@ const getScaleCode = (score: number | null) => {
 };
 
 const getScaleColor = (score: number | null) => {
-    if (!score || !props.ratingScales) return '#e2e8f0';
+    if (!score || !props.ratingScales) return '#94a3b8';
     return props.ratingScales.find((s: any) => s.id === Math.round(score))?.color || '#ef4444';
 };
 
-const overallStats = computed(() => {
-    const studentOveralls = results.value.map(r => {
-        const values = Object.values(r.ratings).filter(v => v !== null) as number[];
-        if (values.length === 0) return null;
-        return values.reduce((a, b) => a + b, 0) / values.length;
-    }).filter(v => v !== null);
-
-    const counts = { EE: 0, ME: 0, AE: 0, BE: 0 };
-    studentOveralls.forEach(avg => {
-        if (avg >= 3.5) counts.EE++;
-        else if (avg >= 2.5) counts.ME++;
-        else if (avg >= 1.5) counts.AE++;
-        else counts.BE++;
-    });
-
-    return counts;
-});
-
 const filteredResults = computed(() => {
-    if (!searchQuery.value) return results.value;
-    const query = searchQuery.value.toLowerCase();
-    return results.value.filter(
-        (r: any) =>
-            r.name.toLowerCase().includes(query) ||
-            r.admission_number.toLowerCase().includes(query),
-    );
+    let list = results.value;
+    
+    if (searchQuery.value) {
+        const q = searchQuery.value.toLowerCase();
+        list = list.filter((s: any) => 
+            s.name.toLowerCase().includes(q) || 
+            s.admission_number.toLowerCase().includes(q)
+        );
+    }
+    
+    if (activeTab.value === 'intervention') {
+        // Only show BE and AE students
+        list = list.filter((s: any) => {
+            const mark = getEffectiveMark(s);
+            const totalPossible = props.assessment.total_marks || criteria.value.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0);
+            const rubricLevel = translateMarksToRubric(mark as number, totalPossible);
+            return (rubricLevel || 1) <= 2;
+        });
+    }
+
+    // Auto rank: descending order of effective mark
+    return [...list].sort((a: any, b: any) => (getEffectiveMark(b) as number) - (getEffectiveMark(a) as number));
 });
+
+const getEffectiveMark = (student: any) => {
+    if (student.total !== null && student.total !== '') return Number(student.total);
+    return Object.values(student.marks).reduce((a: any, b: any) => (Number(a) || 0) + (Number(b) || 0), 0);
+};
 
 const submitAll = () => {
     saving.value = true;
-    const ratingsArray = results.value.flatMap(student => 
-        Object.entries(student.ratings).map(([itemId, rating]) => ({
-            student_id: student.id,
-            assessment_item_id: parseInt(itemId),
-            rating: rating,
-            marks: student.marks[itemId],
-            out_of: 100,
-            feedback: student.remarks
-        }))
-    ).filter(r => r.rating !== null);
+    const studentsData = results.value.map(student => ({
+        student_id: student.id,
+        marks: student.marks,
+        total: student.total,
+        remarks: student.remarks
+    }));
 
-    // @ts-ignore
     router.post(
-        // @ts-ignore
         route('assessments.grading.store', { assessment: props.assessment.id }),
-        { ratings: ratingsArray as any },
+        { ratings: studentsData },
         { onFinish: () => (saving.value = false) }
     );
 };
 </script>
 
 <template>
-    <Head :title="`Intelligence Terminal - ${assessment?.subject?.name}`" />
+    <Head title="Grading Terminal" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col gap-10 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8 bg-background">
+        <div class="mx-auto max-w-[1600px] space-y-4 p-4 fade-in sm:p-6 md:p-8">
             
-            <!-- Strategic Header -->
-            <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
-                <div class="space-y-1">
-                    <div class="flex items-center gap-3">
-                         <!-- @ts-ignore -->
-                        <Link :href="route('assessments.index')" class="group flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card hover:bg-muted transition-all text-muted-foreground mr-1">
-                            <ArrowLeft class="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
-                        </Link>
-                        <h1 class="text-2xl font-black tracking-tighter text-foreground uppercase sm:text-3xl">Grading Terminal</h1>
+            <!-- HEADER SECTION (Dashboard Style) -->
+            <div class="flex flex-col md:flex-row md:items-end justify-between border-b pb-6 border-border/40 gap-6 mb-2">
+                <div class="space-y-1.5 px-1">
+                    <div class="flex items-center gap-2">
+                        <div class="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary),0.6)]"></div>
+                        <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-primary select-none">Institutional Assessment Core</span>
                     </div>
-                    <div class="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" class="h-6 border-primary/20 bg-primary/5 text-primary text-[8px] font-black tracking-widest uppercase rounded-md">{{ assessment?.subject?.name }}</Badge>
-                        <Badge variant="outline" class="h-6 border-slate-200 bg-slate-50 text-slate-500 text-[8px] font-black tracking-widest uppercase rounded-md">{{ assessment?.class?.name }}</Badge>
-                        <span class="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-widest ml-2 italic">CBC Phase III Activated</span>
-                    </div>
+                    <h1 class="text-3xl font-black tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                       <span class="text-primary/90">{{ assessment.subject?.name }}</span> Terminal
+                    </h1>
+                     <p class="text-[11px] sm:text-xs text-muted-foreground font-bold flex items-center gap-2">
+                        <Calendar class="h-3 w-3 opacity-50" />
+                        G{{ assessment.class?.grade_level?.id }} • Term {{ assessment.academic_term_id }} • {{ assessment.class?.name }}
+                    </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex h-11 items-center rounded-md border border-border bg-muted/30 p-1 mr-2 shadow-sm">
-                        <button 
-                            @click="gradingMode = 'rubric'"
-                            class="flex items-center gap-2 px-4 h-full rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
-                            :class="gradingMode === 'rubric' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground'"
-                        >
-                            <Trophy class="h-3.5 w-3.5" /> Rubric logic
-                        </button>
-                        <button 
-                            @click="gradingMode = 'marks'"
-                            class="flex items-center gap-2 px-4 h-full rounded-md text-[9px] font-black uppercase tracking-widest transition-all"
-                            :class="gradingMode === 'marks' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground'"
-                        >
-                            <Target class="h-3.5 w-3.5" /> Marks mode
-                        </button>
-                    </div>
-
-                    <Button variant="outline" class="h-11 rounded-md border-border bg-card px-4 text-[10px] font-black uppercase tracking-widest hover:bg-muted shadow-sm" @click="bulkUploadOpen = true">
-                        <Upload class="mr-2 h-4 w-4 text-primary" />Bulk Import
-                    </Button>
-                    <Button @click="submitAll" :disabled="saving" class="h-11 rounded-md bg-primary px-8 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-95">
-                        <Save class="mr-2 h-4 w-4" />
-                        {{ saving ? 'Syncing...' : 'Finalize records' }}
+                <div class="flex items-center gap-3">
+                    <Button variant="outline" @click="bulkUploadOpen = true" class="h-12 px-8 rounded-2xl border-border/60 text-[10px] font-black uppercase tracking-widest hover:bg-muted/50 transition-all flex items-center gap-3">
+                        <Upload class="h-4 w-4" /> Bulk Sync Records
                     </Button>
                 </div>
             </div>
 
-            <div class="flex flex-col lg:flex-row gap-8">
-                
-                <!-- Selective Context Sidebar -->
-                <div class="w-full lg:w-80 space-y-6 shrink-0">
-                    <div class="rounded-lg border border-border bg-card p-6 shadow-sm space-y-5">
-                         <div class="space-y-1.5">
-                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Grade Level</Label>
-                            <div class="relative">
-                                <select v-model="selectedGrade" class="h-12 w-full appearance-none rounded-md border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
-                                    <option :value="undefined">All Grade Tiers</option>
-                                    <option v-for="g in Array.from(new Set((allAssessments || []).map(a => a.class?.grade_level_id))).filter(id => id)" :key="g" :value="g">
-                                        Grade {{ (allAssessments as any[]).find(a => a.class?.grade_level_id === g)?.class?.grade_level?.name }}
-                                    </option>
-                                </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-40" />
-                            </div>
-                        </div>
+            <!-- KPI GRID (Dashboard Style) -->
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <div v-for="(stat, i) in [
+                    { label: 'Total Learners', val: students?.length || 0, color: 'text-foreground' },
+                    { label: 'Exceeds (EE)', val: stats?.ee || 0, color: 'text-emerald-500' },
+                    { label: 'Meets (ME)', val: stats?.me || 0, color: 'text-blue-500' },
+                    { label: 'Approaching (AE)', val: stats?.ae || 0, color: 'text-amber-500' },
+                    { label: 'Below (BE)', val: stats?.be || 0, color: 'text-rose-500' }
+                ]" :key="i" class="bg-card rounded-2xl border p-5 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
+                    <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors mb-2 whitespace-nowrap">{{ stat.label }}</p>
+                    <h3 class="text-3xl font-black leading-none tracking-tighter" :class="stat.color">{{ stat.val }}</h3>
+                    <div class="absolute -bottom-2 -right-2 h-10 w-10 opacity-[0.02] bg-primary group-hover:opacity-[0.05] transition-all rounded-full group-hover:scale-150"></div>
+                </div>
+            </div>
 
-                        <div class="space-y-1.5 mt-4">
-                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Class/Stream</Label>
-                            <div class="relative">
-                                <select v-model="selectedClass" class="h-12 w-full appearance-none rounded-md border border-border bg-muted/5 px-4 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/10">
-                                    <option :value="undefined">All {{ selectedGrade ? `Grade ${allAssessments.find(a => a.class?.grade_level_id === selectedGrade)?.class?.grade_level?.name}` : '' }} Classes</option>
-                                    <option v-for="c in Array.from(new Set((allAssessments || []).filter(a => !selectedGrade || a.class?.grade_level_id === selectedGrade).map(a => a.class_id))).filter(id => id)" :key="c" :value="c">
-                                        {{ (allAssessments as any[]).find(a => a.class_id === c)?.class?.name }}
-                                    </option>
-                                </select>
-                                <ChevronDown class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-40" />
-                            </div>
-                        </div>
-
-                        <div class="space-y-1.5 border-t border-border pt-5">
-                            <Label class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Context Switcher</Label>
-                            <div class="grid gap-2 mt-2">
-                                <button 
-                                    v-for="a in (availableAssessments as any[])" 
-                                    :key="a.id"
-                                    @click="router.visit(route('assessments.grading', { assessment: a.id }))"
-                                    class="w-full text-left p-4 rounded-lg transition-all border group relative overflow-hidden"
-                                    :class="a.id === assessment?.id 
-                                        ? 'bg-primary/5 border-primary/20 shadow-inner' 
-                                        : 'bg-transparent border-transparent hover:bg-muted'"
-                                >
-                                    <div class="flex items-center justify-between relative z-10">
-                                        <div class="space-y-0.5">
-                                            <p class="text-[11px] font-black uppercase tracking-tight text-foreground">{{ a.subject?.name }}</p>
-                                            <p class="text-[9px] font-bold text-muted-foreground uppercase opacity-60">{{ a.class?.name }}</p>
-                                        </div>
-                                        <div v-if="a.id === assessment?.id" class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
-                                        <ChevronRight v-else class="h-3 w-3 text-muted-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-                                    </div>
-                                    <div v-if="a.id === assessment?.id" class="absolute inset-y-0 left-0 w-1 bg-primary"></div>
-                                </button>
-                                <div v-if="availableAssessments.length === 0" class="py-12 border-2 border-dashed border-border/50 rounded-lg flex flex-col items-center justify-center space-y-2 opacity-30">
-                                    <SearchCode class="h-6 w-6" />
-                                    <span class="text-[9px] font-black uppercase tracking-widest">No active sessions</span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- MAIN DATA PANEL (Dashboard Style) -->
+            <div class="rounded-2xl border bg-card/60 backdrop-blur-xl shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+                <!-- Panel Header -->
+                <div class="flex items-center justify-between border-b px-8 py-6 bg-muted/5 gap-4">
+                    <div class="flex items-center gap-8 overflow-x-auto no-scrollbar">
+                         <button 
+                            v-for="tab in ['Entry', 'Analytics', 'Intervention', 'Competency']" 
+                            :key="tab"
+                            @click="activeTab = tab.toLowerCase()"
+                            class="text-[10px] font-black uppercase tracking-[0.25em] transition-all relative whitespace-nowrap"
+                            :class="activeTab === tab.toLowerCase() ? 'text-primary' : 'text-muted-foreground/60 hover:text-foreground'"
+                        >
+                            {{ tab }} Sheet
+                            <div v-if="activeTab === tab.toLowerCase()" class="absolute -bottom-2 left-0 w-full h-[3px] bg-primary rounded-full"></div>
+                        </button>
                     </div>
 
-                    <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div class="h-8 w-8 rounded-md bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                                <Check class="h-4 w-4" />
-                            </div>
-                            <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700">Auto-Finalized</span>
+                    <div class="flex items-center gap-4 min-w-[200px]">
+                        <div class="flex items-center gap-3 bg-muted/50 rounded-2xl px-6 py-2.5 border border-border/40 w-full transition-all focus-within:ring-2 focus-within:ring-primary/20">
+                            <Search class="h-4 w-4 text-muted-foreground/30" />
+                            <input 
+                                v-model="searchQuery"
+                                type="text" 
+                                placeholder="Filter Registry..." 
+                                class="bg-transparent border-none text-[10px] font-black tracking-widest text-foreground placeholder:text-muted-foreground/20 focus:ring-0 p-0 uppercase"
+                            />
                         </div>
-                        <p class="text-[10px] text-emerald-900/60 leading-relaxed font-bold">Every entry is instantly recorded in the **Sync Hub**. Permanent records update upon finalization.</p>
                     </div>
                 </div>
 
-                <!-- Central Intelligence Grid -->
-                <div class="flex-1 space-y-6">
-                    
-                    <!-- Performance Diagnostics -->
-                    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                         <div v-for="(s, k) in [
-                            { label: 'Learners', val: stats?.total || 0, color: 'text-foreground' },
-                            { label: 'Exceeding', val: overallStats?.EE || 0, color: 'text-emerald-500' },
-                            { label: 'Meeting', val: overallStats?.ME || 0, color: 'text-blue-500' },
-                            { label: 'Approaching', val: overallStats?.AE || 0, color: 'text-amber-500' },
-                            { label: 'Below', val: overallStats?.BE || 0, color: 'text-rose-500' }
-                         ]" :key="k" class="rounded-lg border border-border bg-card p-5 shadow-sm hover:shadow-md transition-all group">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 group-hover:text-primary transition-colors">{{ s.label }}</p>
-                            <p class="mt-2 text-3xl font-black tracking-tight" :class="s.color">{{ s.val }}</p>
-                         </div>
-                    </div>
+                <div class="flex-1 overflow-x-auto no-scrollbar custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b bg-muted/5">
+                                <th class="p-4 w-12 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">#</th>
+                                <th class="p-8 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50" :class="activeTab === 'entry' ? 'w-[320px]' : 'w-[400px]'">Learner Repository</th>
+                                
+                                <!-- Entry Specific Headers -->
+                                <template v-if="activeTab === 'entry'">
+                                    <th v-for="c in criteria" :key="c.id" class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+                                        {{ c.name }}
+                                    </th>
+                                    <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-primary w-[160px]">Master Score</th>
+                                </template>
 
-                     <!-- Intelligence Search -->
-                    <div class="relative overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-                        <Search class="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground/40" />
-                        <Input
-                            v-model="searchQuery"
-                            placeholder="Identify learner node by name or admission index..."
-                            class="h-14 w-full border-0 bg-transparent pl-16 pr-8 text-sm font-bold focus-visible:ring-0"
-                        />
-                         <div class="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                             <div class="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>
-                             <span class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Live Search</span>
-                         </div>
-                    </div>
+                                <!-- Analytics Specific Headers -->
+                                <template v-if="activeTab === 'analytics'">
+                                    <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Raw Score</th>
+                                    <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Percentage</th>
+                                    <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Trajectory</th>
+                                </template>
 
-                    <!-- Evaluation Matrix Terminal -->
-                    <div class="rounded-lg border border-border bg-card shadow-sm overflow-hidden flex flex-col min-h-[600px]">
-                         <div class="flex items-center justify-between border-b border-border bg-muted/5 px-8 pt-4">
-                            <div class="flex items-center gap-8">
-                                <button 
-                                    v-for="tab in ['Entry Sheet', 'Analytics Hub', 'Flags', 'Vault']"
-                                    :key="tab"
-                                    @click="activeTab = tab.toLowerCase().split(' ')[0]"
-                                    class="relative pb-4 text-[10px] font-black uppercase tracking-widest transition-all"
-                                    :class="activeTab === tab.toLowerCase().split(' ')[0] ? 'text-primary' : 'text-muted-foreground/30 hover:text-foreground'"
-                                >
-                                    {{ tab }}
-                                    <div v-if="activeTab === tab.toLowerCase().split(' ')[0]" class="absolute bottom-0 left-0 h-0.5 w-full bg-primary shadow-lg shadow-primary/20"></div>
-                                </button>
-                            </div>
-                         </div>
+                                <!-- Competency Specific Headers -->
+                                <template v-if="activeTab === 'competency'">
+                                    <th v-for="comp in [...new Set(criteria.map(c => c.competency))]" :key="comp" class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">
+                                        {{ comp }}
+                                    </th>
+                                </template>
 
-                         <div class="flex-1 overflow-auto custom-scrollbar">
-                            <table v-if="activeTab.startsWith('entry') && criteria.length > 0" class="w-full border-separate border-spacing-0">
-                                <thead>
-                                    <tr class="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50 bg-muted/20">
-                                        <th class="sticky left-0 z-30 border-b border-border bg-card p-6 text-left shadow-[4px_0_12px_-8px_rgba(0,0,0,0.1)]">LEARNER NODE</th>
-                                        <th v-for="c in criteria" :key="c.id" class="border-b border-l border-border p-6 text-center">
-                                            <div class="flex flex-col items-center gap-2">
-                                                 <Badge variant="outline" class="rounded-md border-primary/20 bg-primary/5 text-primary text-[8px] font-black tracking-tighter">{{ c.code }}</Badge>
-                                                 <span class="max-w-[100px] truncate text-[9px]">{{ c.name }}</span>
-                                            </div>
-                                        </th>
-                                        <th class="border-b border-l border-border p-6 text-center bg-primary/5 text-primary">STATUS</th>
-                                        <th class="border-b border-l border-border p-6 text-left">OBSERVATION</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-border">
-                                    <tr v-for="student in (filteredResults as any[])" :key="student.id" class="group hover:bg-primary/[0.01] transition-all">
-                                        <td class="sticky left-0 z-20 border-border bg-card p-4 group-hover:bg-muted/30 transition-all shadow-[8px_0_12px_-8px_rgba(0,0,0,0.05)]">
-                                            <div class="flex items-center gap-4">
-                                                <Avatar class="h-11 w-11 rounded-lg border border-border shadow-sm">
-                                                    <AvatarImage :src="student.photo" />
-                                                    <AvatarFallback class="bg-primary/5 text-primary text-[10px] font-black">{{ student.name.substring(0,2).toUpperCase() }}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <p class="text-xs font-black text-foreground group-hover:text-primary transition-colors uppercase tracking-tight">{{ student.name }}</p>
-                                                    <p class="text-[9px] font-bold text-muted-foreground/50 uppercase tracking-widest">{{ student.admission_number }}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        
-                                        <td v-for="c in criteria" :key="c.id" class="border-l border-border p-4 text-center">
-                                            <div class="flex flex-col items-center gap-2">
-                                                 <div v-if="gradingMode === 'rubric'" class="relative w-full max-w-[80px]">
-                                                    <select 
-                                                        :value="student.ratings[c.id]"
-                                                        @change="updateRating(student.id, c.id, ($event.target as HTMLSelectElement).value)"
-                                                        class="h-10 w-full appearance-none rounded-md border border-border bg-muted/5 px-2 text-center text-[10px] font-black outline-none transition-all hover:bg-primary/5 focus:ring-1 focus:ring-primary/30"
-                                                        :style="{ color: getScaleColor(student.ratings[c.id]) }"
-                                                    >
-                                                        <option value="null">-</option>
-                                                        <option v-for="s in ratingScales" :key="s.id" :value="s.id">{{ s.code }}</option>
-                                                    </select>
-                                                    <ChevronDown class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary opacity-20" />
-                                                 </div>
+                                <!-- Intervention Specific Headers -->
+                                <template v-if="activeTab === 'intervention'">
+                                    <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Risk Level</th>
+                                    <th class="p-8 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Recommended Intervention</th>
+                                </template>
 
-                                                 <div v-else class="relative w-full max-w-[80px]">
-                                                    <Input 
-                                                        :value="student.marks[c.id]"
-                                                        @input="updateMarks(student.id, c.id, ($event.target as HTMLInputElement).value)"
-                                                        class="h-10 w-full text-center text-[11px] font-black rounded-md border-border bg-muted/5 focus:bg-background transition-all"
-                                                        placeholder="0.0"
-                                                        type="number"
-                                                    />
-                                                 </div>
-                                            </div>
-                                        </td>
+                                <th class="p-8 text-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 w-[140px]">Overall rating</th>
+                                <th v-if="activeTab === 'entry'" class="p-8 text-left text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Professional Remarks</th>
+                                <th class="p-8 w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/20">
+                            <tr 
+                                v-for="(student, idx) in filteredResults" 
+                                :key="student.id"
+                                class="group hover:bg-primary/[0.01] transition-all"
+                            >
+                                <td class="p-4 text-center text-[10px] font-black text-muted-foreground/40">{{ idx + 1 }}</td>
+                                <td class="p-8">
+                                    <div class="flex items-center gap-5">
+                                         <Avatar class="h-10 w-10 ring-2 ring-muted group-hover:ring-primary/20 transition-all shrink-0">
+                                            <AvatarFallback class="bg-primary/5 text-primary text-[10px] font-black uppercase">{{ student.name.substring(0, 2) }}</AvatarFallback>
+                                        </Avatar>
+                                        <div class="flex flex-col leading-tight min-w-0">
+                                            <span class="text-[11px] font-black text-foreground truncate group-hover:text-primary transition-colors uppercase tracking-tight">{{ student.name }}</span>
+                                            <span class="text-[9px] font-black text-muted-foreground opacity-60 mt-1 uppercase tracking-widest">{{ student.admission_number }}</span>
+                                        </div>
+                                    </div>
+                                </td>
 
-                                        <td class="border-l border-border p-4 text-center bg-primary/[0.01]">
-                                            <Badge 
-                                                v-if="getScaleCode(student.ratings[criteria[0]?.id])"
-                                                class="h-10 w-16 items-center justify-center rounded-md border-0 text-[10px] font-black shadow-sm text-white"
-                                                :style="{ backgroundColor: getScaleColor(student.ratings[criteria[0]?.id]) }"
-                                            >
-                                                {{ getScaleCode(student.ratings[criteria[0]?.id]) }}
-                                            </Badge>
-                                            <span v-else class="text-[10px] font-black text-muted-foreground opacity-10">TBD</span>
-                                        </td>
-                                        
-                                        <td class="border-l border-border p-4 min-w-[200px]">
-                                            <Input 
-                                                v-model="student.remarks" 
-                                                placeholder="OBSERVATION..." 
-                                                class="h-10 rounded-md border-border bg-muted/5 text-[9px] font-black uppercase tracking-widest focus:bg-background transition-all"
+                                <!-- Entry Mode -->
+                                <template v-if="activeTab === 'entry'">
+                                    <td v-for="c in criteria" :key="c.id" class="p-4 text-center">
+                                        <div class="relative group/input inline-block w-[90px]">
+                                            <input 
+                                                type="number"
+                                                :value="student.marks[c.id]"
+                                                @input="updateMarks(student.id, c.id, ($event.target as HTMLInputElement).value)"
+                                                class="w-full h-12 bg-muted/40 border border-border/40 rounded-xl px-4 text-xs font-black text-center focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-card transition-all text-muted-foreground/60"
+                                                placeholder="--"
                                             />
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div v-else class="flex flex-col items-center justify-center py-40 opacity-20">
-                                <History class="h-14 w-14 mb-4" />
-                                <p class="text-[10px] font-black uppercase tracking-widest">Repository Empty or Section Locked</p>
-                            </div>
-                         </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <div class="relative group/input inline-block w-[110px]">
+                                            <input 
+                                                type="number"
+                                                v-model="student.total"
+                                                @input="updateMarks(student.id, 'total', ($event.target as HTMLInputElement).value)"
+                                                class="w-full h-12 bg-primary/5 border-2 border-primary/20 rounded-xl px-4 text-sm font-black text-center focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-card transition-all text-primary"
+                                                :placeholder="Object.values(student.marks).some(v => v !== null) ? 'Auto' : '--'"
+                                            />
+                                        </div>
+                                    </td>
+                                </template>
+
+                                <!-- Analytics Mode -->
+                                <template v-if="activeTab === 'analytics'">
+                                    <td class="p-4 text-center font-black text-xs text-foreground uppercase tracking-widest">
+                                        {{ getEffectiveMark(student) }} / {{ props.assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0) }}
+                                    </td>
+                                    <td class="p-4 text-center">
+                                         <Badge variant="outline" class="h-7 px-4 rounded-lg bg-primary/5 border-primary/20 text-[10px] font-black text-primary uppercase">
+                                            {{ Math.round(((getEffectiveMark(student) as number) / (props.assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0))) * 100) }}% Mastery
+                                         </Badge>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="text-[10px] font-black uppercase text-emerald-500 flex items-center justify-center gap-1">
+                                            <Zap class="h-3 w-3" /> Positive
+                                        </span>
+                                    </td>
+                                </template>
+
+                                <!-- Competency Mode -->
+                                <template v-if="activeTab === 'competency'">
+                                    <td v-for="comp in [...new Set(criteria.map(c => c.competency))]" :key="comp" class="p-4 text-center">
+                                         <div class="flex flex-col items-center">
+                                            <span class="text-[10px] font-black text-foreground">
+                                                {{ Math.round(Object.entries(student.marks)
+                                                    .filter(([id]) => criteria.find(cr => String(cr.id) === id)?.competency === comp)
+                                                    .reduce((sum, [, mark]) => sum + (Number(mark) || 0), 0)) 
+                                                }} Pts
+                                            </span>
+                                            <span class="text-[8px] font-bold text-muted-foreground/40 uppercase tracking-widest">Mastery Level</span>
+                                         </div>
+                                    </td>
+                                </template>
+
+                                <!-- Intervention Mode -->
+                                <template v-if="activeTab === 'intervention'">
+                                    <td class="p-4 text-center">
+                                         <Badge class="h-7 px-4 rounded-lg bg-rose-500 text-white text-[10px] font-black uppercase border-none shadow-none">
+                                            Critical
+                                         </Badge>
+                                    </td>
+                                    <td class="p-4">
+                                        <p class="text-[10px] font-bold text-muted-foreground italic truncate max-w-[300px]">
+                                            Differentiated instruction & remedial support required for {{ assessment.subject?.name }}...
+                                        </p>
+                                    </td>
+                                </template>
+
+                                <!-- Shared Overall Rating -->
+                                <td class="p-4 text-center text-xs font-black">
+                                    <div class="flex flex-col items-center gap-1.5">
+                                        <Badge 
+                                            variant="outline" 
+                                            class="h-6 px-4 rounded-full text-[9px] font-black tracking-widest border-2 shadow-sm"
+                                            :style="{ 
+                                                borderColor: `${getScaleColor(translateMarksToRubric(
+                                                    getEffectiveMark(student) as number,
+                                                    assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0)
+                                                ))}30`,
+                                                color: getScaleColor(translateMarksToRubric(
+                                                    getEffectiveMark(student) as number,
+                                                    assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0)
+                                                )),
+                                                backgroundColor: `${getScaleColor(translateMarksToRubric(
+                                                    getEffectiveMark(student) as number,
+                                                    assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0)
+                                                ))}10`
+                                            }"
+                                        >
+                                            {{ getScaleCode(
+                                                translateMarksToRubric(
+                                                    getEffectiveMark(student) as number,
+                                                    assessment.total_marks || criteria.reduce((sum: number, item: any) => sum + (item.outOf || 100), 0)
+                                                )
+                                            ) || '--' }}
+                                        </Badge>
+                                    </div>
+                                </td>
+
+                                <td v-if="activeTab === 'entry'" class="p-4">
+                                    <input 
+                                        v-model="student.remarks"
+                                        class="w-full h-12 px-6 bg-muted/40 border border-border/40 rounded-xl text-[10px] font-bold text-foreground placeholder:text-muted-foreground/20 focus:outline-none focus:ring-1 focus:ring-primary/20 focus:bg-card transition-all"
+                                        placeholder="Observations for Terminal Report Card..."
+                                    />
+                                </td>
+
+                                <td class="p-4 pr-12 text-right">
+                                    <button class="h-10 w-10 flex items-center justify-center bg-muted/50 border border-border/40 rounded-xl text-muted-foreground/20 hover:bg-destructive/10 hover:text-destructive transition-all opacity-0 group-hover:opacity-100">
+                                        <X class="h-4 w-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Operations Bar -->
+                <div class="p-8 border-t border-border/40 bg-muted/5 flex items-center justify-between">
+                    <div class="flex items-center gap-6">
+                        <button class="h-12 px-8 rounded-xl border border-border/60 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-card transition-all flex items-center gap-3">
+                            <Plus class="h-4 w-4" /> Add Record Case
+                        </button>
+                        
+                        <div v-if="lastSavedAt" class="hidden md:flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600 opacity-60">
+                            <Zap class="h-3.5 w-3.5 animate-pulse" /> Live System Sync Active
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                         <Button 
+                            variant="ghost" 
+                            @click="router.visit(route('assessments.index'))"
+                            class="h-14 px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            @click="submitAll" 
+                            :disabled="saving"
+                            class="h-14 bg-primary text-primary-foreground hover:scale-[1.02] active:scale-95 px-12 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center gap-4 shadow-xl shadow-primary/20"
+                        >
+                            <Save v-if="!saving" class="h-5 w-5" />
+                            <span v-else class="h-5 w-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></span>
+                            {{ saving ? 'Syncing...' : 'Finalize & Post' }}
+                        </Button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <BulkUploadDialog
-            v-if="bulkUploadOpen"
-            v-model:open="bulkUploadOpen"
-            title="Mass Registration"
-            description="Import grades from the standard CSV template. Auto-sync will persist records upon upload."
-            :template-url="route('assessments.grading.template', { assessment: assessment.id })"
-            :upload-url="route('assessments.grading.import', { assessment: assessment.id })"
-            @success="router.reload()"
-        />
-
     </AppLayout>
+
+    <BulkUploadDialog
+        v-if="bulkUploadOpen"
+        v-model:open="bulkUploadOpen"
+        title="Institutional Bulk Import"
+        description="Mass data ingestion via encrypted performance matrix. Logic auto-maps to specific criteria items."
+        :template-url="route('assessments.grading.template', { assessment: assessment.id })"
+        :upload-url="route('assessments.grading.import', { assessment: assessment.id })"
+        @success="router.reload()"
+    />
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.fade-in {
+    animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 3px; height: 3px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(var(--primary), 0.1); border-radius: 10px; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(var(--primary), 0.2); }
-th.sticky { box-shadow: 4px 0 12px -8px rgba(0,0,0,0.1); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 10px; }
+
+input[type="number"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 </style>

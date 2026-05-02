@@ -42,6 +42,12 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/ui/tabs';
+import {
     Table,
     TableBody,
     TableCell,
@@ -49,6 +55,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import BulkUploadDialog from '@/components/assessments/BulkUploadDialog.vue';
 import SearchableSelect from '@/components/SearchableSelect.vue';
 import type { BreadcrumbItem } from '@/types';
@@ -61,6 +74,14 @@ const props = defineProps<{
     };
     activeYear: any;
     activeTerm: any;
+    analytics: {
+        overallMean: number;
+        totalAssessments: number;
+        activeStudents: number;
+        subjectAnalysis: { name: string; score: number }[];
+        classAnalysis: { name: string; score: number }[];
+        gradeAnalysis: { name: string; score: number }[];
+    };
     classes: Array<any>;
 }>();
 
@@ -108,7 +129,7 @@ const getPerformanceColor = (average: number) => {
             <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                 <div class="space-y-1">
                     <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Performance Analytics</h1>
-                    <p class="text-xs text-muted-foreground">{{ activeYear?.name || 'Academic Year' }} • {{ activeTerm?.name || 'Current Term' }}</p>
+                    <p class="text-xs text-muted-foreground">{{ activeTerm?.name || 'Current Term' }} • {{ activeYear?.name || 'Academic Year' }}</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted" @click="showUploadDialog = true">
@@ -124,259 +145,357 @@ const getPerformanceColor = (average: number) => {
 
             <!-- Dashboard Stats -->
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <div v-for="(stat, idx) in [
-                    { label: 'Student Body', val: `${students.meta?.total ?? students.data.length} Cohorts`, icon: 'User' },
-                    { label: 'Pass Index', val: '82.4% Efficient', icon: 'CheckCircle2' },
-                    { label: 'Mean Score', val: '68.4 pts', icon: 'TrendingUp' },
-                    { label: 'Engine Load', val: 'Optimized', icon: 'Target' }
-                ]" :key="idx" class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                <div class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
                      <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
-                        <component :is="stat.icon === 'User' ? User : stat.icon === 'CheckCircle2' ? CheckCircle2 : stat.icon === 'TrendingUp' ? TrendingUp : Target" class="h-24 w-24" />
+                        <User class="h-24 w-24" />
                     </div>
-                    <p class="text-xs font-medium text-muted-foreground">{{ stat.label }}</p>
+                    <p class="text-xs font-medium text-muted-foreground">Active Candidates</p>
                     <div class="mt-2 flex items-baseline gap-2">
-                        <h3 class="text-2xl font-bold tracking-tight">{{ stat.val }}</h3>
+                        <h3 class="text-2xl font-bold tracking-tight">{{ analytics.activeStudents }}</h3>
+                    </div>
+                </div>
+                <div class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                     <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
+                        <FileText class="h-24 w-24" />
+                    </div>
+                    <p class="text-xs font-medium text-muted-foreground">Tests Processed</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight">{{ analytics.totalAssessments }}</h3>
+                    </div>
+                </div>
+                <div class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                     <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
+                        <TrendingUp class="h-24 w-24" />
+                    </div>
+                    <p class="text-xs font-medium text-muted-foreground">Overall Mean</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight" :class="getPerformanceColor(analytics.overallMean)">{{ analytics.overallMean }}%</h3>
+                    </div>
+                </div>
+                <div class="group relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all hover:shadow-md">
+                     <div class="absolute -right-4 -top-4 opacity-[0.05] transition-transform duration-700 group-hover:scale-110">
+                        <Target class="h-24 w-24" />
+                    </div>
+                    <p class="text-xs font-medium text-muted-foreground">School Standing</p>
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <h3 class="text-2xl font-bold tracking-tight">{{ analytics.overallMean >= 60 ? 'Optimal' : 'Flagged' }}</h3>
                     </div>
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
-                    <div class="flex items-center gap-2">
-                        <BarChart3 class="h-4 w-4 text-primary" />
-                        <span class="text-xs font-semibold text-foreground tracking-tight">Analytics Filter</span>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <div class="flex flex-col gap-6 md:flex-row md:items-end">
-                        <div class="flex-1 space-y-2">
-                            <label class="text-xs font-medium text-muted-foreground">Search Profile</label>
-                            <div class="relative">
-                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-                                <Input v-model="searchQuery" placeholder="Filter by name or admission code..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
+            <!-- Tab System -->
+            <Tabs defaultValue="overview" class="w-full">
+                <TabsList class="grid w-[400px] grid-cols-2 rounded-xl bg-card border border-border p-1">
+                     <TabsTrigger value="overview" class="rounded-lg text-xs font-bold data-[state=active]:bg-muted data-[state=active]:text-indigo-600">Deep Analytics</TabsTrigger>
+                     <TabsTrigger value="registry" class="rounded-lg text-xs font-bold data-[state=active]:bg-muted data-[state=active]:text-indigo-600">Student Ledgers</TabsTrigger>
+                </TabsList>
+
+                <!-- Analytics Tab -->
+                <TabsContent value="overview" class="mt-6 flex flex-col gap-6">
+                    <div class="grid gap-6 md:grid-cols-3">
+                        <!-- Subjects -->
+                        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                            <div class="mb-6 flex items-center justify-between border-b border-border/50 pb-4">
+                                <h3 class="text-sm font-bold text-foreground">Subject Dominance</h3>
+                                <BarChart3 class="h-4 w-4 text-indigo-500" />
+                            </div>
+                            <div class="space-y-4">
+                                <div v-for="subject in [...analytics.subjectAnalysis].sort((a,b) => b.score - a.score)" :key="subject.name" class="flex flex-col gap-1.5 hover:bg-muted/10 transition-colors p-1 rounded-md">
+                                    <div class="flex items-center justify-between">
+                                        <span class="truncate text-xs font-semibold text-foreground max-w-[60%]">{{ subject.name }}</span>
+                                        <span class="text-xs font-bold" :class="getPerformanceColor(subject.score)">{{ subject.score }}%</span>
+                                    </div>
+                                    <div class="h-1.5 w-full overflow-hidden rounded-full border bg-slate-100 shadow-inner">
+                                        <div class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500" :style="{ width: subject.score + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div v-if="analytics.subjectAnalysis.length === 0" class="text-center text-xs text-muted-foreground p-4 italic">No data captured yet.</div>
                             </div>
                         </div>
-                        <div class="flex-1 space-y-2">
-                            <label class="text-xs font-medium text-muted-foreground">Class Filter</label>
-                            <SearchableSelect
-                                v-model="selectedClass"
-                                :options="[{ id: 'all', name: 'Every Class' }, ...classes]"
-                                placeholder="Cluster Filter"
-                                search-placeholder="Find class..."
-                                class="h-10"
-                            />
+
+                        <!-- Classes -->
+                        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                            <div class="mb-6 flex items-center justify-between border-b border-border/50 pb-4">
+                                <h3 class="text-sm font-bold text-foreground">Class Clusters</h3>
+                                <LayoutGrid class="h-4 w-4 text-indigo-500" />
+                            </div>
+                            <div class="space-y-4">
+                                <div v-for="cls in [...analytics.classAnalysis].sort((a,b) => b.score - a.score)" :key="cls.name" class="flex flex-col gap-1.5 hover:bg-muted/10 transition-colors p-1 rounded-md">
+                                    <div class="flex items-center justify-between">
+                                        <span class="truncate text-xs font-semibold text-foreground max-w-[60%]">{{ cls.name }}</span>
+                                        <span class="text-xs font-bold" :class="getPerformanceColor(cls.score)">{{ cls.score }}%</span>
+                                    </div>
+                                    <div class="h-1.5 w-full overflow-hidden rounded-full border bg-slate-100 shadow-inner">
+                                        <div class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500" :style="{ width: cls.score + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div v-if="analytics.classAnalysis.length === 0" class="text-center text-xs text-muted-foreground p-4 italic">No data captured yet.</div>
+                            </div>
+                        </div>
+
+                        <!-- Grades -->
+                        <div class="rounded-xl border border-border bg-card p-6 shadow-sm">
+                            <div class="mb-6 flex items-center justify-between border-b border-border/50 pb-4">
+                                <h3 class="text-sm font-bold text-foreground">Grade Level Tracking</h3>
+                                <GraduationCap class="h-4 w-4 text-indigo-500" />
+                            </div>
+                            <div class="space-y-4">
+                                <div v-for="grade in [...analytics.gradeAnalysis].sort((a,b) => b.score - a.score)" :key="grade.name" class="flex flex-col gap-1.5 hover:bg-muted/10 transition-colors p-1 rounded-md">
+                                    <div class="flex items-center justify-between">
+                                        <span class="truncate text-xs font-semibold text-foreground max-w-[60%]">{{ grade.name }}</span>
+                                        <span class="text-xs font-bold" :class="getPerformanceColor(grade.score)">{{ grade.score }}%</span>
+                                    </div>
+                                    <div class="h-1.5 w-full overflow-hidden rounded-full border bg-slate-100 shadow-inner">
+                                        <div class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500" :style="{ width: grade.score + '%' }"></div>
+                                    </div>
+                                </div>
+                                <div v-if="analytics.gradeAnalysis.length === 0" class="text-center text-xs text-muted-foreground p-4 italic">No data captured yet.</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </TabsContent>
 
-            <!-- Results Table -->
-            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                                <th class="px-6 py-4">Student Profile</th>
-                                <th class="px-6 py-4 text-center">Cluster</th>
-                                <th class="px-6 py-4 text-center">Load</th>
-                                <th class="px-6 py-4 text-center">Mean (%)</th>
-                                <th class="px-6 py-4 text-center">Pulse Tracking</th>
-                                <th class="px-6 py-4 text-right">Logic</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border/50">
-                        <tr
-                            v-for="student in filteredStudents"
-                            :key="student.id"
-                            class="group transition-all duration-300 hover:bg-muted/10/70"
-                        >
-                            <td class="px-6 py-5">
-                                <div class="flex items-center gap-4">
-                                    <div
-                                        class="flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-50 bg-indigo-600/10 text-sm font-bold text-indigo-700  shadow-inner transition-all group-hover:bg-indigo-600 group-hover:text-white"
-                                    >
-                                        {{ (student.first_name || 'U')[0]
-                                        }}{{ (student.last_name || 'S')[0] }}
-                                    </div>
-                                    <div>
-                                        <div
-                                            class="leading-tight font-bold text-foreground transition-colors group-hover:text-indigo-700"
-                                        >
-                                            {{ student.first_name }}
-                                            {{ student.last_name }}
-                                        </div>
-                                        <div
-                                            class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                        >
-                                            ID: {{ student.admission_number }}
-                                        </div>
+                <!-- Registry Tab -->
+                <TabsContent value="registry" class="mt-6 flex flex-col gap-4">
+                    <!-- Filters -->
+                    <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                        <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
+                            <div class="flex items-center gap-2">
+                                <Filter class="h-4 w-4 text-primary" />
+                                <span class="text-xs font-semibold text-foreground tracking-tight">Ledger Controls</span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="flex flex-col gap-6 md:flex-row md:items-end">
+                                <div class="flex-1 space-y-2">
+                                    <label class="text-xs font-medium text-muted-foreground">Search Profile</label>
+                                    <div class="relative">
+                                        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
+                                        <Input v-model="searchQuery" placeholder="Filter by name or admission code..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
                                     </div>
                                 </div>
-                            </td>
-                            <td class="px-6 py-5 text-center">
-                                <Badge
-                                    variant="outline"
-                                    class="rounded-lg border-border/50 bg-muted/10 px-2 py-0.5 text-xs font-bold text-slate-600 "
-                                >
-                                    {{
-                                        student.current_class?.name ||
-                                        'Isolated'
-                                    }}
-                                </Badge>
-                            </td>
-                            <td class="px-6 py-5 text-center">
-                                <div class="inline-flex flex-col items-center">
-                                    <span
-                                        class="text-sm font-bold text-foreground"
-                                        >{{ student.tests_count || 0 }}</span
-                                    >
-                                    <span
-                                        class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                        >Tests Logged</span
-                                    >
-                                </div>
-                            </td>
-                            <td class="px-6 py-5 text-center">
-                                <div class="inline-flex flex-col items-center">
-                                    <span
-                                        class="text-lg font-bold tracking-tight"
-                                        :class="
-                                            getPerformanceColor(
-                                                student.mean_score,
-                                            )
-                                        "
-                                        >{{ student.mean_score }}%</span
-                                    >
-                                    <span
-                                        class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
-                                        >Consensus</span
-                                    >
-                                </div>
-                            </td>
-                            <td class="px-6 py-5">
-                                <div class="flex flex-col items-center gap-2">
-                                    <div
-                                        class="h-2 w-28 overflow-hidden rounded-full border bg-slate-100 shadow-inner"
-                                    >
-                                        <div
-                                            class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500"
-                                            :style="{
-                                                width: student.mean_score + '%',
-                                            }"
-                                        ></div>
-                                    </div>
-                                    <span
-                                        class="text-xs font-bold tracking-tight text-indigo-600  transition-transform group-hover:scale-105"
-                                        >Trajectory
-                                        {{ student.trajectory }}</span
-                                    >
-                                </div>
-                            </td>
-                            <td class="px-6 py-5 text-right">
-                                <div
-                                    class="flex items-center justify-end gap-1"
-                                >
-                                    <Button
-                                        size="icon"
-                                        variant="ghost"
-                                        class="h-9 w-9 rounded-xl text-slate-300 transition-all hover:bg-indigo-50 hover:text-indigo-600"
-                                        as-child
-                                        title="Performance Log"
-                                    >
-                                        <Link
-                                            :href="`/assessments/results/${student.id}`"
-                                        >
-                                            <ArrowUpRight class="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger as-child>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                class="h-9 w-9 rounded-xl text-slate-300 transition-all hover:text-slate-600"
-                                                ><MoreHorizontal
-                                                    class="h-4 w-4"
-                                            /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent
-                                            align="end"
-                                            class="font-pulsar w-56 overflow-hidden rounded-xl border-border/50 p-1 shadow-lg"
-                                        >
-                                            <DropdownMenuItem
-                                                class="rounded-lg font-bold"
-                                                ><FileText
-                                                    class="mr-3 h-4 w-4 text-indigo-600"
-                                                />
-                                                View
-                                                Transcript</DropdownMenuItem
-                                            >
-                                            <DropdownMenuItem
-                                                class="rounded-lg font-bold"
-                                                ><TrendingUp
-                                                    class="mr-3 h-4 w-4 text-emerald-500"
-                                                />
-                                                Progress Curve</DropdownMenuItem
-                                            >
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem
-                                                class="rounded-lg font-bold text-indigo-600"
-                                                >Export Student ID
-                                                Data</DropdownMenuItem
-                                            >
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredStudents.length === 0">
-                            <td colspan="6" class="px-6 py-24 text-center">
-                                <div
-                                    class="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-muted/10 shadow-inner"
-                                >
-                                    <BarChart3
-                                        class="h-10 w-10 text-slate-200"
+                                <div class="flex-1 space-y-2">
+                                    <label class="text-xs font-medium text-muted-foreground">Class Filter</label>
+                                    <SearchableSelect
+                                        v-model="selectedClass"
+                                        :options="[{ id: 'all', name: 'Every Class' }, ...classes]"
+                                        placeholder="Cluster Filter"
+                                        search-placeholder="Find class..."
+                                        class="h-10"
                                     />
                                 </div>
-                                <h3
-                                    class="mb-2 text-2xl font-bold text-slate-800"
-                                >
-                                    Registry Silent
-                                </h3>
-                                <p
-                                    class="mx-auto max-w-sm font-medium text-muted-foreground"
-                                >
-                                    No student records found matching the
-                                    current search parameters for this academic
-                                    cluster.
-                                </p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- Footer Pagination -->
-            <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5 rounded-xl border mt-auto">
-                <p class="text-xs text-muted-foreground font-medium">Node Registry: {{ filteredStudents.length }} Entries</p>
-                <div class="flex items-center gap-1.5">
-                    <template v-for="(link, i) in students.links" :key="i">
-                        <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-xs font-medium transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" as-child>
-                            <Link :href="link.url" v-html="link.label"></Link>
-                        </Button>
-                        <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
-                             <Link v-if="link.url" :href="link.url">Prev</Link>
-                             <span v-else>Prev</span>
-                        </Button>
-                        <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
-                             <Link v-if="link.url" :href="link.url">Next</Link>
-                             <span v-else>Next</span>
-                        </Button>
-                    </template>
+                    <!-- Results Table -->
+                    <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="border-b border-border/50 bg-muted/5 text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                                        <th class="px-6 py-4">Student Profile</th>
+                                        <th class="px-6 py-4 text-center">Cluster</th>
+                                        <th class="px-6 py-4 text-center">Load</th>
+                                        <th class="px-6 py-4 text-center">Mean (%)</th>
+                                        <th class="px-6 py-4 text-center">Pulse Tracking</th>
+                                        <th class="px-6 py-4 text-right">Logic</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border/50">
+                                <tr
+                                    v-for="student in filteredStudents"
+                                    :key="student.id"
+                                    class="group transition-all duration-300 hover:bg-muted/10/70"
+                                >
+                                    <td class="px-6 py-5">
+                                        <div class="flex items-center gap-4">
+                                            <div
+                                                class="flex h-12 w-12 items-center justify-center rounded-2xl border border-indigo-50 bg-indigo-600/10 text-sm font-bold text-indigo-700  shadow-inner transition-all group-hover:bg-indigo-600 group-hover:text-white"
+                                            >
+                                                {{ (student.first_name || 'U')[0]
+                                                }}{{ (student.last_name || 'S')[0] }}
+                                            </div>
+                                            <div>
+                                                <div
+                                                    class="leading-tight font-bold text-foreground transition-colors group-hover:text-indigo-700"
+                                                >
+                                                    {{ student.first_name }}
+                                                    {{ student.last_name }}
+                                                </div>
+                                                <div
+                                                    class="mt-1 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                                >
+                                                    ID: {{ student.admission_number }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 text-center">
+                                        <Badge
+                                            variant="outline"
+                                            class="rounded-lg border-border/50 bg-muted/10 px-2 py-0.5 text-xs font-bold text-slate-600 "
+                                        >
+                                            {{
+                                                student.current_class?.name ||
+                                                'Isolated'
+                                            }}
+                                        </Badge>
+                                    </td>
+                                    <td class="px-6 py-5 text-center">
+                                        <div class="inline-flex flex-col items-center">
+                                            <span
+                                                class="text-sm font-bold text-foreground"
+                                                >{{ student.tests_count || 0 }}</span
+                                            >
+                                            <span
+                                                class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                                >Tests Logged</span
+                                            >
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 text-center">
+                                        <div class="inline-flex flex-col items-center">
+                                            <span
+                                                class="text-lg font-bold tracking-tight"
+                                                :class="
+                                                    getPerformanceColor(
+                                                        student.mean_score,
+                                                    )
+                                                "
+                                                >{{ student.mean_score }}%</span
+                                            >
+                                            <span
+                                                class="mt-0.5 text-xs font-bold tracking-tight text-muted-foreground/80 "
+                                                >Consensus</span
+                                            >
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <div
+                                                class="h-2 w-28 overflow-hidden rounded-full border bg-slate-100 shadow-inner"
+                                            >
+                                                <div
+                                                    class="h-full rounded-full bg-linear-to-r from-indigo-500 to-purple-500"
+                                                    :style="{
+                                                        width: student.mean_score + '%',
+                                                    }"
+                                                ></div>
+                                            </div>
+                                            <span
+                                                class="text-xs font-bold tracking-tight text-indigo-600  transition-transform group-hover:scale-105"
+                                                >Trajectory
+                                                {{ student.trajectory }}</span
+                                            >
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 text-right">
+                                        <div
+                                            class="flex items-center justify-end gap-1"
+                                        >
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                class="h-9 w-9 rounded-xl text-slate-300 transition-all hover:bg-indigo-50 hover:text-indigo-600"
+                                                as-child
+                                                title="Performance Log"
+                                            >
+                                                <Link
+                                                    :href="`/assessments/results/${student.id}`"
+                                                >
+                                                    <ArrowUpRight class="h-4 w-4" />
+                                                </Link>
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger as-child>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        class="h-9 w-9 rounded-xl text-slate-300 transition-all hover:text-slate-600"
+                                                        ><MoreHorizontal
+                                                            class="h-4 w-4"
+                                                    /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    class="font-pulsar w-56 overflow-hidden rounded-xl border-border/50 p-1 shadow-lg"
+                                                >
+                                                    <DropdownMenuItem
+                                                        class="rounded-lg font-bold"
+                                                        ><FileText
+                                                            class="mr-3 h-4 w-4 text-indigo-600"
+                                                        />
+                                                        View
+                                                        Transcript</DropdownMenuItem
+                                                    >
+                                                    <DropdownMenuItem
+                                                        class="rounded-lg font-bold"
+                                                        ><TrendingUp
+                                                            class="mr-3 h-4 w-4 text-emerald-500"
+                                                        />
+                                                        Progress Curve</DropdownMenuItem
+                                                    >
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem
+                                                        class="rounded-lg font-bold text-indigo-600"
+                                                        >Export Student ID
+                                                        Data</DropdownMenuItem
+                                                    >
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="filteredStudents.length === 0">
+                                    <td colspan="6" class="px-6 py-24 text-center">
+                                        <div
+                                            class="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-border bg-muted/10 shadow-inner"
+                                        >
+                                            <BarChart3
+                                                class="h-10 w-10 text-slate-200"
+                                            />
+                                        </div>
+                                        <h3
+                                            class="mb-2 text-2xl font-bold text-slate-800"
+                                        >
+                                            Registry Silent
+                                        </h3>
+                                        <p
+                                            class="mx-auto max-w-sm font-medium text-muted-foreground"
+                                        >
+                                            No student records found matching the
+                                            current search parameters for this academic
+                                            cluster.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <!-- Footer Pagination -->
+                <div class="flex h-16 items-center justify-between border-t border-border/50 px-6 bg-muted/5 rounded-xl border mt-4">
+                    <p class="text-xs text-muted-foreground font-medium">Node Registry: {{ filteredStudents.length }} Entries</p>
+                    <div class="flex items-center gap-1.5">
+                        <template v-for="(link, i) in students.links" :key="i">
+                            <Button v-if="link.url && !link.label.includes('Next') && !link.label.includes('Previous')" variant="outline" size="sm" :class="['h-8 w-8 rounded-lg text-xs font-medium transition-all', link.active ? 'border-primary bg-primary text-white shadow-sm' : 'border-border bg-card hover:bg-muted text-muted-foreground']" as-child>
+                                <Link :href="link.url" v-html="link.label"></Link>
+                            </Button>
+                            <Button v-else-if="link.label.includes('Previous')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                                 <Link v-if="link.url" :href="link.url">Prev</Link>
+                                 <span v-else>Prev</span>
+                            </Button>
+                            <Button v-else-if="link.label.includes('Next')" variant="outline" size="sm" class="h-8 rounded-lg px-3 text-xs font-medium border-border bg-card hover:bg-muted disabled:opacity-30" :disabled="!link.url" as-child>
+                                 <Link v-if="link.url" :href="link.url">Next</Link>
+                                 <span v-else>Next</span>
+                            </Button>
+                        </template>
+                    </div>
+                </div>
+            </TabsContent>
+            </Tabs>
         </div>
 
         <!-- Bulk Upload Dialog -->

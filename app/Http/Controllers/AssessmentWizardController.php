@@ -23,7 +23,7 @@ class AssessmentWizardController extends Controller
         
         return Inertia::render('assessments/Setup', [
             'gradeLevels' => GradeLevel::where('school_id', $schoolId)->with('classes')->get(),
-            'subjects' => Subject::whereHas('schoolSubjects', fn($q) => $q->where('school_id', $schoolId)->where('is_offered', true))->get(),
+            'subjects' => Subject::orderBy('name')->get(),
             'assessmentTypes' => \App\Models\Assessment\AssessmentType::where('school_id', $schoolId)->get(),
             'academicTerms' => AcademicTerm::where('school_id', $schoolId)->get(),
             'academicYears' => \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->get(),
@@ -78,8 +78,13 @@ class AssessmentWizardController extends Controller
             'description' => 'nullable|string',
             'type_id' => 'required|exists:assessment_types,id',
             'term_id' => 'required|exists:academic_terms,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
             'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
+            'total_marks' => 'required|numeric|min:1',
+            'passing_marks' => 'required|numeric|min:0',
+            'weight' => 'required|numeric|min:0|max:100',
+            'status' => 'required|in:draft,published,closed',
             'source' => 'required|in:internal,ministry',
             'indicators' => 'required|array|min:1',
             'indicators.*.id' => [
@@ -93,25 +98,50 @@ class AssessmentWizardController extends Controller
                     }
                 }
             ],
+            'indicators.*.indicator' => 'nullable|string',
+            'indicators.*.name' => 'nullable|string',
             'indicators.*.max_score' => 'nullable|numeric',
         ]);
 
-        $assessmentId = \DB::transaction(function () use ($validated, $request) {
+        $user = $request->user();
+        $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+        
+        // If user is an admin and not a teacher, use the class teacher
+        if (!$teacher) {
+            $schoolClass = \App\Models\Academic\SchoolClass::find($validated['class_id']);
+            if ($schoolClass && $schoolClass->class_teacher_id) {
+                $teacher = \App\Models\Teacher::where('user_id', $schoolClass->class_teacher_id)->first();
+            }
+        }
+
+        // Final fallback: if still no teacher, pick the first teacher in the school
+        if (!$teacher) {
+             $teacher = \App\Models\Teacher::where('school_id', $user->school_id)->first();
+        }
+        
+        if (!$teacher) {
+            abort(404, 'No teacher record found to associate with this assessment.');
+        }
+
+        $assessmentId = \DB::transaction(function () use ($validated, $request, $teacher, $user) {
             $assessment = Assessment::create([
                 'title' => $validated['title'],
                 'description' => $validated['description'],
                 'class_id' => $validated['class_id'],
                 'subject_id' => $validated['subject_id'],
                 'assessment_type_id' => $validated['type_id'], 
-                'teacher_id' => $request->user()->id,
-                'school_id' => $request->user()->school_id,
-                'academic_year_id' => $validated['academic_year_id'] ?? \App\Models\Academic\AcademicYear::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
-                'academic_term_id' => $validated['term_id'] ?? \App\Models\Academic\AcademicTerm::where('school_id', $request->user()->school_id)->where('is_current', true)->first()?->id,
-                'assessment_date' => $validated['date'],
-                'status' => 'draft',
+                'total_marks' => $request->input('total_marks', 100),
+                'passing_marks' => $request->input('passing_marks', 50),
+                'weight' => $request->input('weight', 10),
+                'teacher_id' => $teacher->id,
+                'school_id' => $user->school_id,
+                'academic_year_id' => $validated['academic_year_id'],
+                'academic_term_id' => $validated['term_id'],
+                'assessment_date' => $request->input('date', now()->toDateString()),
+                'status' => $request->input('status', 'draft'),
                 'source' => $validated['source'],
                 'indicators' => $validated['indicators'], // Save indicators to JSON field
-                'created_by' => $request->user()->id,
+                'created_by' => $user->id,
             ]);
 
             // If it's a ministry/standard assessment, create the 6 standard criteria items

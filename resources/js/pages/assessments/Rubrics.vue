@@ -86,28 +86,28 @@ const searchQuery = ref('');
 
             <div
                 v-if="rubrics.data.length === 0"
-                class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-orange-200/50 bg-orange-50/20 py-20"
+                class="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 py-20"
             >
                 <div
-                    class="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-xl shadow-orange-100/50"
+                    class="mb-6 flex h-24 w-24 items-center justify-center rounded-2xl bg-white shadow-xl shadow-primary/10"
                 >
-                    <Beaker class="h-12 w-12 text-orange-400" />
+                    <BookMarked class="h-12 w-12 text-primary/40" />
                 </div>
                 <h3 class="text-xl font-bold text-foreground">
                     No grading rubrics defined
                 </h3>
                 <p
-                    class="mt-2 max-w-xs text-center font-medium text-muted-foreground"
+                    class="mt-2 max-w-xs text-center text-[11px] font-bold uppercase tracking-widest text-muted-foreground opacity-60"
                 >
                     Create your first rubric to start using standardized grading
                     criteria.
                 </p>
                 <Button
                     as-child
-                    class="mt-8 rounded-2xl bg-orange-600 px-8 py-6 text-lg font-bold shadow-xl shadow-orange-100 hover:bg-orange-700"
+                    class="mt-8 rounded-xl bg-primary px-10 py-6 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 hover:opacity-90"
                 >
                     <Link href="/assessments/rubrics/create">
-                        <Plus class="mr-2 h-6 w-6" />Get Started
+                        <Plus class="mr-2 h-5 w-5" />Get Started
                     </Link>
                 </Button>
             </div>
@@ -116,120 +116,97 @@ const searchQuery = ref('');
                 <div
                     v-for="rubric in rubrics.data"
                     :key="rubric.id"
-                    class="group relative overflow-hidden rounded-xl border border-border bg-white p-8 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-lg"
+                    class="group relative overflow-hidden rounded-2xl border border-border/50 bg-card p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-primary/20"
                 >
-                    <div
-                        class="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-orange-50 opacity-50 transition-transform duration-700 group-hover:scale-150"
-                    ></div>
-
                     <div class="relative">
                         <div class="mb-6 flex items-start justify-between">
                             <div
-                                class="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-orange-600 shadow-inner"
+                                class="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/5 text-primary border border-primary/10"
                             >
-                                <FileCode class="h-7 w-7" />
+                                <FileCode class="h-6 w-6" />
                             </div>
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        class="h-10 w-10 rounded-full hover:bg-orange-50"
+                                        class="h-10 w-10 rounded-full hover:bg-muted"
                                         ><MoreHorizontal
-                                            class="h-5 w-5 text-muted-foreground/80"
+                                            class="h-5 w-5 text-muted-foreground/60"
                                     /></Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent
                                     align="end"
-                                    class="rounded-2xl border-orange-100 p-2 shadow-xl"
+                                    class="rounded-xl border-border/40 p-2 shadow-xl"
                                 >
-                                    <DropdownMenuItem class="rounded-xl"
-                                        ><Eye class="mr-2 h-4 w-4" />View
-                                        Details</DropdownMenuItem
-                                    >
                                     <DropdownMenuItem
                                         as-child
-                                        class="rounded-xl"
+                                        class="rounded-lg text-xs font-bold uppercase tracking-widest"
                                         ><Link
                                             :href="`/assessments/rubrics/${rubric.id}/edit`"
-                                            ><Edit class="mr-2 h-4 w-4" />Edit
+                                            ><Edit class="mr-2 h-4 w-4 opacity-40" />Edit
                                             Rubric</Link
                                         ></DropdownMenuItem
                                     >
                                     <DropdownMenuItem
-                                        class="rounded-xl text-red-600"
+                                        class="rounded-lg text-xs font-bold uppercase tracking-widest text-red-600 focus:bg-red-50 focus:text-red-700"
                                         ><Trash2
-                                            class="mr-2 h-4 w-4"
+                                            class="mr-2 h-4 w-4 opacity-40"
                                         />Delete</DropdownMenuItem
                                     >
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
 
-                        <h3
-                            class="mb-3 text-2xl leading-tight font-bold text-foreground transition-colors group-hover:text-orange-600"
-                        >
-                            {{ rubric.name }}
-                        </h3>
-                        <div class="mb-4 flex flex-wrap items-center gap-2">
-                            <Badge
-                                variant="outline"
-                                class="rounded-lg border-0 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 "
-                            >
-                                {{
-                                    rubric.subject?.name ||
-                                    'General / All Subjects'
-                                }}
-                            </Badge>
-                            <Badge
-                                variant="outline"
-                                class="rounded-lg border-0 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-600 "
-                            >
-                                {{ rubric.total_points }} Max Points
-                            </Badge>
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="text-lg font-black tracking-tight text-foreground group-hover:text-primary transition-colors uppercase">
+                                    {{ rubric.name }}
+                                </h3>
+                                <p class="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50 mt-1">
+                                    {{ rubric.subject?.name || 'General Registry' }}
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <Badge
+                                    variant="outline"
+                                    class="rounded-lg border-primary/20 bg-primary/5 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-primary"
+                                >
+                                    {{ rubric.total_points }} Points
+                                </Badge>
+                                <Badge
+                                    variant="outline"
+                                    class="rounded-lg border-border/60 bg-muted/30 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground"
+                                >
+                                    {{ rubric.criteria?.[0]?.levels?.length || 0 }} Scales
+                                </Badge>
+                            </div>
+
+                            <p class="line-clamp-2 text-[11px] leading-relaxed font-medium text-muted-foreground/80">
+                                {{ rubric.description || 'Standardized terminal grading criteria for performance evaluation.' }}
+                            </p>
                         </div>
 
-                        <p
-                            class="line-clamp-3 min-h-[60px] text-sm font-medium text-muted-foreground"
-                        >
-                            {{
-                                rubric.description ||
-                                'Standardized grading criteria for evaluating student performance levels.'
-                            }}
-                        </p>
-
-                        <div
-                            class="mt-8 flex items-center justify-between border-t border-dashed border-border pt-6"
-                        >
-                            <div class="flex items-center gap-2">
-                                <div
-                                    class="h-2 w-2 rounded-full bg-green-500"
-                                ></div>
-                                <span
-                                    class="text-xs font-bold tracking-tight text-muted-foreground "
-                                >
-                                    {{
-                                        rubric.criteria?.[0]?.levels?.length ||
-                                        0
-                                    }}
-                                    Grading Levels
-                                </span>
+                        <div class="mt-8 pt-6 border-t border-border/40 flex items-center justify-between">
+                             <div class="flex items-center gap-2">
+                                <div class="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+                                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground opacity-60">System Ready</span>
                             </div>
                             <Button
                                 variant="ghost"
                                 as-child
-                                class="h-9 rounded-xl px-0 font-extrabold text-orange-600 transition-all hover:bg-orange-50 hover:px-4"
+                                class="h-9 px-4 rounded-xl text-[9px] font-black uppercase tracking-widest text-primary hover:bg-primary/5"
                             >
-                                <Link
-                                    :href="`/assessments/rubrics/${rubric.id}/edit`"
-                                >
-                                    Configure →
+                                <Link :href="`/assessments/rubrics/${rubric.id}/edit`">
+                                    Configure Module
                                 </Link>
                             </Button>
                         </div>
                     </div>
                 </div>
             </div>
+>
 
             <!-- Pagination -->
             <div

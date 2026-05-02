@@ -7,11 +7,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentAssessmentRating extends Model
 {
+    use \App\Traits\BelongsToSchool;
+
     protected $fillable = [
+        'school_id',
         'student_id',
         'assessment_item_id',
         'rating_level',
         'score',
+        'marks',
+        'out_of',
         'feedback',
         'teacher_id'
     ];

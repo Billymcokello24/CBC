@@ -489,14 +489,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ASSESSMENTS & GRADING (CBC MODERN)
     // ──────────────────────────────────────────────
     Route::group(['prefix' => 'assessments', 'as' => 'assessments.'], function () {
+        // Assessment Management
         Route::get('/', [AssessmentController::class, 'index'])->name('index');
         Route::get('/setup', [AssessmentWizardController::class, 'index'])->name('setup');
         Route::post('/setup', [AssessmentWizardController::class, 'store'])->name('setup.store');
+        
+        // Metadata Lookups
         Route::get('/strands', [AssessmentWizardController::class, 'getStrands'])->name('strands');
         Route::get('/sub-strands', [AssessmentWizardController::class, 'getSubStrands'])->name('sub-strands');
         Route::get('/indicators', [AssessmentWizardController::class, 'getIndicators'])->name('indicators');
         
-        // High-Fidelity Grading Terminal
+        // Feature Sections
+        Route::get('/results', [AssessmentController::class, 'results'])->name('results');
+        Route::get('/analytics', [AssessmentController::class, 'analytics'])->name('analytics');
+        Route::get('/report-cards', [AssessmentController::class, 'reportCards'])->name('report-cards');
+        Route::get('/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('report-cards.show');
+        Route::get('/report-cards/{student}/pdf', [AssessmentController::class, 'exportPdf'])->name('report-cards.pdf');
+        Route::get('/rubrics', [AssessmentController::class, 'rubrics'])->name('rubrics');
+        Route::get('/portfolio', [PortfolioController::class, 'index'])->name('portfolio');
+        Route::get('/portfolio/{studentId}', [PortfolioController::class, 'show'])->name('portfolio.show');
+        
+        // Grading Terminal (High-Fidelity)
         Route::get('/latest-active', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'latestActive'])->name('latest-active');
         Route::get('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading');
         Route::get('/grading/{assessment}/export', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'export'])->name('grading.export');
@@ -505,52 +518,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
         Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
         
-        // Legacy/Overview routes (if needed)
-        Route::get('/grading-overview', [AssessmentController::class, 'gradingIndex'])->name('grading_overview');
-    });
+        // Resource Actions (CRUD)
+        Route::middleware(['check_permission:assessments.create'])->group(function () {
+            Route::get('/create', [AssessmentController::class, 'create'])->name('create');
+            Route::post('/', [AssessmentController::class, 'store'])->name('store');
+        });
 
-    Route::middleware(['check_permission:assessments.view,assessments.view_own'])->group(function () {
-        Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
-        Route::get('assessments/results', [AssessmentController::class, 'results'])->name('assessments.results');
-        Route::get('assessments/bulk-upload', [AssessmentController::class, 'bulkUploadView'])->name('assessments.bulk-upload');
-        Route::post('assessments/bulk-upload', [AssessmentController::class, 'bulkUpload'])->name('assessments.bulk-upload.store');
-        Route::get('/assessments/grading', [AssessmentController::class, 'gradingIndex'])->name('assessments.grading_overview');
-        Route::get('/assessments/analytics', [AssessmentController::class, 'analytics'])->name('assessments.analytics');
-        Route::get('assessments/report-cards', [AssessmentController::class, 'reportCards'])->name('assessments.report-cards');
-        Route::get('assessments/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('assessments.report-cards.show');
-        Route::get('assessments/rubrics', [AssessmentController::class, 'rubrics'])->name('assessments.rubrics');
-        Route::get('assessments/results/export', [AssessmentController::class, 'exportResults'])->name('assessments.results.export');
+        Route::middleware(['check_permission:assessments.update'])->group(function () {
+            Route::get('/{assessment}/edit', [AssessmentController::class, 'edit'])->name('edit');
+            Route::put('/{assessment}', [AssessmentController::class, 'update'])->name('update');
+        });
 
-        // Portfolio Management
-        Route::get('assessments/portfolio', [PortfolioController::class, 'index'])->name('assessments.portfolio');
-        Route::get('assessments/portfolio/{studentId}', [PortfolioController::class, 'show'])->name('assessments.portfolio.show');
-        Route::post('assessments/portfolio/{portfolioId}/item', [PortfolioController::class, 'storeItem'])->name('assessments.portfolio.store-item');
-        Route::delete('assessments/portfolio/item/{itemId}', [PortfolioController::class, 'destroyItem'])->name('assessments.portfolio.destroy-item');
-    });
+        Route::middleware(['check_permission:assessments.delete'])->group(function () {
+            Route::delete('/{assessment}', [AssessmentController::class, 'destroy'])->name('destroy');
+        });
 
-    Route::middleware(['check_permission:assessments.create'])->group(function () {
-        Route::get('assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
-        Route::post('assessments', [AssessmentController::class, 'store'])->name('assessments.store');
-        Route::get('assessments/rubrics/create', [AssessmentController::class, 'rubricCreate'])->name('assessments.rubrics.create');
-        Route::post('assessments/rubrics', [AssessmentController::class, 'rubricStore'])->name('assessments.rubrics.store');
-        Route::get('assessments/import-template', [AssessmentController::class, 'importTemplate'])->name('assessments.import-template');
-        Route::post('assessments/import', [AssessmentController::class, 'import'])->name('assessments.import');
-        Route::post('assessments/results/import', [AssessmentController::class, 'importResults'])->name('assessments.results.import');
-    });
-
-    Route::middleware(['check_permission:assessments.update'])->group(function () {
-        Route::get('assessments/rubrics/{id}/edit', [AssessmentController::class, 'rubricEdit'])->name('assessments.rubrics.edit');
-        Route::put('assessments/rubrics/{id}', [AssessmentController::class, 'rubricUpdate'])->name('assessments.rubrics.update');
-        Route::get('assessments/{assessment}/edit', [AssessmentController::class, 'edit'])->name('assessments.edit');
-        Route::put('assessments/{assessment}', [AssessmentController::class, 'update'])->name('assessments.update');
-    });
-
-    Route::middleware(['check_permission:assessments.delete'])->group(function () {
-        Route::delete('assessments/{assessment}', [AssessmentController::class, 'destroy'])->name('assessments.destroy');
-    });
-
-    Route::middleware(['check_permission:assessments.grade'])->group(function () {
-        Route::post('assessments/{assessment}/grading', [AssessmentController::class, 'storeGrading'])->name('assessments.store-grading');
+        // The "Show" route (Defaults to Grading Terminal for CBC logic)
+        Route::get('/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('show');
     });
 
     // ──────────────────────────────────────────────

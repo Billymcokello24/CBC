@@ -20,6 +20,7 @@ import {
 import { route } from 'ziggy-js';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import SearchableSelect from '@/components/SearchableSelect.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -58,7 +59,7 @@ interface SubStrand {
     name: string;
 }
 interface Indicator {
-    id: number;
+    id: string | number;
     indicator: string;
     [key: string]: any;
 }
@@ -70,12 +71,12 @@ const subStrands = ref<SubStrand[]>([]);
 const indicators = ref<Indicator[]>([]);
 
 const standardMinistryIndicators: Indicator[] = [
-    { id: 9991, indicator: 'Knowledge & Understanding' },
-    { id: 9992, indicator: 'Skills Application' },
-    { id: 9993, indicator: 'Communication' },
-    { id: 9994, indicator: 'Values & Attitudes' },
-    { id: 9995, indicator: 'Creativity' },
-    { id: 9996, indicator: 'Critical Thinking' },
+    { id: 'knowledge', indicator: 'Knowledge & Understanding' },
+    { id: 'skills', indicator: 'Skills Application' },
+    { id: 'communication', indicator: 'Communication' },
+    { id: 'values', indicator: 'Values & Attitudes' },
+    { id: 'creativity', indicator: 'Creativity' },
+    { id: 'thinking', indicator: 'Critical Thinking' },
 ];
 
 const form = useForm({
@@ -90,6 +91,10 @@ const form = useForm({
     subject_id: '',
     strand_id: '',
     sub_strand_id: '',
+    total_marks: 100,
+    passing_marks: 50,
+    weight: 10,
+    status: 'draft',
     indicators: [] as Indicator[],
     source: 'internal',
 });
@@ -180,7 +185,7 @@ watch(
                     sub_strand_id: val,
                 }),
             );
-            indicators.value = res.data as { id: number; indicator: string }[];
+            indicators.value = res.data as { id: any; indicator: string }[];
         } finally {
             loading.value = false;
         }
@@ -262,7 +267,6 @@ const submit = () => {
                             >
                                 <div class="grid gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
-                                        <label class="text-xs font-medium text-muted-foreground">Assessment Title</label>
                                         <Input
                                             v-model="form.title"
                                             placeholder="e.g. End of Term Mathematics Evaluation"
@@ -292,55 +296,54 @@ const submit = () => {
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-xs font-medium text-muted-foreground">Academic Year</label>
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.academic_year_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">Select Year...</option>
-                                            <option v-for="year in academicYears" :key="year.id" :value="String(year.id)">
-                                                {{ year.name }}
-                                            </option>
-                                        </select>
+                                            :options="academicYears.map(y => ({ id: y.id, name: y.name }))"
+                                            placeholder="Select Year..."
+                                        />
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-xs font-medium text-muted-foreground">Assessment Nature</label>
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.type_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">Select Category...</option>
-                                            <option v-for="type in assessmentTypes" :key="type.id" :value="String(type.id)">
-                                                {{ type.name }}
-                                            </option>
-                                        </select>
+                                            :options="assessmentTypes.map(t => ({ id: t.id, name: t.name }))"
+                                            placeholder="Select Category..."
+                                        />
                                     </div>
                                     <div class="space-y-2">
                                         <label class="text-xs font-medium text-muted-foreground">Academic Term</label>
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.term_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">Select Term...</option>
-                                            <option v-for="term in academicTerms" :key="term.id" :value="String(term.id)">
-                                                {{ term.name }}
-                                            </option>
-                                        </select>
+                                            :options="academicTerms.map(t => ({ id: t.id, name: t.name }))"
+                                            placeholder="Select Term..."
+                                        />
                                     </div>
                                     <div class="space-y-2">
-                                        <label
-                                            class="text-xs font-medium text-muted-foreground"
-                                            >Evaluation Date</label
-                                        >
+                                        <label class="text-xs font-medium text-muted-foreground">Evaluation Date</label>
                                         <div class="relative">
-                                            <Calendar
-                                                class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/80"
-                                            />
-                                            <Input
-                                                v-model="form.date"
-                                                type="date"
-                                                class="h-10 rounded-lg border-border bg-muted/10 pl-10 text-sm focus:bg-background"
-                                            />
+                                            <Calendar class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground/80" />
+                                            <Input v-model="form.date" type="date" class="h-10 rounded-lg border-border bg-muted/10 pl-10 text-sm focus:bg-background" />
                                         </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Total Marks</label>
+                                        <Input v-model="form.total_marks" type="number" class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Passing Marks</label>
+                                        <Input v-model="form.passing_marks" type="number" class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Weight (%)</label>
+                                        <Input v-model="form.weight" type="number" class="h-10 rounded-lg border-border bg-muted/10 text-sm focus:bg-background" />
+                                    </div>
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-medium text-muted-foreground">Status</label>
+                                        <select v-model="form.status" class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10">
+                                            <option value="draft">Draft</option>
+                                            <option value="published">Published</option>
+                                            <option value="closed">Closed</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -364,65 +367,34 @@ const submit = () => {
                                             class="text-xs font-medium text-muted-foreground"
                                             >Grade Level</label
                                         >
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.grade_level_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">
-                                                Select Grade...
-                                            </option>
-                                            <option
-                                                v-for="grade in gradeLevels"
-                                                :key="grade.id"
-                                                :value="String(grade.id)"
-                                            >
-                                                {{ grade.name }}
-                                            </option>
-                                        </select>
+                                            :options="gradeLevels.map(g => ({ id: g.id, name: g.name }))"
+                                            placeholder="Select Grade..."
+                                        />
                                     </div>
                                     <div class="space-y-2">
                                         <label
                                             class="text-xs font-medium text-muted-foreground"
                                             >Target Class</label
                                         >
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.class_id"
+                                            :options="availableClasses.map((c: any) => ({ id: c.id, name: c.name }))"
+                                            placeholder="Select Class..."
                                             :disabled="!form.grade_level_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
-                                        >
-                                            <option value="">
-                                                Select Class...
-                                            </option>
-                                            <option
-                                                v-for="cls in availableClasses"
-                                                :key="cls.id"
-                                                :value="String(cls.id)"
-                                            >
-                                                {{ cls.name }}
-                                            </option>
-                                        </select>
+                                        />
                                     </div>
                                     <div class="space-y-2">
                                         <label
                                             class="text-xs font-medium text-muted-foreground"
                                             >Subject Area</label
                                         >
-                                        <select
+                                        <SearchableSelect 
                                             v-model="form.subject_id"
-                                            class="h-10 w-full rounded-lg border border-border bg-muted/10 px-3 text-sm outline-none focus:bg-background focus:ring-2 focus:ring-primary/10"
-                                        >
-                                            <option value="">
-                                                Select Subject...
-                                            </option>
-                                            <!-- This should come from props -->
-                                            <option
-                                                v-for="sub in subjects"
-                                                :key="sub.id"
-                                                :value="String(sub.id)"
-                                            >
-                                                {{ sub.name }}
-                                            </option>
-                                        </select>
+                                            :options="subjects.map(s => ({ id: s.id, name: s.name }))"
+                                            placeholder="Select Subject..."
+                                        />
                                     </div>
                                 </div>
                             </div>

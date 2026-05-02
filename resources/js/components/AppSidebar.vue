@@ -501,6 +501,12 @@ const navigation = [
                         href: '/assessments/portfolio',
                         icon: Folder,
                     },
+                    {
+                        title: 'Rubrics & Schemes',
+                        href: '/assessments/rubrics',
+                        icon: BookMarked,
+                        permissions: ['assessments.view'],
+                    },
                 ],
             },
             {

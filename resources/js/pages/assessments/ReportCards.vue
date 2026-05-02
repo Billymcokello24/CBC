@@ -11,248 +11,279 @@ import {
     AlertCircle,
     LayoutGrid,
 } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+    ChevronRight,
+    ChevronDown,
+    GraduationCap,
+    Users,
+    Table,
+} from 'lucide-vue-next';
 import {
     Card,
     CardContent,
     CardHeader,
     CardTitle,
-    CardDescription,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { BreadcrumbItem } from '@/types';
+import { route } from 'ziggy-js';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps<{
-    classes: Array<any>;
-    students: {
-        data: Array<any>;
-        links: Array<any>;
-        meta: any;
-    };
+    gradeLevels: Array<any>;
+    students: Array<any>;
     activeYear: any;
     activeTerm: any;
+    filters: any;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
+const breadcrumbs = [
     { title: 'Dashboard', href: '/dashboard' },
     { title: 'Assessments', href: '/assessments' },
     { title: 'Report Cards', href: '/assessments/report-cards' },
 ];
 
-const selectedClass = ref('');
-const status = ref('all');
+const viewMode = ref('list'); // 'list' or 'grid'
+const expandedGrades = ref<number[]>([]);
+const selectedClass = ref(props.filters?.class_id || null);
+
+const toggleGrade = (id: number) => {
+    const index = expandedGrades.value.indexOf(id);
+    if (index === -1) expandedGrades.value.push(id);
+    else expandedGrades.value.splice(index, 1);
+};
+
+const selectClass = (classId: number) => {
+    selectedClass.value = classId;
+    router.get(route('assessments.report-cards'), { class_id: classId }, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const getRubricColor = (average: number) => {
+    if (average >= 75) return 'bg-emerald-500';
+    if (average >= 50) return 'bg-blue-500';
+    if (average >= 30) return 'bg-amber-500';
+    return 'bg-rose-500';
+};
+
+const getRubricCode = (average: number) => {
+    if (average >= 75) return 'EE';
+    if (average >= 50) return 'ME';
+    if (average >= 30) return 'AE';
+    return 'BE';
+};
 </script>
 
 <template>
     <Head title="Report Cards" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div
-            class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8"
-        >
+        <div class="mx-auto flex h-full max-w-[1600px] flex-1 animate-in flex-col space-y-8 p-4 pb-20 duration-700 fade-in slide-in-from-bottom-4 sm:p-6 sm:pb-32 md:p-8">
+            <!-- Header -->
             <div class="flex flex-col gap-6 px-1 md:flex-row md:items-center md:justify-between">
                 <div class="space-y-1">
-                    <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Report Cards</h1>
-                    <p class="text-xs text-muted-foreground">Generate and manage student termly reports for {{ activeTerm?.name || 'Current Term' }}</p>
+                    <h1 class="text-2xl font-black tracking-tight text-foreground sm:text-3xl uppercase">Report Cards</h1>
+                    <p class="text-xs font-bold text-muted-foreground uppercase tracking-widest">{{ activeTerm?.name }} - {{ activeYear?.name }}</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    <Button variant="outline" class="h-10 rounded-lg border-border bg-card px-4 text-xs font-semibold hover:bg-muted">
+                    <div class="flex items-center bg-muted/30 rounded-lg p-1 border border-border/50">
+                        <button 
+                            @click="viewMode = 'list'"
+                            class="p-2 rounded-md transition-all"
+                            :class="viewMode === 'list' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            <Table class="h-4 w-4" />
+                        </button>
+                        <button 
+                            @click="viewMode = 'grid'"
+                            class="p-2 rounded-md transition-all"
+                            :class="viewMode === 'grid' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                        >
+                            <LayoutGrid class="h-4 w-4" />
+                        </button>
+                    </div>
+                    <Button variant="outline" class="h-10 rounded-xl border-border bg-card px-4 text-[10px] font-black uppercase tracking-widest hover:bg-muted">
                         <Printer class="mr-2 h-4 w-4 text-primary" />
                         Bulk Print
                     </Button>
-                    <Button class="h-10 rounded-lg bg-primary px-6 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition-all">
-                        <Send class="mr-2 h-4 w-4" />
-                        Send to Parents
-                    </Button>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <div class="flex h-12 items-center justify-between border-b border-border/50 bg-muted/5 px-6">
-                    <div class="flex items-center gap-2">
-                        <FileText class="h-4 w-4 text-primary" />
-                        <span class="text-xs font-semibold text-foreground tracking-tight">Report Registry</span>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <div class="space-y-2">
-                            <label class="text-xs font-medium text-muted-foreground">Class</label>
-                            <Select v-model="selectedClass">
-                                <SelectTrigger class="h-10 w-full rounded-lg border border-border bg-muted/10 px-4 text-sm focus:bg-background focus:ring-2 focus:ring-primary/10">
-                                    <SelectValue placeholder="Select Class" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="cls in classes" :key="cls.id" :value="cls.id.toString()">{{ cls.name }}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-xs font-medium text-muted-foreground">Search Student</label>
-                            <div class="relative">
-                                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/40" />
-                                <Input placeholder="Search student..." class="h-10 rounded-lg border-border bg-muted/10 pl-10 pr-4 text-sm focus:bg-background" />
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <label class="text-xs font-medium text-muted-foreground">Status</label>
-                            <Tabs v-model="status" class="w-full">
-                                <TabsList class="grid h-10 w-full grid-cols-3 bg-muted/20">
-                                    <TabsTrigger value="all" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">All</TabsTrigger>
-                                    <TabsTrigger value="pending" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Pending</TabsTrigger>
-                                    <TabsTrigger value="published" class="text-xs data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm">Published</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div
-                v-if="!selectedClass"
-                class="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-muted-foreground/10 bg-muted/20 py-20"
-            >
-                <div
-                    class="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-indigo-50"
-                >
-                    <LayoutGrid class="h-10 w-10 text-indigo-400" />
-                </div>
-                <h3 class="text-lg font-bold text-gray-900">Select a Class</h3>
-                <p class="mt-2 max-w-sm text-center text-muted-foreground">
-                    Choose a class from the dropdown above to view and manage
-                    student report cards for this term.
-                </p>
-            </div>
-
-            <div
-                v-else
-                class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-            >
-                <div
-                    v-for="student in students.data"
-                    :key="student.id"
-                    class="group relative overflow-hidden rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                >
-                    <div class="absolute top-0 right-0 p-3">
-                        <Badge
-                            variant="outline"
-                            class="border-0 bg-gray-50 text-xs font-bold tracking-wider text-gray-500 uppercase"
-                            >Draft</Badge
-                        >
-                    </div>
-                    <div class="flex flex-col items-center text-center">
-                        <div
-                            class="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50"
-                        >
-                            <span class="text-xl font-bold text-indigo-600"
-                                >{{ student.first_name[0]
-                                }}{{ student.last_name[0] }}</span
-                            >
-                        </div>
-                        <h4
-                            class="line-clamp-1 text-lg font-bold text-gray-900"
-                        >
-                            {{ student.first_name }} {{ student.last_name }}
-                        </h4>
-                        <p
-                            class="mb-4 text-xs font-bold tracking-tight text-muted-foreground uppercase"
-                        >
-                            {{ student.admission_number }}
-                        </p>
-
-                        <div class="mb-5 grid w-full grid-cols-2 gap-3">
-                            <div class="rounded-xl bg-gray-50 p-2">
-                                <p
-                                    class="text-xs font-bold text-muted-foreground uppercase"
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Sidebar Navigation: Hierarchy -->
+                <div class="w-full lg:w-80 shrink-0 space-y-4">
+                    <Card class="rounded-2xl border-border bg-card shadow-sm overflow-hidden">
+                        <CardHeader class="pb-3 pt-4 border-b border-border/50 bg-muted/5">
+                            <CardTitle class="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+                                <GraduationCap class="h-4 w-4 text-primary" />
+                                Institutional Structure
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent class="p-2 space-y-1">
+                            <div v-for="grade in gradeLevels" :key="grade.id" class="space-y-1">
+                                <button 
+                                    @click="toggleGrade(grade.id)"
+                                    class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-all text-left group"
+                                    :class="expandedGrades.includes(grade.id) ? 'bg-primary/5 text-primary' : 'text-foreground'"
                                 >
-                                    Average
-                                </p>
-                                <p class="font-bold text-indigo-600">74%</p>
+                                    <div class="flex items-center gap-3">
+                                        <div class="h-8 w-8 rounded-lg bg-background flex items-center justify-center border border-border group-hover:border-primary/30 transition-all">
+                                            <span class="text-[10px] font-black">{{ grade.name.match(/\d+/)?.[0] || 'G' }}</span>
+                                        </div>
+                                        <span class="text-xs font-bold">{{ grade.name }}</span>
+                                    </div>
+                                    <component :is="expandedGrades.includes(grade.id) ? ChevronDown : ChevronRight" class="h-4 w-4 opacity-40" />
+                                </button>
+                                
+                                <div v-if="expandedGrades.includes(grade.id)" class="pl-4 space-y-1 py-1">
+                                    <button 
+                                        v-for="cls in grade.classes" 
+                                        :key="cls.id"
+                                        @click="selectClass(cls.id)"
+                                        class="w-full flex items-center gap-3 p-2.5 rounded-xl transition-all text-left"
+                                        :class="selectedClass == cls.id ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
+                                    >
+                                        <Users class="h-3.5 w-3.5 opacity-60" />
+                                        <span class="text-[11px] font-bold">{{ cls.name }}</span>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="rounded-xl bg-gray-50 p-2">
-                                <p
-                                    class="text-xs font-bold text-muted-foreground uppercase"
-                                >
-                                    Grade
-                                </p>
-                                <p class="font-bold text-purple-600">ME</p>
-                            </div>
-                        </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
-                        <div
-                            class="flex w-full flex-col gap-2 border-t border-dashed pt-4"
-                        >
-                            <Button
-                                variant="outline"
-                                class="h-10 w-full rounded-xl border-indigo-100 font-bold text-indigo-600 hover:bg-indigo-50"
-                                as-child
-                            >
-                                <Link
-                                    :href="`/assessments/report-cards/${student.id}`"
-                                >
-                                    <FileText class="mr-2 h-4 w-4" />View Report
-                                </Link>
-                            </Button>
-                            <Button
-                                class="h-10 w-full rounded-xl bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700"
-                            >
-                                Generate
+                <!-- Main Content: Student Registry -->
+                <div class="flex-1 space-y-6">
+                    <div v-if="!selectedClass" class="flex flex-col items-center justify-center p-20 rounded-3xl border-2 border-dashed border-border bg-muted/5 text-center">
+                        <div class="h-20 w-20 rounded-full bg-primary/5 flex items-center justify-center mb-6">
+                            <FileText class="h-10 w-10 text-primary opacity-40" />
+                        </div>
+                        <h3 class="text-sm font-black uppercase tracking-widest text-foreground">Select a Class to Begin</h3>
+                        <p class="text-xs font-medium text-muted-foreground mt-2 max-w-xs">Generate termly report cards by selecting a specific class from the institutional structure on the left.</p>
+                    </div>
+
+                    <template v-else>
+                        <!-- Search & Filters -->
+                        <div class="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border shadow-sm">
+                            <div class="relative flex-1">
+                                <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
+                                <Input 
+                                    placeholder="Search by name or admission number..." 
+                                    class="pl-10 h-11 rounded-xl border-border/50 bg-muted/5 font-medium text-sm focus:bg-background"
+                                />
+                            </div>
+                            <Button variant="outline" class="h-11 rounded-xl gap-2 text-xs font-bold border-border/50">
+                                <Filter class="h-4 w-4" /> Filter
                             </Button>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="grid gap-6 md:grid-cols-2">
-                <Card class="border-amber-100 bg-amber-50/30 shadow-sm">
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2 text-base">
-                            <AlertCircle class="h-5 w-5 text-amber-600" />
-                            Missing Submissions
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p class="text-sm text-amber-700">
-                            6 students in this class have incomplete assessment
-                            marks. Ensure all grades are entered before
-                            generating report cards.
-                        </p>
-                        <Button
-                            variant="link"
-                            class="mt-2 h-auto p-0 font-bold text-amber-800"
-                            >View incomplete marks →</Button
-                        >
-                    </CardContent>
-                </Card>
-                <Card class="border-green-100 bg-green-50/30 shadow-sm">
-                    <CardHeader>
-                        <CardTitle class="flex items-center gap-2 text-base">
-                            <CheckCircle2 class="h-5 w-5 text-green-600" />
-                            Ready to Publish
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p class="text-sm text-green-700">
-                            12 student report cards have been generated and are
-                            ready for approval and publication.
-                        </p>
-                        <Button
-                            variant="link"
-                            class="mt-2 h-auto p-0 font-bold text-green-800"
-                            >Approve for publication →</Button
-                        >
-                    </CardContent>
-                </Card>
+                        <!-- Table View -->
+                        <div v-if="viewMode === 'list'" class="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-border/50 bg-muted/5">
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 w-12">#</th>
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Learner Details</th>
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 text-center">Avg Score</th>
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 text-center">Level</th>
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 text-center">Status</th>
+                                        <th class="p-5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border/20">
+                                    <tr v-for="(student, idx) in students" :key="student.id" class="group hover:bg-primary/[0.02] transition-colors">
+                                        <td class="p-5 text-[10px] font-black text-muted-foreground/40">{{ idx + 1 }}</td>
+                                        <td class="p-5">
+                                            <div class="flex items-center gap-4">
+                                                <div class="h-10 w-10 rounded-xl bg-muted/30 border border-border overflow-hidden">
+                                                    <img v-if="student.photo" :src="student.photo" class="h-full w-full object-cover" />
+                                                    <div v-else class="h-full w-full flex items-center justify-center text-[10px] font-black text-muted-foreground/50 bg-primary/5">{{ student.name.substring(0, 2).toUpperCase() }}</div>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-xs font-black text-foreground group-hover:text-primary transition-colors uppercase">{{ student.name }}</span>
+                                                    <span class="text-[10px] font-bold text-muted-foreground opacity-60 tracking-widest">{{ student.admission_number }}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-5 text-center">
+                                            <span class="text-sm font-black text-foreground">{{ student.average }}%</span>
+                                        </td>
+                                        <td class="p-5 text-center">
+                                            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border/50 bg-muted/5">
+                                                <div class="h-1.5 w-1.5 rounded-full" :class="getRubricColor(student.average)"></div>
+                                                <span class="text-[10px] font-black">{{ getRubricCode(student.average) }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="p-5 text-center">
+                                            <Badge variant="outline" class="rounded-lg border-emerald-500/30 bg-emerald-500/5 text-emerald-600 text-[10px] font-black uppercase px-2 py-0.5">Ready</Badge>
+                                        </td>
+                                        <td class="p-5">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 text-primary" as-child>
+                                                    <Link :href="route('assessments.report-cards.show', { student: student.id })">
+                                                        <FileText class="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                                <Button variant="ghost" size="sm" class="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 text-primary" as-child>
+                                                    <a :href="route('assessments.report-cards.pdf', { student: student.id })" target="_blank">
+                                                        <Download class="h-4 w-4" />
+                                                    </a>
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Grid View -->
+                        <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <Card v-for="student in students" :key="student.id" class="rounded-2xl border-border bg-card shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+                                <CardContent class="p-6">
+                                    <div class="flex items-center gap-4 mb-6">
+                                        <div class="h-14 w-14 rounded-2xl bg-muted/30 border-2 border-border/50 overflow-hidden shrink-0">
+                                            <img v-if="student.photo" :src="student.photo" class="h-full w-full object-cover" />
+                                            <div v-else class="h-full w-full flex items-center justify-center text-sm font-black text-muted-foreground/50 bg-primary/5">{{ student.name.substring(0, 2).toUpperCase() }}</div>
+                                        </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <h4 class="text-sm font-black text-foreground truncate uppercase tracking-tight">{{ student.name }}</h4>
+                                            <p class="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] opacity-60">{{ student.admission_number }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-4 mb-6">
+                                        <div class="bg-muted/5 rounded-xl p-3 border border-border/50">
+                                            <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Average</p>
+                                            <p class="text-lg font-black text-primary">{{ student.average }}%</p>
+                                        </div>
+                                        <div class="bg-muted/5 rounded-xl p-3 border border-border/50">
+                                            <p class="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Rating</p>
+                                            <div class="flex items-center gap-2">
+                                                <div class="h-2 w-2 rounded-full" :class="getRubricColor(student.average)"></div>
+                                                <p class="text-sm font-black text-foreground">{{ getRubricCode(student.average) }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <Button variant="outline" class="flex-1 h-10 rounded-xl text-[10px] font-black uppercase tracking-widest border-primary/20 text-primary hover:bg-primary/5" as-child>
+                                            <Link :href="route('assessments.report-cards.show', { student: student.id })">View Details</Link>
+                                        </Button>
+                                        <Button class="h-10 w-10 rounded-xl bg-primary shadow-lg shadow-primary/20 p-0" as-child>
+                                            <a :href="route('assessments.report-cards.pdf', { student: student.id })" target="_blank">
+                                                <Download class="h-4 w-4" />
+                                            </a>
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </AppLayout>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Assessment;
 
 use App\Http\Controllers\Controller;
 use App\Models\Assessment\Assessment;
+use App\Models\Assessment\AssessmentItem;
 use App\Models\Assessment\StudentAssessmentRating;
 use App\Models\Assessment\StudentCompetencyRating;
 use App\Models\Student;
@@ -100,11 +101,23 @@ class AssessmentGradingController extends Controller
      */
     public function index(Assessment $assessment): Response
     {
-        $assessment->load(['items.indicator', 'class', 'subject']);
+        $assessment->load(['items.indicator.competency', 'class.gradeLevel', 'subject']);
         
+        // Repair generic names if they exist using the indicators JSON or relationship
+        foreach ($assessment->items as $index => $item) {
+            if (!$item->name || str_starts_with(strtolower($item->name), 'indicator ')) {
+                $indicatorData = collect($assessment->indicators)->firstWhere('id', (string)$item->competency_indicator_id);
+                if ($indicatorData && isset($indicatorData['indicator'])) {
+                    $item->name = $indicatorData['indicator'];
+                } elseif ($item->indicator) {
+                    $item->name = $item->indicator->indicator;
+                }
+            }
+        }
+
         $students = Student::where('current_class_id', $assessment->class_id)
             ->orderBy('first_name')
-            ->get();
+            ->get(['id', 'first_name', 'last_name', 'admission_number', 'photo']);
 
         $existingRatings = StudentAssessmentRating::whereIn('assessment_item_id', $assessment->items->pluck('id'))
             ->join('assessment_items', 'student_assessment_ratings.assessment_item_id', '=', 'assessment_items.id')
@@ -112,21 +125,38 @@ class AssessmentGradingController extends Controller
             ->get()
             ->groupBy('student_id');
 
+        // Load Total Marks from student_assessments
+        $studentAssessments = \App\Models\Assessment\StudentAssessment::where('assessment_id', $assessment->id)
+            ->get()
+            ->keyBy('student_id');
+
+        // Find the best matching rubric for this subject
+        $rubric = \App\Models\Assessment\Rubric::where('school_id', $assessment->school_id)
+            ->where(function($q) use ($assessment) {
+                $q->where('subject_id', $assessment->subject_id)
+                  ->orWhereNull('subject_id');
+            })
+            ->with(['criteria.levels' => function($q) {
+                $q->orderBy('min_score', 'desc');
+            }])
+            ->orderByRaw('subject_id IS NULL ASC') // Prioritize subject-specific rubrics
+            ->first();
+
         // Calculate summary stats
-        $ratings = StudentAssessmentRating::whereIn('assessment_item_id', $assessment->items->pluck('id'))->get();
-        $studentOverallRatings = [];
+        $studentOverallRatings = [
+            'EE' => 0,
+            'ME' => 0,
+            'AE' => 0,
+            'BE' => 0,
+        ];
         
-        foreach ($students as $student) {
-            $studentRatings = $ratings->where('student_id', $student->id);
-            if ($studentRatings->isNotEmpty()) {
-                $avg = $studentRatings->avg('score');
-                $level = match(true) {
-                    $avg >= 3.5 => 'EE',
-                    $avg >= 2.5 => 'ME',
-                    $avg >= 1.5 => 'AE',
-                    default => 'BE'
-                };
-                $studentOverallRatings[$level] = ($studentOverallRatings[$level] ?? 0) + 1;
+        foreach ($studentAssessments as $sa) {
+            if ($sa->grade_level) {
+                // Ensure key exists before incrementing
+                $level = strtoupper($sa->grade_level);
+                if (isset($studentOverallRatings[$level])) {
+                    $studentOverallRatings[$level]++;
+                }
             }
         }
 
@@ -140,6 +170,8 @@ class AssessmentGradingController extends Controller
             'allAssessments' => $allAssessments,
             'students' => $students,
             'existingRatings' => $existingRatings,
+            'studentAssessments' => $studentAssessments, // Total marks
+            'rubric' => $rubric, // Matching rubric
             'stats' => [
                 'total' => $students->count(),
                 'ee' => $studentOverallRatings['EE'] ?? 0,
@@ -162,76 +194,97 @@ class AssessmentGradingController extends Controller
     public function store(Request $request, Assessment $assessment)
     {
         $request->validate([
-            'ratings' => 'required|array',
             'ratings.*.student_id' => 'required|exists:students,id',
-            'ratings.*.assessment_item_id' => 'required|exists:assessment_items,id',
-            'ratings.*.rating' => 'nullable|integer|min:1|max:4',
-            'ratings.*.marks' => 'nullable|numeric|min:0',
-            'ratings.*.out_of' => 'nullable|integer|min:1',
-            'ratings.*.feedback' => 'nullable|string',
+            'ratings.*.marks' => 'nullable|array', // Item ID => marks
+            'ratings.*.total' => 'nullable|numeric|min:0', // Direct Total
+            'ratings.*.remarks' => 'nullable|string',
         ]);
 
         try {
             DB::beginTransaction();
 
+            $assessment->load('items');
+
             foreach ($request->ratings as $ratingData) {
-                if (is_null($ratingData['rating'])) {
-                    StudentAssessmentRating::where([
-                        'student_id' => $ratingData['student_id'],
-                        'assessment_item_id' => $ratingData['assessment_item_id'],
-                    ])->delete();
-                    continue;
+                $studentId = $ratingData['student_id'];
+
+                // 1. Handle Individual Indicator Ratings (Optional)
+                if (isset($ratingData['marks'])) {
+                    foreach ($ratingData['marks'] as $itemId => $marks) {
+                        if (is_null($marks) || $marks === '') {
+                            StudentAssessmentRating::where([
+                                'student_id' => $studentId,
+                                'assessment_item_id' => $itemId,
+                            ])->delete();
+                            continue;
+                        }
+
+                        $item = $assessment->items->find($itemId);
+                        if (!$item) continue;
+
+                        $outOf = $item->total_marks ?: 100;
+                        $percent = ($marks / $outOf) * 100;
+                        
+                        $perf = $this->calculatePerformanceLevel($assessment, $percent);
+
+                        StudentAssessmentRating::updateOrCreate(
+                            [
+                                'student_id' => $studentId,
+                                'assessment_item_id' => $itemId,
+                            ],
+                            [
+                                'school_id' => $assessment->school_id,
+                                'score' => $perf['points'],
+                                'marks' => $marks,
+                                'out_of' => $outOf,
+                                'rating_level' => $perf['level'],
+                                'feedback' => $ratingData['remarks'] ?? null,
+                                'teacher_id' => auth()->id(),
+                            ]
+                        );
+                    }
                 }
 
-                $score = $ratingData['rating'];
+                // 2. Handle Master Score (Total)
+                $marksObtained = $ratingData['total'] ?? null;
                 
-                // If marks are provided, calculate score (1-4)
-                if (isset($ratingData['marks']) && isset($ratingData['out_of'])) {
-                    $percent = ($ratingData['marks'] / $ratingData['out_of']) * 100;
-                    $score = match(true) {
-                        $percent >= 80 => 4,
-                        $percent >= 60 => 3,
-                        $percent >= 40 => 2,
-                        default => 1
-                    };
+                // If total is provided, use it. Otherwise, if indicators were provided, sum them up.
+                if (is_null($marksObtained) && isset($ratingData['marks']) && !empty($ratingData['marks'])) {
+                     $marksObtained = array_sum(array_filter($ratingData['marks']));
                 }
 
-                $ratingLevel = match(intval($score)) {
-                    4 => 'EE',
-                    3 => 'ME',
-                    2 => 'AE',
-                    1 => 'BE',
-                    default => null
-                };
+                if (!is_null($marksObtained)) {
+                    $totalPossible = $assessment->total_marks ?: $assessment->items->sum('total_marks') ?: 100;
+                    $totalPercent = ($marksObtained / $totalPossible) * 100;
+                    $totalPerf = $this->calculatePerformanceLevel($assessment, $totalPercent);
 
-                StudentAssessmentRating::updateOrCreate(
-                    [
-                        'student_id' => $ratingData['student_id'],
-                        'assessment_item_id' => $ratingData['assessment_item_id'],
-                    ],
-                    [
-                        'score' => $score,
-                        'marks' => $ratingData['marks'] ?? null,
-                        'out_of' => $ratingData['out_of'] ?? 100,
-                        'rating_level' => $ratingLevel,
-                        'feedback' => $ratingData['feedback'] ?? null,
-                        'teacher_id' => $request->user()->id,
-                    ]
-                );
+                    \App\Models\Assessment\StudentAssessment::updateOrCreate(
+                        [
+                            'student_id' => $studentId,
+                            'assessment_id' => $assessment->id,
+                        ],
+                        [
+                            'school_id' => $assessment->school_id,
+                            'marks_obtained' => $marksObtained,
+                            'percentage' => $totalPercent,
+                            'grade_level' => $totalPerf['level'],
+                            'teacher_comments' => $ratingData['remarks'] ?? null,
+                            'graded_at' => now(),
+                            'graded_by' => auth()->id(),
+                        ]
+                    );
+                }
             }
 
             DB::commit();
 
-            // After successful store, derive competency ratings
             $this->deriveCompetencyRatings($assessment);
-            
-            // Auto-generate/Update Report Cards
             $this->updateReportCards($assessment);
 
-            return back()->with('success', 'Grading saved successfully. Report cards have been updated.');
+            return back()->with('success', 'Grading synchronized successfully. Terminal report records have been updated.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to save grading: ' . $e->getMessage());
+            return back()->with('error', 'Critical Sync Error: ' . $e->getMessage());
         }
     }
 
@@ -242,41 +295,61 @@ class AssessmentGradingController extends Controller
     {
         $request->validate([
             'student_id' => 'required|exists:students,id',
-            'assessment_item_id' => 'required|exists:assessment_items,id',
-            'rating' => 'nullable|integer|min:1|max:4',
+            'assessment_id' => 'required|exists:assessments,id',
+            'assessment_item_id' => 'nullable|exists:assessment_items,id',
             'marks' => 'nullable|numeric|min:0',
-            'out_of' => 'nullable|integer|min:1',
         ]);
 
-        if (is_null($request->rating)) {
+        $assessment = Assessment::findOrFail($request->assessment_id);
+
+        // Case A: Saving Master Score (Direct Total)
+        if (!$request->assessment_item_id) {
+            if (is_null($request->marks) || $request->marks === '') {
+                \App\Models\Assessment\StudentAssessment::where([
+                    'student_id' => $request->student_id,
+                    'assessment_id' => $request->assessment_id,
+                ])->delete();
+                return response()->json(['success' => true]);
+            }
+
+            $totalPossible = $assessment->total_marks ?: $assessment->items->sum('total_marks') ?: 100;
+            $percent = ($request->marks / $totalPossible) * 100;
+            $perf = $this->calculatePerformanceLevel($assessment, $percent);
+
+            $record = \App\Models\Assessment\StudentAssessment::updateOrCreate(
+                [
+                    'student_id' => $request->student_id,
+                    'assessment_id' => $request->assessment_id,
+                ],
+                [
+                    'school_id' => $assessment->school_id,
+                    'marks_obtained' => $request->marks,
+                    'percentage' => $percent,
+                    'grade_level' => $perf['level'],
+                    'graded_at' => now(),
+                    'graded_by' => auth()->id(),
+                ]
+            );
+
+            $this->updateReportCards($assessment);
+
+            return response()->json(['success' => true, 'record' => $record]);
+        }
+
+        // Case B: Saving Individual Indicator Rating
+        if (is_null($request->marks) || $request->marks === '') {
             StudentAssessmentRating::where([
                 'student_id' => $request->student_id,
                 'assessment_item_id' => $request->assessment_item_id,
             ])->delete();
-            
             return response()->json(['success' => true]);
         }
 
-        $score = $request->rating;
-
-        if ($request->filled('marks')) {
-            $outOf = $request->out_of ?? 100;
-            $percent = ($request->marks / $outOf) * 100;
-            $score = match(true) {
-                $percent >= 80 => 4,
-                $percent >= 60 => 3,
-                $percent >= 40 => 2,
-                default => 1
-            };
-        }
-
-        $ratingLevel = match(intval($score)) {
-            4 => 'EE',
-            3 => 'ME',
-            2 => 'AE',
-            1 => 'BE',
-            default => null
-        };
+        $item = AssessmentItem::findOrFail($request->assessment_item_id);
+        $outOf = $item->total_marks ?: 100;
+        $percent = ($request->marks / $outOf) * 100;
+        
+        $perf = $this->calculatePerformanceLevel($assessment, $percent);
 
         $rating = StudentAssessmentRating::updateOrCreate(
             [
@@ -284,22 +357,56 @@ class AssessmentGradingController extends Controller
                 'assessment_item_id' => $request->assessment_item_id,
             ],
             [
-                'score' => $score,
+                'school_id' => $assessment->school_id,
+                'score' => $perf['points'],
                 'marks' => $request->marks,
-                'out_of' => $request->out_of ?? 100,
-                'rating_level' => $ratingLevel,
-                'teacher_id' => $request->user()->id,
+                'out_of' => $outOf,
+                'rating_level' => $perf['level'],
+                'teacher_id' => auth()->id(),
             ]
         );
 
-        // Derive competency ratings for this specific student/assessment
-        $assessment = $rating->item->assessment;
         $this->deriveCompetencyRatings($assessment, $request->student_id);
+        $this->updateReportCards($assessment);
 
-        return response()->json([
-            'success' => true,
-            'rating' => $rating
-        ]);
+        return response()->json(['success' => true, 'rating' => $rating]);
+    }
+
+    /**
+     * Helper to calculate performance level based on rubric or defaults.
+     */
+    private function calculatePerformanceLevel(Assessment $assessment, float $percentage): array
+    {
+        $rubric = \App\Models\Assessment\Rubric::where('school_id', $assessment->school_id)
+            ->where(function($q) use ($assessment) {
+                $q->where('subject_id', $assessment->subject_id)
+                  ->orWhereNull('subject_id');
+            })
+            ->with(['criteria.levels' => function($q) {
+                $q->orderBy('min_score', 'desc');
+            }])
+            ->orderByRaw('subject_id IS NULL ASC')
+            ->first();
+
+        if ($rubric && $rubric->criteria->isNotEmpty()) {
+            foreach ($rubric->criteria[0]->levels as $level) {
+                if ($percentage >= $level->min_score && $percentage <= $level->max_score) {
+                    return [
+                        'points' => (float) $level->points,
+                        'level' => $level->grade_code,
+                        'descriptor' => $level->level_name
+                    ];
+                }
+            }
+        }
+
+        // Standard CBC Falling back
+        return match(true) {
+            $percentage >= 80 => ['points' => 4, 'level' => 'EE', 'descriptor' => 'Exceeding Expectation'],
+            $percentage >= 60 => ['points' => 3, 'level' => 'ME', 'descriptor' => 'Meeting Expectation'],
+            $percentage >= 40 => ['points' => 2, 'level' => 'AE', 'descriptor' => 'Approaching Expectation'],
+            default => ['points' => 1, 'level' => 'BE', 'descriptor' => 'Below Expectation']
+        };
     }
 
     /**
@@ -316,7 +423,6 @@ class AssessmentGradingController extends Controller
         $data = array_map('str_getcsv', file($path));
         $headers = array_shift($data);
 
-        // Find the column indices for items
         $itemColMap = [];
         foreach ($headers as $index => $header) {
             if (preg_match('/\(ID:(\d+)\)/', $header, $matches)) {
@@ -331,17 +437,26 @@ class AssessmentGradingController extends Controller
             if (!$student) continue;
 
             foreach ($itemColMap as $itemId => $colIndex) {
-                $ratingVal = trim($row[$colIndex]);
-                if ($ratingVal === '') continue;
+                $marks = trim($row[$colIndex]);
+                if ($marks === '') continue;
 
-                $score = intval($ratingVal);
-                if ($score < 1 || $score > 4) continue;
+                $item = AssessmentItem::find($itemId);
+                if (!$item) continue;
 
-                $ratingLevel = match($score) {
+                $outOf = $item->total_marks ?: 100;
+                $percent = ($marks / $outOf) * 100;
+                
+                $score = match(true) {
+                    $percent >= 80 => 4,
+                    $percent >= 60 => 3,
+                    $percent >= 40 => 2,
+                    default => 1
+                };
+
+                $ratingLevel = match(intval($score)) {
                     4 => 'EE',
                     3 => 'ME',
                     2 => 'AE',
-                    1 => 'BE',
                     default => 'BE'
                 };
 
@@ -352,6 +467,8 @@ class AssessmentGradingController extends Controller
                     ],
                     [
                         'score' => $score,
+                        'marks' => $marks,
+                        'out_of' => $outOf,
                         'rating_level' => $ratingLevel,
                         'teacher_id' => auth()->id(),
                     ]
@@ -360,7 +477,6 @@ class AssessmentGradingController extends Controller
             $successCount++;
         }
 
-        // Trigger updates
         $this->deriveCompetencyRatings($assessment);
         $this->updateReportCards($assessment);
 
@@ -375,7 +491,6 @@ class AssessmentGradingController extends Controller
         $students = Student::where('current_class_id', $assessment->class_id)->get();
         
         foreach ($students as $student) {
-            // Find or create report card for this term
             $reportCard = ReportCard::firstOrCreate([
                 'student_id' => $student->id,
                 'academic_term_id' => $assessment->academic_term_id,
@@ -386,25 +501,45 @@ class AssessmentGradingController extends Controller
                 'status' => 'draft',
             ]);
 
-            // Calculate subject average for this student
-            $allAssessmentsInTerm = Assessment::where('subject_id', $assessment->subject_id)
+            // Get all assessments for this subject in this term
+            $termAssessments = Assessment::where('subject_id', $assessment->subject_id)
+                ->where('class_id', $assessment->class_id)
                 ->where('academic_term_id', $assessment->academic_term_id)
-                ->pluck('id');
-
-            $allRatings = StudentAssessmentRating::where('student_id', $student->id)
-                ->whereHas('item', function($q) use ($allAssessmentsInTerm) {
-                    $q->whereIn('assessment_id', $allAssessmentsInTerm);
-                })
+                ->with('items')
                 ->get();
 
-            if ($allRatings->isNotEmpty()) {
-                $avgScore = $allRatings->avg('score');
-                $grade = match(true) {
-                    $avgScore >= 3.5 => 'EE',
-                    $avgScore >= 2.5 => 'ME',
-                    $avgScore >= 1.5 => 'AE',
-                    default => 'BE'
-                };
+            $totalPossibleMarks = 0;
+            $totalObtainedMarks = 0;
+
+            foreach ($termAssessments as $termAss) {
+                // 1. Check if there's a Master Score (StudentAssessment)
+                $sa = \App\Models\Assessment\StudentAssessment::where([
+                    'student_id' => $student->id,
+                    'assessment_id' => $termAss->id
+                ])->first();
+
+                $possible = $termAss->total_marks ?: $termAss->items->sum('total_marks') ?: 100;
+                $obtained = 0;
+
+                if ($sa) {
+                    $obtained = $sa->marks_obtained;
+                } else {
+                    // 2. Fallback to indicators (StudentAssessmentRating)
+                    $itemIds = $termAss->items->pluck('id');
+                    $obtained = StudentAssessmentRating::where('student_id', $student->id)
+                        ->whereIn('assessment_item_id', $itemIds)
+                        ->sum('marks') ?: 0;
+                }
+
+                $totalPossibleMarks += $possible;
+                $totalObtainedMarks += $obtained;
+            }
+
+            if ($totalPossibleMarks > 0) {
+                $terminalPercentage = ($totalObtainedMarks / $totalPossibleMarks) * 100;
+                
+                // Use the shared calculation logic for terminal grading
+                $terminalPerf = $this->calculatePerformanceLevel($assessment, $terminalPercentage);
 
                 ReportCardSubject::updateOrCreate(
                     [
@@ -412,15 +547,14 @@ class AssessmentGradingController extends Controller
                         'subject_id' => $assessment->subject_id,
                     ],
                     [
-                        'marks_obtained' => $avgScore,
-                        'total_marks' => 4.0,
-                        'percentage' => ($avgScore / 4) * 100,
-                        'grade' => $grade,
+                        'marks_obtained' => $totalObtainedMarks,
+                        'total_marks' => $totalPossibleMarks,
+                        'percentage' => $terminalPercentage,
+                        'grade' => $terminalPerf['level'],
                     ]
                 );
             }
 
-            // Sync competency ratings for the report card
             $competencyRatings = StudentCompetencyRating::where('student_id', $student->id)
                 ->where('academic_term_id', $assessment->academic_term_id)
                 ->get();
@@ -438,16 +572,16 @@ class AssessmentGradingController extends Controller
                 );
             }
 
-            // Update overall report card totals
-            $subjectResults = ReportCardSubject::where('report_card_id', $reportCard->id)->get();
-            if ($subjectResults->isNotEmpty()) {
+            $allSubjects = ReportCardSubject::where('report_card_id', $reportCard->id)->get();
+            if ($allSubjects->isNotEmpty()) {
+                $avgPct = $allSubjects->avg('percentage');
                 $reportCard->update([
-                    'total_subjects' => $subjectResults->count(),
-                    'average_score' => $subjectResults->avg('percentage'),
+                    'total_subjects' => $allSubjects->count(),
+                    'average_score' => $avgPct,
                     'overall_grade' => match(true) {
-                        $subjectResults->avg('marks_obtained') >= 3.5 => 'EE',
-                        $subjectResults->avg('marks_obtained') >= 2.5 => 'ME',
-                        $subjectResults->avg('marks_obtained') >= 1.5 => 'AE',
+                        $avgPct >= 80 => 'EE',
+                        $avgPct >= 60 => 'ME',
+                        $avgPct >= 40 => 'AE',
                         default => 'BE'
                     }
                 ]);
@@ -471,7 +605,6 @@ class AssessmentGradingController extends Controller
 
         foreach ($students as $student) {
             foreach ($competencyIds as $compId) {
-                // Get all indicator ratings for this competency in this assessment
                 $relevantItemIds = $items->where('indicator.competency_id', $compId)->pluck('id');
                 
                 $ratings = StudentAssessmentRating::where('student_id', $student->id)
@@ -500,7 +633,7 @@ class AssessmentGradingController extends Controller
                         'school_id' => $assessment->school_id,
                         'rating_level' => $derivedLevel,
                         'score' => $avgScore,
-                        'teacher_id' => $assessment->teacher_id,
+                        'teacher_id' => auth()->id(),
                     ]
                 );
             }

@@ -173,26 +173,80 @@ class AssessmentController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'type_id' => 'required|exists:assessment_types,id',
+            'academic_year_id' => 'required|exists:academic_years,id',
+            'term_id' => 'required|exists:academic_terms,id',
             'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
-            'rubric_id' => 'required|exists:rubrics,id',
-            'assessment_type_id' => 'required|exists:assessment_types,id',
-            'grading_scale_id' => 'nullable|exists:grading_scales,id',
-            'assessment_date' => 'required|date',
-            'total_marks' => 'required|numeric|min:0',
+            'total_marks' => 'required|numeric|min:1',
             'passing_marks' => 'required|numeric|min:0',
             'weight' => 'required|numeric|min:0|max:100',
-            'status' => 'required|in:draft,scheduled,published',
-            'lesson_plan_id' => 'nullable|exists:lesson_plans,id',
-            'sub_strand_id' => 'nullable|exists:sub_strands,id',
-            'indicators' => 'nullable|array',
-            'competencies' => 'nullable|array',
+            'status' => 'required|in:draft,published,closed',
+            'source' => 'required|in:internal,ministry',
+            'indicators' => 'required|array|min:1',
+            'date' => 'required|date',
         ]);
 
-        $assessment->fill($validated);
-        $assessment->core_competencies = $validated['competencies'] ?? [];
-        $assessment->indicators = $validated['indicators'] ?? [];
-        $assessment->save();
+        DB::transaction(function () use ($validated, $request, $assessment) {
+            $indicatorsChanged = $assessment->source !== $validated['source'] || 
+                                 json_encode($assessment->indicators) !== json_encode($validated['indicators']);
+
+            $assessment->update([
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'class_id' => $validated['class_id'],
+                'subject_id' => $validated['subject_id'],
+                'assessment_type_id' => $validated['type_id'],
+                'total_marks' => $validated['total_marks'],
+                'passing_marks' => $validated['passing_marks'],
+                'weight' => $validated['weight'],
+                'academic_year_id' => $validated['academic_year_id'],
+                'academic_term_id' => $validated['term_id'],
+                'assessment_date' => $validated['date'],
+                'status' => $validated['status'],
+                'source' => $validated['source'],
+                'indicators' => $validated['indicators'],
+            ]);
+
+            // Sync Assessment Items (Criteria) only if changed
+            if ($indicatorsChanged) {
+                // Warning: Deleting items will delete student ratings for those items.
+                $assessment->items()->delete();
+
+                if ($validated['source'] === 'ministry') {
+                    $standardCriteria = [
+                        'knowledge' => 'Knowledge & Understanding',
+                        'skills' => 'Skills Application',
+                        'communication' => 'Communication',
+                        'values' => 'Values & Attitudes',
+                        'creativity' => 'Creativity',
+                        'thinking' => 'Critical Thinking'
+                    ];
+
+                    $i = 0;
+                    foreach ($standardCriteria as $code => $name) {
+                        \App\Models\Assessment\AssessmentItem::create([
+                            'assessment_id' => $assessment->id,
+                            'name' => $name,
+                            'code' => $code,
+                            'max_score' => 4,
+                            'display_order' => $i++,
+                        ]);
+                    }
+                } else {
+                    foreach ($validated['indicators'] as $index => $item) {
+                        \App\Models\Assessment\AssessmentItem::create([
+                            'assessment_id' => $assessment->id,
+                            'competency_indicator_id' => is_numeric($item['id']) ? $item['id'] : null,
+                            'name' => $item['indicator'] ?? 'Indicator ' . ($index + 1),
+                            'code' => !is_numeric($item['id']) ? $item['id'] : null,
+                            'max_score' => $item['max_score'] ?? 4,
+                            'display_order' => $index,
+                        ]);
+                    }
+                }
+            }
+        });
 
         return redirect()->route('assessments.index')->with('success', 'Assessment updated successfully.');
     }
@@ -287,85 +341,276 @@ class AssessmentController extends Controller
         return redirect()->route('assessments.index')->with('success', 'Grades saved successfully.');
     }
 
-    public function reportCards(): Response
+    public function reportCards(Request $request): Response
     {
         $schoolId = $this->getSchoolId();
-        $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
-        $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
+        $activeYear = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+        $activeTerm = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
-        $classes = \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get();
-        
-        // Fetch students for the first class as default if needed, or allow filtering
-        $students = \App\Models\Student::where('school_id', $schoolId)->with('currentClass')->paginate(20);
+        // Load hierarchy: Grade Levels -> Classes
+        $gradeLevels = \App\Models\Academic\GradeLevel::where('school_id', $schoolId)
+            ->with(['classes' => function($q) use ($schoolId) {
+                $q->where('school_id', $schoolId);
+            }])
+            ->get();
+
+        $selectedClassId = $request->input('class_id');
+        $students = [];
+
+        if ($selectedClassId) {
+            // Get all assessments for this class (any term in the active year)
+            $classAssessments = \App\Models\Assessment\Assessment::where('school_id', $schoolId)
+                ->where('class_id', $selectedClassId)
+                ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+                ->with('subject')
+                ->get();
+
+            $assessmentIds = $classAssessments->pluck('id');
+
+            // Build a lookup: assessment_id -> subject info + total_marks
+            $assessmentLookup = $classAssessments->keyBy('id');
+
+            $students = \App\Models\Student::where('current_class_id', $selectedClassId)
+                ->where('school_id', $schoolId)
+                ->active()
+                ->get()
+                ->map(function($student) use ($assessmentIds, $assessmentLookup) {
+                    // Fetch master scores (from "Finalize and Post") for this student
+                    $masterScores = \App\Models\Assessment\StudentAssessment::where('student_id', $student->id)
+                        ->whereIn('assessment_id', $assessmentIds)
+                        ->get();
+
+                    if ($masterScores->isEmpty()) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->full_name,
+                            'admission_number' => $student->admission_number,
+                            'photo' => $student->photo_url,
+                            'average' => 0,
+                            'total' => 0,
+                            'status' => 'pending',
+                        ];
+                    }
+
+                    // Aggregate by subject
+                    $bySubject = $masterScores->groupBy(function($sa) use ($assessmentLookup) {
+                        return $assessmentLookup[$sa->assessment_id]->subject_id ?? 0;
+                    });
+
+                    $subjectAverages = $bySubject->map(function($group) use ($assessmentLookup) {
+                        $totalMarks = 0;
+                        $totalPossible = 0;
+                        foreach ($group as $sa) {
+                            $assessment = $assessmentLookup[$sa->assessment_id] ?? null;
+                            $totalMarks += (float) $sa->marks_obtained;
+                            $totalPossible += $assessment ? ($assessment->total_marks ?: 100) : 100;
+                        }
+                        return $totalPossible > 0 ? ($totalMarks / $totalPossible) * 100 : 0;
+                    });
+
+                    $overallAvg = $subjectAverages->count() > 0 ? $subjectAverages->avg() : 0;
+                    $totalMarks = $masterScores->sum('marks_obtained');
+
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->full_name,
+                        'admission_number' => $student->admission_number,
+                        'photo' => $student->photo_url,
+                        'average' => round($overallAvg, 1),
+                        'total' => $totalMarks,
+                        'status' => 'ready',
+                    ];
+                });
+        }
         
         return Inertia::render('assessments/ReportCards', [
-            'classes' => $classes,
+            'gradeLevels' => $gradeLevels,
             'students' => $students,
             'activeYear' => $activeYear,
             'activeTerm' => $activeTerm,
+            'filters' => $request->only(['class_id', 'search']),
         ]);
     }
 
     public function showReport(int $studentId): Response
     {
         $schoolId = $this->getSchoolId();
-        $student = \App\Models\Student::with(['currentClass'])->findOrFail($studentId);
+        $student = \App\Models\Student::with(['currentClass.gradeLevel', 'school'])->findOrFail($studentId);
         
-        $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
-        $activeTerm = \App\Models\Academic\AcademicTerm::where('is_current', true)
+        $activeYear = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+        $activeTerm = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('is_current', true)
             ->where('academic_year_id', $activeYear?->id)
             ->first();
 
-        // Fetch all subjects
-        $subjects = \App\Models\Curriculum\Subject::orderBy('name')->get();
+        $reportData = $this->buildStudentReportData($student, $schoolId, $activeYear);
 
-        // Fetch all assessment ratings for this student in the current term
-        $ratings = \App\Models\Assessment\StudentAssessmentRating::where('student_id', $studentId)
-            ->with(['item.assessment.assessmentType'])
-            ->whereHas('item.assessment', function($query) use ($activeTerm) {
-                if ($activeTerm) {
-                    $query->where('academic_term_id', $activeTerm->id);
-                }
-            })
+        return Inertia::render('assessments/ReportCardDetail', [
+            'student' => $student,
+            'subjects' => $reportData['subjects'],
+            'summary' => $reportData['summary'],
+            'activeTerm' => $activeTerm,
+            'activeYear' => $activeYear,
+        ]);
+    }
+
+    public function exportPdf(int $studentId)
+    {
+        $schoolId = $this->getSchoolId();
+        $student = \App\Models\Student::with(['currentClass.gradeLevel', 'school'])->findOrFail($studentId);
+        $school = $student->school;
+        
+        $activeYear = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+        $activeTerm = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('is_current', true)
+            ->where('academic_year_id', $activeYear?->id)
+            ->first();
+
+        $reportData = $this->buildStudentReportData($student, $schoolId, $activeYear);
+        $themeColor = $school->getSetting('pdf_theme_color', '#1e40af');
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.report-card', [
+            'student' => $student,
+            'school' => $school,
+            'subjects' => $reportData['subjects'],
+            'themeColor' => $themeColor,
+            'summary' => $reportData['summary'],
+            'activeTerm' => $activeTerm,
+            'activeYear' => $activeYear,
+        ]);
+
+        return $pdf->download("Report_Card_{$student->admission_number}.pdf");
+    }
+
+    /**
+     * Build the subject-wise performance data for a student's report card.
+     * Uses StudentAssessment (master scores from "Finalize and Post") as primary source.
+     */
+    private function buildStudentReportData(\App\Models\Student $student, $schoolId, $activeYear): array
+    {
+        // Get all assessments for this student's class in the active year
+        $classAssessments = \App\Models\Assessment\Assessment::where('school_id', $schoolId)
+            ->where('class_id', $student->current_class_id)
+            ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+            ->with('subject')
             ->get();
 
-        $results = $subjects->map(function($subject) use ($ratings) {
-            $subjectRatings = $ratings->filter(fn($r) => $r->item->assessment->subject_id == $subject->id);
-            
-            $opening = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'Opening') !== false);
-            $mid = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'Mid') !== false);
-            $end = $subjectRatings->filter(fn($r) => stripos($r->item->assessment->assessmentType->name, 'End') !== false);
+        $assessmentIds = $classAssessments->pluck('id');
+        $assessmentLookup = $classAssessments->keyBy('id');
 
-            $openingScore = $opening->count() > 0 ? $opening->avg('score') : null;
-            $midScore = $mid->count() > 0 ? $mid->avg('score') : null;
-            $endScore = $end->count() > 0 ? $end->avg('score') : null;
-            
-            $allScores = $subjectRatings->pluck('score')->filter();
-            $avgScore = $allScores->count() > 0 ? $allScores->avg() : null;
+        // Fetch master scores (from "Finalize and Post")
+        $masterScores = \App\Models\Assessment\StudentAssessment::where('student_id', $student->id)
+            ->whereIn('assessment_id', $assessmentIds)
+            ->get();
+
+        // Get grading scale
+        $gradingScale = \App\Models\Assessment\GradingScale::where('school_id', $schoolId)
+            ->where('is_default', true)
+            ->with('descriptors')
+            ->first() ?? \App\Models\Assessment\GradingScale::where('school_id', $schoolId)->with('descriptors')->first();
+
+        // Group by subject
+        $bySubject = $masterScores->groupBy(function($sa) use ($assessmentLookup) {
+            return $assessmentLookup[$sa->assessment_id]->subject_id ?? 0;
+        });
+
+        $subjectsData = $bySubject->map(function($group) use ($assessmentLookup, $gradingScale) {
+            $firstAssessment = $assessmentLookup[$group->first()->assessment_id] ?? null;
+            $subjectName = $firstAssessment?->subject?->name ?? 'Unknown';
+
+            $totalMarks = 0;
+            $totalPossible = 0;
+            $teacherRemarks = null;
+            foreach ($group as $sa) {
+                $assessment = $assessmentLookup[$sa->assessment_id] ?? null;
+                $totalMarks += (float) $sa->marks_obtained;
+                $totalPossible += $assessment ? ($assessment->total_marks ?: 100) : 100;
+                // Use the most recent teacher comment as subject remarks
+                if ($sa->teacher_comments) {
+                    $teacherRemarks = $sa->teacher_comments;
+                }
+            }
+
+            $percentage = $totalPossible > 0 ? ($totalMarks / $totalPossible) * 100 : 0;
+
+            // Map to grading scale for rubric code/name only (NOT remarks)
+            $rubric = $gradingScale ? $gradingScale->descriptors
+                ->where('min_score', '<=', $percentage)
+                ->where('max_score', '>=', $percentage)
+                ->first() : null;
 
             return [
-                'subject' => $subject->name,
-                'opening' => ['score' => $openingScore ? round($openingScore, 1) : null, 'level' => $this->mapScoreToLevel($openingScore)],
-                'mid' => ['score' => $midScore ? round($midScore, 1) : null, 'level' => $this->mapScoreToLevel($midScore)],
-                'end' => ['score' => $endScore ? round($endScore, 1) : null, 'level' => $this->mapScoreToLevel($endScore)],
-                'average' => ['score' => $avgScore ? round($avgScore, 1) : null, 'level' => $this->mapScoreToLevel($avgScore)],
-                'comments' => $avgScore ? $this->getAutoComment($avgScore) : 'No assessments logged yet.',
+                'subject_id' => $firstAssessment?->subject_id,
+                'name' => $subjectName,
+                'score' => $totalMarks,
+                'max' => $totalPossible,
+                'percentage' => round($percentage, 1),
+                'rubric' => $rubric ? $rubric->level_code : $this->mapScoreToLevel($percentage),
+                'rubric_name' => $rubric ? $rubric->level_name : $this->getLevelName($percentage),
+                'remarks' => $teacherRemarks ?: $this->getAutoComment($percentage),
             ];
-        })->filter(fn($r) => $r['opening']['score'] || $r['mid']['score'] || $r['end']['score'])->values();
+        })->values();
 
-        return Inertia::render('assessments/ReportForm', [
-            'student' => $student,
-            'academicYear' => $activeYear,
-            'academicTerm' => $activeTerm,
-            'results' => $results,
-            'performanceLevels' => [
-                ['code' => 'EE', 'label' => 'Exceeding Expectation', 'range' => '75-100', 'rating' => 4],
-                ['code' => 'ME', 'label' => 'Meeting Expectation', 'range' => '50-74', 'rating' => 3],
-                ['code' => 'AE', 'label' => 'Approaching Expectation', 'range' => '30-49', 'rating' => 2],
-                ['code' => 'BE', 'label' => 'Below Expectation', 'range' => '0-29', 'rating' => 1],
+        $overallTotal = $subjectsData->sum('score');
+        $overallMax = $subjectsData->sum('max');
+        $overallAvg = $subjectsData->count() > 0 ? $subjectsData->avg('percentage') : 0;
+
+        $overallRubric = $gradingScale ? $gradingScale->descriptors
+            ->where('min_score', '<=', $overallAvg)
+            ->where('max_score', '>=', $overallAvg)
+            ->first() : null;
+
+        // Compute rank
+        $classStudents = \App\Models\Student::where('current_class_id', $student->current_class_id)
+            ->where('school_id', $schoolId)
+            ->pluck('id');
+            
+        $allScores = \App\Models\Assessment\StudentAssessment::whereIn('student_id', $classStudents)
+            ->whereIn('assessment_id', $assessmentIds)
+            ->selectRaw('student_id, SUM(marks_obtained) as total_score')
+            ->groupBy('student_id')
+            ->orderByDesc('total_score')
+            ->get();
+            
+        $rank = '-';
+        $outOf = $allScores->count() ?: 1;
+        foreach ($allScores as $index => $scorePair) {
+            if ($scorePair->student_id == $student->id) {
+                $rank = $index + 1;
+                break;
+            }
+        }
+
+        return [
+            'subjects' => $subjectsData,
+            'summary' => [
+                'total' => $overallTotal,
+                'max' => $overallMax,
+                'average' => round($overallAvg, 1),
+                'rubric' => $overallRubric ? $overallRubric->level_code : $this->mapScoreToLevel($overallAvg),
+                'rubric_name' => $overallRubric ? $overallRubric->level_name : $this->getLevelName($overallAvg),
+                'rank' => $rank,
+                'out_of' => $outOf,
+                'class_teacher_remark' => $this->getClassTeacherRemark($overallAvg),
+                'head_teacher_remark' => $this->getHeadTeacherRemark($overallAvg),
             ],
-            'attendance' => ['days_present' => 0, 'total_days' => 0],
-        ]);
+        ];
+    }
+
+    private function getClassTeacherRemark(?float $score): string
+    {
+        if ($score === null || $score === 0.0) return 'No academic data available for this term.';
+        if ($score >= 80) return 'An outstanding term! You have shown remarkable dedication and excellent understanding across all learning areas. Keep maintaining this high standard and continue to be a positive role model in class.';
+        if ($score >= 60) return 'A solid performance this term. You have demonstrated a good grasp of the concepts taught. With a little more consistent effort and focus, you can certainly push your grades even higher next term.';
+        if ($score >= 40) return 'Fair performance. While you have a basic understanding of the subjects, there is significant room for improvement. I encourage you to participate more in class and complete all assignments on time.';
+        return 'This term\'s performance indicates a need for urgent academic intervention. We need to work together—teacher, parent, and learner—to identify the challenges and apply remedial measures before the next term.';
+    }
+
+    private function getHeadTeacherRemark(?float $score): string
+    {
+        if ($score === null || $score === 0.0) return 'No records to evaluate.';
+        if ($score >= 80) return 'Exceptional results! Congratulations on your hard work. Keep aiming for the stars.';
+        if ($score >= 60) return 'Good work. I am pleased with your progress. Strive for excellence in the coming term.';
+        if ($score >= 40) return 'Average work. You possess the potential to do much better. Commit to your studies.';
+        return 'Below expectation. Please step up your efforts significantly. The school will support your remedial program.';
     }
 
     private function mapScoreToLevel(?float $score): ?string
@@ -375,6 +620,15 @@ class AssessmentController extends Controller
         if ($score >= 50) return 'ME';
         if ($score >= 30) return 'AE';
         return 'BE';
+    }
+
+    private function getLevelName(?float $score): string
+    {
+        if ($score === null) return 'Not Graded';
+        if ($score >= 75) return 'Exceeding Expectation';
+        if ($score >= 50) return 'Meeting Expectation';
+        if ($score >= 30) return 'Approaching Expectation';
+        return 'Below Expectation';
     }
 
     private function getAutoComment(?float $score): string
@@ -512,13 +766,65 @@ class AssessmentController extends Controller
     {
         $schoolId = $this->getSchoolId();
         $user = auth()->user();
-        $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->first();
+        $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->where('school_id', $schoolId)->first();
         $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
-        // Fetch students scoped by role
+        // ── Analytics DB Query Building ──
+        $baseQuery = \DB::table('student_assessments')
+            ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
+            ->join('classes', 'assessments.class_id', '=', 'classes.id')
+            ->join('subjects', 'assessments.subject_id', '=', 'subjects.id')
+            ->join('grade_levels', 'classes.grade_level_id', '=', 'grade_levels.id')
+            ->where('assessments.school_id', $schoolId)
+            ->when($activeYear, fn($q) => $q->where('assessments.academic_year_id', $activeYear->id));
+
+        // Note: For Teachers who are not admins, restrict the analytics to their assigned classes.
+        if ($user->hasRole('teacher') && !$user->hasAnyRole(['super_admin', 'school_admin'])) {
+            $classIds = \App\Models\TeacherSubject::where('teacher_id', $user->teacher->id)->pluck('class_id')
+                ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
+                ->unique();
+            $baseQuery->whereIn('assessments.class_id', $classIds);
+        }
+
+        $rawScores = (clone $baseQuery)->select(
+            \DB::raw('SUM(marks_obtained) as total_marks'),
+            \DB::raw('SUM(COALESCE(assessments.total_marks, 100)) as max_marks'),
+            \DB::raw('COUNT(DISTINCT student_assessments.student_id) as student_count'),
+            \DB::raw('COUNT(*) as assessment_count')
+        )->first();
+
+        $overallMean = ($rawScores && $rawScores->max_marks > 0) ? ($rawScores->total_marks / $rawScores->max_marks) * 100 : 0;
+
+        $subjectAnalysis = (clone $baseQuery)
+            ->select(\DB::raw('subjects.name as subject, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
+            ->groupBy('subjects.id', 'subjects.name')
+            ->get()
+            ->map(fn($item) => ['name' => $item->subject, 'score' => round($item->mean_percentage, 1)]);
+
+        $classAnalysis = (clone $baseQuery)
+            ->select(\DB::raw('classes.name as class_name, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
+            ->groupBy('classes.id', 'classes.name')
+            ->get()
+            ->map(fn($item) => ['name' => $item->class_name, 'score' => round($item->mean_percentage, 1)]);
+
+        $gradeAnalysis = (clone $baseQuery)
+            ->select(\DB::raw('grade_levels.name as grade_name, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
+            ->groupBy('grade_levels.id', 'grade_levels.name')
+            ->get()
+            ->map(fn($item) => ['name' => $item->grade_name, 'score' => round($item->mean_percentage, 1)]);
+
+        $analytics = [
+            'overallMean' => round($overallMean, 1),
+            'totalAssessments' => $rawScores->assessment_count ?? 0,
+            'activeStudents' => $rawScores->student_count ?? 0,
+            'subjectAnalysis' => $subjectAnalysis,
+            'classAnalysis' => $classAnalysis,
+            'gradeAnalysis' => $gradeAnalysis,
+        ];
+
+        // ── Student Ledger Query ──
         $query = \App\Models\Student::where('school_id', $schoolId);
 
-        // Teacher scoper: only students in their assigned classes
         if ($user->hasRole('teacher') && !$user->hasAnyRole(['super_admin', 'school_admin'])) {
             $classIds = \App\Models\TeacherSubject::where('teacher_id', $user->teacher->id)->pluck('class_id')
                 ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
@@ -527,7 +833,7 @@ class AssessmentController extends Controller
         }
 
         $students = $query->with(['currentClass', 'assessmentRatings', 'competencyRatings.competency'])
-            ->paginate(20);
+            ->paginate(50);
 
         // Append calculated averages for the frontend
         $students->getCollection()->transform(function ($student) {
@@ -550,6 +856,7 @@ class AssessmentController extends Controller
             'students' => $students,
             'activeYear' => $activeYear,
             'activeTerm' => $activeTerm,
+            'analytics' => $analytics,
             'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
         ]);
     }
