@@ -501,6 +501,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Feature Sections
         Route::get('/results', [AssessmentController::class, 'results'])->name('results');
+        Route::get('/results/pdf', [AssessmentController::class, 'exportResultsPdf'])->name('results.pdf');
+        Route::get('/results/template', [AssessmentController::class, 'downloadResultsTemplate'])->name('results.template');
         Route::get('/analytics', [AssessmentController::class, 'analytics'])->name('analytics');
         Route::get('/report-cards', [AssessmentController::class, 'reportCards'])->name('report-cards');
         Route::get('/report-cards/{student}', [AssessmentController::class, 'showReport'])->name('report-cards.show');
@@ -737,4 +739,3 @@ Route::get('/test-mail', function () {
         return 'Failed to send email: ' . $e->getMessage();
     }
 });
-

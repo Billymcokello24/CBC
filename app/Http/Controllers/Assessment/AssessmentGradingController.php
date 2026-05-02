@@ -418,47 +418,78 @@ class AssessmentGradingController extends Controller
             'file' => 'required|file|mimes:csv,txt'
         ]);
 
+        $assessment->load('items');
+
         $file = $request->file('file');
         $path = $file->getRealPath();
         $data = array_map('str_getcsv', file($path));
         $headers = array_shift($data);
 
+        if (!$headers) {
+            return back()->with('error', 'The uploaded CSV is empty or missing a header row.');
+        }
+
         $itemColMap = [];
+        $assessmentItems = $assessment->items->keyBy('id');
         foreach ($headers as $index => $header) {
             if (preg_match('/\(ID:(\d+)\)/', $header, $matches)) {
-                $itemColMap[$matches[1]] = $index;
+                $itemId = (int) $matches[1];
+                if ($assessmentItems->has($itemId)) {
+                    $itemColMap[$itemId] = $index;
+                }
             }
         }
 
+        if (empty($itemColMap)) {
+            return back()->with('error', 'No valid assessment item columns were found. Please use the template for this assessment.');
+        }
+
+        $classRoster = Student::where('school_id', $assessment->school_id)
+            ->where('current_class_id', $assessment->class_id)
+            ->get()
+            ->keyBy(fn($student) => $this->normalizeCsvIdentity($student->admission_number));
+
         $successCount = 0;
+        $ignoredCount = 0;
+        $invalidMarksCount = 0;
+
         foreach ($data as $row) {
-            $admNo = trim($row[0]);
-            $student = Student::where('admission_number', $admNo)->first();
-            if (!$student) continue;
+            $admNo = trim($row[0] ?? '');
+            $csvName = trim($row[1] ?? '');
+            $student = $classRoster->get($this->normalizeCsvIdentity($admNo));
+
+            if (!$student || !$this->csvNameMatchesStudent($csvName, $student)) {
+                $ignoredCount++;
+                continue;
+            }
+
+            $studentTotal = 0;
+            $studentPossible = 0;
+            $savedAnyMarks = false;
+            $teacherRemarks = $this->extractTeacherRemarks($headers, $row);
 
             foreach ($itemColMap as $itemId => $colIndex) {
-                $marks = trim($row[$colIndex]);
+                $marks = trim($row[$colIndex] ?? '');
                 if ($marks === '') continue;
 
-                $item = AssessmentItem::find($itemId);
+                if (!is_numeric($marks)) {
+                    $invalidMarksCount++;
+                    continue;
+                }
+
+                $item = $assessmentItems->get($itemId);
                 if (!$item) continue;
 
                 $outOf = $item->total_marks ?: 100;
+                $marks = (float) $marks;
+                if ($marks < 0 || $marks > $outOf) {
+                    $invalidMarksCount++;
+                    continue;
+                }
+
                 $percent = ($marks / $outOf) * 100;
                 
-                $score = match(true) {
-                    $percent >= 80 => 4,
-                    $percent >= 60 => 3,
-                    $percent >= 40 => 2,
-                    default => 1
-                };
-
-                $ratingLevel = match(intval($score)) {
-                    4 => 'EE',
-                    3 => 'ME',
-                    2 => 'AE',
-                    default => 'BE'
-                };
+                $perf = $this->calculatePerformanceLevel($assessment, $percent);
 
                 StudentAssessmentRating::updateOrCreate(
                     [
@@ -466,21 +497,91 @@ class AssessmentGradingController extends Controller
                         'assessment_item_id' => $itemId,
                     ],
                     [
-                        'score' => $score,
+                        'school_id' => $assessment->school_id,
+                        'score' => $perf['points'],
                         'marks' => $marks,
                         'out_of' => $outOf,
-                        'rating_level' => $ratingLevel,
+                        'rating_level' => $perf['level'],
+                        'feedback' => $teacherRemarks,
                         'teacher_id' => auth()->id(),
                     ]
                 );
+
+                $studentTotal += $marks;
+                $studentPossible += $outOf;
+                $savedAnyMarks = true;
             }
-            $successCount++;
+
+            if ($savedAnyMarks) {
+                $totalPossible = $assessment->total_marks ?: $studentPossible ?: $assessment->items->sum('total_marks') ?: 100;
+                $totalPercent = $totalPossible > 0 ? ($studentTotal / $totalPossible) * 100 : 0;
+                $totalPerf = $this->calculatePerformanceLevel($assessment, $totalPercent);
+
+                \App\Models\Assessment\StudentAssessment::updateOrCreate(
+                    [
+                        'student_id' => $student->id,
+                        'assessment_id' => $assessment->id,
+                    ],
+                    [
+                        'school_id' => $assessment->school_id,
+                        'marks_obtained' => $studentTotal,
+                        'percentage' => $totalPercent,
+                        'grade_level' => $totalPerf['level'],
+                        'teacher_comments' => $teacherRemarks,
+                        'graded_at' => now(),
+                        'graded_by' => auth()->id(),
+                    ]
+                );
+
+                $successCount++;
+            }
         }
 
         $this->deriveCompetencyRatings($assessment);
         $this->updateReportCards($assessment);
 
-        return back()->with('success', "Successfully imported marks for {$successCount} students.");
+        $message = "Successfully imported marks for {$successCount} students.";
+        if ($ignoredCount > 0) {
+            $message .= " Ignored {$ignoredCount} row(s) not matching this class roster.";
+        }
+        if ($invalidMarksCount > 0) {
+            $message .= " Skipped {$invalidMarksCount} invalid mark value(s).";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function normalizeCsvIdentity(?string $value): string
+    {
+        return strtolower(preg_replace('/\s+/', ' ', trim((string) $value)));
+    }
+
+    private function csvNameMatchesStudent(string $csvName, Student $student): bool
+    {
+        if ($csvName === '') {
+            return true;
+        }
+
+        $csvName = $this->normalizeCsvIdentity($csvName);
+        $studentNames = collect([
+            trim("{$student->first_name} {$student->last_name}"),
+            trim("{$student->last_name} {$student->first_name}"),
+            $student->full_name ?? null,
+        ])->filter()->map(fn($name) => $this->normalizeCsvIdentity($name));
+
+        return $studentNames->contains($csvName);
+    }
+
+    private function extractTeacherRemarks(array $headers, array $row): ?string
+    {
+        foreach ($headers as $index => $header) {
+            if (strtolower(trim($header)) === 'teacher remarks') {
+                $remarks = trim($row[$index] ?? '');
+                return $remarks !== '' ? $remarks : null;
+            }
+        }
+
+        return null;
     }
 
     /**

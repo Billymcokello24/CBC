@@ -345,6 +345,7 @@ class AssessmentController extends Controller
     {
         $schoolId = $this->getSchoolId();
         $activeYear = \App\Models\Academic\AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+        $activeYearIds = $this->currentAcademicYearIds($schoolId);
         $activeTerm = \App\Models\Academic\AcademicTerm::where('school_id', $schoolId)->where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
 
         // Load hierarchy: Grade Levels -> Classes
@@ -361,7 +362,7 @@ class AssessmentController extends Controller
             // Get all assessments for this class (any term in the active year)
             $classAssessments = \App\Models\Assessment\Assessment::where('school_id', $schoolId)
                 ->where('class_id', $selectedClassId)
-                ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+                ->when($activeYearIds->isNotEmpty(), fn($q) => $q->whereIn('academic_year_id', $activeYearIds))
                 ->with('subject')
                 ->get();
 
@@ -486,10 +487,12 @@ class AssessmentController extends Controller
      */
     private function buildStudentReportData(\App\Models\Student $student, $schoolId, $activeYear): array
     {
+        $activeYearIds = $this->currentAcademicYearIds($schoolId);
+
         // Get all assessments for this student's class in the active year
         $classAssessments = \App\Models\Assessment\Assessment::where('school_id', $schoolId)
             ->where('class_id', $student->current_class_id)
-            ->when($activeYear, fn($q) => $q->where('academic_year_id', $activeYear->id))
+            ->when($activeYearIds->isNotEmpty(), fn($q) => $q->whereIn('academic_year_id', $activeYearIds))
             ->with(['subject', 'rubric.criteria.levels', 'gradingScale.descriptors'])
             ->get();
 
@@ -832,103 +835,325 @@ class AssessmentController extends Controller
         return redirect()->route('assessments.rubrics')->with('success', 'Rubric updated successfully.');
     }
 
-    public function results(): Response
+    public function results(Request $request): Response
     {
         $schoolId = $this->getSchoolId();
-        $user = auth()->user();
         $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->where('school_id', $schoolId)->first();
         $activeTerm = \App\Models\Academic\AcademicTerm::where('academic_year_id', $activeYear?->id)->where('is_current', true)->first();
-
-        // ── Analytics DB Query Building ──
-        $baseQuery = \DB::table('student_assessments')
-            ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
-            ->join('classes', 'assessments.class_id', '=', 'classes.id')
-            ->join('subjects', 'assessments.subject_id', '=', 'subjects.id')
-            ->join('grade_levels', 'classes.grade_level_id', '=', 'grade_levels.id')
-            ->where('assessments.school_id', $schoolId)
-            ->when($activeYear, fn($q) => $q->where('assessments.academic_year_id', $activeYear->id));
-
-        // Note: For Teachers who are not admins, restrict the analytics to their assigned classes.
-        if ($user->hasRole('teacher') && !$user->hasAnyRole(['super_admin', 'school_admin'])) {
-            $classIds = \App\Models\TeacherSubject::where('teacher_id', $user->teacher->id)->pluck('class_id')
-                ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
-                ->unique();
-            $baseQuery->whereIn('assessments.class_id', $classIds);
-        }
-
-        $rawScores = (clone $baseQuery)->select(
-            \DB::raw('SUM(marks_obtained) as total_marks'),
-            \DB::raw('SUM(COALESCE(assessments.total_marks, 100)) as max_marks'),
-            \DB::raw('COUNT(DISTINCT student_assessments.student_id) as student_count'),
-            \DB::raw('COUNT(*) as assessment_count')
-        )->first();
-
-        $overallMean = ($rawScores && $rawScores->max_marks > 0) ? ($rawScores->total_marks / $rawScores->max_marks) * 100 : 0;
-
-        $subjectAnalysis = (clone $baseQuery)
-            ->select(\DB::raw('subjects.name as subject, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
-            ->groupBy('subjects.id', 'subjects.name')
-            ->get()
-            ->map(fn($item) => ['name' => $item->subject, 'score' => round($item->mean_percentage, 1)]);
-
-        $classAnalysis = (clone $baseQuery)
-            ->select(\DB::raw('classes.name as class_name, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
-            ->groupBy('classes.id', 'classes.name')
-            ->get()
-            ->map(fn($item) => ['name' => $item->class_name, 'score' => round($item->mean_percentage, 1)]);
-
-        $gradeAnalysis = (clone $baseQuery)
-            ->select(\DB::raw('grade_levels.name as grade_name, (SUM(marks_obtained) / SUM(COALESCE(assessments.total_marks, 100))) * 100 as mean_percentage'))
-            ->groupBy('grade_levels.id', 'grade_levels.name')
-            ->get()
-            ->map(fn($item) => ['name' => $item->grade_name, 'score' => round($item->mean_percentage, 1)]);
-
-        $analytics = [
-            'overallMean' => round($overallMean, 1),
-            'totalAssessments' => $rawScores->assessment_count ?? 0,
-            'activeStudents' => $rawScores->student_count ?? 0,
-            'subjectAnalysis' => $subjectAnalysis,
-            'classAnalysis' => $classAnalysis,
-            'gradeAnalysis' => $gradeAnalysis,
-        ];
-
-        // ── Student Ledger Query ──
-        $query = \App\Models\Student::where('school_id', $schoolId);
-
-        if ($user->hasRole('teacher') && !$user->hasAnyRole(['super_admin', 'school_admin'])) {
-            $classIds = \App\Models\TeacherSubject::where('teacher_id', $user->teacher->id)->pluck('class_id')
-                ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
-                ->unique();
-            $query->whereIn('current_class_id', $classIds);
-        }
-
-        $students = $query->with(['currentClass', 'assessmentRatings', 'competencyRatings.competency'])
-            ->paginate(50);
-
-        // Append calculated averages for the frontend
-        $students->getCollection()->transform(function ($student) {
-            $ratings = $student->assessmentRatings;
-            $count = $ratings->count();
-            $mean = $count > 0 ? $ratings->avg('score') : 0;
-            
-            $student->mean_score = round($mean, 1);
-            $student->tests_count = $count;
-            
-            // Basic trajectory logic: compare last 3 tests to overall mean
-            $last3 = $ratings->sortByDesc('created_at')->take(3);
-            $last3Mean = $last3->count() > 0 ? $last3->avg('score') : 0;
-            $student->trajectory = $last3Mean >= $mean ? 'Positive' : 'Declining';
-            
-            return $student;
-        });
+        $payload = $this->buildResultsPayload($request, $schoolId, $activeYear);
 
         return Inertia::render('assessments/Results', [
-            'students' => $students,
+            'students' => $payload['students'],
             'activeYear' => $activeYear,
             'activeTerm' => $activeTerm,
-            'analytics' => $analytics,
-            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)->get(),
+            'analytics' => $payload['analytics'],
+            'rankings' => $payload['rankings'],
+            'filters' => $payload['filters'],
+            'classes' => $payload['classes'],
+            'grades' => $payload['grades'],
+            'subjects' => $payload['subjects'],
         ]);
+    }
+
+    public function exportResultsPdf(Request $request)
+    {
+        $schoolId = $this->getSchoolId();
+        $school = \App\Models\School::find($schoolId);
+        $activeYear = \App\Models\Academic\AcademicYear::where('is_current', true)->where('school_id', $schoolId)->first();
+        $payload = $this->buildResultsPayload($request, $schoolId, $activeYear, false);
+        $analytics = $payload['analytics'];
+
+        $assessmentsData = collect($analytics['subjectAnalysis'])->map(fn($subject) => (object) [
+            'subject' => $subject['name'],
+            'total_assessed' => $subject['students'],
+            'average_score' => $subject['score'],
+            'male_avg' => $subject['male_avg'],
+            'female_avg' => $subject['female_avg'],
+            'status' => $subject['score'] >= 80 ? 'Excellent' : ($subject['score'] >= 50 ? 'Average' : 'Below Average'),
+        ])->values()->all();
+
+        $stats = (object) [
+            'avg_score' => $analytics['overallMean'],
+            'total_assessed' => $analytics['activeStudents'],
+        ];
+
+        $classTitle = collect([
+            $payload['filters']['grade_level_id'] ? optional($payload['grades']->firstWhere('id', (int) $payload['filters']['grade_level_id']))->name : null,
+            $payload['filters']['class_id'] ? optional($payload['classes']->firstWhere('id', (int) $payload['filters']['class_id']))->name : null,
+            $payload['filters']['subject_id'] ? optional($payload['subjects']->firstWhere('id', (int) $payload['filters']['subject_id']))->name : null,
+        ])->filter()->join(' / ') ?: 'All Classes';
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.assessment-pdf', [
+            'assessmentsData' => $assessmentsData,
+            'classTitle' => $classTitle,
+            'school' => $school,
+            'stats' => $stats,
+            'themeColor' => $school?->getSetting('pdf_theme_color', '#1e40af') ?? '#1e40af',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('assessment_results_' . now()->format('Y_m_d_His') . '.pdf');
+    }
+
+    public function downloadResultsTemplate()
+    {
+        $headers = [
+            'Admission Number',
+            'Student Name',
+            'Class',
+            'Grade',
+            'Subject',
+            'Assessment',
+            'Marks Obtained',
+            'Total Marks',
+            'Percentage',
+            'Rating',
+            'Teacher Remarks',
+        ];
+
+        return response()->streamDownload(function () use ($headers) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $headers);
+            fputcsv($file, ['ADM001', 'Jane Learner', 'Grade 4 East', 'Grade 4', 'Mathematics', 'End Term Assessment', '78', '100', '78', 'ME', 'Good progress']);
+            fclose($file);
+        }, 'assessment_results_template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    private function buildResultsPayload(Request $request, $schoolId, $activeYear, bool $paginate = true): array
+    {
+        $filters = [
+            'search' => $request->input('search', ''),
+            'class_id' => $request->input('class_id', 'all'),
+            'grade_level_id' => $request->input('grade_level_id', 'all'),
+            'subject_id' => $request->input('subject_id', 'all'),
+        ];
+
+        $allowedClassIds = $this->allowedAssessmentClassIds();
+        $activeYearIds = $this->currentAcademicYearIds($schoolId);
+        $percentageSql = '(student_assessments.marks_obtained / NULLIF(COALESCE(assessments.total_marks, 100), 0)) * 100';
+
+        $rows = \DB::table('student_assessments')
+            ->join('assessments', 'student_assessments.assessment_id', '=', 'assessments.id')
+            ->join('students', 'student_assessments.student_id', '=', 'students.id')
+            ->join('classes', 'assessments.class_id', '=', 'classes.id')
+            ->join('subjects', 'assessments.subject_id', '=', 'subjects.id')
+            ->leftJoin('grade_levels', 'classes.grade_level_id', '=', 'grade_levels.id')
+            ->where('assessments.school_id', $schoolId)
+            ->where('students.school_id', $schoolId)
+            ->when($activeYearIds->isNotEmpty(), fn($query) => $query->whereIn('assessments.academic_year_id', $activeYearIds))
+            ->when($allowedClassIds !== null, fn($query) => $query->whereIn('assessments.class_id', $allowedClassIds))
+            ->when($filters['class_id'] !== 'all', fn($query) => $query->where('assessments.class_id', $filters['class_id']))
+            ->when($filters['grade_level_id'] !== 'all', fn($query) => $query->where('classes.grade_level_id', $filters['grade_level_id']))
+            ->when($filters['subject_id'] !== 'all', fn($query) => $query->where('assessments.subject_id', $filters['subject_id']))
+            ->when($filters['search'], function ($query) use ($filters) {
+                $search = $filters['search'];
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('students.first_name', 'like', "%{$search}%")
+                        ->orWhere('students.last_name', 'like', "%{$search}%")
+                        ->orWhere('students.admission_number', 'like', "%{$search}%")
+                        ->orWhere('assessments.title', 'like', "%{$search}%");
+                });
+            })
+            ->selectRaw("
+                student_assessments.student_id,
+                CONCAT(COALESCE(students.first_name, ''), ' ', COALESCE(students.last_name, '')) as student_name,
+                students.first_name,
+                students.last_name,
+                students.admission_number,
+                students.gender,
+                assessments.id as assessment_id,
+                assessments.title as assessment_title,
+                assessments.assessment_date,
+                assessments.class_id,
+                classes.name as class_name,
+                classes.grade_level_id,
+                grade_levels.name as grade_name,
+                assessments.subject_id,
+                subjects.name as subject_name,
+                student_assessments.marks_obtained,
+                COALESCE(assessments.total_marks, 100) as total_marks,
+                student_assessments.grade_level as rating,
+                student_assessments.teacher_comments,
+                {$percentageSql} as percentage
+            ")
+            ->get();
+
+        $students = $this->rankStudentRows($rows);
+        $page = max((int) request('page', 1), 1);
+        $perPage = 30;
+        $studentsPaginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $students->forPage($page, $perPage)->values(),
+            $students->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
+        return [
+            'students' => $paginate ? $studentsPaginator : $students,
+            'analytics' => [
+                'overallMean' => $this->weightedMean($rows),
+                'totalAssessments' => $rows->pluck('assessment_id')->unique()->count(),
+                'activeStudents' => $rows->pluck('student_id')->unique()->count(),
+                'recordedResults' => $rows->count(),
+                'subjectAnalysis' => $this->groupPerformance($rows, 'subject_id', 'subject_name'),
+                'classAnalysis' => $this->groupPerformance($rows, 'class_id', 'class_name'),
+                'gradeAnalysis' => $this->groupPerformance($rows, 'grade_level_id', 'grade_name'),
+                'trend' => $this->trendPerformance($rows),
+                'trendByClass' => $this->trendPerformanceByGroup($rows, 'class_id', 'class_name'),
+                'trendByGrade' => $this->trendPerformanceByGroup($rows, 'grade_level_id', 'grade_name'),
+                'trendBySubject' => $this->trendPerformanceByGroup($rows, 'subject_id', 'subject_name'),
+                'distribution' => $this->performanceDistribution($students),
+            ],
+            'rankings' => [
+                'students' => $students->take(20)->values(),
+                'classes' => $this->groupPerformance($rows, 'class_id', 'class_name'),
+                'grades' => $this->groupPerformance($rows, 'grade_level_id', 'grade_name'),
+                'subjects' => $this->groupPerformance($rows, 'subject_id', 'subject_name'),
+                'topClass' => $this->groupPerformance($rows, 'class_id', 'class_name')->first(),
+                'topGrade' => $this->groupPerformance($rows, 'grade_level_id', 'grade_name')->first(),
+                'topSubject' => $this->groupPerformance($rows, 'subject_id', 'subject_name')->first(),
+            ],
+            'filters' => $filters,
+            'classes' => \App\Models\Academic\SchoolClass::where('school_id', $schoolId)
+                ->when($allowedClassIds !== null, fn($query) => $query->whereIn('id', $allowedClassIds))
+                ->orderBy('name')
+                ->get(['id', 'name', 'grade_level_id']),
+            'grades' => \App\Models\Academic\GradeLevel::where('school_id', $schoolId)->orderBy('name')->get(['id', 'name']),
+            'subjects' => \App\Models\Curriculum\Subject::orderBy('name')->get(['id', 'name']),
+        ];
+    }
+
+    private function allowedAssessmentClassIds()
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasRole('teacher') || $user->hasAnyRole(['super_admin', 'school_admin'])) {
+            return null;
+        }
+
+        return \App\Models\TeacherSubject::where('teacher_id', $user->teacher?->id)->pluck('class_id')
+            ->merge(\App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id'))
+            ->unique()
+            ->values();
+    }
+
+    private function weightedMean($rows): float
+    {
+        $totalMarks = $rows->sum(fn($row) => (float) $row->marks_obtained);
+        $totalPossible = $rows->sum(fn($row) => (float) $row->total_marks);
+
+        return $totalPossible > 0 ? round(($totalMarks / $totalPossible) * 100, 1) : 0.0;
+    }
+
+    private function groupPerformance($rows, string $idKey, string $nameKey)
+    {
+        return $rows->filter(fn($row) => $row->{$idKey} !== null)
+            ->groupBy($idKey)
+            ->map(function ($group) use ($idKey, $nameKey) {
+                $maleRows = $group->filter(fn($row) => strtolower((string) $row->gender) === 'male');
+                $femaleRows = $group->filter(fn($row) => strtolower((string) $row->gender) === 'female');
+
+                return [
+                    'id' => $group->first()->{$idKey},
+                    'name' => $group->first()->{$nameKey} ?? 'Unassigned',
+                    'score' => $this->weightedMean($group),
+                    'students' => $group->pluck('student_id')->unique()->count(),
+                    'assessments' => $group->pluck('assessment_id')->unique()->count(),
+                    'records' => $group->count(),
+                    'male_avg' => $maleRows->isNotEmpty() ? $this->weightedMean($maleRows) : 0,
+                    'female_avg' => $femaleRows->isNotEmpty() ? $this->weightedMean($femaleRows) : 0,
+                ];
+            })
+            ->sortByDesc('score')
+            ->values()
+            ->map(function ($item, $index) {
+                $item['rank'] = $index + 1;
+                return $item;
+            });
+    }
+
+    private function rankStudentRows($rows)
+    {
+        $ranked = $rows->groupBy('student_id')
+            ->map(function ($group) {
+                $recent = $group->sortByDesc('assessment_date')->take(3);
+                $mean = $this->weightedMean($group);
+
+                return [
+                    'id' => $group->first()->student_id,
+                    'first_name' => $group->first()->first_name,
+                    'last_name' => $group->first()->last_name,
+                    'name' => trim($group->first()->student_name),
+                    'admission_number' => $group->first()->admission_number,
+                    'current_class_id' => $group->first()->class_id,
+                    'class_name' => $group->first()->class_name,
+                    'grade_level_id' => $group->first()->grade_level_id,
+                    'grade_name' => $group->first()->grade_name,
+                    'mean_score' => $mean,
+                    'tests_count' => $group->pluck('assessment_id')->unique()->count(),
+                    'subjects_count' => $group->pluck('subject_id')->unique()->count(),
+                    'total_marks' => round($group->sum(fn($row) => (float) $row->marks_obtained), 1),
+                    'total_possible' => round($group->sum(fn($row) => (float) $row->total_marks), 1),
+                    'trajectory' => $this->weightedMean($recent) >= $mean ? 'Positive' : 'Watch',
+                ];
+            })
+            ->sortByDesc('mean_score')
+            ->values();
+
+        $classRanks = $ranked->groupBy('current_class_id')->map(fn($group) => $group->values()->pluck('id')->flip());
+        $gradeRanks = $ranked->groupBy('grade_level_id')->map(fn($group) => $group->values()->pluck('id')->flip());
+
+        return $ranked->map(function ($student, $index) use ($classRanks, $gradeRanks) {
+            $student['overall_rank'] = $index + 1;
+            $student['class_rank'] = ($classRanks[$student['current_class_id']][$student['id']] ?? 0) + 1;
+            $student['grade_rank'] = ($gradeRanks[$student['grade_level_id']][$student['id']] ?? 0) + 1;
+            return $student;
+        });
+    }
+
+    private function trendPerformance($rows)
+    {
+        return $rows->filter(fn($row) => $row->assessment_date)
+            ->groupBy(fn($row) => \Carbon\Carbon::parse($row->assessment_date)->format('M Y'))
+            ->map(fn($group, $label) => ['label' => $label, 'score' => $this->weightedMean($group)])
+            ->values();
+    }
+
+    private function trendPerformanceByGroup($rows, string $idKey, string $nameKey)
+    {
+        $labels = $rows->filter(fn($row) => $row->assessment_date)
+            ->map(fn($row) => \Carbon\Carbon::parse($row->assessment_date)->format('M Y'))
+            ->unique()
+            ->values();
+
+        return $rows->filter(fn($row) => $row->{$idKey} !== null)
+            ->groupBy($idKey)
+            ->map(function ($group) use ($labels, $idKey, $nameKey) {
+                $points = $group->filter(fn($row) => $row->assessment_date)
+                    ->groupBy(fn($row) => \Carbon\Carbon::parse($row->assessment_date)->format('M Y'));
+
+                return [
+                    'id' => $group->first()->{$idKey},
+                    'name' => $group->first()->{$nameKey} ?? 'Unassigned',
+                    'score' => $this->weightedMean($group),
+                    'points' => $labels->map(fn($label) => [
+                        'label' => $label,
+                        'score' => $points->has($label) ? $this->weightedMean($points->get($label)) : null,
+                    ])->values(),
+                ];
+            })
+            ->sortByDesc('score')
+            ->take(6)
+            ->values();
+    }
+
+    private function performanceDistribution($students): array
+    {
+        return [
+            'EE' => $students->where('mean_score', '>=', 80)->count(),
+            'ME' => $students->whereBetween('mean_score', [60, 79.999])->count(),
+            'AE' => $students->whereBetween('mean_score', [40, 59.999])->count(),
+            'BE' => $students->where('mean_score', '<', 40)->count(),
+        ];
     }
 
     public function bulkUploadView(): Response
@@ -1334,5 +1559,12 @@ class AssessmentController extends Controller
         }
 
         return $user->school_id;
+    }
+
+    private function currentAcademicYearIds($schoolId)
+    {
+        return \App\Models\Academic\AcademicYear::where('school_id', $schoolId)
+            ->where('is_current', true)
+            ->pluck('id');
     }
 }
