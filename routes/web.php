@@ -515,12 +515,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         
         // Grading Terminal (High-Fidelity)
         Route::get('/latest-active', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'latestActive'])->name('latest-active');
+        Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
         Route::get('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'index'])->name('grading');
         Route::get('/grading/{assessment}/export', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'export'])->name('grading.export');
         Route::get('/grading/{assessment}/template', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'downloadTemplate'])->name('grading.template');
         Route::post('/grading/{assessment}/import', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'importMarks'])->name('grading.import');
         Route::post('/grading/{assessment}', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'store'])->name('grading.store');
-        Route::post('/grading/quick-save', [\App\Http\Controllers\Assessment\AssessmentGradingController::class, 'quickSave'])->name('grading.quick-save');
         
         // Resource Actions (CRUD)
         Route::middleware(['check_permission:assessments.create'])->group(function () {
