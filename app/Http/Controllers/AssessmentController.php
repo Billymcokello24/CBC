@@ -1161,29 +1161,37 @@ class AssessmentController extends Controller
             return;
         }
 
+        $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
+        $teacherId = $teacher ? $teacher->id : null;
+
         // Teacher — only own assessments
         if ($user->hasRole('teacher') && !$user->hasRole('class_teacher') && !$user->hasRole('hod')) {
-            $query->where('teacher_id', $user->id);
+            if ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            } else {
+                $query->where('id', 0); // Failsafe against data leaking
+            }
             return;
         }
 
         // Class teacher — assessments for their class + own
         if ($user->hasRole('class_teacher')) {
             $classIds = \App\Models\Academic\SchoolClass::where('class_teacher_id', $user->id)->pluck('id')->toArray();
-            $query->where(function($q) use ($user, $classIds) {
-                $q->where('teacher_id', $user->id)
-                  ->orWhereIn('class_id', $classIds);
+            $query->where(function($q) use ($teacherId, $classIds) {
+                if ($teacherId) {
+                    $q->where('teacher_id', $teacherId);
+                }
+                if (!empty($classIds)) {
+                    $q->orWhereIn('class_id', $classIds);
+                }
             });
             return;
         }
 
         // HoD — assessments for subjects in their department
-        if ($user->hasRole('hod')) {
-            $teacher = \App\Models\Teacher::where('user_id', $user->id)->first();
-            if ($teacher?->department_id) {
-                $subjectIds = \App\Models\Curriculum\Subject::where('department_id', $teacher->department_id)->pluck('id')->toArray();
-                $query->whereIn('subject_id', $subjectIds);
-            }
+        if ($user->hasRole('hod') && $teacher?->department_id) {
+            $subjectIds = \App\Models\Curriculum\Subject::where('department_id', $teacher->department_id)->pluck('id')->toArray();
+            $query->whereIn('subject_id', $subjectIds);
             return;
         }
 
@@ -1194,6 +1202,7 @@ class AssessmentController extends Controller
                 $childClassIds = $guardian->students()->pluck('current_class_id')->filter()->toArray();
                 $query->whereIn('class_id', $childClassIds);
             }
+
             return;
         }
 
@@ -1250,18 +1259,11 @@ class AssessmentController extends Controller
         $user = auth()->user();
         if (!$user) return null;
 
-        // Check if user is a teacher
-        if ($user->teacher) {
-            return $user->teacher->school_id;
+        if ($user->hasRole('super_admin') && session()->has('viewing_school_id')) {
+            return session('viewing_school_id');
         }
 
-        // Check if user is a student
-        if ($user->student) {
-            return $user->student->school_id;
-        }
-
-        // Fallback to first school for admins
-        return \App\Models\School::first()?->id;
+        return $user->school_id;
     }
 }
 
